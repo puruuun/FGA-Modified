@@ -1,0 +1,306 @@
+{
+ "name": "himiko-ptoneother",
+ "expected": "ce2f5,#,ab2t34,#,dk2t2",
+ "data": {
+  "team": {
+   "mysticCode": {
+    "mysticCodeId": 1,
+    "level": 10
+   },
+   "onFieldSvts": [
+    {
+     "svtId": 2801400,
+     "tdId": 2801401,
+     "skillIds": [
+      2713550,
+      2714450,
+      2715450
+     ]
+    },
+    {
+     "svtId": 2801400,
+     "tdId": 2801401,
+     "skillIds": [
+      2713550,
+      2714450,
+      2715450
+     ]
+    },
+    null
+   ],
+   "backupSvts": [
+    null,
+    null,
+    null
+   ]
+  },
+  "delegate": {},
+  "actions": [
+   {
+    "type": "skill",
+    "svt": 0,
+    "skill": 2,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "svt": 1,
+    "skill": 1,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "svt": 1,
+    "skill": 2,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "attack",
+    "attacks": [
+     {
+      "svt": 1,
+      "card": -1,
+      "isTD": true,
+      "critical": false,
+      "cardType": 1
+     }
+    ],
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "svt": 0,
+    "skill": 0,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "svt": 0,
+    "skill": 1,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "attack",
+    "attacks": [
+     {
+      "svt": 0,
+      "card": -1,
+      "isTD": true,
+      "critical": false,
+      "cardType": 1
+     },
+     {
+      "svt": 1,
+      "card": 3,
+      "isTD": false,
+      "critical": true,
+      "cardType": 2
+     },
+     {
+      "svt": 1,
+      "card": 4,
+      "isTD": false,
+      "critical": true,
+      "cardType": 2
+     }
+    ],
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 0,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "svt": 1,
+    "skill": 0,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 1,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "skill",
+    "skill": 1,
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 1,
+     "random": 900,
+     "threshold": 1000
+    }
+   },
+   {
+    "type": "attack",
+    "attacks": [
+     {
+      "svt": 1,
+      "card": 3,
+      "isTD": false,
+      "critical": true,
+      "cardType": 2
+     },
+     {
+      "svt": 1,
+      "card": 2,
+      "isTD": false,
+      "critical": true,
+      "cardType": 1
+     },
+     {
+      "svt": 1,
+      "card": 4,
+      "isTD": false,
+      "critical": true,
+      "cardType": 2
+     }
+    ],
+    "options": {
+     "playerTarget": 1,
+     "enemyTarget": 1,
+     "random": 900,
+     "threshold": 1000
+    }
+   }
+  ]
+ },
+ "metadata": {
+  "svt-2801400": {
+   "id": 2801400,
+   "skills": [
+    {
+     "id": 2713550,
+     "functions": [
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "ptAll"
+      }
+     ]
+    },
+    {
+     "id": 2714450,
+     "functions": [
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "ptAll"
+      },
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "ptAll"
+      },
+      {
+       "funcType": "gainNp",
+       "funcTargetType": "ptAll"
+      },
+      {
+       "funcType": "hastenNpturn",
+       "funcTargetType": "ptAll"
+      },
+      {
+       "funcType": "gainNp",
+       "funcTargetType": "self"
+      },
+      {
+       "funcType": "addState",
+       "funcTargetType": "ptOneOther"
+      },
+      {
+       "funcType": "cardReset",
+       "funcTargetType": "self"
+      }
+     ]
+    },
+    {
+     "id": 2715450,
+     "functions": [
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "self"
+      }
+     ]
+    }
+   ],
+   "noblePhantasms": [
+    {
+     "id": 2801401,
+     "effectFlags": [
+      "attackEnemyAll"
+     ]
+    }
+   ]
+  },
+  "MC-1": {
+   "id": 1,
+   "skills": [
+    {
+     "id": 980073,
+     "functions": [
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "ptAll"
+      },
+      {
+       "funcType": "addStateShort",
+       "funcTargetType": "ptAll"
+      }
+     ]
+    },
+    {
+     "id": 980074,
+     "functions": [
+      {
+       "funcType": "gainHp",
+       "funcTargetType": "ptOne"
+      },
+      {
+       "funcType": "subState",
+       "funcTargetType": "ptOne"
+      }
+     ]
+    },
+    {
+     "id": 980075,
+     "functions": [
+      {
+       "funcType": "replaceMember",
+       "funcTargetType": "ptselectOneSub"
+      }
+     ],
+     "script": {}
+    }
+   ]
+  }
+ }
+}

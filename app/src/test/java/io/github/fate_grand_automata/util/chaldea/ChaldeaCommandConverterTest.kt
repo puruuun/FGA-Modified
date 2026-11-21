@@ -52,6 +52,51 @@ class ChaldeaCommandConverterTest {
         assertEquals("ghi1x31ih3gt2acbdefj654", converter().convert(userUrl))
     }
 
+    private val himiko = Json.parseToJsonElement(javaClass.getResource("/chaldea/ptoneother-himiko.json")!!.readText()).jsonObject
+
+    // Skill 2 (index 1) of both Himiko & Iyo carries the functions under test; the rest of the fixture stays fixed.
+    private fun himikoWithSkill2(vararg functions: Pair<String, String>): JsonObject {
+        val metadata = himiko.getValue("metadata").jsonObject
+        val svt = metadata.getValue("svt-2801400").jsonObject
+        val skills = svt.getValue("skills").jsonArray.toMutableList()
+        skills[1] = JsonObject(mapOf(
+            "id" to skills[1].jsonObject.getValue("id"),
+            "functions" to JsonArray(functions.map { (type, target) ->
+                JsonObject(mapOf("funcType" to JsonPrimitive(type), "funcTargetType" to JsonPrimitive(target)))
+            })
+        ))
+        val changed = JsonObject(metadata + ("svt-2801400" to JsonObject(svt + ("skills" to JsonArray(skills)))))
+        return JsonObject(himiko + ("metadata" to changed))
+    }
+
+    private suspend fun convertHimiko(fixture: JsonObject) =
+        converter(fixture).convert(encode(fixture.getValue("data").toString()))
+
+    @Test fun `ptOneOther skill takes the ally target from the share data`() = runBlocking {
+        assertEquals(himiko.text("expected"), convertHimiko(himiko))
+    }
+
+    @Test fun `skill with only ptAll and ptOneOther functions gets the ally target`() = runBlocking {
+        val odysseus = himikoWithSkill2(
+            "addStateShort" to "ptAll", "addStateShort" to "ptAll", "addState" to "ptOneOther", "addState" to "ptOneOther"
+        )
+        assertEquals("ce2f5,#,ab2t34,#,dk2t2", convertHimiko(odysseus))
+    }
+
+    @Test fun `skill with ptOne and ptOneOther converts as it did with ptOne alone`() = runBlocking {
+        val mash = himikoWithSkill2(
+            "addState" to "ptOne", "gainNp" to "ptOne", "hastenNpturn" to "ptOne", "addState" to "ptOneOther"
+        )
+        val ptOneOnly = himikoWithSkill2("addState" to "ptOne", "gainNp" to "ptOne", "hastenNpturn" to "ptOne")
+        assertEquals("ce2f5,#,ab2t34,#,dk2t2", convertHimiko(mash))
+        assertEquals(convertHimiko(ptOneOnly), convertHimiko(mash))
+    }
+
+    @Test fun `skill with only ptAll and self functions gets no ally target`() = runBlocking {
+        val noTarget = himikoWithSkill2("addStateShort" to "ptAll", "gainNp" to "self")
+        assertEquals("cef5,#,abt34,#,dk2t2", convertHimiko(noTarget))
+    }
+
     @TestFactory
     fun `ignoring targets removes every enemy command while preserving other actions`() = fixtures.map { entry ->
         val fixture = entry.jsonObject
