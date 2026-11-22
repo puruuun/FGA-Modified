@@ -43,8 +43,8 @@ class AtlasRouteRepository(
 
     /**
      * What [weekAt] has learned from one state of `<server>-missions.json`, keyed by that file's size and mtime. The
-     * master is a few MB of JSON (about 2 MB for KR and 4 MB for JP) that parses into a tree about ten times that size, so it is parsed only when this file cannot answer. [missed] holds snapshot times no
-     * weekly set covers.
+     * master is a few MB of JSON (about 2 MB for KR and 4 MB for JP) that parses into a tree about ten times that
+     * size, so it is parsed only when this file cannot answer. [missed] holds snapshot times no weekly set covers.
      */
     @Serializable private class Side(val size: Long, val mtime: Long, val weeks: List<SideWeek> = emptyList(), val missed: List<Long> = emptyList())
 
