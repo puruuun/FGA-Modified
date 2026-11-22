@@ -129,6 +129,25 @@ class ScreenshotServiceHolder @Inject constructor(
         }
     }
 
+    /**
+     * [takeFullDisplayScreenshot] with a way to a newer full-display frame before the restore (see
+     * [MediaProjectionScreenshotService.withFullDisplayFrames]); root takes a new screencap for each.
+     * Null without a service that can take one.
+     */
+    suspend fun <T> withFullDisplayFrames(block: (first: Pattern, next: () -> Pattern?) -> T): T? {
+        val service = screenshotService ?: return null
+        val metrics = display.metrics
+        val size = Size(metrics.widthPixels, metrics.heightPixels)
+        val density = metrics.densityDpi
+        return withContext(NonCancellable + Dispatchers.Default) {
+            when (service) {
+                is MediaProjectionScreenshotService -> service.withFullDisplayFrames(size, density, block)
+                is ResizedScreenshotProvider -> block(service.takeFullDisplayScreenshot()) { service.takeFullDisplayScreenshot() }
+                else -> null
+            }
+        }
+    }
+
     fun resizeCapture() {
         val service = screenshotService ?: return
         val metrics = display.metrics

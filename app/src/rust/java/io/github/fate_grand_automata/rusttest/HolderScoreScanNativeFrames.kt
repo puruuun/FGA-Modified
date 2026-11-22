@@ -4,10 +4,13 @@ import io.github.fate_grand_automata.imaging.MediaProjectionScreenshotService
 import io.github.fate_grand_automata.runner.ScreenshotServiceHolder
 import io.github.fate_grand_automata.scripts.FgoCaptureGeometry
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanCaptureState
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameJudge
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNative
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeCapture
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeChecks
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeFrameLoop
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeFrames
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeMap
 import io.github.fate_grand_automata.util.CutoutManager
 import io.github.fate_grand_automata.util.DisplayHelper
 import io.github.lib_automata.GameAreaManager
@@ -19,10 +22,12 @@ import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
- * Issue #600, rust build type only: the support score scan's full-display frame, through the same
- * [ScreenshotServiceHolder.takeFullDisplayScreenshot] the settings calibration uses. It runs on the
- * script thread, which is the only thread that takes the run's 720p screenshots, and the capture lock
- * keeps the temporary size invisible to them. The decisions are in [ScoreScanNativeChecks].
+ * Issue #600, rust build type only: the support score scan's full-display frame, through
+ * [ScreenshotServiceHolder.withFullDisplayFrames], the same capture as the settings calibration's
+ * [ScreenshotServiceHolder.takeFullDisplayScreenshot] with the chance to take a newer frame before the
+ * restore. It runs on the script thread, which is the only thread that takes the run's 720p
+ * screenshots, and the capture lock keeps the temporary size invisible to them. The decisions are in
+ * [ScoreScanNativeChecks] and [ScoreScanNativeFrameLoop].
  *
  * MediaProjection: the virtual display is resized to the full display and back. The restore installs
  * a new reader and forgets the last frame, so the next 720p screenshot waits for a new frame at the
@@ -36,7 +41,7 @@ class HolderScoreScanNativeFrames @Inject constructor(
     private val gameAreaManager: GameAreaManager,
     private val scale: Scale,
 ) : ScoreScanNativeFrames {
-    override fun capture(): ScoreScanNativeCapture {
+    override fun capture(judge: ScoreScanFrameJudge): ScoreScanNativeCapture {
         val service = holder.screenshotService ?: return ScoreScanNativeCapture.Failed(ScoreScanNative.NO_SERVICE)
         if (service !is MediaProjectionScreenshotService && service !is ResizedScreenshotProvider) {
             return ScoreScanNativeCapture.Failed(ScoreScanNative.UNSUPPORTED, service.javaClass.name)
@@ -51,8 +56,16 @@ class HolderScoreScanNativeFrames @Inject constructor(
         ScoreScanNativeChecks.before(projection != null, before, geometry, scriptCrop)?.let { return it }
 
         var error: Exception? = null
+        val landscape = ScoreScanNativeChecks.landscape(displaySize)
+        val map = ScoreScanNativeMap.of(geometry, landscape)
         val frame: Pattern? = try {
-            runBlocking { holder.takeFullDisplayScreenshot() }
+            runBlocking {
+                holder.withFullDisplayFrames { first, next ->
+                    // A frame of another size is dropped by the checks below; it is not judged.
+                    if (first.width != landscape.width || first.height != landscape.height) first
+                    else ScoreScanNativeFrameLoop.run(first, map, next, { Thread.sleep(it.inWholeMilliseconds) }, judge)
+                }
+            }
         } catch (e: Exception) {
             error = e
             null

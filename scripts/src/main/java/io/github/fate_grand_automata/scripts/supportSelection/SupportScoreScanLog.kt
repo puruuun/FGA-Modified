@@ -382,12 +382,15 @@ object ScoreScanLog {
                 "clamped" to native.clamped,
                 "match" to native.match?.json(),
                 "captureMicros" to native.captureMicros,
+                "fieldOffset" to native.fieldOffset,
             )
         },
         "reason" to record.reason,
         "detail" to record.detail,
         "captureMicros" to record.captureMicros,
         "postNativeLooks" to record.postNativeLooks,
+        "frameCheck" to record.frameCheck?.let { linkedMapOf("match" to it.match?.json(), "best" to it.best?.json(), "offset" to it.offset) },
+        "nativeFrames" to record.nativeFrames,
     ))
 
     /** The lower median, so the value is always one that was measured. */
@@ -416,6 +419,14 @@ object ScoreScanLog {
         "captureMicros" to times(n.captureMicros),
         "match" to matches(n.matches),
         "lowMatchScreens" to n.lowMatchScreens,
+        "nativeFrames" to linkedMapOf(
+            "screens" to n.frameScreens,
+            "moreThanOne" to n.frameScreensMoreThanOne,
+            "validFirst" to n.validFirst,
+            "validLater" to n.validLater,
+            "noValidFrame" to n.noValidFrame,
+            "refusedRows" to n.refusedRows,
+        ),
         "postNativeLooks" to linkedMapOf(
             "screens" to n.lookScreens,
             "moreThanOne" to n.lookScreensMoreThanOne,

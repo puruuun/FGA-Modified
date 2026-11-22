@@ -6,18 +6,82 @@ import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
 import java.io.ByteArrayOutputStream
+import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Issue #600: one full-display grayscale frame per logged screen of the support score scan, so the
+ * Issue #600: one full-display grayscale capture per logged screen of the support score scan, so the
  * score fields can be studied at the display's own resolution. The Android side is in the rust
  * source set; no other build binds it.
  */
 interface ScoreScanNativeFrames {
-    /** Never throws for a capture problem: it answers [ScoreScanNativeCapture.Failed] or [ScoreScanNativeCapture.RestoreFailed]. */
-    fun capture(): ScoreScanNativeCapture
+    /**
+     * Never throws for a capture problem: it answers [ScoreScanNativeCapture.Failed] or
+     * [ScoreScanNativeCapture.RestoreFailed]. While the display is still at the full size, the frames
+     * go through [ScoreScanNativeFrameLoop.run] with [judge]; the frame answered is the last one judged.
+     */
+    fun capture(judge: ScoreScanFrameJudge): ScoreScanNativeCapture
+}
+
+/** Decides, while the capture is at the full size, whether a frame shows the screen the rows were read from. */
+interface ScoreScanFrameJudge {
+    /** True when the frame is to be kept. Must not throw for what a frame holds. */
+    fun accept(frame: Pattern, map: ScoreScanNativeMap): Boolean
+
+    /** Read without waiting on a pause: the capture lock is held while it is asked. */
+    val stopRequested: Boolean
+}
+
+/**
+ * The bounded sequence of full-size frames, shared by the Android capture and the tests. The first
+ * frame after the resize to the full size is the first buffer the new reader got, and nothing in the
+ * capture tells whether the compositor drew it for the new size; a newer one is asked for only when
+ * [ScoreScanFrameJudge.accept] refuses the last.
+ */
+object ScoreScanNativeFrameLoop {
+    /**
+     * Frames asked for in all, the first included. Like the looks after the restore: a few tries.
+     * [WAIT] before each further one spans several display frames of a game that draws continuously,
+     * and the two waits keep the display at the full size at most 0.2 s longer than one frame would.
+     */
+    const val ATTEMPTS = 3
+    val WAIT = 100.milliseconds
+
+    /**
+     * [next] answers a newer frame, or null when the reader received none since the last (then the
+     * same buffer is not judged again). Answers the last judged frame, owned by the caller; every
+     * other frame is closed, also when something throws.
+     */
+    fun run(
+        first: Pattern,
+        map: ScoreScanNativeMap,
+        next: () -> Pattern?,
+        wait: (Duration) -> Unit,
+        judge: ScoreScanFrameJudge,
+    ): Pattern {
+        var frame = first
+        try {
+            var accepted = judge.accept(frame, map)
+            var tries = 1
+            while (!accepted && tries < ATTEMPTS && !judge.stopRequested) {
+                wait(WAIT)
+                tries++
+                if (judge.stopRequested) break
+                val newer = next() ?: continue
+                frame.close()
+                frame = newer
+                accepted = judge.accept(frame, map)
+            }
+            return frame
+        } catch (e: Throwable) {
+            frame.close()
+            throw e
+        }
+    }
 }
 
 sealed interface ScoreScanNativeCapture {
@@ -79,7 +143,8 @@ object ScoreScanNative {
 
     /**
      * Checked after the capture has returned; it cannot interrupt it. A first frame after a resize
-     * normally arrives within a few display frames and the full-size copy takes tens of milliseconds;
+     * normally arrives within a few display frames, the full-size copy takes tens of milliseconds and
+     * the newer frames of [ScoreScanNativeFrameLoop] add at most 0.2 s;
      * 1.5 s is half the capture's own first-frame timeout (3 s, which ends the capture with an
      * exception, logged as `error`), so a slower capture means the compositor stalled and the frame
      * may not show the screen the rows were read from.
@@ -96,9 +161,33 @@ object ScoreScanNative {
     const val FIELD_OUTSIDE_FRAME = "field_outside_frame"
     const val RESTORE_FAILED = "restore_failed"
 
+    const val CAPTURE_STOPPED = "capture_stopped"
+
+    /** A row whose native field does not show what the 720p crop showed: nothing is saved for it. */
+    const val FRAME_MISMATCH = "frame_mismatch"
+
     /** The look diagnosis's word for a capture that delivered a frame. */
     const val OK = "ok"
-    const val CAPTURE_STOPPED = "capture_stopped"
+
+    /**
+     * The vertical search for the field, in 720p px each way. Settled rows on the tablet were found
+     * up to about 1.3 px off (rounding of the two scaling paths); 3 px covers that with room and stays
+     * far below the 11 to 15 px of a list that was still moving, which is refused: its 720p crop was
+     * read from a moving list, and the field sits at the crop's edge. Vertical only: the list scrolls
+     * vertically, and nothing moves a row sideways.
+     */
+    const val SEARCH = 3
+
+    /**
+     * The least best match a row needs for its native crop to be saved: a safety rule for what is
+     * written, not a tuning knob. On the tablet, settled rows measured 0.94 to 0.99 at offset 0 and a
+     * median of 0.98 with the search; a moving list measured 0.53 to 0.59, frames that showed other,
+     * magnified content below 0.25. 0.9 lets every settled row through, also one found up to
+     * [SEARCH] px off, and refuses both kinds of wrong frame with a wide gap.
+     */
+    const val FLOOR = 0.9
+
+    fun passes(best: Double?) = best != null && best.isFinite() && best >= FLOOR
 
     /** Null when the field itself is not wholly inside the frame. */
     fun crop(map: ScoreScanNativeMap, fieldImage: Region): ScoreScanNativeCrop? {
@@ -123,6 +212,32 @@ object ScoreScanNative {
     }
 
     fun png(pattern: Pattern): ByteArray = ByteArrayOutputStream().also { pattern.save(it) }.toByteArray()
+
+    /**
+     * [match] at the mapped place, and the best match over the vertical [SEARCH] with its offset in
+     * native px; offsets whose field would leave the frame are skipped. Of equal values the one
+     * nearest the mapped place wins.
+     */
+    fun check(frame: Pattern, map: ScoreScanNativeMap, crop: ScoreScanNativeCrop, readPixels: ByteArray, readSize: Size): ScoreScanFrameCheck {
+        val field = crop.field + crop.region.location
+        val reach = ceil(SEARCH * map.scaleY).toInt()
+        val bounds = Region(Location(), map.frame)
+        var atZero: Double? = null
+        var best: Double? = null
+        var offset: Int? = null
+        for (step in 0..2 * reach) {
+            val dy = if (step % 2 == 1) -(step + 1) / 2 else step / 2
+            val moved = Region(field.x, field.y + dy, field.width, field.height)
+            if (moved !in bounds) continue
+            val value = match(frame, moved, readPixels, readSize)?.takeIf { it.isFinite() }
+            if (dy == 0) atZero = value
+            if (value != null && (best == null || value > best)) {
+                best = value
+                offset = dy
+            }
+        }
+        return ScoreScanFrameCheck(atZero, best, offset)
+    }
 
     /**
      * The native field area-averaged down to the 720p field's size, compared by Pearson correlation
@@ -161,6 +276,11 @@ object ScoreScanNative {
     }
 }
 
+/** What [ScoreScanNative.check] measured: [match] at the mapped place, [best] over the search at [offset] native px (down is positive). */
+data class ScoreScanFrameCheck(val match: Double?, val best: Double?, val offset: Int?) {
+    val passes get() = ScoreScanNative.passes(best)
+}
+
 /** One logged row of a screen, kept until that screen's native frame is taken. */
 class ScoreScanLoggedRow(
     val screen: Int,
@@ -184,6 +304,10 @@ data class ScoreScanNativeRecord(
     val captureMicros: Long?,
     /** How many looks the list check after this screen's capture needed; null when none was made. */
     val postNativeLooks: Int? = null,
+    /** What the check before saving measured; null when the row was not checked. */
+    val frameCheck: ScoreScanFrameCheck? = null,
+    /** Full-size frames judged for this screen; null when none was. */
+    val nativeFrames: Int? = null,
 )
 
 data class ScoreScanNativeResult(
@@ -197,6 +321,8 @@ data class ScoreScanNativeResult(
     val clamped: List<String>,
     val match: Double?,
     val captureMicros: Long,
+    /** Native px (down is positive) from the mapped field to where the search found it; the saved region is not moved. */
+    val fieldOffset: Int,
 )
 
 /** The native part of summary.json; per screen for frames and times, per row for the match. */
@@ -232,6 +358,25 @@ class ScoreScanNativeTally {
     fun screenMatches(values: List<Double?>) {
         val known = values.filterNotNull().filter { it.isFinite() }
         if (known.isNotEmpty() && known.all { it < LOW_MATCH }) lowMatchScreens++
+    }
+
+    var frameScreens = 0; private set
+    var frameScreensMoreThanOne = 0; private set
+    var validFirst = 0; private set
+    var validLater = 0; private set
+    var noValidFrame = 0; private set
+    var refusedRows = 0; private set
+
+    /** One screen whose rows were checked against [judged] frames; [valid] when a row of the last passed. */
+    fun frames(judged: Int, valid: Boolean, refused: Int) {
+        frameScreens++
+        if (judged > 1) frameScreensMoreThanOne++
+        when {
+            !valid -> noValidFrame++
+            judged > 1 -> validLater++
+            else -> validFirst++
+        }
+        refusedRows += refused
     }
 
     var lookScreens = 0; private set
@@ -283,6 +428,9 @@ object ScoreScanNativeChecks {
      * [frameSize] is null when no frame came back. A projection whose state changed, or whose display
      * no longer renders into the current reader, could serve a stale or full-size frame next.
      */
+    /** The frame size a full-display capture of [display] has: landscape, as the game runs. */
+    fun landscape(display: Size) = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
+
     fun after(
         projection: Boolean,
         before: ScoreScanCaptureState?,
@@ -300,7 +448,7 @@ object ScoreScanNativeChecks {
         }
         if (error != null) return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.ERROR, error))
         if (frameSize == null) return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.NULL_FRAME))
-        val landscape = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
+        val landscape = landscape(display)
         if (frameSize != landscape) {
             return Verdict.Drop(ScoreScanNativeCapture.Failed(ScoreScanNative.FRAME_SIZE, "frame $frameSize, display $landscape"))
         }

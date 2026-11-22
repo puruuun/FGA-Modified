@@ -22,6 +22,8 @@ import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReade
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanDevice
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanEndReason
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFolder
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameJudge
+import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeFrameLoop
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameStats
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanListMeasures
 import io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrames
@@ -266,9 +268,17 @@ class SupportScoreScanTest {
     }
 
     /**
-     * The full-display port as HolderScoreScanNativeFrames answers it: a 2560x1440 frame of what the
-     * world shows when it is asked, or the failures that class returns. Every call is recorded with
-     * what was on disk and how many snapshots and gestures had happened.
+     * What one full-size frame of the capture shows: the world's screen at the 2x display scale, moved
+     * by [dx], [dy] native px; [zoom] 4 is other content magnified (a frame not composed for the full
+     * size); the fields of the row positions in [noise] show unrelated pixels.
+     */
+    data class Kind(val dx: Int = 0, val dy: Int = 0, val zoom: Int = 2, val noise: Set<Int> = emptySet())
+
+    /**
+     * The full-display port as HolderScoreScanNativeFrames answers it: the full-size frames of [kinds]
+     * through the same ScoreScanNativeFrameLoop (a null kind is "the reader received nothing new"),
+     * or the failures that class returns. Every call is recorded with what was on disk and how many
+     * snapshots and gestures had happened.
      */
     private class Native(val world: World, val time: TestTimeSource, val linesFile: () -> File?) : ScoreScanNativeFrames {
         data class Call(val rowLines: Int, val nativeLines: Int, val snaps: Int, val gestures: Int)
@@ -277,11 +287,33 @@ class SupportScoreScanTest {
         /** Per 1-based call: what to answer instead of a frame. */
         var answer: (Int) -> ScoreScanNativeCapture? = { null }
         var took: Duration = 30.milliseconds
-        /** Native pixels the frame is moved right by (content shifted since the snapshot). */
-        var shift = 0
+        /** Per 1-based call, the frames the reader receives in order; the last repeats. */
+        var kinds: (Int) -> List<Kind?> = { listOf(Kind()) }
         var onCapture: (Int) -> Unit = {}
+        val waits = mutableListOf<Duration>()
+        var onWait: (Int) -> Unit = {}
+        var judged = 0
+        var restores = 0
 
-        override fun capture(): ScoreScanNativeCapture {
+        fun render(kind: Kind): GrayPattern {
+            val small = world.screen720()
+            val big = ByteArray(2560 * 1440)
+            for (y in 0 until 1440) for (x in 0 until 2560) {
+                val sx = (x - kind.dx).coerceIn(0, 2559) / kind.zoom
+                val sy = (y - kind.dy).coerceIn(0, 1439) / kind.zoom
+                big[y * 2560 + x] = small[sy * 1280 + sx]
+            }
+            val random = kotlin.random.Random(7)
+            for (position in kind.noise) {
+                val at = World.fieldImage(position)
+                for (y in at.y * 2 - 40 until (at.y + at.height) * 2 + 40) for (x in at.x * 2 - 40 until (at.x + at.width) * 2 + 40) {
+                    big[y * 2560 + x] = random.nextInt(256).toByte()
+                }
+            }
+            return GrayPattern(2560, 1440, big).also { frames += it }
+        }
+
+        override fun capture(judge: ScoreScanFrameJudge): ScoreScanNativeCapture {
             onCapture(calls.size + 1)
             val lines = linesFile()?.takeIf { it.exists() }?.readLines() ?: emptyList()
             calls += Call(
@@ -290,14 +322,19 @@ class SupportScoreScanTest {
             )
             time += took
             answer(calls.size)?.let { return it }
-            val small = world.screen720()
-            val big = ByteArray(2560 * 1440)
-            for (y in 0 until 1440) for (x in 0 until 2560) {
-                val sx = (x - shift).coerceIn(0, 2559) / 2
-                big[y * 2560 + x] = small[(y / 2) * 1280 + sx]
+            val list = kinds(calls.size)
+            val map = ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0))
+            var index = 0
+            val counting = object : ScoreScanFrameJudge by judge {
+                override fun accept(frame: Pattern, map: ScoreScanNativeMap) = judge.accept(frame, map).also { judged++ }
             }
-            val frame = GrayPattern(2560, 1440, big).also { frames += it }
-            return ScoreScanNativeCapture.Frame(frame, ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0)))
+            val frame = try {
+                ScoreScanNativeFrameLoop.run(render(list[0]!!), map, {
+                    index++
+                    list[minOf(index, list.lastIndex)]?.let { render(it) }
+                }, { waits += it; onWait(waits.size) }, counting)
+            } finally { restores++ }
+            return ScoreScanNativeCapture.Frame(frame, map)
         }
     }
 
@@ -445,7 +482,7 @@ class SupportScoreScanTest {
         every { transformer.toImage(any()) } answers { firstArg<Region>() * 0.5 }
         val native = object : ScoreScanNativeFrames {
             var calls = 0
-            override fun capture(): ScoreScanNativeCapture {
+            override fun capture(judge: ScoreScanFrameJudge): ScoreScanNativeCapture {
                 calls++
                 return ScoreScanNativeCapture.Failed(ScoreScanNative.UNSUPPORTED)
             }
@@ -869,20 +906,22 @@ class SupportScoreScanTest {
         val native1 = File(scan.folder(result), "native/s000-r1.png").readBytes()
         val matches = natives.map { it.obj("native").str("match").toDouble() }
         assertThat(matches.all { kotlin.math.abs(it - 1.0) < 1e-9 }).isTrue()
-        fun withoutMatch(line: JsonObject) = JsonObject(line + ("native" to JsonObject(line.obj("native") - "match")))
+        assertThat(natives.all { line -> listOf("match", "best").all { kotlin.math.abs(line.obj("frameCheck").str(it).toDouble() - 1.0) < 1e-9 } }).isTrue()
+        fun withoutMatch(line: JsonObject) =
+            JsonObject(line + ("native" to JsonObject(line.obj("native") - "match")) + ("frameCheck" to JsonObject(line.obj("frameCheck") - "match" - "best")))
         assertThat(withoutMatch(natives[0])).isEqualTo(json("""
             {"schema":2,"kind":"native","time":1790000000030,"server":"Jp","screen":0,"row":0,"cropSha256":"${ScoreScanLog.sha256(crop0)}",
              "native":{"crop":"native/s000-r0.png","cropSha256":"${ScoreScanLog.sha256(native0)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":160,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
-                       "clamped":[],"captureMicros":30000},
-             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1}
+                       "clamped":[],"captureMicros":30000,"fieldOffset":0},
+             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1,"frameCheck":{"offset":0},"nativeFrames":1}
         """))
         assertThat(withoutMatch(natives[1])).isEqualTo(json("""
             {"schema":2,"kind":"native","time":1790000000040,"server":"Jp","screen":0,"row":1,"cropSha256":"${ScoreScanLog.sha256(crop1)}",
              "native":{"crop":"native/s000-r1.png","cropSha256":"${ScoreScanLog.sha256(native1)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":560,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
-                       "clamped":[],"captureMicros":30000},
-             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1}
+                       "clamped":[],"captureMicros":30000,"fieldOffset":0},
+             "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1,"frameCheck":{"offset":0},"nativeFrames":1}
         """))
         // 200x140 at 2x of the 100x70 region around the field: a 4-byte size header and the pixels.
         assertThat(native0.size).isEqualTo(4 + 200 * 140)
@@ -894,7 +933,9 @@ class SupportScoreScanTest {
         assertThat(JsonObject(nativeSummary + ("match" to JsonObject(nativeSummary.obj("match") - "median" - "min")))).isEqualTo(json("""
             {"taken":1,"failed":{},"frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
              "captureMicros":{"count":1,"median":30000,"max":30000},"match":{"count":2},
-             "lowMatchScreens":0,"postNativeLooks":{"screens":1,"moreThanOne":0,"max":1}}
+             "lowMatchScreens":0,
+             "nativeFrames":{"screens":1,"moreThanOne":0,"validFirst":1,"validLater":0,"noValidFrame":0,"refusedRows":0},
+             "postNativeLooks":{"screens":1,"moreThanOne":0,"max":1}}
         """))
         assertThat(JsonObject(summary - "native")).isEqualTo(json("""
             {"schema":2,"appVersion":"1.9.0-beta.1-rust.1","deviceModel":"Test Phone","androidVersion":"15 (API 35)",
@@ -1136,17 +1177,18 @@ class SupportScoreScanTest {
     }
 
     @Test
-    fun `the native match is 1 for the frame the rows were read from and lower for a shifted one`() {
+    fun `the native match is 1 for the frame the rows were read from, and a sideways shift is refused`() {
         val same = Scan(total = 2)
         val sameResult = same.run()
         val sameMatches = same.nativeLines(sameResult).map { it.obj("native").str("match").toDouble() }
-        val shifted = Scan(total = 2).apply { native.shift = 6 }
+        val shifted = Scan(total = 2).apply { native.kinds = { listOf(Kind(dx = 6)) } }
         val shiftedResult = shifted.run()
-        val shiftedMatches = shifted.nativeLines(shiftedResult).map { it.obj("native").str("match").toDouble() }
+        val shiftedLines = shifted.nativeLines(shiftedResult)
 
         assertThat(sameMatches.all { kotlin.math.abs(it - 1.0) < 1e-9 }).isTrue()
-        assertThat(shiftedMatches.size).isEqualTo(2)
-        assertThat(shiftedMatches.all { it < 0.9 }).isTrue()
+        assertThat(shiftedLines.size).isEqualTo(2)
+        assertThat(shiftedLines.all { it.getValue("native") == JsonNull && it.str("reason") == "frame_mismatch" }).isTrue()
+        assertThat(shiftedLines.all { it.obj("frameCheck").str("match").toDouble() < 0.9 }).isTrue()
         assertThat(same.summary(sameResult).obj("native").int("lowMatchScreens")).isEqualTo(0)
         assertThat(shifted.summary(shiftedResult).obj("native").int("lowMatchScreens")).isEqualTo(1)
     }
@@ -1178,6 +1220,7 @@ class SupportScoreScanTest {
         native = io.github.fate_grand_automata.scripts.supportSelection.ScoreScanNativeResult(
             crop = "s001-r2.png", cropSha256 = "bb", frame = Size(2560, 1440), scaleX = 2.0, scaleY = 2.0,
             region = Region(0, 0, 170, 110), field = Region(10, 10, 120, 60), clamped = clamped, match = match, captureMicros = 9,
+            fieldOffset = -2,
         ),
         reason = null, detail = null, captureMicros = 9,
     )
@@ -1188,8 +1231,8 @@ class SupportScoreScanTest {
             {"schema":2,"kind":"native","time":5,"server":"Kr","screen":1,"row":2,"cropSha256":"aa",
              "native":{"crop":"native/s001-r2.png","cropSha256":"bb","frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
                        "region":{"x":0,"y":0,"w":170,"h":110},"field":{"x":10,"y":10,"w":120,"h":60},
-                       "clamped":["left","top"],"match":null,"captureMicros":9},
-             "reason":null,"detail":null,"captureMicros":9,"postNativeLooks":null}
+                       "clamped":["left","top"],"match":null,"captureMicros":9,"fieldOffset":-2},
+             "reason":null,"detail":null,"captureMicros":9,"postNativeLooks":null,"frameCheck":null,"nativeFrames":null}
         """)
         assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(null, listOf("left", "top"))))).isEqualTo(expected)
         assertThat(Json.parseToJsonElement(ScoreScanLog.nativeLine(nativeRecord(Double.NaN, listOf("left", "top"))))).isEqualTo(expected)
@@ -1511,5 +1554,206 @@ class SupportScoreScanTest {
         verify(exactly = 1) { with(api) { extra.getPattern(any()) } }
         verify(exactly = 1) { with(api) { area.getPattern(any()) } }
         verify(exactly = 2) { with(api) { any<Region>().getPattern(any()) } }
+    }
+
+    private fun Scan.nativeFiles(result: ScoreScanResult) = File(folder(result), ScoreScanNative.FOLDER).list()!!.sorted()
+    private fun JsonObject.best() = obj("frameCheck").str("best").toDouble()
+
+    @Test
+    fun `a frame of other content followed by a good one saves the crops once, from the good frame`() {
+        val reference = Scan(total = 7)
+        val referenceResult = reference.run()
+        val scan = Scan(total = 7)
+        scan.native.kinds = { if (it == 1) listOf(Kind(zoom = 4), Kind()) else listOf(Kind()) }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(scan.world.gestures).isEqualTo(reference.world.gestures)
+        assertThat(scan.native.waits).containsExactly(ScoreScanNativeFrameLoop.WAIT)
+        assertThat(scan.nativeFiles(result)).isEqualTo(reference.nativeFiles(referenceResult))
+        for (name in scan.nativeFiles(result)) {
+            assertThat(File(scan.folder(result), "native/$name").readBytes().contentEquals(File(reference.folder(referenceResult), "native/$name").readBytes())).isTrue()
+        }
+        val lines = scan.nativeLines(result)
+        assertThat(lines.map { it.int("nativeFrames") }).containsExactly(2, 2, 2, 1, 1, 1, 1, 1, 1)
+        assertThat(lines.all { it.getValue("native") is JsonObject && it.best() > 0.99 }).isTrue()
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
+            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":1,"noValidFrame":0,"refusedRows":0}"""))
+        assertThat(scan.summary(result).obj("native").int("lowMatchScreens")).isEqualTo(1)
+        assertThat(scan.native.frames.all { it.closed }).isTrue()
+    }
+
+    @Test
+    fun `other content on every frame saves nothing for the screen, logs frame_mismatch and goes on`() {
+        val reference = Scan(total = 7)
+        reference.run()
+        val scan = Scan(total = 7)
+        scan.native.kinds = { if (it == 1) listOf(Kind(zoom = 4)) else listOf(Kind()) }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.Bottom)
+        assertThat(scan.world.gestures).isEqualTo(reference.world.gestures)
+        assertThat(scan.native.judged).isEqualTo(ScoreScanNativeFrameLoop.ATTEMPTS + 2)
+        assertThat(scan.native.waits).isEqualTo(List(ScoreScanNativeFrameLoop.ATTEMPTS - 1) { ScoreScanNativeFrameLoop.WAIT })
+        assertThat(scan.nativeFiles(result).none { it.startsWith("s000") }).isTrue()
+        val first = scan.nativeLines(result).take(3)
+        assertThat(first.all { it.getValue("native") == JsonNull && it.str("reason") == "frame_mismatch" && it.int("nativeFrames") == 3 }).isTrue()
+        assertThat(first.all { it.best() < 0.25 }).isTrue()
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
+            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":0,"noValidFrame":1,"refusedRows":3}"""))
+        assertThat(scan.summary(result).obj("native").obj("match").int("count")).isEqualTo(6)
+        assertThat(scan.native.frames.all { it.closed }).isTrue()
+    }
+
+    @Test
+    fun `a field found within the search is kept with its offset, a list that was still moving is refused`() {
+        val reach = ScoreScanNative.SEARCH * 2
+        val near = Scan(total = 2)
+        near.native.kinds = { listOf(Kind(dy = reach)) }
+        val nearResult = near.run()
+        val nearLines = near.nativeLines(nearResult)
+        assertThat(nearLines.map { it.obj("native").int("fieldOffset") }).containsExactly(reach, reach)
+        assertThat(nearLines.all { it.best() > 0.99 && it.obj("frameCheck").int("offset") == reach }).isTrue()
+        assertThat(near.nativeFiles(nearResult)).containsExactly("s000-r0.png", "s000-r1.png")
+        // The saved region is the mapped one, not moved by the offset.
+        assertThat(nearLines[0].obj("native").obj("region")).isEqualTo(Json.parseToJsonElement("""{"x":1996,"y":160,"w":200,"h":140}"""))
+
+        val moving = Scan(total = 2)
+        moving.native.kinds = { listOf(Kind(dy = 30)) }
+        val movingResult = moving.run()
+        val movingLines = moving.nativeLines(movingResult)
+        assertThat(movingLines.all { it.str("reason") == "frame_mismatch" && it.best() < ScoreScanNative.FLOOR }).isTrue()
+        assertThat(moving.nativeFiles(movingResult)).isEqualTo(emptyList<String>())
+    }
+
+    @Test
+    fun `the floor lets 0_9 through and refuses anything below, missing or not finite`() {
+        assertThat(ScoreScanNative.FLOOR).isEqualTo(0.9)
+        assertThat(ScoreScanNative.SEARCH).isEqualTo(3)
+        assertThat(ScoreScanNative.passes(0.9)).isTrue()
+        assertThat(ScoreScanNative.passes(1.0)).isTrue()
+        assertThat(ScoreScanNative.passes(0.8999)).isFalse()
+        assertThat(ScoreScanNative.passes(null)).isFalse()
+        assertThat(ScoreScanNative.passes(Double.NaN)).isFalse()
+        assertThat(ScoreScanNative.passes(Double.POSITIVE_INFINITY)).isFalse()
+    }
+
+    @Test
+    fun `one row that does not match costs only its own crop, and no file is written for it`() {
+        val scan = Scan(total = 3)
+        scan.native.kinds = { listOf(Kind(noise = setOf(1))) }
+        val result = scan.run()
+        val lines = scan.nativeLines(result)
+        assertThat(lines.map { it.getValue("native") is JsonObject }).containsExactly(true, false, true)
+        assertThat(lines[1].str("reason")).isEqualTo("frame_mismatch")
+        assertThat(lines[1].best() < 0.25).isTrue()
+        assertThat(lines.map { it.int("nativeFrames") }).containsExactly(1, 1, 1)
+        assertThat(scan.native.waits.size).isEqualTo(0)
+        assertThat(scan.nativeFiles(result)).containsExactly("s000-r0.png", "s000-r2.png")
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames").int("refusedRows")).isEqualTo(1)
+    }
+
+    @Test
+    fun `a stop during the wait for a newer frame ends the capture with one restore and no gesture`() {
+        val scan = Scan(total = 7)
+        scan.native.kinds = { listOf(Kind(zoom = 4)) }
+        scan.native.onWait = { scan.world.exitManager.exit() }
+        val result = scan.run()
+
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.UserStopped)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.native.waits.size).isEqualTo(1)
+        assertThat(scan.native.judged).isEqualTo(1)
+        assertThat(scan.native.restores).isEqualTo(1)
+        assertThat(scan.nativeLines(result).map { it.str("reason") }).containsExactly("frame_mismatch", "frame_mismatch", "frame_mismatch")
+        assertThat(scan.nativeFiles(result)).isEqualTo(emptyList<String>())
+    }
+
+    @Test
+    fun `a capture that failed for another reason checks no frame`() {
+        val scan = Scan(total = 7)
+        scan.native.answer = { if (it == 1) ScoreScanNativeCapture.Failed(ScoreScanNative.UNSUPPORTED) else null }
+        val result = scan.run()
+        val first = scan.nativeLines(result).take(3)
+        assertThat(first.all { it.getValue("frameCheck") == JsonNull && it.getValue("nativeFrames") == JsonNull && it.str("reason") == "unsupported" }).isTrue()
+        assertThat(scan.native.judged).isEqualTo(2)
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames").int("screens")).isEqualTo(2)
+
+        val restore = Scan(total = 7)
+        restore.native.answer = { ScoreScanNativeCapture.RestoreFailed("before a, after b") }
+        val restoreResult = restore.run()
+        assertThat(restoreResult.reason).isEqualTo(ScoreScanEndReason.NativeRestoreFailed)
+        assertThat(restore.world.gestures.size).isEqualTo(0)
+        assertThat(restore.native.judged).isEqualTo(0)
+        assertThat(restore.nativeLines(restoreResult).all { it.getValue("frameCheck") == JsonNull && it.str("reason") == "restore_failed" }).isTrue()
+    }
+
+    @Test
+    fun `a frame the port answered without judging it is still checked before anything is saved`() {
+        val scan = Scan(total = 2)
+        val map = ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0))
+        scan.native.answer = { ScoreScanNativeCapture.Frame(scan.native.render(Kind(zoom = 4)), map) }
+        val result = scan.run()
+        assertThat(scan.nativeLines(result).map { it.str("reason") }).containsExactly("frame_mismatch", "frame_mismatch")
+        assertThat(scan.nativeLines(result).map { it.int("nativeFrames") }).containsExactly(1, 1)
+        assertThat(scan.nativeFiles(result)).isEqualTo(emptyList<String>())
+    }
+
+    private class LoopJudge(val answers: List<Boolean>) : ScoreScanFrameJudge {
+        val seen = mutableListOf<Pattern>()
+        var stop = false
+        override val stopRequested get() = stop
+        override fun accept(frame: Pattern, map: ScoreScanNativeMap) = answers[seen.size].also { seen += frame }
+    }
+
+    private val loopMap = ScoreScanNativeMap(Size(2, 1), Size(2, 1), Location(0, 0))
+    private fun pixel(value: Int) = GrayPattern(2, 1, byteArrayOf(value.toByte(), 0))
+
+    @Test
+    fun `the frame loop asks for newer frames only while they are refused, and closes the ones it replaces`() {
+        val frames = (1..3).map { pixel(it) }
+        var asked = 0
+        val waits = mutableListOf<Duration>()
+        val refusing = LoopJudge(listOf(false, false, false))
+        val last = ScoreScanNativeFrameLoop.run(frames[0], loopMap, { frames[++asked] }, { waits += it }, refusing)
+        assertThat(last).isEqualTo(frames[2])
+        assertThat(refusing.seen).isEqualTo(frames)
+        assertThat(waits).isEqualTo(List(2) { ScoreScanNativeFrameLoop.WAIT })
+        assertThat(frames.map { it.closed }).containsExactly(true, true, false)
+
+        val second = (1..3).map { pixel(it) }
+        var secondAsked = 0
+        val accepting = LoopJudge(listOf(false, true))
+        assertThat(ScoreScanNativeFrameLoop.run(second[0], loopMap, { second[++secondAsked] }, {}, accepting)).isEqualTo(second[1])
+        assertThat(secondAsked).isEqualTo(1)
+
+        val only = pixel(9)
+        val nothingNew = LoopJudge(listOf(false))
+        var nulls = 0
+        assertThat(ScoreScanNativeFrameLoop.run(only, loopMap, { nulls++; null }, {}, nothingNew)).isEqualTo(only)
+        assertThat(nulls).isEqualTo(ScoreScanNativeFrameLoop.ATTEMPTS - 1)
+        assertThat(nothingNew.seen.size).isEqualTo(1)
+        assertThat(only.closed).isFalse()
+    }
+
+    @Test
+    fun `the frame loop stops on a stop and closes its frame when something throws`() {
+        val stopping = LoopJudge(listOf(false, false, false))
+        var asked = 0
+        val first = pixel(1)
+        ScoreScanNativeFrameLoop.run(first, loopMap, { asked++; pixel(2) }, { stopping.stop = true }, stopping)
+        assertThat(asked).isEqualTo(0)
+        assertThat(first.closed).isFalse()
+
+        val already = LoopJudge(listOf(false)).apply { stop = true }
+        var waited = 0
+        ScoreScanNativeFrameLoop.run(pixel(4), loopMap, { pixel(5) }, { waited++ }, already)
+        assertThat(waited).isEqualTo(0)
+
+        val throwing = pixel(3)
+        assertFailsWith<IllegalStateException> {
+            ScoreScanNativeFrameLoop.run(throwing, loopMap, { throw IllegalStateException("screen capture stopped") }, {}, LoopJudge(listOf(false)))
+        }
+        assertThat(throwing.closed).isTrue()
     }
 }

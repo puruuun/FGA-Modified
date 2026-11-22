@@ -399,14 +399,18 @@ class SupportScoreScanner(
     }
 
     /**
-     * One capture for the screen whose rows were just logged, never retried. Its crops are written at
-     * once and their lines gathered in [result]. [NativeScreen.restoreFailed] only when the capture
-     * could not restore the 720p capture; every other problem is logged and the scan goes on.
+     * One capture for the screen whose rows were just logged, never retried after it returned. Its
+     * crops are written at once and their lines gathered in [result]. [NativeScreen.restoreFailed]
+     * only when the capture could not restore the 720p capture; every other problem is logged and the
+     * scan goes on. A row's crop is written only when its native field matches the 720p field that
+     * was read ([ScoreScanNative.FLOOR]); while the display is at the full size, a frame of which no
+     * row passes is replaced by a newer one ([ScoreScanNativeFrameLoop]).
      */
     private fun captureNative(folder: ScoreScanFolder, logged: List<ScoreScanLoggedRow>, result: NativeScreen) {
+        val judge = RowJudge(logged)
         val start = timeSource.markNow()
         val capture = try {
-            nativeFrames.capture()
+            nativeFrames.capture(judge)
         } catch (e: ScriptAbortException) {
             throw e
         } catch (e: Exception) {
@@ -435,25 +439,78 @@ class SupportScoreScanner(
                 if (micros > ScoreScanNative.CAPTURE_BOUND.inWholeMicroseconds) {
                     failAll(ScoreScanNative.SLOW, null)
                 } else {
+                    // The save rule must not depend on the port having judged the frame it answered.
+                    if (judge.frame !== frame) judge.accept(frame, capture.map)
                     nativeTally.taken(capture.map, micros)
-                    for (row in logged) result.records += nativeRow(folder, frame, capture.map, row, micros)
-                    nativeTally.screenMatches(result.records.map { it.native?.match })
+                    nativeTally.screenMatches(judge.firstMatches)
+                    val checks = judge.checks
+                    nativeTally.frames(judge.judged, checks.any { it is RowCheck.Checked && it.check.passes },
+                        checks.count { it is RowCheck.Checked && !it.check.passes })
+                    for ((row, check) in logged.zip(checks)) {
+                        result.records += nativeRow(folder, frame, capture.map, row, check, micros, judge.judged)
+                    }
                 }
             }
         }
     }
 
-    private fun nativeRow(folder: ScoreScanFolder, frame: Pattern, map: ScoreScanNativeMap, row: ScoreScanLoggedRow, micros: Long): ScoreScanNativeRecord {
+    private sealed interface RowCheck {
+        data object Outside : RowCheck
+        data class Error(val detail: String) : RowCheck
+        data class Checked(val crop: ScoreScanNativeCrop, val check: ScoreScanFrameCheck) : RowCheck
+    }
+
+    /** Judges each full-size frame by its rows; keeps what it measured on the last one. */
+    private inner class RowJudge(private val logged: List<ScoreScanLoggedRow>) : ScoreScanFrameJudge {
+        var frame: Pattern? = null
+        var checks: List<RowCheck> = emptyList()
+        var judged = 0
+
+        /** The first frame's matches at the mapped place: what [ScoreScanNativeTally.lowMatchScreens] counted before the check. */
+        var firstMatches: List<Double?> = emptyList()
+
+        override val stopRequested get() = exitManager.isExitRequested
+
+        override fun accept(frame: Pattern, map: ScoreScanNativeMap): Boolean {
+            checks = logged.map { row ->
+                try {
+                    val crop = ScoreScanNative.crop(map, row.fieldImage)
+                    if (crop == null) RowCheck.Outside
+                    else RowCheck.Checked(crop, ScoreScanNative.check(frame, map, crop, row.fieldPixels, row.fieldSize))
+                } catch (e: Exception) {
+                    RowCheck.Error(e.toString())
+                }
+            }
+            if (judged == 0) firstMatches = checks.map { (it as? RowCheck.Checked)?.check?.match }
+            judged++
+            this.frame = frame
+            return checks.any { it is RowCheck.Checked && it.check.passes }
+        }
+    }
+
+    private fun nativeRow(
+        folder: ScoreScanFolder,
+        frame: Pattern,
+        map: ScoreScanNativeMap,
+        row: ScoreScanLoggedRow,
+        rowCheck: RowCheck,
+        micros: Long,
+        judged: Int,
+    ): ScoreScanNativeRecord {
         var reason: String? = null
         var detail: String? = null
         var saved: Pair<ScoreScanNativeResult, ByteArray>? = null
-        try {
-            val crop = ScoreScanNative.crop(map, row.fieldImage)
-            if (crop == null) {
-                reason = ScoreScanNative.FIELD_OUTSIDE_FRAME
-            } else {
+        val measured = (rowCheck as? RowCheck.Checked)?.check
+        when (rowCheck) {
+            RowCheck.Outside -> reason = ScoreScanNative.FIELD_OUTSIDE_FRAME
+            is RowCheck.Error -> {
+                reason = ScoreScanNative.ERROR
+                detail = rowCheck.detail
+            }
+            // Nothing of a refused row is written: its pixels may show any part of the screen.
+            is RowCheck.Checked -> if (!rowCheck.check.passes) reason = ScoreScanNative.FRAME_MISMATCH else try {
+                val crop = rowCheck.crop
                 val png = frame.crop(crop.region).use { ScoreScanNative.png(it) }
-                val match = ScoreScanNative.match(frame, crop.field + crop.region.location, row.fieldPixels, row.fieldSize)
                 saved = ScoreScanNativeResult(
                     crop = ScoreScanLog.cropName(row.screen, row.row),
                     cropSha256 = ScoreScanLog.sha256(png),
@@ -463,13 +520,14 @@ class SupportScoreScanner(
                     region = crop.region,
                     field = crop.field,
                     clamped = crop.clamped,
-                    match = match,
+                    match = rowCheck.check.match,
                     captureMicros = micros,
+                    fieldOffset = rowCheck.check.offset ?: 0,
                 ) to png
+            } catch (e: Exception) {
+                reason = ScoreScanNative.ERROR
+                detail = e.toString()
             }
-        } catch (e: Exception) {
-            reason = ScoreScanNative.ERROR
-            detail = e.toString()
         }
         // A failed file write is the scan's own error, as for the 720p crops.
         saved?.let { (result, png) ->
@@ -478,6 +536,7 @@ class SupportScoreScanner(
         }
         return ScoreScanNativeRecord(
             clock(), serverName, row.screen, row.row, row.cropSha256, saved?.first, reason, detail, micros,
+            frameCheck = measured, nativeFrames = judged,
         )
     }
 

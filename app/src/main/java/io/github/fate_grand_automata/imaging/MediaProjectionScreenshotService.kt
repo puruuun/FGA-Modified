@@ -155,19 +155,35 @@ class MediaProjectionScreenshotService(
      * When the capture already has [size] and [density] (a 1280x720 display), both resizes return early:
      * no new reader, and the frame is the newest image or, if nothing changed, the last frame captured.
      */
-    fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern = synchronized(lock) {
+    fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern =
+        withFullDisplayFrames(size, density) { first, _ -> first }
+
+    /**
+     * [takeFullDisplayScreenshot] for a caller that may need a newer frame before the restore (the rust
+     * build's support score scan): [block] gets the first owned frame and a function for a newer one,
+     * which answers null when the reader received nothing since the last. The lock and the full size
+     * are held until [block] returns, and the previous size is restored once, after it, however it ends.
+     */
+    fun <T> withFullDisplayFrames(size: Size, density: Int, block: (first: Pattern, next: () -> Pattern?) -> T): T = synchronized(lock) {
         val previousSize = imageSize
         val previousDensity = screenDensity
         try {
             resize(size, density)
             if (closed.get()) throw KnownException(KnownException.Reason.ScreenCaptureStopped)
             screenshotIntoBuffer()
-            val gray = Mat()
-            try {
-                Imgproc.cvtColor(bufferMat, gray, Imgproc.COLOR_RGBA2GRAY)
-                DroidCvPattern(gray)
-            } catch (e: Exception) { gray.release(); throw e }
+            block(grayCopy()) {
+                if (closed.get()) throw KnownException(KnownException.Reason.ScreenCaptureStopped)
+                if (screenshotIntoBuffer()) grayCopy() else null
+            }
         } finally { resize(previousSize, previousDensity) }
+    }
+
+    private fun grayCopy(): Pattern {
+        val gray = Mat()
+        try {
+            Imgproc.cvtColor(bufferMat, gray, Imgproc.COLOR_RGBA2GRAY)
+            return DroidCvPattern(gray)
+        } catch (e: Exception) { gray.release(); throw e }
     }
 
     /** What the virtual display renders into; [rendersIntoReader] is false when a resize left it without the current reader's surface. */
@@ -187,14 +203,15 @@ class MediaProjectionScreenshotService(
         CaptureState(imageSize, screenDensity, display != null && display.surface === imageReader.surface)
     }
 
-    private fun screenshotIntoBuffer() {
+    /** True when a new image was copied into [bufferMat]. */
+    private fun screenshotIntoBuffer(): Boolean {
         val image = imageReader.acquireLatestImage()
             ?: awaitFirstImage()
             /*
              * Nothing new since the last call, which just means the screen didn't change.
              * [bufferMat] still holds the previous frame.
              */
-            ?: return
+            ?: return false
 
         image.use {
             val plane = it.planes[0]
@@ -210,6 +227,7 @@ class MediaProjectionScreenshotService(
         }
 
         hasFrame = true
+        return true
     }
 
     /**
