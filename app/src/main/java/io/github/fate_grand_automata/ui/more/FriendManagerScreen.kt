@@ -460,7 +460,7 @@ internal fun servantPickerName(names: GameNameMap, id: Long): String {
 }
 
 @Composable
-private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, filter: FriendFilter,
+internal fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, filter: FriendFilter,
     onDismiss: () -> Unit, choose: (Long?) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val displayNames = if (ce) names.equips else counts.keys.associateWith { servantPickerName(names, it) }
