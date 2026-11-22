@@ -96,12 +96,13 @@ private fun OverviewProgress(progress: DashboardProgress, now: Long) {
             )
         }
         progress.running(now).forEach { event ->
-            val color = if (event.complete) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+            // Plain text and a primary bar also when the last reward is reached (owner, 2026-11-23).
+            val color = MaterialTheme.colorScheme.primary
             Column(Modifier.fillMaxWidth().testTag("overview-progress-event:${event.eventId}"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (event.max != null) {
                     Text(
                         "${event.name} · ${event.points.grouped()} / ${event.max.grouped()}", style = MaterialTheme.typography.bodyMedium.tabular(),
-                        color = if (event.complete) color else MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     SegmentedBar(listOf(event.fraction to color), Modifier.testTag("overview-progress-bar:${event.eventId}"))
                 } else Text(

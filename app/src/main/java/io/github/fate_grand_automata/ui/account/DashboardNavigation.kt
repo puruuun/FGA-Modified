@@ -197,8 +197,11 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
     if (wide) Column(modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         nameLine()
         levelLine()
-        if (ap != null) HeaderAp(ap, carry, now)
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        // The line parts the account (name, level, server) from its AP (owner, 2026-11-23).
+        if (ap != null) {
+            HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
+            HeaderAp(ap, carry, now)
+        }
         updated()
     } else Row(
         modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalAlignment = Alignment.CenterVertically,

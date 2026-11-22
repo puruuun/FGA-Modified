@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.account
 
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsActions
@@ -91,6 +92,18 @@ class DashboardRingHeaderUiTest {
     @Test fun theNarrowSummaryHasNoCarryOverPartAtZero() {
         show(360, recovering(carry = 0))
         assertFalse(texts("header-ap-detail"), texts("header-ap-detail").contains("이월"))
+    }
+
+    @Test fun theUpdateTimeFollowsTheApRowWithoutALineBetween() {
+        show(1280, recovering())
+        val ap = box("header-ap"); val updated = box("dashboard-updated")
+        assertTrue("ap $ap updated $updated", updated.top - ap.bottom < 12.dp)
+    }
+
+    @Test fun aLineSitsBetweenTheLevelAndTheApRingOnWide() {
+        show(1280, recovering())
+        val level = box("header-level"); val line = box("header-divider"); val ap = box("header-ap")
+        assertTrue("level $level line $line ap $ap", line.top >= level.bottom && line.bottom <= ap.top)
     }
 
     @Test fun theCarryOverLineShowsOnWideWhenAboveZero() {
