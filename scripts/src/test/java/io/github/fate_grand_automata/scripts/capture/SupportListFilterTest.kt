@@ -144,6 +144,50 @@ class SupportListFilterTest {
         }
     }
 
+    @Test fun friendWithoutAnyReadableSlotHashLeavesEverythingUnchanged() {
+        val good = friend("a", main = listOf(slot(100), slot(999)))
+        for (shape in listOf(
+            """{"type":1,"userId":"x"}""",
+            """{"type":1,"userId":"x","userSvtLeaderHash":null,"eventUserSvtLeaderHash":"s","userSvtGrandHash":5}""",
+        )) {
+            assertNull(run(body(good, shape)), shape)
+        }
+        // A friend that has the keys but only empty lists is a known shape and is removed.
+        val empty = """{"type":1,"userId":"x","userSvtLeaderHash":[]}"""
+        assertEquals(1, infos(run(body(good.replace(slot(999), slot(100)), empty, friend("b", main = listOf(slot(999)))))!!).size)
+    }
+
+    @Test fun invalidUtf8IsUnchanged() {
+        val bytes = body(friend("a", main = listOf(slot(100), slot(999)))).toByteArray()
+        val marker = "fictional a".toByteArray()
+        val at = String(bytes, Charsets.ISO_8859_1).indexOf("fictional a")
+        val broken = bytes.copyOf().also { it[at + marker.size - 1] = 0xFF.toByte() }
+        assertNull(run("", wire = broken))
+    }
+
+    @Test fun loneSurrogateEscapeIsUnchanged() {
+        val text = body(friend("a", main = listOf(slot(100), slot(999)))).replace("fictional a", """x\ud800y""")
+        assertNull(run(text))
+        assertNull(run(text.replace("""\ud800""", """\udc00""")))
+        // A proper pair is fine.
+        assertNotNull(run(text.replace("""\ud800""", """😀""")))
+    }
+
+    @Test fun duplicateKeysAreUnchanged() {
+        val text = body(friend("a", main = listOf(slot(100), slot(999))))
+        assertNull(run(text.replace(""""serverTime":99""", """"serverTime":99,"serverTime":100""")))
+        assertNull(run(text.replace(""""type":1,""", """"type":1,"type":2,""")))
+        // The same key in different objects is not a duplicate.
+        assertNotNull(run(text))
+    }
+
+    @Test fun headersBoundToTheOriginalBodyAreNotRewritten() {
+        for (name in listOf("ETag", "etag", "Content-MD5", "Digest", "Trailer")) {
+            val raw = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n$name: v\r\n\r\n".toByteArray()
+            assertNull(SupportListFilter.rewriteHead(raw, 1), name)
+        }
+    }
+
     @Test fun rewriteHeadReplacesLengthAndDropsChunkedKeepingOtherHeaders() {
         val raw = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\ncontent-length: 5\r\nContent-Encoding: gzip\r\n\r\n".toByteArray()
         val head = String(assertNotNull(SupportListFilter.rewriteHead(raw, 42)))

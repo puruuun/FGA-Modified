@@ -823,6 +823,12 @@ class ProxyServer(
      * [SupportListFilter.MAX_WIRE_BYTES]; past that, or when anything fails, they go to the game exactly as read.
      * The returned result still carries the original payload, which is what capture records.
      */
+    private var supportListRewriteHead: (ByteArray, Int) -> ByteArray? = SupportListFilter::rewriteHead
+
+    internal fun setSupportListRewriteHeadForTesting(step: (ByteArray, Int) -> ByteArray?) {
+        supportListRewriteHead = step
+    }
+
     private fun relaySupportList(
         ur: HttpReader,
         cout: OutputStream,
@@ -837,66 +843,31 @@ class ProxyServer(
             held.release()
             throw t
         }
-        val payload = body.payload
-        val filtered = if (payload != null && !held.released) {
-            SupportListFilter.apply(payload, resp.header("Content-Encoding"), criteria)
-        } else null
-        val head = filtered?.let { SupportListFilter.rewriteHead(resp.raw, it.wire.size) }
-        if (filtered != null && head != null) {
+        // Everything up to the first byte of the new response is fail-open: a Throwable here sends the original bytes.
+        val replacement: ByteArray? = try {
+            val payload = body.payload
+            val filtered = if (payload != null && !held.released && !body.hadTrailers) {
+                SupportListFilter.apply(payload, resp.header("Content-Encoding"), criteria)
+            } else null
+            val head = filtered?.let { supportListRewriteHead(resp.raw, it.wire.size) }
+            if (filtered != null && head != null) {
+                val c = filtered.counts
+                Timber.d(
+                    "Capture: support list filter friends %d>%d slots %d>%d",
+                    c.friendsBefore, c.friendsAfter, c.slotsBefore, c.slotsAfter,
+                )
+                head + filtered.wire
+            } else null
+        } catch (_: Throwable) {
+            null
+        }
+        if (replacement != null) {
             held.discard()
-            cout.write(head)
-            cout.write(filtered.wire)
-            val c = filtered.counts
-            Timber.d(
-                "Capture: support list filter friends %d>%d slots %d>%d",
-                c.friendsBefore, c.friendsAfter, c.slotsBefore, c.slotsAfter,
-            )
+            cout.write(replacement)
         } else {
             held.release()
         }
         return body
-    }
-
-    /** Holds the head and body of a response until it is either replaced ([discard]) or sent as it came ([release]). */
-    private class HeldResponse(private val out: OutputStream, private val head: ByteArray, private val limit: Int) : OutputStream() {
-        private var buffer: ByteArrayOutputStream? = ByteArrayOutputStream()
-        var released = false
-            private set
-
-        override fun write(b: Int) = write(byteArrayOf(b.toByte()), 0, 1)
-
-        override fun write(b: ByteArray, off: Int, len: Int) {
-            val held = buffer
-            if (released || held == null) {
-                out.write(b, off, len)
-                return
-            }
-            if (head.size.toLong() + held.size() + len > limit) {
-                release()
-                out.write(b, off, len)
-                return
-            }
-            try {
-                held.write(b, off, len)
-            } catch (_: OutOfMemoryError) {
-                release()
-                out.write(b, off, len)
-            }
-        }
-
-        fun release() {
-            if (released) return
-            val held = buffer
-            released = true
-            buffer = null
-            out.write(head)
-            held?.writeTo(out)
-        }
-
-        fun discard() {
-            released = true
-            buffer = null
-        }
     }
 
     private class ReplaySocket(
@@ -980,3 +951,49 @@ class ProxyServer(
         }
     }
 }
+
+/** Holds the head and body of a response until it is either replaced ([discard]) or sent as it came ([release]). */
+internal class HeldResponse(private val out: OutputStream, private val head: ByteArray, private val limit: Int) : OutputStream() {
+    private var buffer: ByteArrayOutputStream? = ByteArrayOutputStream()
+    var released = false
+        private set
+
+    /** Bytes kept in memory, head included; never above the limit. */
+    val heldBytes: Int get() = if (buffer == null) 0 else head.size + buffer!!.size()
+
+    override fun write(b: Int) = write(byteArrayOf(b.toByte()), 0, 1)
+
+    override fun write(b: ByteArray, off: Int, len: Int) {
+        val held = buffer
+        if (released || held == null) {
+            out.write(b, off, len)
+            return
+        }
+        if (head.size.toLong() + held.size() + len > limit) {
+            release()
+            out.write(b, off, len)
+            return
+        }
+        try {
+            held.write(b, off, len)
+        } catch (_: OutOfMemoryError) {
+            release()
+            out.write(b, off, len)
+        }
+    }
+
+    fun release() {
+        if (released) return
+        val held = buffer
+        released = true
+        buffer = null
+        out.write(head)
+        held?.writeTo(out)
+    }
+
+    fun discard() {
+        released = true
+        buffer = null
+    }
+}
+

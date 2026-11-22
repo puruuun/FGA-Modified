@@ -39,12 +39,14 @@ enum class DropReason { TooLarge, OutOfMemory }
  * @param payload the body without chunk framing, or null when it exceeded the capture limit or ran out of memory.
  * @param untilClose the body was delimited by connection close, so the connection cannot be reused.
  * @param dropped the reason why capture was dropped, or null when capture succeeded or was not requested.
+ * @param hadTrailers a chunked body ended with trailer fields.
  */
 class BodyResult(
     val rawBytes: Long,
     val payload: ByteArray?,
     val untilClose: Boolean,
     val dropped: DropReason? = null,
+    val hadTrailers: Boolean = false,
 )
 
 /**
@@ -196,6 +198,7 @@ class HttpReader(
 
     private fun copyChunked(out: OutputStream, sink: BodySink): BodyResult {
         var raw = 0L
+        var trailers = false
         while (true) {
             val line = readLineRaw()
             out.write(line)
@@ -209,6 +212,7 @@ class HttpReader(
                     out.write(t)
                     raw += t.size
                     if (String(t, Charsets.ISO_8859_1).isBlank()) break
+                    trailers = true
                 }
                 break
             }
@@ -218,7 +222,8 @@ class HttpReader(
             out.write(crlf)
             raw += crlf.size
         }
-        return sink.finish(raw, false)
+        val result = sink.finish(raw, false)
+        return if (trailers) BodyResult(result.rawBytes, result.payload, result.untilClose, result.dropped, hadTrailers = true) else result
     }
 
     /** One line including its terminator. */

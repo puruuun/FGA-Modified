@@ -58,12 +58,15 @@ object SupportListFilter {
         val encoding = contentEncoding?.trim()?.lowercase().orEmpty()
         if (encoding !in SUPPORTED_ENCODINGS) return null
         val decoded = BodyDecoder.decode(wire, encoding.ifEmpty { null }, MAX_DECODED_BYTES)
-        val root = Json.parseToJsonElement(String(decoded, Charsets.UTF_8)) as? JsonObject ?: return null
+        val text = String(decoded, Charsets.UTF_8)
+        // Invalid UTF-8 became U+FFFD while decoding: writing the text back would change those bytes.
+        if (text.indexOf('�') >= 0 || JsonRisks.found(text)) return null
+        val root = Json.parseToJsonElement(text) as? JsonObject ?: return null
         val filtered = filter(root, criteria) ?: return null
         // toString, not encodeToString: the serializer round-trips numbers through Double (1.50 becomes 1.5, 1e5 becomes 100000.0).
-        val text = filtered.first.toString().toByteArray(Charsets.UTF_8)
-        if (text.size > MAX_DECODED_BYTES) return null
-        val encoded = encode(text, encoding, deflateIsRaw(wire, encoding)) ?: return null
+        val out = filtered.first.toString().toByteArray(Charsets.UTF_8)
+        if (out.size > MAX_DECODED_BYTES) return null
+        val encoded = encode(out, encoding, deflateIsRaw(wire, encoding)) ?: return null
         return SupportListFiltered(encoded, filtered.second)
     }
 
@@ -77,6 +80,8 @@ object SupportListFilter {
         var friendsAfter = 0
         var slotsBefore = 0
         var slotsAfter = 0
+        // A friend with no readable slot hash is a shape this code has not seen: it must not be counted as empty and removed.
+        var unknownShape = false
         val newFollowers = followers.map { follower ->
             val entry = follower as? JsonObject ?: return@map follower
             val infos = entry["followerInfo"] as? JsonArray ?: return@map follower
@@ -85,6 +90,7 @@ object SupportListFilter {
                 if (friend.long("type") != 1L) return@mapNotNull friend
                 friendsBefore++
                 val result = filterFriend(friend, criteria)
+                if (!result.readable) unknownShape = true
                 slotsBefore += result.before
                 slotsAfter += result.after
                 if (result.after > 0) friendsAfter++
@@ -93,23 +99,25 @@ object SupportListFilter {
             if (kept.size == infos.size && kept.zip(infos).all { it.first === it.second }) entry
             else JsonObject(entry + ("followerInfo" to JsonArray(kept)))
         }
-        if (slotsAfter == slotsBefore && friendsAfter == friendsBefore) return null
+        if (unknownShape || (slotsAfter == slotsBefore && friendsAfter == friendsBefore)) return null
         val counts = SupportListCounts(friendsBefore, friendsAfter, slotsBefore, slotsAfter)
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
         return JsonObject(root + ("cache" to newCache)) to counts
     }
 
-    private class FriendResult(val friend: JsonObject, val before: Int, val after: Int)
+    private class FriendResult(val friend: JsonObject, val before: Int, val after: Int, val readable: Boolean)
 
     private fun filterFriend(friend: JsonObject, criteria: SupportListCriteria): FriendResult {
         var before = 0
         var after = 0
+        var readable = false
         val replaced = LinkedHashMap<String, JsonElement>()
         for (key in SLOT_HASHES) {
             val grand = key == GRAND_HASH
             when (val hash = friend[key]) {
                 is JsonArray -> {
+                    readable = true
                     val kept = hash.filter { slot -> passes(slot, grand, criteria) }
                     before += hash.size
                     after += kept.size
@@ -117,6 +125,7 @@ object SupportListFilter {
                 }
                 // A hash keyed by deck or seat: removing an entry keeps the other keys and their order.
                 is JsonObject -> {
+                    readable = true
                     val kept = hash.filterValues { slot -> passes(slot, grand, criteria) }
                     before += hash.size
                     after += kept.size
@@ -125,7 +134,7 @@ object SupportListFilter {
                 else -> Unit
             }
         }
-        return FriendResult(if (replaced.isEmpty()) friend else JsonObject(friend + replaced), before, after)
+        return FriendResult(if (replaced.isEmpty()) friend else JsonObject(friend + replaced), before, after, readable)
     }
 
     /**
@@ -142,6 +151,7 @@ object SupportListFilter {
 
     private fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.longOrNull
 
+    private val BODY_BOUND_HEADERS = setOf("trailer", "etag", "content-md5", "digest")
     private val SUPPORTED_ENCODINGS = setOf("", "identity", "gzip", "x-gzip", "deflate")
 
     /** KR Unity sends raw RFC 1951 for deflate (see [BodyDecoder]); the body is sent back the same way. */
@@ -175,6 +185,8 @@ object SupportListFilter {
         val text = String(raw, Charsets.ISO_8859_1)
         if (!text.endsWith("\r\n\r\n")) return null
         val lines = text.removeSuffix("\r\n\r\n").split("\r\n")
+        // These describe the original bytes or promise trailers, so a rewritten body would contradict them.
+        if (lines.drop(1).any { it.substringBefore(':', "").trim().lowercase() in BODY_BOUND_HEADERS }) return null
         val kept = lines.filterIndexed { index, line ->
             index == 0 || run {
                 val name = line.substringBefore(':', "").trim()
