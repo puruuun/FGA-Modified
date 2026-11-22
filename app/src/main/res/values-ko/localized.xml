@@ -1500,5 +1500,4 @@
     <string name="dashboard_col_codes">코드</string>
     <string name="dashboard_col_card_boost">카드 강화</string>
     <string name="clear_all">"모두 해제"</string>
-    <string name="p_wait_ap_regen_short">"기다리기"</string>
 </resources>

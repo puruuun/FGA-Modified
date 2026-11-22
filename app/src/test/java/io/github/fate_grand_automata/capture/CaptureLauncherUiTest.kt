@@ -14,6 +14,10 @@ import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncherResponseBuilder
 import io.github.fate_grand_automata.ui.launcher.battleLauncher
+import io.github.fate_grand_automata.ui.launcher.LauncherBondIgnoreBoxTagPrefix
+import io.github.fate_grand_automata.ui.launcher.LauncherBondIgnoreTagPrefix
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import io.github.fate_grand_automata.ui.screenshotRules
 import org.junit.After
 import org.junit.Assert.*
@@ -37,6 +41,25 @@ class CaptureLauncherUiTest {
     @Test fun stoppedShowsGainOptionEvenWhenRuntimeServerIsKr() = checkRule(false, GameServer.Kr)
     @Test fun runningHidesGainOptionOnOfficialJp() = checkRule(true, GameServer.Jp.Original)
     @Test fun stoppedShowsGainOptionOnOfficialJp() = checkRule(false, GameServer.Jp.Original)
+
+    @Test fun ignoreCharactersSitUnderTheirTitleWithTheBoxRightUnderEachLabel() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        lateinit var response: ScriptLauncherResponseBuilder
+        compose.setContent { FGATheme { Surface(Modifier.fillMaxSize()) { response = battleLauncher(fixture.prefs, prefsCore = fixture.core) } } }
+        val title = compose.onNodeWithText(context.getString(R.string.p_bond_ignore_characters)).performScrollTo().getUnclippedBoundsInRoot()
+        val label = compose.onNodeWithText(context.getString(R.string.p_bond_position, 1), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val box = compose.onNodeWithTag("${LauncherBondIgnoreBoxTagPrefix}1", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("title to label ${label.top - title.bottom}", label.top - title.bottom >= 6.dp)
+        // The checkbox draws a 20dp square at the centre of its node.
+        val drawnTop = (box.top + box.bottom) / 2 - 10.dp
+        assertTrue("label to box ${drawnTop - label.bottom}", drawnTop - label.bottom <= 8.dp)
+        val slot = compose.onNodeWithTag("${LauncherBondIgnoreTagPrefix}1")
+        assertTrue(slot.getUnclippedBoundsInRoot().height >= 48.dp)
+        compose.onNodeWithText(context.getString(R.string.p_bond_position, 1)).performClick()
+        slot.assertIsOn()
+        compose.runOnIdle { response.build() }
+        assertEquals(setOf(1, 2), fixture.bond.ignoredCharacters.get())
+    }
 
     private fun checkRule(running: Boolean, server: GameServer) {
         CaptureTracker.setRunning(running)
