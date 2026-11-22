@@ -101,17 +101,48 @@ class CeTemplateCropTest {
         Frame("Black Grail", "Jp/support/support-grand-bond-ce-16x9.png")
     )
 
+    /**
+     * Every match at or above the default similarity whose top-left lies inside the support list, best first per
+     * row. The list starts at y=332 of the 1440p `listRegion` (166 at 720p); above it is the screen header. A frame
+     * may hold the same CE on several rows with equal scores, so one global best is not a stable position.
+     */
+    private fun listMatches(frame: Mat, template: Mat): List<Best> {
+        val result = Mat()
+        Imgproc.matchTemplate(frame, template, result, Imgproc.TM_CCOEFF_NORMED)
+        val listTop = 166
+        val matches = mutableListOf<Best>()
+        while (true) {
+            val mm = Core.minMaxLoc(result.submat(listTop, result.rows(), 0, result.cols()))
+            if (mm.maxVal < 0.80) break
+            val x = mm.maxLoc.x.toInt()
+            val y = mm.maxLoc.y.toInt() + listTop
+            matches += Best(mm.maxVal, x, y)
+            Imgproc.rectangle(
+                result,
+                org.opencv.core.Point((x - template.cols()).toDouble(), (y - template.rows()).toDouble()),
+                org.opencv.core.Point((x + template.cols()).toDouble(), (y + template.rows()).toDouble()),
+                org.opencv.core.Scalar(-1.0),
+                -1
+            )
+        }
+        return matches.sortedWith(compareBy({ it.y }, { it.x }))
+    }
+
     @Test
     fun `cropped templates still match real frames where the old file matched, at the same top-left`() {
         for ((ce, file) in cleanFrames) {
             val frame = frame720(File(referenceImages, file))
-            val now = best(frame, builtIn(ce))
-            val before = best(frame, beforeCrop(ce))
-            assertTrue(now.score >= 0.80, "$ce on $file scored ${now.score}")
-            assertTrue(
-                Math.abs(now.x - before.x) <= 1 && Math.abs(now.y - before.y) <= 1,
-                "$ce on $file moved from (${before.x},${before.y}) to (${now.x},${now.y})"
-            )
+            val now = listMatches(frame, builtIn(ce))
+            val before = listMatches(frame, beforeCrop(ce))
+            val describe = { m: List<Best> -> m.joinToString { "(${it.x},${it.y}) ${it.score}" } }
+            assertTrue(before.isNotEmpty(), "$ce on $file: the old file has no match in the list")
+            assertEquals(before.size, now.size, "$ce on $file: before ${describe(before)}, now ${describe(now)}")
+            for ((b, n) in before.zip(now)) {
+                assertTrue(
+                    Math.abs(n.x - b.x) <= 1 && Math.abs(n.y - b.y) <= 1,
+                    "$ce on $file moved from (${b.x},${b.y}) to (${n.x},${n.y})"
+                )
+            }
         }
     }
 
