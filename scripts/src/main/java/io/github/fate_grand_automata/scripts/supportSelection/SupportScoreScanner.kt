@@ -302,11 +302,18 @@ class SupportScoreScanner(
         var restoreFailed = false
         var attempt = ScoreScanNative.OK
 
+        /** The check's outcome for [ScoreScanNativeTally.frames], counted once the lines are on disk. */
+        var frames: (() -> Unit)? = null
+
         fun writeLines(folder: ScoreScanFolder) {
             while (records.isNotEmpty()) {
-                folder.appendLine(ScoreScanLog.nativeLine(records.first().copy(postNativeLooks = looks)))
+                val record = records.first()
+                folder.appendLine(ScoreScanLog.nativeLine(record.copy(postNativeLooks = looks)))
+                if (record.reason == ScoreScanNative.FRAME_MISMATCH) nativeTally.refused()
                 records.removeAt(0)
             }
+            frames?.invoke()
+            frames = null
             looks?.let { nativeTally.looks(it) }
         }
     }
@@ -418,12 +425,16 @@ class SupportScoreScanner(
         }
         val micros = start.elapsedNow().inWholeMicroseconds
 
+        // Frames judged before the capture failed or was dropped are logged for diagnosis; nothing of them is saved.
         fun failAll(reason: String, detail: String?) {
             result.attempt = reason
             nativeTally.failed(reason, micros)
-            for (row in logged) {
+            val judged = judge.judged.takeIf { it > 0 }
+            for ((index, row) in logged.withIndex()) {
                 result.records += ScoreScanNativeRecord(
                     clock(), serverName, row.screen, row.row, row.cropSha256, null, reason, detail, micros,
+                    frameCheck = judged?.let { (judge.checks.getOrNull(index) as? RowCheck.Checked)?.check },
+                    nativeFrames = judged,
                 )
             }
         }
@@ -444,8 +455,11 @@ class SupportScoreScanner(
                     nativeTally.taken(capture.map, micros)
                     nativeTally.screenMatches(judge.firstMatches)
                     val checks = judge.checks
-                    nativeTally.frames(judge.judged, checks.any { it is RowCheck.Checked && it.check.passes },
-                        checks.count { it is RowCheck.Checked && !it.check.passes })
+                    val judged = judge.judged
+                    result.frames = {
+                        nativeTally.frames(judged, checks.any { it is RowCheck.Checked && it.check.passes },
+                            checks.any { it is RowCheck.Checked })
+                    }
                     for ((row, check) in logged.zip(checks)) {
                         result.records += nativeRow(folder, frame, capture.map, row, check, micros, judge.judged)
                     }
@@ -466,7 +480,7 @@ class SupportScoreScanner(
         var checks: List<RowCheck> = emptyList()
         var judged = 0
 
-        /** The first frame's matches at the mapped place: what [ScoreScanNativeTally.lowMatchScreens] counted before the check. */
+        /** The first frame's matches at the mapped place, which [ScoreScanNativeTally.lowMatchScreens] counts. */
         var firstMatches: List<Double?> = emptyList()
 
         override val stopRequested get() = exitManager.isExitRequested
@@ -484,7 +498,8 @@ class SupportScoreScanner(
             if (judged == 0) firstMatches = checks.map { (it as? RowCheck.Checked)?.check?.match }
             judged++
             this.frame = frame
-            return checks.any { it is RowCheck.Checked && it.check.passes }
+            // With no row that can be checked, a newer frame of the same map could not do better.
+            return checks.none { it is RowCheck.Checked } || checks.any { it is RowCheck.Checked && it.check.passes }
         }
     }
 

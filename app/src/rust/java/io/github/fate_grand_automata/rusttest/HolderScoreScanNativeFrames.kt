@@ -25,9 +25,11 @@ import javax.inject.Inject
  * Issue #600, rust build type only: the support score scan's full-display frame, through
  * [ScreenshotServiceHolder.withFullDisplayFrames], the same capture as the settings calibration's
  * [ScreenshotServiceHolder.takeFullDisplayScreenshot] with the chance to take a newer frame before the
- * restore. It runs on the script thread, which is the only thread that takes the run's 720p
- * screenshots, and the capture lock keeps the temporary size invisible to them. The decisions are in
- * [ScoreScanNativeChecks] and [ScoreScanNativeFrameLoop].
+ * restore. It is called on the script thread, the only thread that takes the run's 720p screenshots,
+ * which waits in `runBlocking` while the holder runs the capture, the frame loop and the judging on a
+ * `Dispatchers.Default` thread; the capture lock keeps the temporary size invisible to any other
+ * screenshot. The judge only reads the stop flag, so it does not wait on a pause. The decisions are
+ * in [ScoreScanNativeChecks] and [ScoreScanNativeFrameLoop].
  *
  * MediaProjection: the virtual display is resized to the full display and back. The restore installs
  * a new reader and forgets the last frame, so the next 720p screenshot waits for a new frame at the

@@ -425,6 +425,7 @@ object ScoreScanLog {
             "validFirst" to n.validFirst,
             "validLater" to n.validLater,
             "noValidFrame" to n.noValidFrame,
+            "noCheckableRow" to n.noCheckableRow,
             "refusedRows" to n.refusedRows,
         ),
         "postNativeLooks" to linkedMapOf(

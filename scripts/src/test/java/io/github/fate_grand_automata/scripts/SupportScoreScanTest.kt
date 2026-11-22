@@ -272,7 +272,7 @@ class SupportScoreScanTest {
      * by [dx], [dy] native px; [zoom] 4 is other content magnified (a frame not composed for the full
      * size); the fields of the row positions in [noise] show unrelated pixels.
      */
-    data class Kind(val dx: Int = 0, val dy: Int = 0, val zoom: Int = 2, val noise: Set<Int> = emptySet())
+    data class Kind(val dx: Int = 0, val dy: Int = 0, val zoom: Int = 2, val noise: Set<Int> = emptySet(), val flat: Set<Int> = emptySet())
 
     /**
      * The full-display port as HolderScoreScanNativeFrames answers it: the full-size frames of [kinds]
@@ -294,6 +294,8 @@ class SupportScoreScanTest {
         var onWait: (Int) -> Unit = {}
         var judged = 0
         var restores = 0
+        /** Per 1-based call: the restore after the frames throws, as the service's finally can. */
+        var restoreFails: (Int) -> Boolean = { false }
 
         fun render(kind: Kind): GrayPattern {
             val small = world.screen720()
@@ -308,6 +310,12 @@ class SupportScoreScanTest {
                 val at = World.fieldImage(position)
                 for (y in at.y * 2 - 40 until (at.y + at.height) * 2 + 40) for (x in at.x * 2 - 40 until (at.x + at.width) * 2 + 40) {
                     big[y * 2560 + x] = random.nextInt(256).toByte()
+                }
+            }
+            for (position in kind.flat) {
+                val at = World.fieldImage(position)
+                for (y in at.y * 2 - 40 until (at.y + at.height) * 2 + 40) for (x in at.x * 2 - 40 until (at.x + at.width) * 2 + 40) {
+                    big[y * 2560 + x] = 90
                 }
             }
             return GrayPattern(2560, 1440, big).also { frames += it }
@@ -334,6 +342,11 @@ class SupportScoreScanTest {
                     list[minOf(index, list.lastIndex)]?.let { render(it) }
                 }, { waits += it; onWait(waits.size) }, counting)
             } finally { restores++ }
+            if (restoreFails(calls.size)) {
+                // HolderScoreScanNativeFrames drops the frame when the states before and after differ.
+                frame.close()
+                return ScoreScanNativeCapture.RestoreFailed("before 1280x720, after 2560x1440")
+            }
             return ScoreScanNativeCapture.Frame(frame, map)
         }
     }
@@ -934,7 +947,7 @@ class SupportScoreScanTest {
             {"taken":1,"failed":{},"frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
              "captureMicros":{"count":1,"median":30000,"max":30000},"match":{"count":2},
              "lowMatchScreens":0,
-             "nativeFrames":{"screens":1,"moreThanOne":0,"validFirst":1,"validLater":0,"noValidFrame":0,"refusedRows":0},
+             "nativeFrames":{"screens":1,"moreThanOne":0,"validFirst":1,"validLater":0,"noValidFrame":0,"noCheckableRow":0,"refusedRows":0},
              "postNativeLooks":{"screens":1,"moreThanOne":0,"max":1}}
         """))
         assertThat(JsonObject(summary - "native")).isEqualTo(json("""
@@ -1093,7 +1106,7 @@ class SupportScoreScanTest {
         assertThat(scan.nativeLines(result).size).isEqualTo(6)
     }
 
-    private fun assertNativeFailureKeepsTheScan(answer: (Int) -> ScoreScanNativeCapture?, took: Duration, reason: String, detail: String?) {
+    private fun assertNativeFailureKeepsTheScan(answer: (Int) -> ScoreScanNativeCapture?, took: Duration, reason: String, detail: String?): Pair<Scan, ScoreScanResult> {
         val reference = Scan(total = 7)
         val referenceResult = reference.run()
         val scan = Scan(total = 7)
@@ -1119,30 +1132,40 @@ class SupportScoreScanTest {
         assertThat(native.int("taken")).isEqualTo(0)
         assertThat(native.obj("failed")).isEqualTo(Json.parseToJsonElement("""{"$reason":3}"""))
         assertThat(native.getValue("frame")).isEqualTo(JsonNull)
+        if (scan.native.judged == 0) assertThat(natives.all { it.getValue("frameCheck") == JsonNull && it.getValue("nativeFrames") == JsonNull }).isTrue()
         assertThat(native.obj("captureMicros").int("count")).isEqualTo(3)
         assertThat(native.obj("match").int("count")).isEqualTo(0)
+        return scan to result
     }
 
     @Test
-    fun `a failing native capture leaves the 720p lines and the scan as they were`() =
+    fun `a failing native capture leaves the 720p lines and the scan as they were`() {
         assertNativeFailureKeepsTheScan(
             { ScoreScanNativeCapture.Failed(ScoreScanNative.ERROR, "KnownException: NoScreenshotReceived") },
             40.milliseconds, "error", "KnownException: NoScreenshotReceived",
         )
+    }
 
     @Test
-    fun `a null native frame leaves the 720p lines and the scan as they were`() =
+    fun `a null native frame leaves the 720p lines and the scan as they were`() {
         assertNativeFailureKeepsTheScan({ ScoreScanNativeCapture.Failed(ScoreScanNative.NULL_FRAME) }, 40.milliseconds, "null_frame", null)
+    }
 
     @Test
-    fun `a native capture that throws is logged and the scan goes on`() =
+    fun `a native capture that throws is logged and the scan goes on`() {
         assertNativeFailureKeepsTheScan(
             { throw IllegalStateException("display gone") }, 40.milliseconds, "error", "java.lang.IllegalStateException: display gone",
         )
+    }
 
     @Test
-    fun `a slow native capture is dropped, closed and logged, and the scan goes on`() =
-        assertNativeFailureKeepsTheScan({ null }, ScoreScanNative.CAPTURE_BOUND + 1.milliseconds, "slow", null)
+    fun `a slow native capture is dropped, closed and logged, and the scan goes on`() {
+        val (scan, result) = assertNativeFailureKeepsTheScan({ null }, ScoreScanNative.CAPTURE_BOUND + 1.milliseconds, "slow", null)
+        val natives = scan.nativeLines(result)
+        assertThat(natives.map { it.int("nativeFrames") }.distinct()).containsExactly(1)
+        assertThat(natives.all { it.best() > 0.99 && it.obj("frameCheck").int("offset") == 0 }).isTrue()
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames").int("screens")).isEqualTo(0)
+    }
 
     @Test
     fun `a native capture at the bound is kept`() {
@@ -1578,7 +1601,7 @@ class SupportScoreScanTest {
         assertThat(lines.map { it.int("nativeFrames") }).containsExactly(2, 2, 2, 1, 1, 1, 1, 1, 1)
         assertThat(lines.all { it.getValue("native") is JsonObject && it.best() > 0.99 }).isTrue()
         assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
-            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":1,"noValidFrame":0,"refusedRows":0}"""))
+            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":1,"noValidFrame":0,"noCheckableRow":0,"refusedRows":0}"""))
         assertThat(scan.summary(result).obj("native").int("lowMatchScreens")).isEqualTo(1)
         assertThat(scan.native.frames.all { it.closed }).isTrue()
     }
@@ -1600,7 +1623,7 @@ class SupportScoreScanTest {
         assertThat(first.all { it.getValue("native") == JsonNull && it.str("reason") == "frame_mismatch" && it.int("nativeFrames") == 3 }).isTrue()
         assertThat(first.all { it.best() < 0.25 }).isTrue()
         assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
-            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":0,"noValidFrame":1,"refusedRows":3}"""))
+            """{"screens":3,"moreThanOne":1,"validFirst":2,"validLater":0,"noValidFrame":1,"noCheckableRow":0,"refusedRows":3}"""))
         assertThat(scan.summary(result).obj("native").obj("match").int("count")).isEqualTo(6)
         assertThat(scan.native.frames.all { it.closed }).isTrue()
     }
@@ -1755,5 +1778,140 @@ class SupportScoreScanTest {
             ScoreScanNativeFrameLoop.run(throwing, loopMap, { throw IllegalStateException("screen capture stopped") }, {}, LoopJudge(listOf(false)))
         }
         assertThat(throwing.closed).isTrue()
+    }
+
+    @Test
+    fun `a reader that gives nothing new judges the frame once and counts no valid frame`() {
+        val scan = Scan(total = 2)
+        scan.native.kinds = { listOf(Kind(zoom = 4), null) }
+        val result = scan.run()
+        assertThat(scan.native.judged).isEqualTo(1)
+        assertThat(scan.native.waits.size).isEqualTo(ScoreScanNativeFrameLoop.ATTEMPTS - 1)
+        assertThat(scan.nativeLines(result).map { it.int("nativeFrames") }).containsExactly(1, 1)
+        assertThat(scan.nativeFiles(result)).isEqualTo(emptyList<String>())
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
+            """{"screens":1,"moreThanOne":0,"validFirst":0,"validLater":0,"noValidFrame":1,"noCheckableRow":0,"refusedRows":2}"""))
+    }
+
+    @Test
+    fun `a restore that fails after frames were judged saves nothing and ends the scan before any gesture`() {
+        val scan = Scan(total = 7)
+        scan.native.restoreFails = { true }
+        val result = scan.run()
+        assertThat(result.reason).isEqualTo(ScoreScanEndReason.NativeRestoreFailed)
+        assertThat(scan.world.gestures.size).isEqualTo(0)
+        assertThat(scan.native.judged).isEqualTo(1)
+        assertThat(scan.native.restores).isEqualTo(1)
+        assertThat(scan.nativeFiles(result)).isEqualTo(emptyList<String>())
+        val lines = scan.nativeLines(result)
+        assertThat(lines.all { it.str("reason") == "restore_failed" && it.getValue("native") == JsonNull && it.int("nativeFrames") == 1 }).isTrue()
+        assertThat(lines.all { it.best() > 0.99 }).isTrue()
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames").int("screens")).isEqualTo(0)
+        assertThat(scan.native.frames.all { it.closed }).isTrue()
+    }
+
+    @Test
+    fun `a screen of which no row can be checked asks for no newer frame`() {
+        val scan = Scan(total = 1)
+        scan.world.outsidePosition = 0
+        val result = scan.run()
+        assertThat(scan.native.judged).isEqualTo(1)
+        assertThat(scan.native.waits.size).isEqualTo(0)
+        val line = scan.nativeLines(result).single()
+        assertThat(line.str("reason")).isEqualTo("field_outside_frame")
+        assertThat(line.getValue("frameCheck")).isEqualTo(JsonNull)
+        assertThat(line.int("nativeFrames")).isEqualTo(1)
+        assertThat(scan.summary(result).obj("native").obj("nativeFrames")).isEqualTo(Json.parseToJsonElement(
+            """{"screens":1,"moreThanOne":0,"validFirst":0,"validLater":0,"noValidFrame":0,"noCheckableRow":1,"refusedRows":0}"""))
+    }
+
+    @Test
+    fun `refused rows count only the lines that were written`() {
+        val scan = Scan(total = 7)
+        scan.native.kinds = { listOf(Kind(noise = setOf(1))) }
+        scan.hookFolders { real ->
+            object : FolderHook(real) {
+                var lines = 0
+                override fun appendLine(json: String) {
+                    if ("\"kind\":\"native\"" in json && ++lines == 2) throw java.io.IOException("disk full")
+                    real.appendLine(json)
+                }
+            }
+        }
+        assertFailsWith<java.io.IOException> { scan.run() }
+        val nativeFrames = scan.summaryOnDisk().obj("native").obj("nativeFrames")
+        assertThat(nativeFrames.int("refusedRows")).isEqualTo(0)
+        assertThat(nativeFrames.int("screens")).isEqualTo(0)
+    }
+
+    @Test
+    fun `a flat native field cannot be checked and is refused without a file`() {
+        val scan = Scan(total = 3)
+        scan.native.kinds = { listOf(Kind(flat = setOf(1))) }
+        val result = scan.run()
+        val lines = scan.nativeLines(result)
+        assertThat(lines[1].str("reason")).isEqualTo("frame_mismatch")
+        assertThat(lines[1].obj("frameCheck")).isEqualTo(Json.parseToJsonElement("""{"match":null,"best":null,"offset":null}"""))
+        assertThat(scan.nativeFiles(result)).containsExactly("s000-r0.png", "s000-r2.png")
+    }
+
+    /** A frame of random texture whose rows repeat every [period] px (0: no repeat). */
+    private fun texture(width: Int, height: Int, period: Int = 0): GrayPattern {
+        val random = kotlin.random.Random(11)
+        val rows = if (period > 0) period else height
+        val table = Array(rows) { ByteArray(width) { random.nextInt(256).toByte() } }
+        return GrayPattern(width, height, ByteArray(width * height) { table[(it / width) % rows][it % width] })
+    }
+
+    /** The 720p pixels a read would have had for the native field at [field]. */
+    private fun readAt(frame: GrayPattern, field: Region) = frame.crop(field).resize(Size(60, 30)).grayPixels()!!
+
+    private fun checkAt(frame: GrayPattern, map: ScoreScanNativeMap, fieldImage: Region, trueOffset: Int): io.github.fate_grand_automata.scripts.supportSelection.ScoreScanFrameCheck {
+        val crop = ScoreScanNative.crop(map, fieldImage)!!
+        val field = crop.field + crop.region.location
+        val read = readAt(frame, Region(field.x, field.y + trueOffset, field.width, field.height))
+        return ScoreScanNative.check(frame, map, crop, read, Size(60, 30))
+    }
+
+    @Test
+    fun `the search finds a field moved up, skips offsets outside the frame and still checks the mapped place at an edge`() {
+        val map = ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0))
+        val frame = texture(2560, 1440)
+        val up = checkAt(frame, map, Region(600, 300, 60, 30), -5)
+        assertThat(up.offset).isEqualTo(-5)
+        assertThat(kotlin.math.abs(up.best!! - 1.0) < 1e-9).isTrue()
+
+        val top = checkAt(frame, map, Region(600, 0, 60, 30), 0)
+        assertThat(top.offset).isEqualTo(0)
+        assertThat(kotlin.math.abs(top.best!! - 1.0) < 1e-9).isTrue()
+        val bottom = checkAt(frame, map, Region(600, 690, 60, 30), 0)
+        assertThat(bottom.offset).isEqualTo(0)
+        assertThat(kotlin.math.abs(bottom.match!! - 1.0) < 1e-9).isTrue()
+        val belowTop = checkAt(frame, map, Region(600, 0, 60, 30), 4)
+        assertThat(belowTop.offset).isEqualTo(4)
+        // A read that only a field reaching above the frame would match: crop clips, so that offset must be skipped.
+        val topCrop = ScoreScanNative.crop(map, Region(600, 0, 60, 30))!!
+        val aboveTop = ScoreScanNative.check(frame, map, topCrop, readAt(frame, Region(1200, -6, 120, 60)), Size(60, 30))
+        assertThat(aboveTop.offset!! >= 0).isTrue()
+        assertThat(aboveTop.best!! < 0.99).isTrue()
+    }
+
+    @Test
+    fun `of equal matches the mapped place wins, then the offset above`() {
+        val map = ScoreScanNativeMap(Size(2560, 1440), Size(1280, 720), Location(0, 0))
+        val everyFour = checkAt(texture(2560, 1440, period = 4), map, Region(600, 300, 60, 30), 0)
+        assertThat(everyFour.offset).isEqualTo(0)
+        val everyEight = checkAt(texture(2560, 1440, period = 8), map, Region(600, 300, 60, 30), -4)
+        assertThat(everyEight.offset).isEqualTo(-4)
+        assertThat(kotlin.math.abs(everyEight.best!! - 1.0) < 1e-9).isTrue()
+    }
+
+    @Test
+    fun `the search reach is rounded up for a scale that is not whole`() {
+        // 1080 / 720 = 1.5 native px a 720p px, so 3 px reach 4.5 and the search goes to 5.
+        val map = ScoreScanNativeMap(Size(1920, 1080), Size(1280, 720), Location(0, 0))
+        val found = checkAt(texture(1920, 1080), map, Region(600, 300, 60, 30), 5)
+        assertThat(found.offset).isEqualTo(5)
+        assertThat(kotlin.math.abs(found.best!! - 1.0) < 1e-9).isTrue()
     }
 }

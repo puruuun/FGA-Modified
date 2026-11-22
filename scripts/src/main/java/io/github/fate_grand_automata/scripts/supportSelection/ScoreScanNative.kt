@@ -6,7 +6,6 @@ import io.github.lib_automata.Pattern
 import io.github.lib_automata.Region
 import io.github.lib_automata.Size
 import java.io.ByteArrayOutputStream
-import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -29,7 +28,10 @@ interface ScoreScanNativeFrames {
 
 /** Decides, while the capture is at the full size, whether a frame shows the screen the rows were read from. */
 interface ScoreScanFrameJudge {
-    /** True when the frame is to be kept. Must not throw for what a frame holds. */
+    /**
+     * True when the frame is to be kept, or when a newer frame could not change the answer (no row of
+     * the screen can be checked with this map). Must not throw for what a frame holds.
+     */
     fun accept(frame: Pattern, map: ScoreScanNativeMap): Boolean
 
     /** Read without waiting on a pause: the capture lock is held while it is asked. */
@@ -45,8 +47,10 @@ interface ScoreScanFrameJudge {
 object ScoreScanNativeFrameLoop {
     /**
      * Frames asked for in all, the first included. Like the looks after the restore: a few tries.
-     * [WAIT] before each further one spans several display frames of a game that draws continuously,
-     * and the two waits keep the display at the full size at most 0.2 s longer than one frame would.
+     * [WAIT] before each further one spans several display frames of a game that draws continuously.
+     * While the loop runs, the display stays at the full size and the capture lock is held: the two
+     * waits (0.2 s at most), up to two more gray copies and up to three judgings of every row come on
+     * top of one frame's capture. The judging time was not measured on a device.
      */
     const val ATTEMPTS = 3
     val WAIT = 100.milliseconds
@@ -143,8 +147,8 @@ object ScoreScanNative {
 
     /**
      * Checked after the capture has returned; it cannot interrupt it. A first frame after a resize
-     * normally arrives within a few display frames, the full-size copy takes tens of milliseconds and
-     * the newer frames of [ScoreScanNativeFrameLoop] add at most 0.2 s;
+     * normally arrives within a few display frames and the full-size copy takes tens of milliseconds;
+     * [ScoreScanNativeFrameLoop] adds its waits (0.2 s at most), its copies and its judgings;
      * 1.5 s is half the capture's own first-frame timeout (3 s, which ends the capture with an
      * exception, logged as `error`), so a slower capture means the compositor stalled and the frame
      * may not show the screen the rows were read from.
@@ -365,18 +369,28 @@ class ScoreScanNativeTally {
     var validFirst = 0; private set
     var validLater = 0; private set
     var noValidFrame = 0; private set
+    var noCheckableRow = 0; private set
     var refusedRows = 0; private set
 
-    /** One screen whose rows were checked against [judged] frames; [valid] when a row of the last passed. */
-    fun frames(judged: Int, valid: Boolean, refused: Int) {
+    /**
+     * One screen whose rows were decided by the check, after [judged] frames: [valid] when a row of
+     * the last passed, [checkable] when any row of it could be checked at all (else no newer frame
+     * was asked for, and the screen counts as [noCheckableRow] only).
+     */
+    fun frames(judged: Int, valid: Boolean, checkable: Boolean) {
         frameScreens++
         if (judged > 1) frameScreensMoreThanOne++
         when {
+            !checkable -> noCheckableRow++
             !valid -> noValidFrame++
             judged > 1 -> validLater++
             else -> validFirst++
         }
-        refusedRows += refused
+    }
+
+    /** One `frame_mismatch` line written. */
+    fun refused() {
+        refusedRows++
     }
 
     var lookScreens = 0; private set
@@ -424,13 +438,13 @@ object ScoreScanNativeChecks {
         else -> null
     }
 
+    /** The frame size a full-display capture of [display] has: landscape, as the game runs. */
+    fun landscape(display: Size) = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
+
     /**
      * [frameSize] is null when no frame came back. A projection whose state changed, or whose display
      * no longer renders into the current reader, could serve a stale or full-size frame next.
      */
-    /** The frame size a full-display capture of [display] has: landscape, as the game runs. */
-    fun landscape(display: Size) = Size(maxOf(display.width, display.height), minOf(display.width, display.height))
-
     fun after(
         projection: Boolean,
         before: ScoreScanCaptureState?,
