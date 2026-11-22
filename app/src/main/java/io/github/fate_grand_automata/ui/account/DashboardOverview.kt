@@ -55,8 +55,10 @@ internal fun DashboardOverview(
             if (wide) OverviewProgress(progress, now)
             data.storage?.let { OverviewStorage(it) }
             if (battle != null || outside != null) OverviewRecent(battle, outside, names, openLogs)
+            // The left column is the longer one, so the account block fills the empty end of the right column.
+            if (wide) OverviewAccount(data, friendCount, now)
         }
-        // Narrow keeps one column in the order of the two wide columns; the account block closes either layout.
+        // Narrow keeps one column in the order of the two wide columns; the account block closes it.
         if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp), content = first)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp), content = second)
@@ -64,7 +66,7 @@ internal fun DashboardOverview(
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = first)
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = second)
         }
-        OverviewAccount(data, friendCount, now, wide)
+        if (!wide) OverviewAccount(data, friendCount, now)
     }
 }
 
@@ -101,10 +103,7 @@ private fun OverviewProgress(progress: DashboardProgress, now: Long) {
                         "${event.name} · ${event.points.grouped()} / ${event.max.grouped()}", style = MaterialTheme.typography.bodyMedium.tabular(),
                         color = if (event.complete) color else MaterialTheme.colorScheme.onSurface,
                     )
-                    LinearProgressIndicator(
-                        progress = { event.fraction }, color = color, modifier = Modifier.fillMaxWidth().testTag("overview-progress-bar:${event.eventId}"),
-                        drawStopIndicator = {},
-                    )
+                    SegmentedBar(listOf(event.fraction to color), Modifier.testTag("overview-progress-bar:${event.eventId}"))
                 } else Text(
                     stringResource(R.string.dashboard_progress_event_open, event.name, event.points.grouped()),
                     style = MaterialTheme.typography.bodyMedium.tabular(),
@@ -182,9 +181,9 @@ private fun OverviewServants(servants: List<DashboardServant>, catalog: List<Atl
         summary.rarities.forEach { row ->
             Row(Modifier.fillMaxWidth().heightIn(min = 28.dp).testTag("overview-rarity:${row.rarity}"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("★${row.rarity}", Modifier.width(32.dp), style = MaterialTheme.typography.bodyMedium.tabular())
-                if (row.total != null) LinearProgressIndicator(
-                    progress = { if (row.total > 0) (row.owned.toFloat() / row.total).coerceIn(0f, 1f) else 0f },
-                    modifier = Modifier.weight(1f).testTag("overview-rarity-bar:${row.rarity}"), drawStopIndicator = {},
+                if (row.total != null) SegmentedBar(
+                    listOf((if (row.total > 0) row.owned.toFloat() / row.total else 0f) to MaterialTheme.colorScheme.primary),
+                    Modifier.weight(1f).testTag("overview-rarity-bar:${row.rarity}"),
                 ) else Spacer(Modifier.weight(1f))
                 Text(
                     row.total?.let { "${row.owned} / $it" } ?: row.owned.toString(), Modifier.widthIn(min = 72.dp),
@@ -310,7 +309,7 @@ private fun gainLine(resources: List<LogResource>, names: GameNameMap): String =
     resources.take(3).map { "${resourceName(it.type, it.id, names)} ${it.count?.let(::signedOutsideCount) ?: "—"}" }.joinToString(" · ")
 
 @Composable
-private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long, wide: Boolean) {
+private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long) {
     val profile = data.profile
     val fields = buildList {
         profile["friendCode"]?.let { add(Triple("friendCode", R.string.dashboard_friend_code, it)) }
@@ -336,7 +335,7 @@ private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long, w
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("overview-account")) {
         OverviewTitle(stringResource(R.string.dashboard_overview_account))
         FlowRow(
-            Modifier.fillMaxWidth(), maxItemsInEachRow = if (wide) 4 else 2, verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxWidth(), maxItemsInEachRow = 2, verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             fields.forEach { (key, label, value) ->

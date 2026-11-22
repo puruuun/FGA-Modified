@@ -230,7 +230,7 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNode(hasText("123,456") and hasAnyAncestor(hasTestTag("overview-account:friendPoint"))).assertExists()
     }
 
-    @Test fun overviewListsTwoColumnsOnWideAndOneOnNarrowWithTheAccountBlockLast() {
+    @Test fun overviewListsTwoColumnsOnWideWithTheAccountBlockInTheRightOneAndOneOnNarrowWithItLast() {
         show(all.copy(storage = all.storage), battle = battleLogFixture("recent"))
         fun box(tag: String) = compose.onNodeWithTag(tag).getUnclippedBoundsInRoot()
         val resources = box("overview-resources"); val fruits = box("overview-fruits"); val servants = box("overview-servants")
@@ -241,8 +241,8 @@ class DashboardNavigationTest(private val width: Int) {
             assertTrue(resources.right <= storage.left)
             assertEquals(resources.top.value, storage.top.value, 1f)
             assertEquals(resources.left, servants.left)
-            assertTrue(account.top >= servants.bottom && account.top >= recent.bottom)
-            assertEquals(account.left, resources.left)
+            assertTrue(account.left >= storage.left && account.left > resources.right)
+            assertTrue(account.top >= recent.bottom)
         } else {
             assertEquals(resources.left, storage.left)
             assertTrue(servants.bottom <= storage.top)
@@ -261,16 +261,16 @@ class DashboardNavigationTest(private val width: Int) {
     @Test fun apShowsFullOrTheTimeItBecomesFull() {
         val game = { recoverAt: Long -> dashboardData(dashboardState("userGame" to """[{"actMax":144,"actRecoverAt":$recoverAt}]"""), case.names) }
         show(game(1))
-        compose.onNode(hasText("144 / 144") and hasAnyAncestor(hasTestTag("header-ap"))).assertExists()
-        compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap"))).assertExists()
+        compose.onNode(hasText("144") and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("가득 참", substring = true) and (hasTestTag("header-ap-detail") or hasAnyAncestor(hasTestTag("header-ap-detail"))), useUnmergedTree = true).assertExists()
     }
 
     @Test fun apShowsTheClockTimeWhenNotYetFull() {
         val recoverAt = System.currentTimeMillis() / 1000 + 3 * 3600
         show(dashboardData(dashboardState("userGame" to """[{"actMax":144,"actRecoverAt":$recoverAt}]"""), case.names))
-        val texts = compose.onAllNodes(hasAnyAncestor(hasTestTag("header-ap")), useUnmergedTree = true).fetchSemanticsNodes()
+        val texts = compose.onAllNodes(hasTestTag("header-ap-detail") or hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).fetchSemanticsNodes()
             .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { t -> t.text } }
-        assertTrue(texts.toString(), texts.any { Regex("""\d{2}:\d{2} 가득 참""").matches(it) })
+        assertTrue(texts.toString(), texts.any { Regex("""(.* · )?\d{2}:\d{2}( .*)?""").matches(it) } && texts.any { it.contains("가득 참") })
     }
 
     @Test fun formationLongCeNamesKeepLevelAndMaxVisible() {

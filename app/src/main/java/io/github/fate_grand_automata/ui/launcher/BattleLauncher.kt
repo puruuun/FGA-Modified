@@ -1,15 +1,12 @@
 package io.github.fate_grand_automata.ui.launcher
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.ui.layout.Layout
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -57,9 +54,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -358,77 +352,75 @@ fun battleLauncher(
             state = mainConfigState
         ) {
             item {
-                // Short label next to the title (#613); the full text stays as the description for screen readers.
-                val waitDescription = stringResource(R.string.p_wait_ap_regen_text)
-                ApRecoveryBlock(
-                    title = {
-                        Text(
-                            "${stringResource(R.string.p_refill)}:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    },
-                    wait = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .heightIn(min = 48.dp)
-                                .toggleable(value = waitApRegen, role = Role.Checkbox, onValueChange = { waitApRegen = it })
-                                .semantics { contentDescription = waitDescription }
-                                .testTag(LauncherWaitApRegenTag)
-                        ) {
-                            // Same box and 48dp area as the other launcher checkboxes; the row toggles, so the box has no click.
-                            Checkbox(
-                                checked = waitApRegen,
-                                onCheckedChange = null,
-                                modifier = Modifier
-                                    .minimumInteractiveComponentSize()
-                                    .alpha(if (waitApRegen) 1f else 0.7f)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                stringResource(R.string.p_wait_ap_regen_short),
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    },
-                    stepper = {
-                        Stepper(
-                            value = refillCount.value,
-                            onValueChange = { value ->
-                                when {
-                                    RefillResourceEnum.Copper in refillResources -> copperApple = value
-                                    RefillResourceEnum.Bronze in refillResources -> blueApple = value
-                                    RefillResourceEnum.Silver in refillResources -> silverApple = value
-                                    RefillResourceEnum.Gold in refillResources -> goldApple = value
-                                    RefillResourceEnum.SQ in refillResources -> rainbowApple = value
-                                }
-                            },
-                            valueRange = 0..999,
-                            enabled = refillResources.isNotEmpty()
-                        )
-                    },
-                    fruits = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            availableRefills.forEach {
-                                it.RefillResource(
-                                    isSelected = it in refillResources,
-                                    toggle = {
-                                        // TODO change back to refillResources.toggle()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "${stringResource(R.string.p_refill)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
 
-                                        // if the tapped resource is the only one in the list, disable it. otherwise only select the tapped resource
-                                        refillResources = if (it in refillResources) emptySet() else setOf(it)
-                                    }
-                                )
+                    Stepper(
+                        value = refillCount.value,
+                        onValueChange = { value ->
+                            when {
+                                RefillResourceEnum.Copper in refillResources -> copperApple = value
+                                RefillResourceEnum.Bronze in refillResources -> blueApple = value
+                                RefillResourceEnum.Silver in refillResources -> silverApple = value
+                                RefillResourceEnum.Gold in refillResources -> goldApple = value
+                                RefillResourceEnum.SQ in refillResources -> rainbowApple = value
                             }
-                        }
-                    }
-                )
+                        },
+                        valueRange = 0..999,
+                        enabled = refillResources.isNotEmpty()
+                    )
+                }
             }
 
             item {
+                LazyRow(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+
+                    items(availableRefills) {
+                        it.RefillResource(
+                            isSelected = it in refillResources,
+                            toggle = {
+                                // TODO change back to refillResources.toggle()
+
+                                // if the tapped resource is the only one in the list, disable it. otherwise only select the tapped resource
+                                refillResources = if (it in refillResources) emptySet() else setOf(it)
+                            }
+                        )
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { waitApRegen = !waitApRegen }
+                ) {
+                    Checkbox(
+                        checked = waitApRegen,
+                        onCheckedChange = { waitApRegen = it },
+                        modifier = Modifier
+                            .alpha(if (waitApRegen) 1f else 0.7f)
+                            .padding(end = 5.dp)
+                    )
+
+                    Text(
+                        stringResource(R.string.p_wait_ap_regen_text),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
                 HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
             }
 
@@ -475,13 +467,27 @@ fun battleLauncher(
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(start = 8.dp, top = 8.dp)
                         )
-                        Row {
+                        Row(Modifier.padding(top = 8.dp)) {
                             for (slot in 1..5) {
-                                androidx.compose.foundation.layout.Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                // The label and the box toggle together so the box sits right under the label (owner,
+                                // 2026-11-22); the column keeps the 48dp touch target.
+                                androidx.compose.foundation.layout.Column(
+                                    Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp)
+                                        .toggleable(value = slot in bond.ignored, role = Role.Checkbox, onValueChange = { checked ->
+                                            changeBond(bond.copy(ignored = if (checked) bond.ignored + slot else bond.ignored - slot))
+                                        })
+                                        .testTag("$LauncherBondIgnoreTagPrefix$slot"),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
                                     Text(stringResource(R.string.p_bond_position, slot), style = MaterialTheme.typography.bodySmall)
-                                    Checkbox(checked = slot in bond.ignored, onCheckedChange = { checked ->
-                                        changeBond(bond.copy(ignored = if (checked) bond.ignored + slot else bond.ignored - slot))
-                                    })
+                                    // Without its own click the checkbox takes no 48dp area of its own.
+                                    Checkbox(
+                                        checked = slot in bond.ignored, onCheckedChange = null,
+                                        modifier = Modifier.testTag("$LauncherBondIgnoreBoxTagPrefix$slot")
+                                    )
                                 }
                             }
                         }
@@ -589,7 +595,8 @@ fun battleLauncher(
 }
 
 internal const val LauncherResetAllTag = "launcher-reset-all"
-internal const val LauncherWaitApRegenTag = "launcher-wait-ap-regen"
+internal const val LauncherBondIgnoreTagPrefix = "launcher-bond-ignore:"
+internal const val LauncherBondIgnoreBoxTagPrefix = "launcher-bond-ignore-box:"
 internal const val LauncherConfigListTag = "launcher-config-list"
 internal const val LauncherSettingsListTag = "launcher-settings-list"
 internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"
@@ -785,57 +792,6 @@ private fun LauncherFolderRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-    }
-}
-
-/**
- * The AP recovery block: title, the wait checkbox and the stepper on one line when they fit at full size, with the
- * fruits right-aligned below. When the panel is too narrow, which it often is in the landscape phone launcher, the
- * wait pair moves to the start of the fruits line instead of being squeezed; the fruits stay right-aligned and drop to
- * a line of their own only if the pair and the fruits do not fit together either.
- */
-@Composable
-internal fun ApRecoveryBlock(
-    title: @Composable () -> Unit,
-    wait: @Composable () -> Unit,
-    stepper: @Composable () -> Unit,
-    fruits: @Composable () -> Unit
-) {
-    Layout(
-        modifier = Modifier.fillMaxWidth(),
-        content = {
-            Box { title() }
-            Box { wait() }
-            Box { stepper() }
-            Box { fruits() }
-        }
-    ) { measurables, constraints ->
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val (t, w, s, f) = measurables.map { it.measure(loose) }
-        val maxW = constraints.maxWidth
-        val gap = 8.dp.roundToPx()
-        val inline = t.width + gap + w.width + gap + s.width <= maxW
-        val pairWithFruits = w.width + gap + f.width <= maxW
-
-        val row1 = if (inline) maxOf(t.height, w.height, s.height) else maxOf(t.height, s.height)
-        val row2 = when {
-            inline -> f.height
-            pairWithFruits -> maxOf(w.height, f.height)
-            else -> w.height
-        }
-        val row3 = if (!inline && !pairWithFruits) f.height else 0
-        layout(maxW, row1 + row2 + row3) {
-            t.placeRelative(0, (row1 - t.height) / 2)
-            s.placeRelative(maxW - s.width, (row1 - s.height) / 2)
-            if (inline) {
-                w.placeRelative(t.width + gap, (row1 - w.height) / 2)
-                f.placeRelative(maxW - f.width, row1 + (row2 - f.height) / 2)
-            } else {
-                w.placeRelative(0, row1 + (row2 - w.height) / 2)
-                if (pairWithFruits) f.placeRelative(maxW - f.width, row1 + (row2 - f.height) / 2)
-                else f.placeRelative(maxW - f.width, row1 + row2)
-            }
-        }
     }
 }
 
