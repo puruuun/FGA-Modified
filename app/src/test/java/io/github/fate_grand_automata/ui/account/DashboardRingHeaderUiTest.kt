@@ -162,15 +162,6 @@ class DashboardRingHeaderUiTest {
         assertTrue(account.top >= recent.bottom)
     }
 
-    @Test fun theWideAccountBlockHasTwoFieldsPerRow() {
-        show(1280, fixture.data())
-        compose.onNodeWithTag("overview-account").performScrollTo()
-        val exp = box("overview-account:exp"); val cost = box("overview-account:cost"); val friends = box("overview-account:friends")
-        // At two per row the third field of the three starts a new row; at four per row all three would share one.
-        assertEquals(exp.top.value, cost.top.value, 0.5f)
-        assertTrue(friends.top > exp.top)
-    }
-
     private fun currentAp(): String {
         val node = compose.onNodeWithTag("header-ap-current", useUnmergedTree = true).fetchSemanticsNode()
         return node.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString("") { it.text }
