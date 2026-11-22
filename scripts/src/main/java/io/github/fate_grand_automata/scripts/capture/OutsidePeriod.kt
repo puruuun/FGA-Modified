@@ -14,6 +14,8 @@ data class OutsidePeriod(
     val sources: List<SourceDelta> = emptyList(),
     val total: AccountDelta = AccountDelta(),
     val fruitUsed: Map<Long, Long> = emptyMap(),
+    /** One entry per recorded login grant, oldest first. Absent in files written before the breakdown existed. */
+    val logins: List<LoginBreakdown> = emptyList(),
 ) {
     val isEmpty get() = sources.all { it.delta.isEmpty } && fruitUsed.values.all { it == 0L }
 
@@ -33,6 +35,8 @@ data class OutsidePeriod(
             )
         })
     }
+
+    fun withLogin(login: LoginBreakdown?) = if (login == null) this else copy(logins = logins + login)
 
     fun add(source: ChangeSource, delta: AccountDelta, now: Long): OutsidePeriod {
         if (delta.isEmpty) return this

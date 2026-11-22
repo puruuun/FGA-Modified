@@ -60,11 +60,14 @@ fun LogScreen(viewModel: LogViewModel = hiltViewModel()) {
         val cardIds = allOutside.flatMap {
             it.period.total.svts.keys + it.period.sources.flatMap { source -> source.delta.svts.keys }
         }.toSet()
+        val loginServantIds = allOutside.flatMap { entry ->
+            entry.period.logins.flatMap { listOfNotNull(it.normal?.svtId, it.event?.svtId, it.grand?.svtId) }
+        }.toSet()
         val logAccounts = (entries.mapNotNull { it.accountId } + allOutside.map { it.accountId }).toSet()
         if (gains.isNotEmpty() || allOutside.isNotEmpty()) names = cache.resolve(
             gains, itemIds + iconItemIds, includeCards = allOutside.isNotEmpty(),
             hasJpAccount = CaptureTracker.accounts.value.any { it.id in logAccounts && it.server == "JP" },
-            cardIds = cardIds,
+            cardIds = cardIds, extraServantIds = loginServantIds,
         )
     }
     LogScreenContent(rememberCaptureLogEntries(entries), viewModel::delete, viewModel::clear, names,

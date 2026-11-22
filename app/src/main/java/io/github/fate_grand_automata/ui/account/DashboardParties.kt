@@ -74,7 +74,7 @@ private fun PartyMemberRow(slot: DashboardPartySlot, names: GameNameMap) {
 
 /** An outlined square in the icon spot, for rows that have no image of their own. */
 @Composable
-private fun IconPlaceholder(content: @Composable BoxScope.() -> Unit = {}) {
+internal fun IconPlaceholder(content: @Composable BoxScope.() -> Unit = {}) {
     Surface(
         Modifier.size(IconSize), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),

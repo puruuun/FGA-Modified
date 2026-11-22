@@ -1107,6 +1107,15 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_outside_title">Changes outside scripts</string>
     <string name="capture_outside_totals">Totals</string>
     <string name="capture_outside_sources">By source</string>
+    <string name="capture_login_received">Received</string>
+    <string name="capture_login_friend">Friend</string>
+    <string name="capture_login_follow">Follow</string>
+    <string name="capture_login_recommend">Recommended support</string>
+    <string name="capture_login_top">Top earning servants</string>
+    <string name="capture_login_top_normal">Normal</string>
+    <string name="capture_login_top_event">Event</string>
+    <string name="capture_login_top_grand">Grand</string>
+    <string name="capture_login_top_none">None</string>
     <string name="capture_outside_gained">Gains (+)</string>
     <string name="capture_outside_used">Uses (−)</string>
     <string name="capture_source_gift_box">Gift box</string>

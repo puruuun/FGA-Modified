@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.capture
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.LoginTopServant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonObject
@@ -355,6 +356,55 @@ class CaptureOutsideSessionTest {
         assertEquals(420, session.openEntries.value.single().period.total.friendPoint)
     }
 
+    private val tops = ""","topAddFriendPointSvt":{"userSvtId":9,"svtId":100100,"friendPoint":60},
+        "topAddFriendPointSvtEQ":{"userSvtId":0,"svtId":0,"friendPoint":0}"""
+
+    @Test fun loginGrantRecordsItsBreakdownInThePeriodThatGetsTheGrant() {
+        time = kstSeconds(10, 21)
+        feed()
+        time = kstSeconds(11, 4)
+        response("login/top", outsideLogin(fruit = 50, grant = 370, extra = tops))
+        assertTrue(logs.entries.single().period.logins.isEmpty())
+        val login = session.openEntries.value.single().period.logins.single()
+        assertEquals(kstSeconds(11, 4), login.at)
+        assertEquals(370, login.friend)
+        assertEquals(LoginTopServant(100100, 60), login.normal)
+        assertNull(login.event)
+        assertNull(login.grand)
+    }
+
+    @Test fun breakdownSurvivesTheLogAndAReload() {
+        response("login/top", outsideLogin(grant = 370, extra = tops))
+        accounts = CaptureAccounts().apply { load(directory) }
+        session = CaptureOutsideSession(accounts, logs::add, { time }).apply { load(directory); setRunning(true) }
+        assertEquals(370, session.openEntries.value.single().period.logins.single().total)
+        session.setRunning(false)
+        val reloaded = OutsideLogStore(File(directory, "written")).apply { load() }
+        assertEquals(LoginTopServant(100100, 60), reloaded.entries.single().period.logins.single().normal)
+    }
+
+    @Test fun loginThatDoesNotReplaceTheSnapshotDoesNotRepeatTheBreakdown() {
+        response("login/top", outsideLogin(grant = 370, extra = tops))
+        response("login/top", Json.parseToJsonElement("""{"response":[{"nid":"login","resCode":"00","success":{"addFriendPoint":500}}],"cache":{"replaced":{}}}""").jsonObject)
+        assertEquals(1, session.openEntries.value.single().period.logins.size)
+    }
+
+    @Test fun twoLoginsInOnePeriodKeepTwoBreakdownsInOrder() {
+        time = 100
+        response("login/top", outsideLogin(grant = 370, extra = tops))
+        time = 200
+        response("login/top", outsideLogin(grant = 50))
+        val logins = session.openEntries.value.single().period.logins
+        assertEquals(listOf(100L, 200L), logins.map { it.at })
+        assertEquals(listOf(370L, 50L), logins.map { it.total })
+        assertNull(logins[1].normal)
+    }
+
+    @Test fun loginWithoutGrantOrWithFailedLoginRecordsNoBreakdown() {
+        response("login/top", outsideLogin(grant = 0, extra = tops))
+        response("login/top", outsideLogin(grant = 370, resCode = "01", extra = tops))
+        assertTrue(session.openEntries.value.isEmpty())
+    }
     @Test fun zeroGrantLoginWithNoOpenPeriodCreatesNothing() {
         response("login/top", outsideLogin(grant = 0))
         assertTrue(session.openEntries.value.isEmpty())
