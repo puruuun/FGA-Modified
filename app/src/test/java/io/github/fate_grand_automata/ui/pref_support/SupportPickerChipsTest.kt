@@ -156,6 +156,32 @@ class SupportPickerChipsTest {
         chip("One").assertIsOff()
     }
 
+    private fun bounds(name: String) = chip(name).fetchSemanticsNode().boundsInRoot
+
+    @Test
+    fun `servant chips take one line each and fill the dialog width`() {
+        val pref = prefsCore("chips627_lines").forBattleConfig("t").support.preferredServants
+        open(Store(listOf("A", "B")), pref)
+        val a = bounds("A")
+        val b = bounds("B")
+        assertTrue("same line: ${a.top} ${b.top}", b.top > a.top + 1f)
+        assertEquals(a.left, b.left, 0.5f)
+        assertEquals(a.width, b.width, 0.5f)
+        assertTrue("chip is ${a.width / 1.5f} dp wide", a.width / 1.5f > 250f)
+    }
+
+    @Test
+    fun `the picker without faces keeps flowing chips on one line`() {
+        val pref = prefsCore("chips627_flow").forBattleConfig("t").support.preferredNoblePhantasms
+        compose.setContent { FGATheme { pref.SupportSelectPreference("NPs", mapOf("One" to "One", "Two" to "Two")) } }
+        compose.onNodeWithText("NPs").performClick()
+        val one = bounds("One")
+        val two = bounds("Two")
+        assertEquals(one.top, two.top, 0.5f)
+        assertTrue(two.left > one.right - 1f)
+        assertTrue(one.width / 1.5f < 120f)
+    }
+
     // Delete mode
 
     @Test

@@ -116,7 +116,7 @@ fun FaceChoiceRow(
  * One choice of a chip picker: [content] (a 24dp face when the entry has one, then its name).
  * The chip is at least 40dp high inside a 48dp touch target. A selected chip is filled and has no border.
  * [isMarked] is `null` outside delete mode. In delete mode a tap marks instead of selecting, so the mark is what
- * gets the error border and what a screen reader reports.
+ * gets the error border and what a screen reader reports. [fillWidth] makes the chip take a whole line.
  */
 @Composable
 fun FaceChip(
@@ -125,6 +125,7 @@ fun FaceChip(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     isMarked: Boolean? = null,
+    fillWidth: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -133,6 +134,7 @@ fun FaceChip(
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = modifier
+            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
             .heightIn(min = 48.dp)
             .combinedClickable(role = Role.Checkbox, onClick = onClick, onLongClick = onLongClick)
             .semantics { toggleableState = ToggleableState(checked) }
@@ -141,6 +143,7 @@ fun FaceChip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
+                .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
                 .heightIn(min = 40.dp)
                 .background(if (isSelected) colors.secondaryContainer else Color.Transparent, shape)
                 .then(
@@ -178,6 +181,7 @@ fun <T> FgaDialog.chipChoiceList(
     onClick: (T) -> Unit,
     onLongClick: ((T) -> Unit)? = null,
     isMarked: ((T) -> Boolean)? = null,
+    fillWidth: Boolean = false,
     template: @Composable RowScope.(T, Boolean) -> Unit
 ) {
     constrained { modifier ->
@@ -195,7 +199,8 @@ fun <T> FgaDialog.chipChoiceList(
                             isSelected = isSelected(item),
                             onClick = { onClick(item) },
                             onLongClick = onLongClick?.let { { it(item) } },
-                            isMarked = marked
+                            isMarked = marked,
+                            fillWidth = fillWidth
                         ) {
                             template(item, marked == true)
                         }

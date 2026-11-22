@@ -92,7 +92,9 @@ fun <T> multiSelectListDialog(
             isSelected = { it in current },
             onClick = { if (marked == null) current = current.toggle(it) else mark(it) },
             onLongClick = imageDelete?.let { { item -> mark(item) } },
-            isMarked = markedNow?.let { set -> { it in set } }
+            isMarked = markedNow?.let { set -> { it in set } },
+            // The owner wants the pickers with faces (servants, CEs) one chip per line; the others flow.
+            fillWidth = thumbnails != null
         ) { item, isMarked ->
             if (thumbnails != null) FaceThumbnail(thumbnails, item.toString(), marked = isMarked)
             Text(entries[item] ?: "--")
