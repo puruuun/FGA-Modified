@@ -9,6 +9,7 @@ import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.VectorIcon
 import io.github.fate_grand_automata.ui.dialog.FaceThumbnails
+import io.github.fate_grand_automata.ui.dialog.ImageDelete
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.MultiSelectListPreference
 import io.github.fate_grand_automata.ui.prefs.remember
@@ -20,7 +21,9 @@ fun Pref<Set<String>>.SupportSelectPreference(
     icon: VectorIcon? = null,
     imageDownload: (@Composable ((String) -> Unit) -> Unit)? = null,
     // Only the servant and CE pickers have a folder of images to show; the other two stay a plain list.
-    thumbnails: FaceThumbnails? = null
+    thumbnails: FaceThumbnails? = null,
+    // Only the servant and CE pickers list files the user may remove.
+    imageDelete: ImageDelete<String>? = null
 ) {
     val value by remember()
 
@@ -30,6 +33,7 @@ fun Pref<Set<String>>.SupportSelectPreference(
         icon = icon,
         dialogAction = imageDownload,
         thumbnails = thumbnails,
+        imageDelete = imageDelete,
         summary = {
             if (it.isEmpty())
                 stringResource(R.string.p_not_set)

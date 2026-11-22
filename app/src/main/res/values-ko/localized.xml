@@ -1255,6 +1255,10 @@
     <string name="widget_settings_show_service_button">서비스 시작/중지 버튼 표시</string>
     <string name="widget_settings_show_log_button">로그 수집 버튼 표시</string>
     <string name="support_picker_download">이미지 받기</string>
+    <string name="support_picker_delete_count">"%d개 선택됨"</string>
+    <string name="support_picker_delete_confirm_message">"%d개의 이미지를 정말로 지우시겠습니까?"</string>
+    <string name="support_picker_delete_failed">"일부 이미지를 삭제하지 못했습니다."</string>
+    <string name="support_picker_builtin_locked">"기본 제공 이미지는 앱 업데이트 때 다시 생기므로 삭제할 수 없습니다."</string>
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">프로필</string>
     <string name="capture_log_all_profiles">전체</string>

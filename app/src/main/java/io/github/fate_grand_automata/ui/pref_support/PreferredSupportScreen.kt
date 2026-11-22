@@ -51,6 +51,12 @@ import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.util.stringRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.content.res.AssetManager
+import io.github.fate_grand_automata.ui.dialog.ImageDelete
+import io.github.fate_grand_automata.util.StorageProvider
+import io.github.fate_grand_automata.util.SupportImageExtractor
+import io.github.fate_grand_automata.util.SupportThumbnailIndex
 
 @Composable
 fun PreferredSupportScreen(
@@ -84,6 +90,30 @@ fun PreferredSupportScreen(
             } else supportVm.refresh(context)
         }
     }
+}
+
+/**
+ * Deleting for one picker. Built-in images are protected because the extractor writes them back after an app
+ * update and from the More options screen, so a deleted one would reappear on its own.
+ */
+internal fun supportImageDelete(
+    storage: StorageProvider,
+    kind: SupportImageKind,
+    assets: AssetManager,
+    index: SupportThumbnailIndex,
+    afterDelete: () -> Unit
+): ImageDelete<String> {
+    val builtIn = SupportImageExtractor.builtInEntries(assets, kind)
+    return ImageDelete(
+        isProtected = { it in builtIn },
+        delete = { names ->
+            val removable = names.filterNot { it in builtIn }.toSet()
+            val removed = withContext(Dispatchers.IO) { storage.deleteSupportEntries(kind, removable) }
+            index.forget(removed)
+            afterDelete()
+            removed
+        }
+    )
 }
 
 /** Turns off the checks the screen hides for this state. Only writes a check that is on. */
@@ -132,8 +162,17 @@ internal fun PreferredSupport(
     }
 
     // A new index per refresh, so images saved by "이미지 받기" show up in the reopened list.
-    val servantFaces = remember(vm.servants) { vm.storageProvider.supportThumbnails(SupportImageKind.Servant).let { FaceThumbnails(it::thumbnail) } }
-    val ceFaces = remember(vm.ces) { vm.storageProvider.supportThumbnails(SupportImageKind.CE).let { FaceThumbnails(it::thumbnail) } }
+    val servantIndex = remember(vm.servants) { vm.storageProvider.supportThumbnails(SupportImageKind.Servant) }
+    val ceIndex = remember(vm.ces) { vm.storageProvider.supportThumbnails(SupportImageKind.CE) }
+    val servantFaces = remember(servantIndex) { FaceThumbnails(servantIndex::thumbnail) }
+    val ceFaces = remember(ceIndex) { FaceThumbnails(ceIndex::thumbnail) }
+
+    val servantDelete = remember(vm, servantIndex) {
+        supportImageDelete(vm.storageProvider, SupportImageKind.Servant, context.assets, servantIndex) { vm.refresh(context) }
+    }
+    val ceDelete = remember(vm, ceIndex) {
+        supportImageDelete(vm.storageProvider, SupportImageKind.CE, context.assets, ceIndex) { vm.refresh(context) }
+    }
 
     CappedWidth {
         LazyColumn {
@@ -162,6 +201,7 @@ internal fun PreferredSupport(
                             title = stringResource(R.string.p_battle_config_support_pref_servants),
                             entries = servantEntries,
                             thumbnails = servantFaces,
+                            imageDelete = servantDelete,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.Servant, select, { vm.refresh(context) })
                             }
@@ -262,6 +302,7 @@ internal fun PreferredSupport(
                             title = stringResource(R.string.p_battle_config_support_pref_ces),
                             entries = ceEntries,
                             thumbnails = ceFaces,
+                            imageDelete = ceDelete,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.CE, select, { vm.refresh(context) })
                             }

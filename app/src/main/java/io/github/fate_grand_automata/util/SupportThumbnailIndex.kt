@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class SupportThumbnailIndex(private val kindFolder: () -> DocumentFile?) {
     private val lock = Mutex()
-    private var children: Map<String, DocumentFile>? = null
+    @Volatile private var children: Map<String, DocumentFile>? = null
     private val resolved = ConcurrentHashMap<String, Found>()
 
     private class Found(val uri: Uri?)
@@ -39,6 +39,12 @@ class SupportThumbnailIndex(private val kindFolder: () -> DocumentFile?) {
         val uri = entry?.let(::firstImage)?.uri
         resolved[name] = Found(uri)
         uri
+    }
+
+    /** Drops what is known about [names], and the folder listing it came from, after those entries were deleted. */
+    fun forget(names: Collection<String>) {
+        children = null
+        names.forEach { resolved.remove(it) }
     }
 
     private fun firstImage(entry: DocumentFile): DocumentFile? {

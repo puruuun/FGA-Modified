@@ -1013,6 +1013,10 @@
     <string name="widget_settings_show_service_button">サービス開始/停止ボタンを表示</string>
     <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
     <string name="support_picker_download">画像を取得</string>
+    <string name="support_picker_delete_count">"%d件選択中"</string>
+    <string name="support_picker_delete_confirm_message">"本当に %d 枚の画像を削除しますか?"</string>
+    <string name="support_picker_delete_failed">"一部の画像を削除できませんでした。"</string>
+    <string name="support_picker_builtin_locked">"内蔵画像はアプリの更新で復元されるため、削除できません。"</string>
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">プロフィール</string>
     <string name="capture_log_all_profiles">すべて</string>

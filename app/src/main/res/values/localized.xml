@@ -1328,6 +1328,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_settings_show_service_button">Show service start/stop button</string>
     <string name="widget_settings_show_log_button">Show log collection button</string>
     <string name="support_picker_download">Download images</string>
+    <string name="support_picker_delete_count">"%d selected"</string>
+    <string name="support_picker_delete_confirm_message">"Are you sure you want to delete %d image(s)?"</string>
+    <string name="support_picker_delete_failed">"Could not delete some images."</string>
+    <string name="support_picker_builtin_locked">"Built-in images come back with app updates, so they cannot be deleted."</string>
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">Profile</string>
     <string name="capture_log_all_profiles">All profiles</string>

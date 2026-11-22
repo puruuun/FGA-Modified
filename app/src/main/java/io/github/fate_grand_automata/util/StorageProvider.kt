@@ -202,6 +202,17 @@ class StorageProvider @Inject constructor(
         dirRoot?.findFile(supportFolderName)?.findFile(SupportThumbnailIndex.folderName(kind))?.takeIf { it.isDirectory }
     }
 
+    /**
+     * Deletes servant folders or CE entries from the user's support folder and returns the names that are gone.
+     * Read-only lookup of the folder: it never creates one.
+     */
+    fun deleteSupportEntries(kind: SupportImageKind, names: Set<String>): Set<String> {
+        require(kind == SupportImageKind.Servant || kind == SupportImageKind.CE)
+        val folder = dirRoot?.findFile(supportFolderName)?.findFile(SupportThumbnailIndex.folderName(kind))
+            ?.takeIf { it.isDirectory } ?: return emptySet()
+        return deleteSupportEntries(folder, names)
+    }
+
     override fun list(kind: SupportImageKind) = kind.imageFolder
         .listFiles()
         .mapNotNull { it.name }
