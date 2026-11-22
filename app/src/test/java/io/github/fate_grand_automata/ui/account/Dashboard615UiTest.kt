@@ -102,12 +102,12 @@ class Dashboard615UiTest {
         compose.onNodeWithTag("overview-progress-bar:7").assertDoesNotExist()
     }
 
-    @Test fun theBarAndValueAreGoldOnlyWhenThePointsReachTheLastReward() {
+    @Test fun aCompletedEventKeepsThePrimaryBar() {
         show(1280)
         fun fill(tag: String) = compose.onNodeWithTag(tag).captureToImage().asAndroidBitmap().let { it.getPixel(6, it.height / 2) }
         assertNotEquals(primary, tertiary)
         assertEquals(primary, fill("overview-progress-bar:80500"))
-        assertEquals(tertiary, fill("overview-progress-bar:80501"))
+        assertEquals(primary, fill("overview-progress-bar:80501"))
     }
 
     @Test fun eventsThatAreNotRunningAreLeftOutAndAnEmptyBlockIsHidden() {
