@@ -29,9 +29,9 @@ In the **Preferred Servants** and **Preferred CEs** pickers a **long press** on 
 1. A long press on a chip starts delete mode with that chip marked. The title row shows **N selected**, a close button at the start and a **Delete** button at the end; the Download images, Cancel and OK buttons are hidden.
 2. In delete mode a tap marks or unmarks a chip with a red border and a delete mark. Marks are separate from the preference: tapping never changes it. Unmarking the last chip leaves delete mode.
 3. Back or the close button leaves delete mode and deletes nothing.
-4. **Delete** asks for confirmation. On **Delete**, a servant's whole folder or a CE's image file is removed from `support` in the FGA folder, and the deleted entries leave the list and this config's saved selection. An entry that could not be deleted stays, and an error is shown.
+4. **Delete** asks for confirmation. On **Delete**, a servant's whole folder or a CE's image file is removed from `support` in the FGA folder, and the deleted entries leave the list and the saved selection of every battle config. An entry that could not be deleted stays (a partly emptied folder keeps its preference), and an error is shown.
 
-**Built-in images** cannot be deleted: they are written back when the app is updated or when support images are extracted again from More options, so a long press on one only shows a message. Other battle configs that still list a deleted entry keep it; clear it there if needed. The NP level and friend name pickers have no delete.
+**Built-in images** cannot be deleted: they are written back when the app is updated or when support images are extracted again from More options, so a long press on one only shows a message. The NP level and friend name pickers have no delete.
 
 ## Naming language and search
 
