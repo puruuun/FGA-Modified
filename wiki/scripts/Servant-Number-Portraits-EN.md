@@ -20,6 +20,19 @@ Saving one or more images reloads the list and immediately checks the saved fold
 
 If a numbered folder already exists, opening from the picker saves images into that folder while keeping its name and existing preferences. The standalone **More options → Additional features** entry remains available as before.
 
+## Chip layout and deleting images
+
+The **Preferred Servants, Preferred CEs, NP level and friend name** pickers lay their choices out as chips. Servant and CE chips show a face and the name (a grey placeholder when there is no image), and a selected chip is filled. Tapping a chip toggles it; a long name may take a whole line.
+
+In the **Preferred Servants** and **Preferred CEs** pickers a **long press** on a chip deletes images from the support folder.
+
+1. A long press on a chip starts delete mode with that chip marked. The title row shows **N selected**, a close button at the start and a **Delete** button at the end; the Download images, Cancel and OK buttons are hidden.
+2. In delete mode a tap marks or unmarks a chip with a red border and a delete mark. Marks are separate from the preference: tapping never changes it. Unmarking the last chip leaves delete mode.
+3. Back or the close button leaves delete mode and deletes nothing.
+4. **Delete** asks for confirmation. On **Delete**, a servant's whole folder or a CE's image file is removed from `support` in the FGA folder, and the deleted entries leave the list and this config's saved selection. An entry that could not be deleted stays, and an error is shown.
+
+**Built-in images** cannot be deleted: they are written back when the app is updated or when support images are extracted again from More options, so a long press on one only shows a message. Other battle configs that still list a deleted entry keep it; clear it there if needed. The NP level and friend name pickers have no delete.
+
 ## Naming language and search
 
 Saved names use the **App Language selected in FGA**. When set to follow the system default, Android's effective locale is used. Korean uses KR data, Japanese uses JP, English uses NA, and Simplified/Traditional Chinese use CN/TW; if an entry has no localized name or uses an unsupported language, it falls back to the JP Japanese name.
