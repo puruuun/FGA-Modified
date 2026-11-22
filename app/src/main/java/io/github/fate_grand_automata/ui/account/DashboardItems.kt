@@ -80,9 +80,11 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            views.forEach { view -> key(view.group) {
+            views.forEachIndexed { index, view -> key(view.group) {
                 ItemGroupSection(
                     view, query, names, widthDp,
+                    // The block title already draws a line above the first group; the search field, when open, sits between.
+                    topDivider = index > 0 || searching,
                     flipped = view.group.name in flipped.split(','),
                     onFlip = { flipped = toggleName(flipped, view.group.name) },
                     showAll = view.group.name in expandedAll.split(','),
@@ -117,7 +119,7 @@ private fun toggleName(list: String, name: String): String =
 }
 
 @Composable private fun ItemGroupSection(
-    view: ItemGroupView, query: String, names: GameNameMap, widthDp: Float,
+    view: ItemGroupView, query: String, names: GameNameMap, widthDp: Float, topDivider: Boolean,
     flipped: Boolean, onFlip: () -> Unit, showAll: Boolean, onShowAll: () -> Unit,
 ) {
     val group = view.group
@@ -125,7 +127,7 @@ private fun toggleName(list: String, name: String): String =
     val searching = query.isNotBlank()
     val open = isItemGroupOpen(query, openByUser)
     Column(Modifier.fillMaxWidth().testTag("items-group:${group.name}")) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        if (topDivider) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.testTag("items-group-divider:${group.name}"))
         Row(
             Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(enabled = !searching, role = Role.Button) { onFlip() }
                 .testTag("items-group-header:${group.name}"),

@@ -100,6 +100,18 @@ class DashboardItemsUiTest {
         compose.onNodeWithTag("items-no-match").assertDoesNotExist()
     }
 
+    @Test fun onlyTheBlockTitleLineSitsAboveTheFirstGroupAndTheSearchFieldKeepsItsLine() {
+        show(1280)
+        val groups = compose.onAllNodes(tagStartingWith("items-group:")).fetchSemanticsNodes()
+        val tops = groups.associate { it.config[SemanticsProperties.TestTag].removePrefix("items-group:") to it.unclippedTop() }
+        val first = tops.minBy { it.value }.key
+        assertEquals("Materials", first)
+        compose.onNodeWithTag("items-group-divider:$first", useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(groups.size - 1, compose.onAllNodes(tagStartingWith("items-group-divider:"), useUnmergedTree = true).fetchSemanticsNodes().size)
+        search("이벤트")
+        compose.onNodeWithTag("items-group-divider:Event", useUnmergedTree = true).assertExists()
+    }
+
     @Test fun materialsListInTheReverseOfTheCapturedOrder() {
         show(1280)
         val y = (14 downTo 3L).map { compose.onNodeWithTag("item-row:${9100 + it}").performScrollTo().getUnclippedBoundsInRoot().top.value }
@@ -167,6 +179,8 @@ class DashboardItemsUiTest {
         compose.onNodeWithTag("item-table:Pieces").assertExists()
     }
 }
+
+private fun androidx.compose.ui.semantics.SemanticsNode.unclippedTop() = positionInRoot.y
 
 private fun tagStartingWith(prefix: String) = SemanticsMatcher("tag starts with $prefix") { node ->
     node.config.getOrNull(SemanticsProperties.TestTag)?.startsWith(prefix) == true
