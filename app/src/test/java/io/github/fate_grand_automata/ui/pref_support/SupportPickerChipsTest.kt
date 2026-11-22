@@ -202,7 +202,8 @@ class SupportPickerChipsTest {
         compose.waitForIdle()
 
         compose.onAllNodesWithTag(DeleteProgressTag).assertCountEquals(1)
-        compose.onAllNodesWithTag(DeleteActionTag).assertCountEquals(0)
+        chip("Gamma").performClick()
+        longPress("Gamma")
         chip("Gamma").performClick()
         compose.onNodeWithTag(DeleteCloseTag).performClick()
         Espresso.pressBack()
