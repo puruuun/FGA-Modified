@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
@@ -172,7 +175,7 @@ fun ChipFlow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 
 /**
  * The chips of a multi-select dialog. [isMarked] is `null` outside delete mode, [onLongClick] `null` when the
- * entries cannot be deleted. The list is not lazy, which a flow layout cannot be.
+ * entries cannot be deleted. With [fillWidth] the list is lazy; the flowing layout cannot be.
  */
 @Composable
 fun <T> FgaDialog.chipChoiceList(
@@ -185,6 +188,27 @@ fun <T> FgaDialog.chipChoiceList(
     template: @Composable RowScope.(T, Boolean) -> Unit
 ) {
     constrained { modifier ->
+        if (fillWidth) {
+            // One chip per line, so the list can be lazy: only the visible chips compose and load a thumbnail.
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                modifier = modifier.fillMaxWidth()
+            ) {
+                items(items) { item ->
+                    val marked = isMarked?.invoke(item)
+                    FaceChip(
+                        isSelected = isSelected(item),
+                        onClick = { onClick(item) },
+                        onLongClick = onLongClick?.let { { it(item) } },
+                        isMarked = marked,
+                        fillWidth = true
+                    ) {
+                        template(item, marked == true)
+                    }
+                }
+            }
+            return@constrained
+        }
         Column(
             modifier = modifier
                 .fillMaxWidth()

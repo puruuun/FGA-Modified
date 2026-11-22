@@ -27,7 +27,8 @@ import java.io.File
 class SupportEntryDeletionTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val root = File(context.cacheDir, "deletion-${System.nanoTime()}").apply { mkdirs() }
-    private val storage = StorageProvider(PrefsCore(PrefMaker(context.getSharedPreferences("del-${System.nanoTime()}", Context.MODE_PRIVATE)), context), context)
+    private val prefs = PrefsCore(PrefMaker(context.getSharedPreferences("del-${System.nanoTime()}", Context.MODE_PRIVATE)), context)
+    private val storage = StorageProvider(prefs, context)
         .also { StorageProvider::class.java.getDeclaredField("dirRoot").apply { isAccessible = true }.set(it, DocumentFile.fromFile(root)) }
 
     private fun file(path: String) = File(root, path).apply { parentFile!!.mkdirs(); writeBytes(byteArrayOf(1)) }
@@ -109,6 +110,47 @@ class SupportEntryDeletionTest {
         assertTrue(File(root, "support/servant/Arcueid/a.png").exists())
         assertFalse(File(root, "support/servant/Mine").exists())
         assertEquals(1, refreshed)
+    }
+
+    @Test
+    fun `every battle config loses exactly the servants that were really deleted`() {
+        layout()
+        prefs.battleConfigList.set(setOf("c1", "c2"))
+        for (id in listOf("c1", "c2")) {
+            val support = prefs.forBattleConfig(id).support
+            support.preferredServants.set(setOf("Alpha", "Beta", "Keep"))
+            support.preferredCEs.set(setOf("Grail.png", "Alpha"))
+            support.friendNames.set(setOf("Alpha"))
+        }
+        prefs.forBattleConfig("c2").support.preferredServants.set(setOf("Beta"))
+
+        // Beta stays because its delete fails; Alpha is removed everywhere it was listed.
+        val removed = storage.deleteSupportEntries(SupportImageKind.Servant, setOf("Alpha", "Beta")) { it.name != "Beta" && it.delete() }
+        assertEquals(setOf("Alpha"), removed)
+        assertEquals(setOf("Beta", "Keep"), prefs.forBattleConfig("c1").support.preferredServants.get())
+        assertEquals(setOf("Beta"), prefs.forBattleConfig("c2").support.preferredServants.get())
+        for (id in listOf("c1", "c2")) {
+            val support = prefs.forBattleConfig(id).support
+            assertEquals(setOf("Grail.png", "Alpha"), support.preferredCEs.get())
+            assertEquals(setOf("Alpha"), support.friendNames.get())
+        }
+    }
+
+    @Test
+    fun `a deleted CE leaves the preferred CEs of every config and not the preferred servants`() {
+        layout()
+        prefs.battleConfigList.set(setOf("c1", "c2"))
+        for (id in listOf("c1", "c2")) {
+            val support = prefs.forBattleConfig(id).support
+            support.preferredCEs.set(setOf("Grail.png", "Other.png"))
+            support.preferredServants.set(setOf("Grail.png"))
+        }
+        assertEquals(setOf("Grail.png"), storage.deleteSupportEntries(SupportImageKind.CE, setOf("Grail.png")))
+        for (id in listOf("c1", "c2")) {
+            val support = prefs.forBattleConfig(id).support
+            assertEquals(setOf("Other.png"), support.preferredCEs.get())
+            assertEquals(setOf("Grail.png"), support.preferredServants.get())
+        }
     }
 
     @Test(expected = IllegalArgumentException::class)

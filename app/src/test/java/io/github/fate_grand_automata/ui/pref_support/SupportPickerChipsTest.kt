@@ -40,6 +40,7 @@ import io.github.fate_grand_automata.ui.dialog.FaceThumbnails
 import io.github.fate_grand_automata.ui.dialog.ImageDelete
 import io.github.fate_grand_automata.ui.prefs.DeleteActionTag
 import io.github.fate_grand_automata.ui.prefs.DeleteCloseTag
+import io.github.fate_grand_automata.ui.prefs.DeleteProgressTag
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.util.SupportImageExtractor
 import org.junit.Assert.assertEquals
@@ -72,7 +73,12 @@ class SupportPickerChipsTest {
     }
 
     // Stands for the user's image folder. It reports back only entries it really removed, like the real storage.
-    private class Store(names: Collection<String>, val builtIn: Set<String> = emptySet(), val failing: Set<String> = emptySet()) {
+    private class Store(
+        names: Collection<String>,
+        val builtIn: Set<String> = emptySet(),
+        val failing: Set<String> = emptySet(),
+        val gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    ) {
         val files = names.toMutableSet()
         var list by mutableStateOf(names.associateWith { it })
         var deleteCalls = 0
@@ -81,6 +87,7 @@ class SupportPickerChipsTest {
             isProtected = { it in builtIn },
             delete = { requested ->
                 deleteCalls++
+                gate?.await()
                 val gone = requested.filter { it in files && it !in failing }.toSet()
                 files -= gone
                 list = files.sorted().associateWith { it }
@@ -180,6 +187,52 @@ class SupportPickerChipsTest {
         assertEquals(one.top, two.top, 0.5f)
         assertTrue(two.left > one.right - 1f)
         assertTrue(one.width / 1.5f < 120f)
+    }
+
+    @Test
+    fun `while a delete runs nothing else can change the marks or start another delete`() {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val pref = prefsCore("chips627_busy").forBattleConfig("t").support.preferredServants
+        pref.set(setOf("Alpha", "Beta"))
+        val store = Store(listOf("Alpha", "Beta", "Gamma"), gate = gate)
+        open(store, pref)
+        longPress("Beta")
+        compose.onNodeWithTag(DeleteActionTag).performClick()
+        confirmDelete()
+        compose.waitForIdle()
+
+        compose.onAllNodesWithTag(DeleteProgressTag).assertCountEquals(1)
+        compose.onAllNodesWithTag(DeleteActionTag).assertCountEquals(0)
+        chip("Gamma").performClick()
+        compose.onNodeWithTag(DeleteCloseTag).performClick()
+        Espresso.pressBack()
+        compose.waitForIdle()
+        compose.onNodeWithText("1 selected").assertExists()
+        assertEquals(1, store.deleteCalls)
+
+        gate.complete(Unit)
+        compose.waitForIdle()
+        assertEquals(1, store.deleteCalls)
+        assertEquals(setOf("Alpha", "Gamma"), store.files)
+        assertEquals(setOf("Alpha"), pref.get())
+        compose.onNodeWithText("OK").assertExists()
+        compose.onAllNodesWithTag(DeleteProgressTag).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a long servant list composes and loads only the visible chips`() {
+        val pref = prefsCore("chips627_lazy").forBattleConfig("t").support.preferredServants
+        var loads = 0
+        val counting = FaceThumbnails { loads++; null }
+        val names = (1..300).map { "Servant %03d".format(it) }
+        compose.setContent {
+            FGATheme { pref.SupportSelectPreference("Servants", names.associateWith { it }, thumbnails = counting) }
+        }
+        compose.onNodeWithText("Servants").performClick()
+        compose.waitForIdle()
+        val chips = compose.onAllNodes(isToggleable() and hasAnyAncestor(isDialog())).fetchSemanticsNodes().size
+        assertTrue("$chips chips composed", chips in 1..60)
+        assertTrue("$loads thumbnails requested", loads in 1..60)
     }
 
     // Delete mode

@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import kotlinx.coroutines.withContext
 
 const val DeleteCloseTag = "deleteModeClose"
 const val DeleteActionTag = "deleteModeAction"
+const val DeleteProgressTag = "deleteModeProgress"
 
 @Composable
 fun <T> multiSelectListDialog(
@@ -62,15 +65,18 @@ fun <T> multiSelectListDialog(
         var current by remember(selected) { mutableStateOf(carried[0] ?: selected).also { carried[0] = null } }
         // Null is normal mode; a set is delete mode with those entries marked.
         var marked by remember { mutableStateOf<Set<T>?>(null) }
+        // True while the files are being deleted: nothing else may change the marks or start a second delete.
+        var deleting by remember { mutableStateOf(false) }
         val confirm = FgaDialog()
 
-        BackHandler(enabled = marked != null) { marked = null }
+        BackHandler(enabled = marked != null) { if (!deleting) marked = null }
 
         fun refuse() {
             Toast.makeText(context, R.string.support_picker_builtin_locked, Toast.LENGTH_SHORT).show()
         }
 
         fun mark(item: T) {
+            if (deleting) return
             if (imageDelete?.isProtected?.invoke(item) == true) return refuse()
             val next = marked.orEmpty().toggle(item)
             marked = next.ifEmpty { null }
@@ -82,7 +88,8 @@ fun <T> multiSelectListDialog(
         } else {
             DeleteModeTitle(
                 count = markedNow.size,
-                onClose = { marked = null },
+                deleting = deleting,
+                onClose = { if (!deleting) marked = null },
                 onDelete = { confirm.show() }
             )
         }
@@ -90,7 +97,7 @@ fun <T> multiSelectListDialog(
         chipChoiceList(
             items = entries.keys.toList(),
             isSelected = { it in current },
-            onClick = { if (marked == null) current = current.toggle(it) else mark(it) },
+            onClick = { if (!deleting) { if (marked == null) current = current.toggle(it) else mark(it) } },
             onLongClick = imageDelete?.let { { item -> mark(item) } },
             isMarked = markedNow?.let { set -> { it in set } },
             // The owner wants the pickers with faces (servants, CEs) one chip per line; the others flow.
@@ -113,8 +120,10 @@ fun <T> multiSelectListDialog(
             buttons(
                 okLabel = stringResource(R.string.battle_config_list_delete),
                 onSubmit = {
+                    if (deleting) return@buttons
                     val requested = marked.orEmpty()
                     val stored = selected
+                    deleting = true
                     scope.launch {
                         // Not cancellable: once a file is gone the stored selection must lose it too.
                         withContext(NonCancellable) {
@@ -132,6 +141,7 @@ fun <T> multiSelectListDialog(
                                 Toast.makeText(context, R.string.support_picker_delete_failed, Toast.LENGTH_SHORT).show()
                             }
                             marked = null
+                            deleting = false
                         }
                     }
                 }
@@ -143,7 +153,7 @@ fun <T> multiSelectListDialog(
 }
 
 @Composable
-private fun DeleteModeTitle(count: Int, onClose: () -> Unit, onDelete: () -> Unit) {
+private fun DeleteModeTitle(count: Int, deleting: Boolean, onClose: () -> Unit, onDelete: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 8.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
@@ -156,13 +166,17 @@ private fun DeleteModeTitle(count: Int, onClose: () -> Unit, onDelete: () -> Uni
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.weight(1f)
         )
-        HeadingButton(
-            text = stringResource(R.string.battle_config_list_delete),
-            onClick = onDelete,
-            isDanger = true,
-            icon = icon(Icons.Default.Delete),
-            modifier = Modifier.testTag(DeleteActionTag)
-        )
+        if (deleting) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp).testTag(DeleteProgressTag), strokeWidth = 2.dp)
+        } else {
+            HeadingButton(
+                text = stringResource(R.string.battle_config_list_delete),
+                onClick = onDelete,
+                isDanger = true,
+                icon = icon(Icons.Default.Delete),
+                modifier = Modifier.testTag(DeleteActionTag)
+            )
+        }
     }
 }
 
