@@ -1036,6 +1036,15 @@
     <string name="capture_outside_title">스크립트 밖 변화</string>
     <string name="capture_outside_totals">전체 변화</string>
     <string name="capture_outside_sources">출처별 변화</string>
+    <string name="capture_login_received">받은 내역</string>
+    <string name="capture_login_friend">프렌드</string>
+    <string name="capture_login_follow">팔로우</string>
+    <string name="capture_login_recommend">추천 서포트</string>
+    <string name="capture_login_top">가장 많이 번 서번트</string>
+    <string name="capture_login_top_normal">통상</string>
+    <string name="capture_login_top_event">이벤트</string>
+    <string name="capture_login_top_grand">관위</string>
+    <string name="capture_login_top_none">없음</string>
     <string name="capture_outside_gained">획득 (+)</string>
     <string name="capture_outside_used">사용 (−)</string>
     <string name="capture_source_gift_box">선물함</string>

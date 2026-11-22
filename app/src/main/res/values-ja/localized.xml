@@ -792,6 +792,15 @@
     <string name="capture_outside_title">スクリプト外の変化</string>
     <string name="capture_outside_totals">合計</string>
     <string name="capture_outside_sources">入手・使用先別</string>
+    <string name="capture_login_received">獲得内訳</string>
+    <string name="capture_login_friend">フレンド</string>
+    <string name="capture_login_follow">フォロー</string>
+    <string name="capture_login_recommend">おすすめサポート</string>
+    <string name="capture_login_top">最も稼いだサーヴァント</string>
+    <string name="capture_login_top_normal">通常</string>
+    <string name="capture_login_top_event">イベント</string>
+    <string name="capture_login_top_grand">冠位</string>
+    <string name="capture_login_top_none">なし</string>
     <string name="capture_outside_gained">獲得 (+)</string>
     <string name="capture_outside_used">使用 (−)</string>
     <string name="capture_source_gift_box">プレゼントボックス</string>
