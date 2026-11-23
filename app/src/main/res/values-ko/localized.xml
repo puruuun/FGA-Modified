@@ -1559,7 +1559,9 @@
     <string name="clear_all">"모두 해제"</string>
     <string name="capture_support_filter_header">"실험 기능"</string>
     <string name="capture_support_filter">"서포트 목록 필터 (실험)"</string>
-    <string name="capture_support_filter_summary">"로그 수집 중에 조건에 맞지 않는 서포트를 게임이 받는 목록에서 뺍니다. 게임이 서버로 보내는 내용은 바꾸지 않습니다."</string>
+    <string name="capture_support_filter_summary">"로그 수집 중에 조건에 맞는 서포트가 없는 사람은 게임이 받는 목록에서 빼고, 남는 사람의 나머지 서번트 칸은 빈 칸으로 보이게 합니다. 게임이 서버로 보내는 내용은 바꾸지 않습니다."</string>
     <string name="capture_support_filter_servants">"서번트: %1$d개 선택"</string>
     <string name="capture_support_filter_ces">"예장: %1$d개 선택 (선택 사항)"</string>
+    <string name="capture_support_filter_last">"마지막 목록: %1$d명 중 %2$d명, 서번트 칸 %3$d개 중 %4$d개"</string>
+    <string name="capture_support_filter_last_unchanged">"마지막 목록: 바꾸지 않음"</string>
 </resources>

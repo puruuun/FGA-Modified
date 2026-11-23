@@ -27,6 +27,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.CaptureTracker
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.capture.GameNames
+import io.github.fate_grand_automata.capture.SupportListLastResult
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.FriendFilter
 import io.github.fate_grand_automata.scripts.capture.FriendFormation
@@ -50,6 +51,20 @@ private class SupportFilterOptions(
 fun LazyListScope.supportListFilterItems(prefs: PrefsCore) {
     item { PreferenceGroupHeader(stringResource(R.string.capture_support_filter_header)) }
     item { SupportListFilterSettings(prefs) }
+}
+
+/** The last follower/list result of this app process, counts only; nothing is shown before the first list. */
+@Composable
+internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
+    val last by SupportListLastResult.last.collectAsStateWithLifecycle()
+    val text = when (val result = last) {
+        null -> return
+        is SupportListLastResult.Result.Filtered -> result.counts.let {
+            stringResource(R.string.capture_support_filter_last, it.followersBefore, it.followersAfter, it.slotsBefore, it.slotsAfter)
+        }
+        SupportListLastResult.Result.Unchanged -> stringResource(R.string.capture_support_filter_last_unchanged)
+    }
+    Text(text, modifier, style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -80,6 +95,7 @@ private fun SupportListFilterSettings(prefs: PrefsCore) {
             summary = stringResource(R.string.capture_support_filter_summary),
             onClick = { enabled = !enabled },
         ) { Switch(checked = enabled, onCheckedChange = { enabled = it }, colors = FGASwitchColors()) }
+        SupportListLastResultLine(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { picker = false }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.capture_support_filter_servants, servants.size))

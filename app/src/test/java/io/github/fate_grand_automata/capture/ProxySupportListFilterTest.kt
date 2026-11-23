@@ -5,6 +5,7 @@ import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.HttpHead
 import io.github.fate_grand_automata.scripts.capture.HttpReader
 import io.github.fate_grand_automata.scripts.capture.SingleUseCa
+import io.github.fate_grand_automata.scripts.capture.SupportListCounts
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
 import io.github.fate_grand_automata.scripts.capture.SupportListFilter
 import kotlinx.serialization.json.Json
@@ -293,6 +294,41 @@ class ProxySupportListFilterTest {
             val e = exchange(upstream, criteria)
             assertContentEquals(upstream, e.clientWire)
         }
+    }
+
+    private fun followerWithOther(id: String) = follower(id, 1, 100).replaceFirst(
+        """{"supportDeckId":1,"classId":2,"svtId":0,""",
+        """{"supportDeckId":1,"classId":2,"svtId":999,""",
+    )
+
+    private val listWithOtherServant = """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[""" +
+        """${followerWithOther("a")},${follower("b", 2)}]}]},"serverTime":1}}"""
+
+    @Test(timeout = 20000)
+    fun aSlotThatDoesNotMatchIsBlankedInTheBodyTheGameGetsAndTheCaptureKeepsTheOriginal() {
+        val e = exchange(response(listWithOtherServant.toByteArray()), criteria)
+        val slots = kept(e.body)[0].jsonObject["userSvtLeaderHash"]!!.jsonArray
+        assertEquals(27, slots.size)
+        assertEquals("100", slots[1].jsonObject["svtId"]!!.toString())
+        assertEquals("0", slots[2].jsonObject["svtId"]!!.toString())
+        assertEquals(1, kept(e.body).size)
+        assertContentEquals(listWithOtherServant.toByteArray(), e.captured[0])
+    }
+
+    @Test(timeout = 20000)
+    fun lastResultHoldsTheCountsAfterAFilteredListAndUnchangedAfterAPassThrough() {
+        SupportListLastResult.resetForTesting()
+        assertNull(SupportListLastResult.last.value)
+        exchange(response(listWithOtherServant.toByteArray()), criteria)
+        assertEquals(
+            SupportListLastResult.Result.Filtered(SupportListCounts(2, 1, 2, 1)),
+            SupportListLastResult.last.value,
+        )
+        // Nothing to leave out or blank: the original bytes go through.
+        val untouched = """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[${follower("a", 1, 100)}]}]},"serverTime":1}}"""
+        val upstream = response(untouched.toByteArray())
+        assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+        assertEquals(SupportListLastResult.Result.Unchanged, SupportListLastResult.last.value)
     }
 
     @Test(timeout = 20000)

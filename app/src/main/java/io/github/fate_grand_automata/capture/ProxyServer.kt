@@ -853,12 +853,17 @@ class ProxyServer(
             if (filtered != null && head != null) {
                 val c = filtered.counts
                 Timber.d(
-                    "Capture: support list filter followers %d>%d",
-                    c.followersBefore, c.followersAfter,
+                    "Capture: support list filter followers %d>%d filled slots %d>%d",
+                    c.followersBefore, c.followersAfter, c.slotsBefore, c.slotsAfter,
                 )
+                SupportListLastResult.filtered(c)
                 head + filtered.wire
-            } else null
+            } else {
+                SupportListLastResult.unchanged()
+                null
+            }
         } catch (_: Throwable) {
+            SupportListLastResult.unchanged()
             null
         }
         if (replacement != null) {

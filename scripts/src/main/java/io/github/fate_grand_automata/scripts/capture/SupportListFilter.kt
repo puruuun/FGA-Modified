@@ -3,8 +3,10 @@ package io.github.fate_grand_automata.scripts.capture
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.longOrNull
 import java.io.ByteArrayOutputStream
 import java.util.zip.Deflater
@@ -14,17 +16,26 @@ import java.util.zip.GZIPOutputStream
 /** The servants (and optionally CEs) the owner wants to see in the support list; matched by svtId. */
 data class SupportListCriteria(val servantIds: Set<Long>, val ceIds: Set<Long> = emptySet())
 
-/** Counts only, for the debug log: no ids and no names. */
-data class SupportListCounts(val followersBefore: Int, val followersAfter: Int)
+/**
+ * Counts only, for the debug log and the settings line: no ids and no names. Slots are the filled ones
+ * (svtId > 0) of the followers that are filtered (type 1 and 2).
+ */
+data class SupportListCounts(
+    val followersBefore: Int,
+    val followersAfter: Int,
+    val slotsBefore: Int = 0,
+    val slotsAfter: Int = 0,
+)
 
 /** [wire] is the body as it goes to the game: filtered and encoded like the original. */
 class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
 
 /**
- * Experiment (#636): leaves the followers that have no matching support out of a follower/list response.
- * It only removes whole followers (friends and non-friends alike); a follower that stays is the original entry,
- * every slot of it included, because the game looks a slot up by deck and class and shows nothing when one is missing. Every call returns null ("unchanged") on anything unexpected, so the caller
- * forwards the original bytes; nothing is thrown.
+ * Experiment (#636): in a follower/list response, leaves out the followers that have no matching support and,
+ * in the followers that stay, replaces every filled slot that does not match with the server's own empty-slot
+ * form (see [blankSlot]). A slot that matches, a slot that is already empty and every other key stay as received.
+ * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
+ * nothing is thrown.
  *
  * The result is the compact JSON of the parsed tree. Key order is kept (the tree keeps insertion order) and
  * numbers are written as the digits they were read with, but whitespace is dropped and string escapes are
@@ -72,7 +83,7 @@ object SupportListFilter {
         return SupportListFiltered(encoded, filtered.second)
     }
 
-    /** The filtered tree and its counts, or null when nothing was left out or the shape is not the expected one. */
+    /** The filtered tree and its counts, or null when nothing was changed or the shape is not the expected one. */
     internal fun filter(root: JsonObject, criteria: SupportListCriteria): Pair<JsonObject, SupportListCounts>? {
         if (criteria.servantIds.isEmpty()) return null
         val cache = root["cache"] as? JsonObject ?: return null
@@ -80,31 +91,55 @@ object SupportListFilter {
         val followers = updated["userFollower"] as? JsonArray ?: return null
         var before = 0
         var after = 0
-        // A follower with no readable slot hash is a shape this code has not seen: it must not be counted as empty and removed.
+        var slotsBefore = 0
+        var slotsAfter = 0
+        var changed = false
+        // A follower or slot of a shape this code has not seen must not be counted as empty, removed or blanked.
         var unknownShape = false
         val newFollowers = followers.map { follower ->
             val entry = follower as? JsonObject ?: return@map follower
             val infos = entry["followerInfo"] as? JsonArray ?: return@map follower
-            val kept = infos.filter { info ->
-                val candidate = info as? JsonObject ?: return@filter true
+            var entryChanged = false
+            val kept = ArrayList<JsonElement>(infos.size)
+            for (info in infos) {
+                val candidate = info as? JsonObject
+                if (candidate == null) {
+                    kept += info
+                    continue
+                }
                 before++
                 // Story quests may send other kinds (NPC, fixed support) that the game needs; only friends and non-friends are filtered.
                 if (!isFilterable(candidate)) {
                     after++
-                    return@filter true
+                    kept += candidate
+                    continue
                 }
-                val result = matches(candidate, criteria)
-                if (result == null) unknownShape = true
-                val keep = result != false
-                if (keep) after++
-                keep
+                val result = reduce(candidate, criteria)
+                if (result == null) {
+                    unknownShape = true
+                    kept += candidate
+                    continue
+                }
+                slotsBefore += result.filledBefore
+                if (!result.anyMatch) {
+                    entryChanged = true
+                    changed = true
+                    continue
+                }
+                after++
+                slotsAfter += result.filledAfter
+                if (result.follower !== candidate) {
+                    entryChanged = true
+                    changed = true
+                }
+                kept += result.follower
             }
-            if (kept.size == infos.size) entry else JsonObject(entry + ("followerInfo" to JsonArray(kept)))
+            if (entryChanged) JsonObject(entry + ("followerInfo" to JsonArray(kept))) else entry
         }
-        if (unknownShape || after == before) return null
+        if (unknownShape || !changed) return null
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
-        return JsonObject(root + ("cache" to newCache)) to SupportListCounts(before, after)
+        return JsonObject(root + ("cache" to newCache)) to SupportListCounts(before, after, slotsBefore, slotsAfter)
     }
 
     /** type 1 (friend) and 2 (not a friend) as a JSON integer; a string "1" or a missing type is not. */
@@ -113,39 +148,97 @@ object SupportListFilter {
         return !type.isString && type.longOrNull in FILTERED_TYPES
     }
 
-    /** True when one slot of the follower passes, false when none does, null when no slot hash is readable. */
-    private fun matches(follower: JsonObject, criteria: SupportListCriteria): Boolean? {
+    private class Reduced(val follower: JsonObject, val anyMatch: Boolean, val filledBefore: Int, val filledAfter: Int)
+
+    /**
+     * The follower with its non-matching filled slots blanked, or null when no slot hash is readable or a slot
+     * has an unexpected shape. When nothing in it changes, [Reduced.follower] is the same object that came in.
+     */
+    private fun reduce(follower: JsonObject, criteria: SupportListCriteria): Reduced? {
         var readable = false
-        var any = false
+        var anyMatch = false
+        var filledBefore = 0
+        var filledAfter = 0
+        var failed = false
+        var changed = false
+        val entries = LinkedHashMap<String, JsonElement>(follower)
+
+        fun reduceSlot(slot: JsonElement, grand: Boolean): JsonElement {
+            val row = slot as? JsonObject
+            val svtId = row?.long("svtId")
+            if (row == null || svtId == null) {
+                failed = true
+                return slot
+            }
+            if (svtId <= 0L) return slot
+            filledBefore++
+            if (passes(row, grand, criteria)) {
+                filledAfter++
+                anyMatch = true
+                return slot
+            }
+            changed = true
+            return blankSlot(row)
+        }
+
         for (key in SLOT_HASHES) {
             val grand = key == GRAND_HASH
-            val slots = when (val hash = follower[key]) {
-                is JsonArray -> hash
+            entries[key] = when (val hash = follower[key]) {
+                is JsonArray -> JsonArray(hash.map { reduceSlot(it, grand) })
                 // A hash keyed by deck or seat.
-                is JsonObject -> hash.values
+                is JsonObject -> JsonObject(hash.mapValues { reduceSlot(it.value, grand) })
                 else -> continue
             }
             readable = true
-            if (slots.any { passes(it, grand, criteria) }) any = true
         }
-        return if (readable) any else null
+        if (!readable || failed) return null
+        // The rebuilt copy is only needed when a slot was blanked in a follower that stays.
+        return Reduced(if (changed && anyMatch) JsonObject(entries) else follower, anyMatch, filledBefore, filledAfter)
     }
 
-    /**
-     * A slot that is not a readable object does not pass, and neither does an empty one: the server sends every
-     * deck x class slot, with svtId 0 where nobody is set.
-     * Grand slots hold their CEs in equipTarget1 and equipTarget3; equipTarget2 is the bond CE and stays out of the match.
-     */
-    private fun passes(slot: JsonElement, grand: Boolean, criteria: SupportListCriteria): Boolean {
-        val row = slot as? JsonObject ?: return false
+    /** A filled slot matches when its servant is chosen and, if CEs are chosen, one of its CEs is. */
+    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria): Boolean {
         val svtId = row.long("svtId")
         if (svtId == null || svtId <= 0L || svtId !in criteria.servantIds) return false
         if (criteria.ceIds.isEmpty()) return true
+        // Grand slots hold their CEs in equipTarget1 and equipTarget3; equipTarget2 is the bond CE and stays out of the match.
         val ceKeys = if (grand) listOf("equipTarget1", "equipTarget3") else listOf("equipTarget1", "equipTarget2")
         return ceKeys.any { ((row[it] as? JsonObject)?.long("svtId")) in criteria.ceIds }
     }
 
-    private fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.longOrNull
+    private val SLOT_OWN_KEYS = setOf("userId", "supportDeckId", "classId", "updatedAt")
+    private val LIMIT_COUNT_KEYS = setOf("dispLimitCount", "imageLimitCount", "commandCardLimitCount", "iconLimitCount", "portraitLimitCount")
+
+    /**
+     * The server's own form of a slot with no servant, built from the slot it replaces: same keys in the same order;
+     * the slot's own userId, supportDeckId, classId and updatedAt stay, the five *LimitCount are 1, commandCardParam is
+     * five zeros and every other value is blanked by type, nested objects included. The game already shows a follower
+     * whose slot has this form as "no support".
+     */
+    internal fun blankSlot(slot: JsonObject): JsonObject = JsonObject(
+        slot.mapValues { (key, value) ->
+            when {
+                key in SLOT_OWN_KEYS -> value
+                key in LIMIT_COUNT_KEYS -> JsonPrimitive(1)
+                key == "commandCardParam" -> JsonArray(List(5) { JsonPrimitive(0) })
+                else -> blankValue(value)
+            }
+        },
+    )
+
+    private fun blankValue(value: JsonElement): JsonElement = when (value) {
+        is JsonNull -> JsonNull
+        is JsonPrimitive -> when {
+            value.isString -> JsonPrimitive("")
+            value.booleanOrNull != null -> JsonPrimitive(false)
+            else -> JsonPrimitive(0)
+        }
+        is JsonArray -> JsonArray(emptyList())
+        is JsonObject -> JsonObject(value.mapValues { blankValue(it.value) })
+    }
+
+    /** An integer as a JSON number; the string "100" is not one. */
+    private fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.takeIf { !it.isString }?.longOrNull
 
     private val BODY_BOUND_HEADERS = setOf("trailer", "etag", "content-md5", "digest")
     private val SUPPORTED_ENCODINGS = setOf("", "identity", "gzip", "x-gzip", "deflate")

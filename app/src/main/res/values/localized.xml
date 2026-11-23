@@ -1588,7 +1588,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_col_card_boost">Card boost</string>
     <string name="capture_support_filter_header">"Experimental"</string>
     <string name="capture_support_filter">"Support list filter (experimental)"</string>
-    <string name="capture_support_filter_summary">"While log collection runs, support servants that do not match are left out of the list the game receives. Nothing the game sends is changed."</string>
+    <string name="capture_support_filter_summary">"While log collection runs, followers with no matching support are left out of the list the game receives, and the other servant slots of the followers that stay are shown as empty. Nothing the game sends is changed."</string>
     <string name="capture_support_filter_servants">"Servants: %1$d chosen"</string>
     <string name="capture_support_filter_ces">"CEs: %1$d chosen (optional)"</string>
+    <string name="capture_support_filter_last">"Last list: %2$d of %1$d people, %4$d of %3$d servant slots"</string>
+    <string name="capture_support_filter_last_unchanged">"Last list: not changed"</string>
 </resources>
