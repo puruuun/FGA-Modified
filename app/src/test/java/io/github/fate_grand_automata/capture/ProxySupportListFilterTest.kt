@@ -37,11 +37,15 @@ import kotlin.test.assertTrue
 class ProxySupportListFilterTest {
     private val gameHost = CaptureNames.JP_HOST
 
-    private fun slot(svt: Long) = """{"supportDeckId":1,"classId":1,"svtId":$svt,"equipTarget1":{"svtId":0}}"""
+    private fun slot(svt: Long, deck: Int, cls: Int) = """{"supportDeckId":$deck,"classId":$cls,"svtId":$svt,"equipTarget1":{"svtId":0}}"""
+
+    private fun hash(svt: Long = 0) = (1..3).flatMap { d -> (0..8).map { c -> slot(if (d == 1 && c == 1) svt else 0, d, c) } }.joinToString(",")
+
+    private fun follower(id: String, type: Int, svt: Long = 0) =
+        """{"type":$type,"userId":"$id","mainSupportDeckIds":[1,2,3],"userSvtLeaderHash":[${hash(svt)}],"eventUserSvtLeaderHash":[${hash()}],"userSvtGrandHash":[]}"""
 
     private val listJson = """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[""" +
-        """{"type":1,"userId":"a","userSvtLeaderHash":[${slot(100)},${slot(999)}]},""" +
-        """{"type":1,"userId":"b","userSvtLeaderHash":[${slot(999)}]}]}]},"serverTime":1},"sign":"s"}"""
+        """${follower("a", 1, 100)},${follower("b", 1)},${follower("c", 2)}]}]},"serverTime":1}}"""
 
     private val criteria = SupportListCriteria(setOf(100L))
 
@@ -296,7 +300,7 @@ class ProxySupportListFilterTest {
         val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), criteria)
         assertEquals(1, e.captured.size)
         assertContentEquals(gzip(listJson), e.captured[0])
-        assertEquals(2, kept(e.captured[0], "gzip").size)
+        assertEquals(3, kept(e.captured[0], "gzip").size)
     }
 
     @Test(timeout = 20000)

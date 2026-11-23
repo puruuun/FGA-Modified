@@ -853,8 +853,8 @@ class ProxyServer(
             if (filtered != null && head != null) {
                 val c = filtered.counts
                 Timber.d(
-                    "Capture: support list filter friends %d>%d slots %d>%d",
-                    c.friendsBefore, c.friendsAfter, c.slotsBefore, c.slotsAfter,
+                    "Capture: support list filter followers %d>%d",
+                    c.followersBefore, c.followersAfter,
                 )
                 head + filtered.wire
             } else null
