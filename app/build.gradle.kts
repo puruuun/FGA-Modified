@@ -1186,7 +1186,11 @@ val debugSigningOnly: Provider<Boolean> = providers.environmentVariable("CI").ma
 }
 
 android {
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

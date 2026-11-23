@@ -2,23 +2,23 @@
 appcompat_version = "1.8.0"
 assertk_version = "0.28.1"
 constraintlayout_version = "2.2.2"
-core_ktx_version = "1.19.0"
+core_ktx_version = "1.19.1"
 documentfile_version = "1.1.0"
 flow_preferences_version = "1.9.1"
 hilt_navigation_compose_version = "1.4.0"
 kotlinx_coroutines_core_version = "1.11.0"
-kotlinx_serialization_version = "1.11.0"
-lifecycle_version = "2.11.0"
+kotlinx_serialization_version = "1.13.0"
+lifecycle_version = "2.11.1"
 hilt_version = "2.60.1"
 
 
-kotlin_version = "2.4.10"
-ksp_version = "2.3.11"
+kotlin_version = "2.4.21"
+ksp_version = "2.3.14"
 
-agp_version = "9.4.0"
+agp_version = "9.5.2"
 
 
-ben-manes_versions = "0.61.0"
+ben-manes_versions = "0.67.0"
 accompanist_version = "0.37.3"
 
 google_android_play_version = "2.1.0"
@@ -28,7 +28,7 @@ activity_version = "1.13.0"
 glance_version = "1.2.0"
 core_remoteviews_version = "1.1.0"
 work_version = "2.12.0"
-mockk_version = "1.14.11"
+mockk_version = "1.14.12"
 
 opencv_version = "4.11.0"
 # JVM-only fixture tests; never packaged in Android builds.
@@ -37,12 +37,12 @@ opencv_jvm_version = "4.9.0-0"
 opencv_aligned_libcxx_version = "4.14.0"
 # Resolved only with -Pfga.native=true -Pfga.native.ort=true (issue #535): its libonnxruntime.so
 # is what native/fga-ffi links against, and it is then packaged in every variant built, as
-# libfga_ffi.so is with fga.native. Neither property is ever set for a release build. The same
+# libfga_ffi.so is with fga.native. -Pfga.native.ort is never set for a release build. The same
 # 1.31 minor as ort 2.0.0-rc.15 and the PC runtime. Version and SHA-256 are pinned in three
 # places that change together: here, app/build.gradle.kts (extractOnnxRuntime) and
 # .github/workflows/native-ci.yml.
 onnxruntime_android_version = "1.31.0"
-nav3_core_version = "1.1.7"
+nav3_core_version = "1.2.2"
 
 reorderable_version = "3.1.0"
 tesseract4android_version = "4.9.0"
@@ -51,7 +51,7 @@ timber_version = "5.0.1"
 shizuku_version = "13.1.5"
 libsu_version = "6.0.0"
 
-compose_bom_version = "2026.08.00"
+compose_bom_version = "2026.11.01"
 
 
 coil_version = "3.6.3"

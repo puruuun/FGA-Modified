@@ -67,7 +67,9 @@ SUFFIX = '_named' if NAMED else ''
 
 
 def asset(server, n):
-    return os.path.join(R, 'app', 'src', 'main', 'assets', server, n + '.png')
+    # Like the app's ImageLoader: a server without its own copy uses En's (Kr/Jp rank_up since v3081)
+    path = os.path.join(R, 'app', 'src', 'main', 'assets', server, n + '.png')
+    return path if os.path.exists(path) else os.path.join(R, 'app', 'src', 'main', 'assets', 'En', n + '.png')
 
 
 def pick_shot(server, n):

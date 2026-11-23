@@ -598,7 +598,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="battle_config_party_default">"Default"</string>
     <string name="battle_config_materials_none">"Don't count"</string>
     <string name="battle_config_notes_hint">"Add a note"</string>
-    <string name="battle_config_cmd_not_set">"Not recorded — open the Skill Maker"</string>
+    <string name="battle_config_cmd_not_set">"Not recorded — open the Command Editor"</string>
     <string name="battle_config_cmd_invalid">"Invalid skill command: %1$s"</string>
     <string name="save">Save</string>
     <string name="reset">Reset</string>
@@ -1184,7 +1184,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_copy">Copy friend code</string>
     <string name="dashboard_snapshot">Snapshot</string>
     <string name="dashboard_updated">Last update</string>
-    <string name="dashboard_carry_ap">Carry-over AP</string>
     <string name="dashboard_command_spell">Command spell recovery</string>
     <string name="dashboard_servants_others">Servants + other</string>
     <string name="dashboard_storage_detail">Servants / other (EXP, Fou, etc.)</string>

@@ -82,13 +82,17 @@ class DashboardRound2UiTest {
     private fun assertApInHeader(width: Int, section: Int) {
         show(width, withGame("""{"actMax":144,"actRecoverAt":1,"carryOverActPoint":12}"""), section = section)
         val inHeader = hasAnyAncestor(hasTestTag("dashboard-account-header"))
-        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
-        compose.onNode(hasText("144") and inHeader and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag("header-ap-bar").assertDoesNotExist()
         if (width >= 840) {
+            compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
+            compose.onNode(hasText("144") and inHeader and hasTestTag("header-ap-current"), useUnmergedTree = true).assertExists()
             compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).assertExists()
-            compose.onNodeWithTag("header-ap-carry", useUnmergedTree = true).assertTextEquals("이월 AP 12")
-        } else compose.onNodeWithTag("header-ap-detail").assertTextEquals("AP 144 / 144 · 가득 참 · 이월 AP 12")
+        } else {
+            compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
+            compose.onNode(hasText("144") and inHeader and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
+            compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithTag("header-ap-detail").assertTextEquals("AP 144 / 144 · 가득 참")
+        }
     }
 
     @Test fun apIsInTheHeaderOnWideOnOverview() = assertApInHeader(1280, 0)
@@ -96,11 +100,10 @@ class DashboardRound2UiTest {
     @Test fun apStaysInTheHeaderWhenAnotherSectionIsOpenOnWide() = assertApInHeader(1280, 4)
     @Test fun apStaysInTheHeaderWhenAnotherSectionIsOpenOnNarrow() = assertApInHeader(360, 4)
 
-    @Test fun theApLineShowsTheClockTimeAndCarryOverTogether() {
+    @Test fun theWideApDetailShowsTheLabelAndTheClockTime() {
         val recoverAt = System.currentTimeMillis() / 1000 + 3 * 3600
         show(1280, withGame("""{"actMax":144,"actRecoverAt":$recoverAt,"carryOverActPoint":7}"""))
         compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).assertExists()
-        compose.onNode(hasTestTag("header-ap-detail").and(hasAnyDescendant(hasText("이월 AP 7"))), useUnmergedTree = true).assertExists()
         val clock = compose.onAllNodes(hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).fetchSemanticsNodes()
             .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { t -> t.text } }
         assertTrue(clock.toString(), clock.any { Regex("""\d{2}:\d{2}""").matches(it) })

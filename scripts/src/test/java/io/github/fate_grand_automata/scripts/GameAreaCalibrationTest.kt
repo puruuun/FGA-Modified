@@ -15,7 +15,7 @@ import java.io.OutputStream
 import kotlin.math.roundToInt
 import kotlin.test.*
 
-/** Native JVM OpenCV, with the same INTER_AREA resize and TM_CCOEFF_NORMED as DroidCvPattern. */
+/** Native JVM OpenCV, with the same resize (INTER_CUBIC when enlarging, INTER_AREA otherwise) and TM_CCOEFF_NORMED as DroidCvPattern. */
 class GameAreaCalibrationTest {
     companion object { init { nu.pattern.OpenCV.loadLocally() } }
 
@@ -24,7 +24,8 @@ class GameAreaCalibrationTest {
         override val height get() = mat.rows()
         override var tag = "calibration-fixture"
         override fun resize(size: Size): Pattern = CvPattern(Mat().also {
-            Imgproc.resize(mat, it, org.opencv.core.Size(size.width.toDouble(), size.height.toDouble()), 0.0, 0.0, Imgproc.INTER_AREA)
+            val interpolation = if (size.width > mat.cols()) Imgproc.INTER_CUBIC else Imgproc.INTER_AREA
+            Imgproc.resize(mat, it, org.opencv.core.Size(size.width.toDouble(), size.height.toDouble()), 0.0, 0.0, interpolation)
         })
         override fun resize(target: Pattern, size: Size) = error("unused")
         override fun findMatches(template: Pattern, similarity: Double): Sequence<Match> {
