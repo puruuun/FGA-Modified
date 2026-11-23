@@ -152,8 +152,8 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: name, level and server, the AP ring with its details, then the update time. Narrow: a row of a
- * small ring and four lines, to keep the header short above the tab row.
+ * secondary text. Wide: name with level and server at the end of the same line, then a centered AP ring with its
+ * details and the update time. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
  */
 @Composable
 private fun AccountHeader(data: DashboardData, displayName: String?, server: String, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
@@ -174,11 +174,12 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
         Text(ageText, Modifier.semantics { contentDescription = absolute }.testTag("dashboard-updated"),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    val nameLine = @Composable {
+    val nameLine = @Composable { nameModifier: Modifier ->
         name?.let {
-            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
+            // One line that shrinks before it cuts. On the wide rail the level and server take their width first, so a
+            // name of 12 wide characters ends in an ellipsis there rather than pushing them out.
             Text(
-                it, Modifier.fillMaxWidth().testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
+                it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 autoSize = TextAutoSize.StepBased(minFontSize = NAME_MIN, maxFontSize = if (wide) NAME_MAX_WIDE else NAME_MAX_NARROW),
             )
@@ -187,16 +188,21 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
     val levelLine = @Composable {
         Row(Modifier.testTag("header-level"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             profile["lv"]?.let {
-                Text(stringResource(R.string.dashboard_level_short, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.dashboard_level_short, it), maxLines = 1, softWrap = false, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
-                Text(server, Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelMedium)
+                Text(server, Modifier.padding(horizontal = 8.dp, vertical = 2.dp), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelMedium)
             }
         }
     }
-    if (wide) Column(modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        nameLine()
-        levelLine()
+    if (wide) Column(
+        modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            nameLine(Modifier.weight(1f))
+            levelLine()
+        }
         // The line parts the account (name, level, server) from its AP (owner, 2026-11-23).
         if (ap != null) {
             HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
@@ -209,7 +215,7 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
     ) {
         if (ap != null) Box(Modifier.testTag("header-ap")) { ApRing(ap, 56.dp, 5.dp, showMax = false) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            nameLine()
+            nameLine(Modifier.fillMaxWidth())
             levelLine()
             if (ap != null) {
                 val summary = listOfNotNull(
@@ -232,15 +238,17 @@ internal fun apFraction(current: Long, max: Long): Float = if (max > 0) (current
 
 @Composable
 private fun HeaderAp(ap: DashboardAp, carry: Long?, now: Long) {
-    Row(Modifier.fillMaxWidth().testTag("header-ap"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        ApRing(ap, 84.dp, 6.dp, showMax = true)
-        Column(Modifier.weight(1f).testTag("header-ap-detail"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("header-ap"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ApRing(ap, 112.dp, 7.dp, showMax = true)
+        Column(Modifier.testTag("header-ap-detail"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
             val onVariant = MaterialTheme.colorScheme.onSurfaceVariant
             if (ap.recoverAt <= now) {
                 Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.titleSmall)
             } else {
-                Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.bodySmall, color = onVariant)
-                Text(clock(ap.recoverAt), style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.bodySmall, color = onVariant)
+                    Text(clock(ap.recoverAt), style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
+                }
             }
             carry?.let {
                 Text("${stringResource(R.string.dashboard_carry_ap)} ${it.grouped()}", Modifier.testTag("header-ap-carry"), style = MaterialTheme.typography.bodySmall, color = onVariant)

@@ -50,25 +50,76 @@ class DashboardRingHeaderUiTest {
     private fun named(name: String) = fixture.data().copy(profile = fixture.data().profile + ("name" to name))
     private fun box(tag: String) = compose.onNodeWithTag(tag, useUnmergedTree = true).getUnclippedBoundsInRoot()
 
-    private fun assertOneLineWithoutEllipsis(name: String) {
-        show(1280, named(name))
-        val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithTag("header-name", useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        val layout = layouts.single()
-        assertEquals(name, 1, layout.lineCount)
-        assertFalse(name, layout.hasVisualOverflow)
-        assertEquals(name, name.length, layout.getLineEnd(0, visibleEnd = true))
+    private val hasClockText = SemanticsMatcher("shows a HH:mm time") { node ->
+        node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { Regex("""\d{2}:\d{2}""").matches(it.text) }
     }
 
-    @Test fun aTwelveCharacterKoreanNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("가나다라마바사아자차카타")
-    @Test fun aTwelveCharacterJapaneseNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("あいうえおかきくけこさし")
-    @Test fun twelveWideLatinCharactersFitOneLineOnTheRail() = assertOneLineWithoutEllipsis("WWWWWWWWWWWW")
+    private fun layoutOf(matcher: SemanticsMatcher): TextLayoutResult {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNode(matcher, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single()
+    }
 
-    @Test fun theLevelIsBelowTheNameNotBesideIt() {
+    // The rail is 240dp with 24dp padding, so the level and the server chip leave about 100dp for the name: twelve wide
+    // characters end in an ellipsis there, and what must hold is one line with the level intact beside it.
+    private fun assertNameOneLineAndLevelWhole(name: String) {
+        show(1280, named(name))
+        assertEquals(name, 1, layoutOf(hasTestTag("header-name")).lineCount)
+        val level = layoutOf(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")))
+        assertEquals(name, 1, level.lineCount)
+        val levelText = compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("$name $levelText ${level.size}", !level.isLineEllipsized(0) &&
+            levelText.right - levelText.left >= with(level.layoutInput.density) { (level.getLineRight(0) - level.getLineLeft(0)).toDp() } - 0.5.dp)
+        val pane = box("dashboard-nav-pane"); val nameBox = box("header-name"); val levelBox = box("header-level")
+        assertTrue("name $nameBox level $levelBox pane $pane", nameBox.right <= levelBox.left && levelBox.right <= pane.right)
+        compose.onNode(hasText("KR") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun aTwelveCharacterKoreanNameStaysOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("가나다라마바사아자차카타")
+    @Test fun aTwelveCharacterJapaneseNameStaysOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("あいうえおかきくけこさし")
+    @Test fun twelveWideLatinCharactersStayOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("WWWWWWWWWWWW")
+
+    @Test fun theLevelAndTheServerSitOnTheNamesLine() {
         show(1280, named("샘플 마스터"))
         val name = box("header-name"); val level = box("header-level")
-        assertTrue("name $name level $level", level.top >= name.bottom)
+        val centre = (level.top + level.bottom) / 2
+        assertTrue("name $name level $level", centre >= name.top && centre <= name.bottom && level.left >= name.right)
         compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun theRingIsCentredInThePaneAtOneHundredTwelveDp() {
+        show(1280, recovering())
+        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
+        assertEquals(112f, (ring.right - ring.left).value, 0.5f)
+        assertEquals("pane $pane ring $ring", (pane.left + pane.right).value / 2, (ring.left + ring.right).value / 2, 2f)
+    }
+
+    @Test fun theFullTextIsOneCentredLineBelowTheRing() {
+        show(1280, recovering(carry = 12))
+        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
+        val label = compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val time = compose.onNode(hasClockText and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue("ring $ring label $label", label.top >= ring.bottom)
+        assertEquals("label $label time $time", (label.top + label.bottom).value, (time.top + time.bottom).value, 4f)
+        assertEquals((pane.left + pane.right).value / 2, (label.left + time.right).value / 2, 2f)
+        val carry = box("header-ap-carry")
+        assertTrue("carry $carry label $label", carry.top >= label.bottom)
+        assertEquals((pane.left + pane.right).value / 2, (carry.left + carry.right).value / 2, 2f)
+    }
+
+    @Test fun aFullApSaysOnlyFullCentredBelowTheRing() {
+        show(1280, game("""{"actMax":147,"actRecoverAt":1,"carryOverActPoint":0}"""))
+        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
+        val label = compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue(label.top >= ring.bottom)
+        assertEquals((pane.left + pane.right).value / 2, (label.left + label.right).value / 2, 2f)
+    }
+
+    @Test fun theUpdateTimeIsCentredBelowEverything() {
+        show(1280, recovering(carry = 12))
+        val pane = box("dashboard-nav-pane"); val updated = box("dashboard-updated"); val carry = box("header-ap-carry")
+        assertTrue("carry $carry updated $updated", updated.top >= carry.bottom)
+        assertEquals((pane.left + pane.right).value / 2, (updated.left + updated.right).value / 2, 2f)
     }
 
     @Test fun theMaxIsInsideTheRingOnWideAndNotOnNarrow() {
