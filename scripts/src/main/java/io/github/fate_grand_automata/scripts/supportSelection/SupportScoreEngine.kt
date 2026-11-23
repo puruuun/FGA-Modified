@@ -1,12 +1,16 @@
 package io.github.fate_grand_automata.scripts.supportSelection
 
+import io.github.fate_grand_automata.scripts.IFgoAutomataApi
+import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
 import io.github.lib_automata.Pattern
 import kotlin.time.Duration
 
 /**
- * An optional second reader of one support score field (issue #568): the Rust engine in the
- * owner's Rust test APK, nothing anywhere else. Like [ISupportScoreReader] it says what it read and
- * keeps its thresholds to itself (design 0025, D-3).
+ * The Rust reader of one support score field (issue #568). The support selection asks it first
+ * through [EngineFirstSupportScoreReader] and falls back to [SupportScoreReader] (design 0026, D-1),
+ * and the owner's support score scan compares the two. Builds without the engine bind
+ * [NoSupportScoreEngine], so they read with [SupportScoreReader] alone. Like [ISupportScoreReader]
+ * it says what it read and keeps its thresholds to itself (design 0025, D-3).
  *
  * None of its members throws, short of errors that leave the virtual machine unusable: an engine
  * that is missing, failed to load or answered something unexpected reads every field as unknown
@@ -27,6 +31,22 @@ interface SupportScoreEngine : AutoCloseable {
     fun read(field: Pattern): EngineScore
 
     override fun close() = Unit
+}
+
+/**
+ * The engine's input, cut the same way wherever the engine reads: the row's score number region
+ * from the caller's current snapshot. The engine was measured on exactly this crop, 60x30 grayscale
+ * at 720p; a crop of another size (a row cut by the screen edge) is never given to it.
+ */
+object SupportScoreEngineField {
+    const val WIDTH = 60
+    const val HEIGHT = 30
+
+    fun cut(api: IFgoAutomataApi, bounds: SupportBounds, tag: String): Pattern = with(api) {
+        SupportScoreLayout.numberRegion(bounds.region).getPattern(tag)
+    }
+
+    fun fits(field: Pattern) = field.width == WIDTH && field.height == HEIGHT
 }
 
 /** The binding of every build that has no engine. */

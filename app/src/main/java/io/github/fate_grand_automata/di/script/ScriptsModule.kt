@@ -20,7 +20,7 @@ import io.github.fate_grand_automata.scripts.locations.ScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.modules.RealSupportScreen
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
 import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader
-import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
+import io.github.fate_grand_automata.scripts.supportSelection.EngineFirstSupportScoreReader
 import io.github.lib_automata.ExitManager
 import io.github.lib_automata.GameAreaManager
 import io.github.lib_automata.GestureService
@@ -84,10 +84,12 @@ abstract class ScriptsModule {
     @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
 
-    // Binds to the one scoped SupportScoreReader so a script run still has a single instance.
+    // Design 0026, D-3: the selection reads with the engine first and falls back to the run's one
+    // scoped SupportScoreReader, which stays injectable as itself (the support score scan compares
+    // that reader, not this one, with the engine).
     @ScriptScope
     @Binds
-    abstract fun bindSupportScoreReader(reader: SupportScoreReader): ISupportScoreReader
+    abstract fun bindSupportScoreReader(reader: EngineFirstSupportScoreReader): ISupportScoreReader
 
     @ScriptScope
     @Binds

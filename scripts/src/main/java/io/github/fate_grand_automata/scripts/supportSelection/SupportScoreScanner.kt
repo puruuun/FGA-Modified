@@ -79,9 +79,7 @@ class ApiScoreScanFrames(
     override fun rows() = boundsFinder.all()
 
     // The same crop as the rust-engine device case and the Kotlin reader's own number region.
-    override fun field(bounds: SupportBounds): Pattern = with(api) {
-        SupportScoreLayout.numberRegion(bounds.region).getPattern(FIELD_TAG)
-    }
+    override fun field(bounds: SupportBounds): Pattern = SupportScoreEngineField.cut(api, bounds, FIELD_TAG)
 
     // getPattern crops the snapshot at exactly this region.
     override fun fieldImageRegion(bounds: SupportBounds): Region =
