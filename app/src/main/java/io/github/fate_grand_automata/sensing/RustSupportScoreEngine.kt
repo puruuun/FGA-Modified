@@ -2,13 +2,13 @@ package io.github.fate_grand_automata.sensing
 
 import android.content.Context
 import android.os.Looper
+import io.github.fate_grand_automata.scripts.supportSelection.EngineField
 import io.github.fate_grand_automata.scripts.supportSelection.EngineScore
 import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReason
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.lib_automata.Pattern
 import timber.log.Timber
 import java.io.File
-import java.io.FileNotFoundException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
@@ -22,9 +22,20 @@ import kotlin.time.Duration.Companion.seconds
  * of the run. Every failure on the way makes the engine unavailable for the
  * rest of the run; nothing is retried.
  *
+ * An engine error in a read (an error reply, a malformed reply, a throw from the library) also
+ * ends the engine for the run (issue #665): it is logged once, the model is unloaded at once and
+ * the engine is unavailable with that reason, so later rows go straight to the existing reader
+ * without cutting a field or calling the library. No such error is specific to one field: the
+ * binding always hands Rust a 60x30 gray crop, and for that size every step of a read (the pixel
+ * count, the preprocessing, the model run, the decoding) either works for every crop or for none,
+ * so an error says the engine is broken (a panic that dropped the model, a backend failure). A
+ * field whose pattern has no gray pixels is the field's own problem and stays an engine error
+ * for that row only. The next run builds a new engine and loads again.
+ *
  * State machine. [work] guards `state`; only a thread that holds it loads, reads or unloads.
  *
  *     NotLoaded --load ok--> Loaded --close--> Closed
+ *     Loaded --engine error in a read (unload)--> Failed(why) --close--> Closed
  *     NotLoaded --load failed--> Failed(why) --close--> Closed
  *     NotLoaded --close--> Closed
  *
@@ -108,16 +119,23 @@ class RustSupportScoreEngine(
                 // A close arrived during the load this call made; nothing is read after it.
                 EngineScore.unknown(EngineUnknownReason.Unavailable, CLOSED, elapsed())
             } else {
-                try {
-                    val pixels = field.grayPixels()
-                    if (pixels == null) {
-                        EngineScore.unknown(EngineUnknownReason.EngineError, "the score field is not a grayscale image", elapsed())
-                    } else {
-                        ScoreWire.decode(native.readScore(pixels, field.width, field.height), elapsed())
-                    }
+                val pixels = try {
+                    field.grayPixels()
                 } catch (t: Throwable) {
                     rethrowIfFatal(t)
-                    EngineScore.unknown(EngineUnknownReason.EngineError, describe(t), elapsed())
+                    return@withWork EngineScore.unknown(EngineUnknownReason.EngineError, describe(t), elapsed())
+                }
+                if (pixels == null) {
+                    EngineScore.unknown(EngineUnknownReason.EngineError, "the score field is not a grayscale image", elapsed())
+                } else {
+                    val score = try {
+                        ScoreWire.decode(native.readScore(pixels, field.width, field.height), elapsed())
+                    } catch (t: Throwable) {
+                        rethrowIfFatal(t)
+                        EngineScore.unknown(EngineUnknownReason.EngineError, describe(t), elapsed())
+                    }
+                    if (score.classScore == ENGINE_ERROR) endAfterEngineError(score.detail)
+                    score
                 }
             }
         }
@@ -162,16 +180,38 @@ class RustSupportScoreEngine(
     private fun finishClose() {
         if (state == State.Loaded) {
             try {
-                val code = native.unload()
-                if (code != ScoreWire.CODE_YES) Timber.w("Rust support-score engine unload answered %d", code)
-            } catch (t: Throwable) {
-                rethrowIfFatal(t)
-                Timber.w(t, "Rust support-score engine unload failed")
+                unload()
             } finally {
                 state = State.Closed
             }
         }
         state = State.Closed
+    }
+
+    /** Never throws except for [rethrowIfFatal]'s errors. Called with the lock held. */
+    private fun unload() {
+        try {
+            val code = native.unload()
+            if (code != ScoreWire.CODE_YES) Timber.w("Rust support-score engine unload answered %d", code)
+        } catch (t: Throwable) {
+            rethrowIfFatal(t)
+            Timber.w(t, "Rust support-score engine unload failed")
+        }
+    }
+
+    /**
+     * Ends the engine for the run after an engine error in a read. Called with the lock held, in
+     * Loaded, so it runs once per instance. After a panic in Rust the model is already gone and
+     * unload answers 0; after any other error it is still loaded and unload frees it now, so the
+     * rest of the run does not keep it in memory and [close] has nothing left to unload.
+     */
+    private fun endAfterEngineError(detail: String?) {
+        Timber.w("Rust support-score engine error in a read; the existing reader answers for the rest of the run: %s", detail)
+        try {
+            unload()
+        } finally {
+            state = State.Failed("$READ_FAILED$detail")
+        }
     }
 
     /** Null when loaded, otherwise why the engine cannot read. Called with the lock held. */
@@ -203,8 +243,11 @@ class RustSupportScoreEngine(
         native.loadLibrary()?.let { return "libfga_ffi.so did not load: $it" }
         val model = try {
             prepareModel()
-        } catch (e: FileNotFoundException) {
-            return "the OCR model asset is missing: ${e.message}"
+        } catch (t: Throwable) {
+            rethrowIfFatal(t)
+            // The asset, the installed copy and its folder all fail with an IOException (a missing
+            // asset and an unwritable folder alike with FileNotFoundException), so its own text says which.
+            return "$MODEL_NOT_PREPARED${describe(t)}"
         }
         val deadline = System.nanoTime() + slotWait.inWholeNanoseconds
         while (true) {
@@ -236,6 +279,10 @@ class RustSupportScoreEngine(
         const val SLOT_BUSY = "an earlier run's engine was still loaded when the wait for it ended; this run has no engine"
         const val STOPPED = "the run was stopped before the engine loaded; nothing was loaded"
         const val SLOT_POLL_MS = 20L
+        const val READ_FAILED = "the engine failed in a read and is not used again in this run: "
+        const val MODEL_NOT_PREPARED = "the OCR model could not be prepared: "
+
+        private val ENGINE_ERROR = EngineField.Unknown(EngineUnknownReason.EngineError)
 
         private fun describe(t: Throwable) = "${t.javaClass.simpleName}: ${t.message}"
 

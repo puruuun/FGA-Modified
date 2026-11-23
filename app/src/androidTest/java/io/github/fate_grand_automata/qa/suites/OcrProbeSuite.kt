@@ -1241,7 +1241,10 @@ private fun damagedModelCase(runner: SupportDeviceTestRunner, case: JSONObject, 
             }
         }
         val damage = if (test == "rust-engine-short-model") "cut to ${installed.length()} of ${pin.size} bytes" else "${DAMAGE_OFFSETS.size} bytes inverted, size ${installed.length()}"
-        report.put("damage", damage).put("damagedCopyMatchesPin", sha256(installed) == pin.sha256)
+        val damagedMatches = sha256(installed) == pin.sha256
+        report.put("damage", damage).put("damagedCopyMatchesPin", damagedMatches)
+        // A case whose damage did not reach the file would pass without testing anything.
+        check(!damagedMatches && (test != "rust-engine-short-model" || installed.length() < pin.size)) { "$test: the damage was not applied: $report" }
         val engine = RustSupportScoreEngine.forApp(context)
         try {
             val started = System.nanoTime()
@@ -1303,16 +1306,18 @@ private fun afterCloseCase(runner: SupportDeviceTestRunner, case: JSONObject): J
         "$test: a closed engine read a field: $report"
     }
     check(first.unavailableReason == RustSupportScoreEngine.CLOSED && closed.detail == RustSupportScoreEngine.CLOSED) { "$test: a closed engine gave another reason: $report" }
-    if (!libraryLoads) {
-        checkUnavailableWithoutLibrary(test, firstAvailable, firstReason)
-        return report.put("outcome", "unavailable")
-    }
-    check(firstAvailable) { "$test: the first engine did not load: $firstReason" }
+    if (!libraryLoads) checkUnavailableWithoutLibrary(test, firstAvailable, firstReason)
+    else check(firstAvailable) { "$test: the first engine did not load: $firstReason" }
     val second = RustSupportScoreEngine.forApp(context)
     try {
         val available = noThrow(test, "available") { second.available }
-        report.put("secondAvailable", available).put("secondReason", second.unavailableReason).put("secondLoadMs", second.loadMillis)
-        check(available) { "$test: a new engine after the close did not load: ${second.unavailableReason}" }
+        val secondReason = noThrow(test, "unavailableReason") { second.unavailableReason }
+        report.put("secondAvailable", available).put("secondReason", secondReason).put("secondLoadMs", second.loadMillis)
+        if (!libraryLoads) {
+            checkUnavailableWithoutLibrary(test, available, secondReason)
+            return report.put("outcome", "unavailable")
+        }
+        check(available) { "$test: a new engine after the close did not load: $secondReason" }
         report.put("outcome", "reloaded")
         checkSampleReads(runner, case, test, second, report)
     } finally {

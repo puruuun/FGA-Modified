@@ -66,6 +66,13 @@ class OcrModelInstallerTest {
         assertContentEquals(model, file.readBytes())
     }
 
+    @Test fun `a copy longer than the pin is replaced`() {
+        val file = File(dir, OcrModelInstaller.fileName(pin)).apply { writeBytes(model + byteArrayOf(1, 2, 3)) }
+        assertEquals(file, OcrModelInstaller.install(pin, dir, asset()))
+        assertEquals(1, opened)
+        assertContentEquals(model, file.readBytes())
+    }
+
     @Test fun `stale copies and part files are removed`() {
         File(dir, "0000-old.onnx").writeBytes(byteArrayOf(1))
         File(dir, OcrModelInstaller.fileName(pin) + OcrModelInstaller.PART_SUFFIX).writeBytes(byteArrayOf(2))

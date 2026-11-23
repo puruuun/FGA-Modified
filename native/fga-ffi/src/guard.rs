@@ -33,14 +33,15 @@ where
 ///
 /// A panic while the lock was held poisons it. The panic guard has already turned that panic into
 /// the failed call's error, so the poison only says that the model in the slot may have stopped in
-/// the middle of a call. Such a model is not trusted again: it is taken out and dropped, the poison
-/// is cleared, and the caller gets the slot empty, as after an unload. The slot itself is
-/// consistent at that point because every write to it is one whole assignment (`Some(model)` after
-/// the model was built, or `take()`), so a panic leaves either the old value or the new one, never
-/// a half-written `Option`; whatever partial state a panic left lives inside the model that is
-/// dropped here. The slot is emptied before the model is dropped, so a panic in the model's own
-/// drop poisons the lock again with the slot already empty, and the next call recovers the same
-/// way.
+/// the middle of a call. Such a model is not trusted again: it is taken out of the slot, the poison
+/// is cleared, the model is dropped, and the caller gets the slot empty, as after an unload. The
+/// slot itself is consistent at that point because every write to it is one whole assignment
+/// (`Some(model)` after the model was built, `None` before a probe loads, or `take()`), so a panic
+/// leaves either the old value or the new one, never a half-written `Option`; whatever partial
+/// state a panic left lives inside the model that is dropped here. The model is dropped while the
+/// lock is still held and after the slot was emptied, so a panic in the model's own drop poisons
+/// the lock again with the slot already empty (that call answers the panic as its error), and the
+/// next call recovers the same way and finds nothing to drop (tests/score_engine_poisoned.rs).
 pub(crate) fn lock_slot<T>(slot: &'static Mutex<Option<T>>) -> MutexGuard<'static, Option<T>> {
     slot.lock()
         .unwrap_or_else(|poisoned| recover_slot(slot, poisoned))

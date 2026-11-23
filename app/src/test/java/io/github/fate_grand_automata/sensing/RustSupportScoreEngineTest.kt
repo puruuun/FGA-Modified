@@ -125,7 +125,7 @@ class RustSupportScoreEngineTest {
     private val model = File("model.onnx")
 
     private fun engine(
-        native: FakeNative,
+        native: ScoreNative,
         mainThread: Boolean = false,
         slotWait: Duration = 5.seconds,
         stopRequested: () -> Boolean = { false },
@@ -167,8 +167,14 @@ class RustSupportScoreEngineTest {
         val engine = engine(native, prepare = { throw FileNotFoundException("ocr/ocr-model.properties") })
         val score = engine.read(field)
         assertEquals(unavailable, score.grandScore)
-        assertTrue(score.detail!!.startsWith("the OCR model asset is missing"))
+        assertEquals("${RustSupportScoreEngine.MODEL_NOT_PREPARED}FileNotFoundException: ocr/ocr-model.properties", score.detail)
         assertEquals(listOf("library"), native.work)
+    }
+
+    @Test fun `an installed copy or folder that cannot be opened says so, not that the asset is missing`() {
+        val path = "/data/user/0/app/no_backup/ocr-model/x.onnx.part: open failed: EACCES (Permission denied)"
+        val engine = engine(FakeNative(), prepare = { throw FileNotFoundException(path) })
+        assertEquals("${RustSupportScoreEngine.MODEL_NOT_PREPARED}FileNotFoundException: $path", engine.unavailableReason)
     }
 
     @Test fun `a model that does not match its pin makes the engine unavailable`() {
@@ -187,7 +193,7 @@ class RustSupportScoreEngineTest {
             val native = FakeNative()
             val engine = engine(native, prepare = { OcrModelInstaller.install(pin, dir) { damaged.inputStream() } })
             assertFalse(engine.available)
-            assertTrue(engine.unavailableReason!!.startsWith("IOException: model asset has SHA-256"), engine.unavailableReason)
+            assertTrue(engine.unavailableReason!!.startsWith("${RustSupportScoreEngine.MODEL_NOT_PREPARED}IOException: model asset has SHA-256"), engine.unavailableReason)
             assertEquals(unavailable, engine.read(field).classScore)
             assertEquals(listOf("library"), native.work)
             assertEquals(emptyList(), dir.list()!!.toList())
@@ -240,12 +246,91 @@ class RustSupportScoreEngineTest {
         assertEquals(listOf("library", "load", "read", "unload"), native.work)
     }
 
-    @Test fun `a field whose pixels cannot be read is an engine error`() {
-        val engine = engine(FakeNative())
+    @Test fun `a field whose pixels cannot be read is an engine error for that field only`() {
+        val native = FakeNative()
+        val engine = engine(native)
         assertEquals(engineError, engine.read(FakePattern { null }).classScore)
         val score = engine.read(FakePattern { throw IllegalStateException("released Mat") })
         assertEquals(engineError, score.classScore)
         assertTrue(score.detail!!.contains("released Mat"))
+        assertNull(engine.unavailableReason)
+        assertEquals(EngineField.Value(62), engine.read(field).classScore)
+        assertEquals(listOf("library", "load", "read"), native.work)
+    }
+
+    /** Captures what the engine logs at warning level. */
+    private class Warnings : timber.log.Timber.Tree() {
+        val messages: MutableList<String> = Collections.synchronizedList(mutableListOf())
+        override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+            if (priority == android.util.Log.WARN) messages += message
+        }
+    }
+
+    private fun <T> withWarnings(block: (Warnings) -> T): T {
+        val warnings = Warnings()
+        timber.log.Timber.plant(warnings)
+        try {
+            return block(warnings)
+        } finally {
+            timber.log.Timber.uproot(warnings)
+        }
+    }
+
+    /**
+     * After a panic in a read, Rust answers that read with the panic as an error reply and drops
+     * the model (score_engine_poisoned.rs), so the slot is empty and unload answers 0.
+     */
+    private class PanickingRead(val inner: FakeNative) : ScoreNative by inner {
+        override fun readScore(pixels: ByteArray, width: Int, height: Int): IntArray? {
+            inner.readScore(pixels, width, height)
+            inner.slot.set(false)
+            return errorReply(PANIC)
+        }
+    }
+
+    @Test fun `an engine error in a read ends the engine for the run, logged once with its text`() = withWarnings { warnings ->
+        val slot = AtomicBoolean(false)
+        val inner = FakeNative(slot = slot)
+        val engine = engine(PanickingRead(inner))
+        val score = engine.read(field)
+        assertEquals(engineError, score.classScore)
+        assertEquals(PANIC, score.detail)
+        assertEquals(RustSupportScoreEngine.READ_FAILED + PANIC, engine.unavailableReason)
+        assertFalse(engine.available)
+        repeat(3) {
+            val later = engine.read(field)
+            assertEquals(unavailable, later.classScore)
+            assertEquals(RustSupportScoreEngine.READ_FAILED + PANIC, later.detail)
+        }
+        assertEquals(listOf("library", "load", "read", "unload"), inner.work)
+        assertEquals(1, warnings.messages.count { it.contains(PANIC) }, warnings.messages.toString())
+        engine.close()
+        assertEquals(listOf("library", "load", "read", "unload"), inner.work)
+        assertEquals(RustSupportScoreEngine.CLOSED, engine.unavailableReason)
+
+        // The next run's engine loads into the same slot and reads.
+        val next = FakeNative(slot = slot)
+        val nextEngine = engine(next)
+        assertEquals(EngineField.Value(62), nextEngine.read(field).classScore)
+        nextEngine.close()
+        assertEquals(listOf("library", "load", "read", "unload"), next.work)
+    }
+
+    @Test fun `an error reply that leaves the model loaded unloads it at once`() = withWarnings { warnings ->
+        val inner = FakeNative()
+        val failing = object : ScoreNative by inner {
+            override fun readScore(pixels: ByteArray, width: Int, height: Int): IntArray? {
+                inner.readScore(pixels, width, height)
+                return errorReply("inference backend: tract run failed")
+            }
+        }
+        val engine = engine(failing)
+        assertEquals(engineError, engine.read(field).classScore)
+        assertFalse(inner.loaded)
+        assertEquals(RustSupportScoreEngine.READ_FAILED + "inference backend: tract run failed", engine.unavailableReason)
+        engine.close()
+        assertEquals(listOf("library", "load", "read", "unload"), inner.work)
+        assertEquals(1, warnings.messages.size, warnings.messages.toString())
     }
 
     @Test fun `errors that leave the VM unusable propagate`() {
@@ -253,11 +338,19 @@ class RustSupportScoreEngineTest {
         assertFailsWith<OutOfMemoryError> { engine.read(FakePattern { throw OutOfMemoryError("test") }) }
     }
 
-    @Test fun `a JNI failure is an engine error`() {
-        val engine = RustSupportScoreEngine(object : ScoreNative by FakeNative() {
-            override fun readScore(pixels: ByteArray, width: Int, height: Int): IntArray? = null
-        }, { model }, isMainThread = { false })
-        assertEquals(engineError, engine.read(field).classScore)
+    @Test fun `a JNI failure or a malformed reply is an engine error that ends the engine`() {
+        for (reply in listOf<IntArray?>(null, intArrayOf(0))) {
+            val inner = FakeNative()
+            val engine = RustSupportScoreEngine(object : ScoreNative by inner {
+                override fun readScore(pixels: ByteArray, width: Int, height: Int): IntArray? = reply
+            }, { model }, isMainThread = { false })
+            val score = engine.read(field)
+            assertEquals(engineError, score.classScore)
+            assertTrue(score.detail!!.startsWith("malformed engine reply"), score.detail)
+            assertEquals(RustSupportScoreEngine.READ_FAILED + score.detail, engine.unavailableReason)
+            assertEquals(unavailable, engine.read(field).classScore)
+            assertEquals(listOf("library", "load", "unload"), inner.work)
+        }
     }
 
     @Test fun `close unloads once and later reads are unavailable`() {
@@ -465,10 +558,14 @@ class RustSupportScoreEngineTest {
     }
 
     companion object {
-        /** wire.rs `encode_error(NOT_LOADED)`. */
-        val NOT_LOADED_REPLY: IntArray = "the support-score engine is not loaded".let { text ->
+        const val PANIC = "panic: the model panicked mid-read"
+
+        /** wire.rs `encode_error(text)`. */
+        fun errorReply(text: String): IntArray =
             intArrayOf(ScoreWire.MAGIC, 1, -1, -1, 2, 0, 0, Float.NaN.toRawBits(), Float.NaN.toRawBits(), 0, text.length) +
                 text.codePoints().toArray()
-        }
+
+        /** wire.rs `encode_error(NOT_LOADED)`. */
+        val NOT_LOADED_REPLY: IntArray = errorReply("the support-score engine is not loaded")
     }
 }

@@ -95,3 +95,113 @@ pub mod helpers {
         with_text
     }
 }
+
+/// Small ONNX models built here, so tests can fill a recogniser slot without the real model,
+/// which CI does not have.
+#[cfg(test)]
+pub mod onnx {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    fn varint(out: &mut Vec<u8>, mut value: u64) {
+        loop {
+            let byte = (value & 0x7f) as u8;
+            value >>= 7;
+            if value == 0 {
+                out.push(byte);
+                return;
+            }
+            out.push(byte | 0x80);
+        }
+    }
+
+    fn field_varint(out: &mut Vec<u8>, field: u64, value: u64) {
+        varint(out, field << 3);
+        varint(out, value);
+    }
+
+    fn field_bytes(out: &mut Vec<u8>, field: u64, bytes: &[u8]) {
+        varint(out, (field << 3) | 2);
+        varint(out, bytes.len() as u64);
+        out.extend_from_slice(bytes);
+    }
+
+    /// ValueInfoProto: a float tensor `name` of shape 1x3x48xW (W symbolic).
+    fn value_info(name: &str) -> Vec<u8> {
+        let mut shape = Vec::new();
+        for dim in [1u64, 3, 48] {
+            let mut d = Vec::new();
+            field_varint(&mut d, 1, dim);
+            field_bytes(&mut shape, 1, &d);
+        }
+        let mut w = Vec::new();
+        field_bytes(&mut w, 2, b"W");
+        field_bytes(&mut shape, 1, &w);
+        let mut tensor = Vec::new();
+        field_varint(&mut tensor, 1, 1); // FLOAT
+        field_bytes(&mut tensor, 2, &shape);
+        let mut type_proto = Vec::new();
+        field_bytes(&mut type_proto, 1, &tensor);
+        let mut info = Vec::new();
+        field_bytes(&mut info, 1, name.as_bytes());
+        field_bytes(&mut info, 2, &type_proto);
+        info
+    }
+
+    /// A valid ONNX model (opset 13) whose graph is one `op` from `x` to `y`, optionally with the
+    /// recogniser's character list in its metadata.
+    pub fn model(op: &str, characters: Option<&str>) -> Vec<u8> {
+        let mut node = Vec::new();
+        field_bytes(&mut node, 1, b"x");
+        field_bytes(&mut node, 2, b"y");
+        field_bytes(&mut node, 3, b"n");
+        field_bytes(&mut node, 4, op.as_bytes());
+        let mut graph = Vec::new();
+        field_bytes(&mut graph, 1, &node);
+        field_bytes(&mut graph, 2, b"g");
+        field_bytes(&mut graph, 11, &value_info("x"));
+        field_bytes(&mut graph, 12, &value_info("y"));
+        let mut opset = Vec::new();
+        field_bytes(&mut opset, 1, b"");
+        field_varint(&mut opset, 2, 13);
+        let mut model = Vec::new();
+        field_varint(&mut model, 1, 8);
+        field_bytes(&mut model, 8, &opset);
+        field_bytes(&mut model, 7, &graph);
+        if let Some(text) = characters {
+            let mut entry = Vec::new();
+            field_bytes(&mut entry, 1, b"character");
+            field_bytes(&mut entry, 2, text.as_bytes());
+            field_bytes(&mut model, 14, &entry);
+        }
+        model
+    }
+
+    /// An Identity graph with a character list: every recogniser loader accepts it, and a read on
+    /// it is an error, so a test can tell a filled slot from an empty one without the real model.
+    pub fn stand_in() -> Vec<u8> {
+        model("Identity", Some("0\n1\n+\n/\n"))
+    }
+
+    /// Deterministic bytes without a crate: xorshift64.
+    pub fn random_bytes(len: usize) -> Vec<u8> {
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        (0..len)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                (state >> 32) as u8
+            })
+            .collect()
+    }
+
+    /// Writes `bytes` under this test binary's temporary folder and returns the path as text.
+    pub fn write(test: &str, name: &str, bytes: &[u8]) -> String {
+        let dir: PathBuf = Path::new(env!("CARGO_TARGET_TMPDIR")).join(test);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(name);
+        fs::write(&path, bytes).unwrap();
+        path.to_str().unwrap().to_owned()
+    }
+}

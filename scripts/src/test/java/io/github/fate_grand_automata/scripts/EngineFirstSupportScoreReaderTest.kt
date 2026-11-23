@@ -133,6 +133,24 @@ class EngineFirstSupportScoreReaderTest {
     }
 
     @Test
+    fun `after an engine error the later rows go to the existing reader without a cut or a read`() {
+        // As RustSupportScoreEngine does (issue #665): an engine error in a read ends the engine
+        // for the run, so its reason is set from then on.
+        lateinit var engine: FakeSupportScoreEngine
+        engine = FakeSupportScoreEngine {
+            EngineAnswers.engineError("panic: the model panicked mid-read").also {
+                engine.reason = "the engine failed in a read and is not used again in this run: panic: the model panicked mid-read"
+            }
+        }
+        val existing = Existing(SupportScores(62, 16, SupportScoreDisplay.Compound))
+        val reader = reader(engine, existing)
+        repeat(4) { row -> assertThat(reader.read(bounds, true, true, 0, row)).isSameInstanceAs(existing.answer) }
+        assertThat(engine.reads).containsExactly(field)
+        assertThat(existing.calls.map { it[4] }).containsExactly(0, 1, 2, 3)
+        fieldCuts(1)
+    }
+
+    @Test
     fun `a field of another size never reaches the engine`() {
         every { field.width } returns 60
         every { field.height } returns 22
