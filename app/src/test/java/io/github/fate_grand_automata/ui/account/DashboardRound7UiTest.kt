@@ -33,11 +33,11 @@ class DashboardRound7UiTest {
             } }
         }
     }
-    @Test fun jpAccountBlockUsesTheAccountServer() {
+    @Test fun jpProfileChipUsesTheAccountServer() {
         compose.setContent { FGATheme {
             fixture.Icons { AccountDashboardContent(fixture.data, fixture.names, "JP sample", {}, {}, server = "JP") }
         } }
-        compose.onNode(hasText("JP") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("JP").assertIsDisplayed()
         compose.onNodeWithText("KR").assertDoesNotExist()
     }
 

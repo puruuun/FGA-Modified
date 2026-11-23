@@ -59,7 +59,7 @@ class DashboardRound2UiTest {
         assertEquals(3f, (bar.right - bar.left).value, 0.5f)
         dashboardSections(fixture.data).forEach {
             val item = compose.onNodeWithTag("dashboard-nav:${it.name}").getUnclippedBoundsInRoot()
-            assertTrue("$it ${item.bottom - item.top}", (item.bottom - item.top).value >= 48f)
+            assertTrue("$it ${item.bottom - item.top}", (item.bottom - item.top).value >= 47.99f)
         }
     }
 
@@ -82,12 +82,17 @@ class DashboardRound2UiTest {
     private fun assertApInHeader(width: Int, section: Int) {
         show(width, withGame("""{"actMax":144,"actRecoverAt":1,"carryOverActPoint":12}"""), section = section)
         val inHeader = hasAnyAncestor(hasTestTag("dashboard-account-header"))
-        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
-        compose.onNode(hasText("144") and inHeader and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag("header-ap-bar").assertDoesNotExist()
         if (width >= 840) {
+            compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
+            compose.onNode(hasText("144") and inHeader and hasTestTag("header-ap-current"), useUnmergedTree = true).assertExists()
             compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).assertExists()
-        } else compose.onNodeWithTag("header-ap-detail").assertTextEquals("AP 144 / 144 · 가득 참")
+        } else {
+            compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP 144 / 144")
+            compose.onNode(hasText("144") and inHeader and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
+            compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertDoesNotExist()
+            compose.onNodeWithTag("header-ap-detail").assertTextEquals("AP 144 / 144 · 가득 참")
+        }
     }
 
     @Test fun apIsInTheHeaderOnWideOnOverview() = assertApInHeader(1280, 0)

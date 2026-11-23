@@ -1107,8 +1107,6 @@
     <string name="dashboard_friends">친구 상한</string>
     <string name="dashboard_created">계정 생성일</string>
     <string name="dashboard_friend_points">프렌드 포인트</string>
-    <string name="dashboard_account_level">레벨</string>
-    <string name="dashboard_server">서버</string>
     <string name="dashboard_friend_code">친구 코드</string>
     <string name="dashboard_copy">친구 코드 복사</string>
     <string name="dashboard_snapshot">스냅샷 시각</string>
@@ -1380,6 +1378,7 @@
     <string name="dashboard_nav_formations">편성</string>
     <string name="dashboard_nav_collection">도감·소환</string>
     <string name="dashboard_nav_present_box">선물함</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
     <string name="dashboard_updated_just_now">방금 갱신</string>
     <plurals name="dashboard_updated_minutes">
         <item quantity="other">%1$d분 전 갱신</item>

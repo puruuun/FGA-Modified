@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
@@ -70,7 +72,7 @@ internal fun DashboardNavigation(
         if (wide) Row(Modifier.fillMaxSize()) {
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.width(240.dp).fillMaxHeight().testTag("dashboard-nav-pane")) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AccountHeader(data, displayName, now, wide = true, Modifier.padding(horizontal = HEADER_PADDING))
+                    AccountHeader(data, displayName, server, now, wide = true, Modifier.padding(horizontal = HEADER_PADDING))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Column {
                         sections.forEach { section ->
@@ -79,9 +81,9 @@ internal fun DashboardNavigation(
                     }
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, server, now, true, openLogs, target, initialSection, progress, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, progress, Modifier.weight(1f))
         } else Column(Modifier.fillMaxSize()) {
-            AccountHeader(data, displayName, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
+            AccountHeader(data, displayName, server, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
             PrimaryScrollableTabRow(selectedTabIndex = sections.indexOf(selected).coerceAtLeast(0), edgePadding = 8.dp) {
                 sections.forEach { section ->
                     Tab(
@@ -91,7 +93,7 @@ internal fun DashboardNavigation(
                     )
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, server, now, false, openLogs, target, initialSection, progress, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, progress, Modifier.weight(1f))
         }
     }
 }
@@ -117,7 +119,7 @@ private fun RailItem(label: String, selected: Boolean, onClick: () -> Unit, name
 @Composable
 private fun SectionPane(
     selected: DashboardSection, data: DashboardData, names: GameNameMap, battle: BattleLogEntry?, outside: OutsideLogEntry?,
-    friendCount: Int?, server: String, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress, modifier: Modifier,
+    friendCount: Int?, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress, modifier: Modifier,
 ) {
     key(selected) {
         Column(
@@ -128,7 +130,7 @@ private fun SectionPane(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (selected) {
-                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, server, battle, outside, now, wide, openLogs, progress)
+                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, battle, outside, now, wide, openLogs, progress)
                 DashboardSection.Servants -> DashboardServantsSection(data)
                 DashboardSection.Items -> data.inventory?.let { DashboardItemsSection(it, names) }
                 DashboardSection.Formations -> DashboardFormationsSection(data, names)
@@ -153,12 +155,11 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: the name centered on its own line, then a centered AP ring with its details and the update time. Level
- * and server live in the Overview account block, not here. Narrow: a row of a small ring and three lines, to keep the
- * header short above the tab row.
+ * secondary text. Wide: the name with the update time at the end of its line, the level and server, then the AP number,
+ * its full time and a bar. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
  */
 @Composable
-private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
+private fun AccountHeader(data: DashboardData, displayName: String?, server: String, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
     val profile = data.profile
     val name = listOfNotNull(displayName, profile["name"]).distinct().takeIf { it.isNotEmpty() }?.joinToString(" · ")
     val ap = dashboardAp(data.game, now)
@@ -172,37 +173,50 @@ private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, 
         }
         // The absolute time is not shown, but a screen reader and the tests can read it from the description.
         val absolute = "${stringResource(R.string.dashboard_updated)}: ${date(data.lastUpdateTime)}"
-        Text(ageText, Modifier.semantics { contentDescription = absolute }.testTag("dashboard-updated"),
+        // Wide: it ends the name's line, so it must neither shrink nor wrap.
+        Text(ageText, Modifier.semantics { contentDescription = absolute }.testTag("dashboard-updated"), maxLines = 1, softWrap = !wide,
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     val nameLine = @Composable { nameModifier: Modifier ->
         name?.let {
-            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
+            // One line that shrinks before it cuts. Wide: the update time takes its width first, so a 12-character name
+            // keeps one line and its last characters give way to the ellipsis.
             Text(
                 it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, textAlign = if (wide) TextAlign.Center else null,
+                overflow = TextOverflow.Ellipsis,
                 autoSize = TextAutoSize.StepBased(minFontSize = NAME_MIN, maxFontSize = if (wide) NAME_MAX_WIDE else NAME_MAX_NARROW),
             )
         }
     }
-    if (wide) Column(
-        modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        nameLine(Modifier.fillMaxWidth())
-        // The line parts the account name from its AP (owner, 2026-11-23).
+    val levelLine = @Composable {
+        Row(Modifier.testTag("header-level"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            profile["lv"]?.let {
+                Text(stringResource(R.string.dashboard_level_short, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                Text(server, Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+    if (wide) Column(modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (name != null) nameLine(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
+            updated()
+        }
+        levelLine()
+        // The line parts the account (name, level, server) from its AP (owner, 2026-11-23).
         if (ap != null) {
             HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
             HeaderAp(ap, now)
         }
-        updated()
     } else Row(
         modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (ap != null) Box(Modifier.testTag("header-ap")) { ApRing(ap, 56.dp, 5.dp, showMax = false) }
+        if (ap != null) Box(Modifier.testTag("header-ap")) { ApRing(ap, 56.dp, 5.dp) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             nameLine(Modifier.fillMaxWidth())
+            levelLine()
             if (ap != null) {
                 val summary = listOfNotNull(
                     "AP ${ap.current.grouped()} / ${ap.max.grouped()}", apFullText(ap, now),
@@ -221,27 +235,66 @@ private fun apFullText(ap: DashboardAp, now: Long): String =
 /** The share of AP that is filled; a max of 0 has nothing to fill, and a value past either end is not drawn past it. */
 internal fun apFraction(current: Long, max: Long): Float = if (max > 0) (current.toFloat() / max).coerceIn(0f, 1f) else 0f
 
+/**
+ * The AP number with its max, the full time and a bar. The full time sits at the end of the number's row when both fit the
+ * 192dp of the rail and drops to its own end-aligned line below when they do not, which only the measured widths can tell.
+ */
 @Composable
 private fun HeaderAp(ap: DashboardAp, now: Long) {
-    Column(Modifier.fillMaxWidth().testTag("header-ap"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ApRing(ap, 112.dp, 7.dp, showMax = true)
-        Column(Modifier.testTag("header-ap-detail"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val onVariant = MaterialTheme.colorScheme.onSurfaceVariant
-            if (ap.recoverAt <= now) {
-                Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.titleSmall)
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.bodySmall, color = onVariant)
-                    Text(clock(ap.recoverAt), style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
+    val onVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(Modifier.fillMaxWidth().testTag("header-ap"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Layout(
+            content = {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        ap.current.grouped(), Modifier.alignByBaseline().testTag("header-ap-current"), maxLines = 1, softWrap = false,
+                        style = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"),
+                    )
+                    Text(
+                        "/ ${ap.max.grouped()} AP", Modifier.alignByBaseline().padding(start = 4.dp).testTag("header-ap-max"), maxLines = 1, softWrap = false,
+                        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"), color = onVariant,
+                    )
                 }
+                Row(Modifier.testTag("header-ap-detail"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (ap.recoverAt <= now) {
+                        Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall)
+                    } else {
+                        Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.bodySmall, color = onVariant)
+                        Text(clock(ap.recoverAt), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
+                    }
+                }
+            },
+        ) { measurables, constraints ->
+            val loose = constraints.copy(minWidth = 0)
+            val number = measurables[0].measure(loose)
+            val detail = measurables[1].measure(loose)
+            val gap = 8.dp.roundToPx()
+            val beside = number.width + gap + detail.width <= constraints.maxWidth
+            val width = constraints.maxWidth
+            val rowHeight = maxOf(number.height, detail.height)
+            if (beside) layout(width, rowHeight) {
+                number.placeRelative(0, (rowHeight - number.height) / 2)
+                detail.placeRelative(width - detail.width, (rowHeight - detail.height) / 2)
+            } else layout(width, number.height + detail.height) {
+                number.placeRelative(0, 0)
+                detail.placeRelative(width - detail.width, number.height)
             }
         }
+        val fraction = apFraction(ap.current, ap.max)
+        val description = "AP ${ap.current.grouped()} / ${ap.max.grouped()}"
+        SegmentedBar(
+            listOf(fraction to MaterialTheme.colorScheme.primary),
+            Modifier.testTag("header-ap-bar").clearAndSetSemantics {
+                contentDescription = description
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+            },
+        )
     }
 }
 
-/** Starts at 12 o'clock and runs clockwise; a full AP is a closed ring. One element for a screen reader. */
+/** The narrow header's ring: starts at 12 o'clock and runs clockwise; a full AP is a closed ring. One element for a screen reader. */
 @Composable
-private fun ApRing(ap: DashboardAp, size: Dp, stroke: Dp, showMax: Boolean) {
+private fun ApRing(ap: DashboardAp, size: Dp, stroke: Dp) {
     val track = MaterialTheme.colorScheme.surfaceVariant
     val progress = MaterialTheme.colorScheme.primary
     val fraction = apFraction(ap.current, ap.max)
@@ -260,9 +313,8 @@ private fun ApRing(ap: DashboardAp, size: Dp, stroke: Dp, showMax: Boolean) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 ap.current.grouped(), Modifier.testTag("header-ap-current"),
-                style = (if (showMax) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium).copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
             )
-            if (showMax) Text("/ ${ap.max.grouped()}", Modifier.testTag("header-ap-max"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

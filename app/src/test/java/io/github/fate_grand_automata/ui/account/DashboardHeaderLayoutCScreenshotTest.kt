@@ -17,25 +17,24 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Light-theme shots of #648: the wide header with a short name and a 12-character name, and the Overview account block. */
+/** Light-theme shots of the #648 header: wide with a short name and a 12-character name, and narrow. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])
-class DashboardCenteredHeaderScreenshotTest {
+class DashboardHeaderLayoutCScreenshotTest {
     private val compose = createComposeRule()
     @get:Rule val rules = screenshotRules(compose)
     private val fixture by lazy { Round615Fixture() }
 
-    private fun shot(name: String, accountName: String, scrollTo: String? = null) {
+    private fun shot(name: String, accountName: String, width: Int = 1280) {
         val recoverAt = System.currentTimeMillis() / 1000 + 5 * 3600
         val data = fixture.data().copy(
             profile = fixture.data().profile + ("name" to accountName),
             game = Json.parseToJsonElement("""{"actMax":147,"actRecoverAt":$recoverAt,"carryOverActPoint":12}""").jsonObject,
         )
-        compose.shoot("dashboard-648", name, 1280, 800, false, "ko", beforeCapture = {
+        compose.shoot("dashboard-648", name, width, 800, false, "ko", beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready").fetchSemanticsNodes().isNotEmpty() ||
                 compose.onAllNodesWithTag("dashboard-section:3").fetchSemanticsNodes().isEmpty() }
-            scrollTo?.let { compose.onNodeWithTag(it).performScrollTo(); compose.waitForIdle() }
         }) {
             fixture.case.fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) {
                 AccountDashboardContent(data, fixture.names, null, {}, {}, battle = battleLogFixture("recent"), userId = "synthetic",
@@ -46,5 +45,5 @@ class DashboardCenteredHeaderScreenshotTest {
 
     @Test fun headerWideShortName() = shot("HeaderWideShortName", "샘플")
     @Test fun headerWideTwelveCharacterName() = shot("HeaderWideTwelveCharacterName", "가나다라마바사아자차카타")
-    @Test fun accountBlockWide() = shot("AccountBlockWide", "샘플", scrollTo = "overview-account")
+    @Test fun headerNarrow() = shot("HeaderNarrow", "샘플", width = 360)
 }

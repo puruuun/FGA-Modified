@@ -48,162 +48,172 @@ class DashboardRingHeaderUiTest {
     }
 
     private fun named(name: String) = fixture.data().copy(profile = fixture.data().profile + ("name" to name))
-    private fun box(tag: String) = compose.onNodeWithTag(tag, useUnmergedTree = true).getUnclippedBoundsInRoot()
-
     private val hasClockText = SemanticsMatcher("shows a HH:mm time") { node ->
         node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { Regex("""\d{2}:\d{2}""").matches(it.text) }
     }
 
-    private fun layoutOf(matcher: SemanticsMatcher): TextLayoutResult {
+    private fun box(tag: String) = compose.onNodeWithTag(tag, useUnmergedTree = true).getUnclippedBoundsInRoot()
+
+    private fun layoutOf(tag: String): TextLayoutResult {
         val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNode(matcher, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        compose.onNodeWithTag(tag, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         return layouts.single()
     }
 
-    private fun assertOneLineWithoutEllipsis(name: String) {
+    private fun fullAp(max: Int) = game("""{"actMax":$max,"actRecoverAt":1,"carryOverActPoint":12}""")
+    private fun paneContent() = box("dashboard-nav-pane").let { it.left + 24.dp to it.right - 24.dp }
+
+    // The update time takes its width first, so on 192dp the last characters of a 12-wide-character name give way.
+    private fun assertNameOneLineAndUpdateWhole(name: String) {
         show(1280, named(name))
-        val layout = layoutOf(hasTestTag("header-name"))
-        assertEquals(name, 1, layout.lineCount)
-        assertFalse(name, layout.hasVisualOverflow)
-        assertEquals(name, name.length, layout.getLineEnd(0, visibleEnd = true))
+        assertEquals(name, 1, layoutOf("header-name").lineCount)
+        val updated = layoutOf("dashboard-updated")
+        assertEquals(name, 1, updated.lineCount)
+        assertFalse(name, updated.isLineEllipsized(0))
+        val nameBox = box("header-name"); val updatedBox = box("dashboard-updated")
+        assertTrue("name $nameBox updated $updatedBox", nameBox.right <= updatedBox.left && updatedBox.right <= paneContent().second + 0.5.dp)
+        val textWidth = with(updated.layoutInput.density) { (updated.getLineRight(0) - updated.getLineLeft(0)).toDp() }
+        assertTrue("updated $updatedBox text $textWidth", updatedBox.right - updatedBox.left >= textWidth - 0.5.dp)
     }
 
-    @Test fun aTwelveCharacterKoreanNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("가나다라마바사아자차카타")
-    @Test fun aTwelveCharacterJapaneseNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("あいうえおかきくけこさし")
-    @Test fun twelveWideLatinCharactersFitOneLineOnTheRail() = assertOneLineWithoutEllipsis("WWWWWWWWWWWW")
+    @Test fun aTwelveCharacterKoreanNameStaysOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("가나다라마바사아자차카타")
+    @Test fun aTwelveCharacterJapaneseNameStaysOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("あいうえおかきくけこさし")
+    @Test fun twelveWideLatinCharactersStayOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("WWWWWWWWWWWW")
 
-    private fun assertNoLevelOrServerInTheHeader(width: Int) {
-        show(width, named("샘플 마스터"))
-        compose.onNodeWithTag("header-level", useUnmergedTree = true).assertDoesNotExist()
-        val inHeader = hasAnyAncestor(hasTestTag("dashboard-account-header"))
-        compose.onAllNodes(hasText("Lv", substring = true) and inHeader, useUnmergedTree = true).assertCountEquals(0)
-        compose.onAllNodes(hasText("KR") and inHeader, useUnmergedTree = true).assertCountEquals(0)
-    }
-
-    @Test fun theWideHeaderHasNoLevelOrServer() = assertNoLevelOrServerInTheHeader(1280)
-    @Test fun theNarrowHeaderHasNoLevelOrServer() = assertNoLevelOrServerInTheHeader(360)
-
-    @Test fun theWideNameTakesTheFullLine() {
+    @Test fun theUpdateTimeEndsTheNamesLineOnWide() {
         show(1280, named("샘플 마스터"))
-        val pane = box("dashboard-nav-pane"); val name = box("header-name")
-        assertEquals("pane $pane name $name", (pane.right - pane.left).value - 48f, (name.right - name.left).value, 1f)
+        val name = box("header-name"); val updated = box("dashboard-updated")
+        val centre = (updated.top + updated.bottom) / 2
+        assertTrue("name $name updated $updated", centre >= name.top && centre <= name.bottom && updated.left >= name.right)
+        assertEquals((paneContent().second).value, updated.right.value, 0.5f)
+        assertEquals(paneContent().first.value, name.left.value, 0.5f)
     }
 
-    private fun assertAccountBlockHasLevelAndServer(width: Int) {
-        show(width, fixture.data())
-        compose.onNode(hasText("160") and hasAnyAncestor(hasTestTag("overview-account:level")), useUnmergedTree = true).assertExists()
-        compose.onNode(hasText("레벨") and hasAnyAncestor(hasTestTag("overview-account:level")), useUnmergedTree = true).assertExists()
-        compose.onNode(hasText("서버") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
-        compose.onNode(hasText("KR") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
+    @Test fun theLevelLineIsBelowTheNameOnWide() {
+        show(1280, named("샘플 마스터"))
+        val name = box("header-name"); val level = box("header-level")
+        assertTrue("name $name level $level", level.top >= name.bottom)
+        assertEquals(name.left.value, level.left.value, 0.5f)
+        compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
     }
 
-    @Test fun theWideAccountBlockHasTheLevelAndTheServer() = assertAccountBlockHasLevelAndServer(1280)
-    @Test fun theNarrowAccountBlockHasTheLevelAndTheServer() = assertAccountBlockHasLevelAndServer(360)
-
-    @Test fun theLevelAndTheServerComeFirstInTheAccountBlock() {
-        show(1280, fixture.data())
-        val level = box("overview-account:level"); val server = box("overview-account:server"); val code = box("overview-account:friendCode")
-        assertTrue("level $level server $server code $code", level.top <= code.top && server.top <= code.top && level.left < server.left)
-    }
-
-    @Test fun withoutALevelTheAccountBlockLeavesOutTheLevelField() {
-        show(1280, fixture.data().copy(profile = fixture.data().profile - "lv"))
-        compose.onNodeWithTag("overview-account:level", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithTag("overview-account:server", useUnmergedTree = true).assertExists()
-    }
-
-    @Test fun theRingIsCentredInThePaneAtOneHundredTwelveDp() {
+    @Test fun theWideHeaderHasABarAndNoRing() {
         show(1280, recovering())
-        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
-        assertEquals(112f, (ring.right - ring.left).value, 0.5f)
-        assertEquals("pane $pane ring $ring", (pane.left + pane.right).value / 2, (ring.left + ring.right).value / 2, 2f)
+        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertExists()
     }
 
-    @Test fun theFullTextIsOneCentredLineBelowTheRing() {
-        show(1280, recovering(carry = 12))
-        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
+    @Test fun theBarIsOneElementWithTheApAndItsFraction() {
+        show(1280, recovering())
+        val current = currentAp().replace(",", "").toLong()
+        val node = compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true)
+        node.assertContentDescriptionEquals("AP ${currentAp()} / 147")
+        val range = node.fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo]
+        assertEquals(apFraction(current, 147), range.current, 0.001f)
+        assertTrue(range.current > 0f && range.current < 1f)
+    }
+
+    @Test fun theBarIsFilledByTheFractionOfTheAp() {
+        show(1280, recovering())
+        val fraction = apFraction(currentAp().replace(",", "").toLong(), 147)
+        val bitmap = compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).captureToImage().asAndroidBitmap()
+        val y = bitmap.height / 2
+        val edge = (bitmap.width * fraction).toInt()
+        val track = bitmap.getPixel(bitmap.width - 4, y)
+        assertNotEquals(track, bitmap.getPixel(edge - 10, y))
+        assertEquals(track, bitmap.getPixel(edge + 10, y))
+    }
+
+    @Test fun theBarIsTheOverviewsEightDpBarAcrossTheContentWidth() {
+        show(1280, recovering())
+        val bar = box("header-ap-bar"); val (left, right) = paneContent()
+        assertEquals(8f, (bar.bottom - bar.top).value, 0.5f)
+        assertEquals(left.value, bar.left.value, 0.5f)
+        assertEquals(right.value, bar.right.value, 0.5f)
+    }
+
+    @Test fun theNumberAndTheMaxAreOneRowAboveTheBar() {
+        show(1280, recovering())
+        compose.onNodeWithTag("header-ap-max", useUnmergedTree = true).assertTextEquals("/ 147 AP")
+        val current = box("header-ap-current"); val max = box("header-ap-max"); val bar = box("header-ap-bar")
+        assertTrue("current $current max $max", max.left >= current.right && max.bottom <= current.bottom + 1.dp)
+        assertTrue("current $current bar $bar", bar.top >= current.bottom)
+    }
+
+    @Test fun theFullTextIsBesideTheNumberWhenItFits() {
+        show(1280, fullAp(147))
+        val current = box("header-ap-current"); val max = box("header-ap-max"); val detail = box("header-ap-detail"); val bar = box("header-ap-bar")
+        val centre = (detail.top + detail.bottom) / 2
+        assertTrue("current $current detail $detail", centre >= current.top && centre <= current.bottom && detail.left >= max.right)
+        assertEquals(paneContent().second.value, detail.right.value, 0.5f)
+        assertTrue("detail $detail bar $bar", bar.top >= detail.bottom)
+    }
+
+    @Test fun theFullTextDropsBelowTheNumberEndAlignedWhenItDoesNotFit() {
+        show(1280, fullAp(99999))
+        val current = box("header-ap-current"); val detail = box("header-ap-detail"); val bar = box("header-ap-bar")
+        assertTrue("current $current detail $detail", detail.top >= current.bottom)
+        assertEquals(paneContent().second.value, detail.right.value, 0.5f)
+        assertTrue("detail $detail bar $bar", bar.top >= detail.bottom)
+    }
+
+    @Test fun aRecoveringApShowsTheLabelAndTheClockTimeOnOneLineOnWide() {
+        show(1280, recovering())
         val label = compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
         val time = compose.onNode(hasClockText and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertTrue("ring $ring label $label", label.top >= ring.bottom)
         assertEquals("label $label time $time", (label.top + label.bottom).value, (time.top + time.bottom).value, 4f)
-        assertEquals((pane.left + pane.right).value / 2, (label.left + time.right).value / 2, 2f)
-    }
-
-    @Test fun aFullApSaysOnlyFullCentredBelowTheRing() {
-        show(1280, game("""{"actMax":147,"actRecoverAt":1,"carryOverActPoint":0}"""))
-        val pane = box("dashboard-nav-pane"); val ring = box("header-ap-ring")
-        val label = compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertTrue(label.top >= ring.bottom)
-        assertEquals((pane.left + pane.right).value / 2, (label.left + label.right).value / 2, 2f)
-    }
-
-    @Test fun theUpdateTimeIsCentredBelowEverything() {
-        show(1280, recovering(carry = 12))
-        val pane = box("dashboard-nav-pane"); val updated = box("dashboard-updated"); val ap = box("header-ap")
-        assertTrue("ap $ap updated $updated", updated.top >= ap.bottom)
-        assertEquals((pane.left + pane.right).value / 2, (updated.left + updated.right).value / 2, 2f)
-    }
-
-    @Test fun theMaxIsInsideTheRingOnWideAndNotOnNarrow() {
-        show(1280, recovering())
-        compose.onNode(hasText("/ 147") and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP ${currentAp()} / 147")
-    }
-
-    @Test fun theMaxIsNotInsideTheNarrowRing() {
-        show(360, recovering())
-        compose.onNodeWithTag("header-ap-max", useUnmergedTree = true).assertDoesNotExist()
-        compose.onNodeWithTag("header-ap-current", useUnmergedTree = true).assertExists()
-        assertTrue(texts("header-ap-detail"), Regex("""AP \d+ / 147 · \d{2}:\d{2} 가득 참""").matches(texts("header-ap-detail")))
+        assertTrue(time.left >= label.right)
     }
 
     private fun assertNoCarryOver(width: Int) {
         show(width, recovering(carry = 12))
         compose.onNodeWithTag("header-ap-carry", useUnmergedTree = true).assertDoesNotExist()
         compose.onAllNodes(hasText("이월", substring = true) and hasAnyAncestor(hasTestTag("dashboard-account-header")), useUnmergedTree = true).assertCountEquals(0)
-        assertFalse(texts("header-ap-detail"), texts("header-ap-detail").contains("이월"))
     }
 
     @Test fun theWideHeaderHasNoCarryOverEvenWhenTheValueIsPresent() = assertNoCarryOver(1280)
     @Test fun theNarrowHeaderHasNoCarryOverEvenWhenTheValueIsPresent() = assertNoCarryOver(360)
 
-    @Test fun theWideNameIsCentredInThePane() {
-        show(1280, named("샘플"))
-        val pane = box("dashboard-nav-pane"); val name = box("header-name")
-        val layout = layoutOf(hasTestTag("header-name"))
-        val density = layout.layoutInput.density
-        val left = name.left + with(density) { layout.getLineLeft(0).toDp() }
-        val right = name.left + with(density) { layout.getLineRight(0).toDp() }
-        assertEquals("pane $pane name $name", (pane.left + pane.right).value / 2, (left + right).value / 2, 2f)
+    @Test fun theAccountBlockHasNoLevelOrServerField() {
+        show(1280, fixture.data())
+        compose.onNodeWithTag("overview-account:level", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("overview-account:server", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("overview-account:friendCode", useUnmergedTree = true).assertExists()
     }
 
-    @Test fun theUpdateTimeFollowsTheApRowWithoutALineBetween() {
+    @Test fun theNarrowHeaderKeepsTheRingTheLevelLineAndTheSummary() {
+        show(360, recovering())
+        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("header-ap-max", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("header-ap-current", useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
+        assertTrue(texts("header-ap-detail"), Regex("""AP \d+ / 147 · \d{2}:\d{2} 가득 참""").matches(texts("header-ap-detail")))
+    }
+
+    @Test fun aLineSitsBetweenTheLevelAndTheApOnWide() {
         show(1280, recovering())
-        val ap = box("header-ap"); val updated = box("dashboard-updated")
-        assertTrue("ap $ap updated $updated", updated.top - ap.bottom < 12.dp)
+        val level = box("header-level"); val line = box("header-divider"); val ap = box("header-ap")
+        assertTrue("level $level line $line ap $ap", line.top >= level.bottom && line.bottom <= ap.top)
     }
 
-    @Test fun aLineSitsBetweenTheNameAndTheApRingOnWide() {
-        show(1280, recovering())
-        val name = box("header-name"); val line = box("header-divider"); val ap = box("header-ap")
-        assertTrue("name $name line $line ap $ap", line.top >= name.bottom && line.bottom <= ap.top)
-    }
-
-    private fun assertNoRing(width: Int) {
+    private fun assertNoApParts(width: Int) {
         show(width, fixture.data().copy(game = null))
         compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("header-ap", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("header-name", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("header-level", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("dashboard-updated", useUnmergedTree = true).assertExists()
     }
 
-    @Test fun withoutApDataThereIsNoRingOnWide() = assertNoRing(1280)
-    @Test fun withoutApDataThereIsNoRingOnNarrow() = assertNoRing(360)
+    @Test fun withoutApDataThereIsNoApPartOnWide() = assertNoApParts(1280)
+    @Test fun withoutApDataThereIsNoApPartOnNarrow() = assertNoApParts(360)
 
-    @Test fun aFullApRingIsClosedAndSaysOnlyFullOnWide() {
-        show(1280, game("""{"actMax":147,"actRecoverAt":1,"carryOverActPoint":0}"""))
-        assertEquals(1f, apFraction(147, 147), 0f)
-        compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertContentDescriptionEquals("AP 147 / 147")
+    @Test fun aFullApFillsTheBarAndSaysOnlyFullOnWide() {
+        show(1280, fullAp(147))
+        compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).assertContentDescriptionEquals("AP 147 / 147")
+        assertEquals(1f, compose.onNodeWithTag("header-ap-bar", useUnmergedTree = true).fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo].current, 0f)
         compose.onNode(hasText("가득 참") and hasAnyAncestor(hasTestTag("header-ap-detail")), useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("header-ap-detail", useUnmergedTree = true).onChildren().assertCountEquals(1)
     }
