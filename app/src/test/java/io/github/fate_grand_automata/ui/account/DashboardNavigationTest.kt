@@ -261,7 +261,7 @@ class DashboardNavigationTest(private val width: Int) {
     @Test fun apShowsFullOrTheTimeItBecomesFull() {
         val game = { recoverAt: Long -> dashboardData(dashboardState("userGame" to """[{"actMax":144,"actRecoverAt":$recoverAt}]"""), case.names) }
         show(game(1))
-        compose.onNode(hasText("144") and hasAnyAncestor(hasTestTag("header-ap-ring")), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("144") and (hasAnyAncestor(hasTestTag("header-ap-ring")) or hasTestTag("header-ap-current")), useUnmergedTree = true).assertExists()
         compose.onNode(hasText("가득 참", substring = true) and (hasTestTag("header-ap-detail") or hasAnyAncestor(hasTestTag("header-ap-detail"))), useUnmergedTree = true).assertExists()
     }
 

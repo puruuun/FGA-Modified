@@ -243,7 +243,7 @@ private fun BarHeader(label: String, count: Int, limit: Long?) {
 
 /** Segments are fractions of the whole bar, drawn left to right over the track. */
 @Composable
-private fun SegmentedBar(segments: List<Pair<Float, Color>>, modifier: Modifier = Modifier) {
+internal fun SegmentedBar(segments: List<Pair<Float, Color>>, modifier: Modifier = Modifier) {
     val track = MaterialTheme.colorScheme.surfaceVariant
     Box(
         modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(track).drawBehind {
