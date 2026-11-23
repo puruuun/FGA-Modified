@@ -276,6 +276,7 @@ object CaptureTracker {
             val previousServers = stored.currentServers
             val now = clockSeconds()
             stored.recordFriendFields(target, body, now)
+            stored.recordSupportListShape(target, body, now)
             val rosterId = stored.friendTarget(target, body)
             val rosterChanged = rosterId != null && stored.applyFriends(rosterId, target, body, now)
             if (rosterChanged) _rosterRevision.value += 1
