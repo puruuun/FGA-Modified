@@ -110,8 +110,10 @@ class Reader:
                 self.templates[server].append(template)
                 for scale in self.scales:
                     size = tuple(rounded(n*scale) for n in template.shape[::-1])
-                    # Pattern.resize and Kotlin Size.times use INTER_AREA and roundToInt.
-                    resized = template if scale == 1 else cv2.resize(template, size, interpolation=cv2.INTER_AREA)
+                    # Pattern.resize uses INTER_CUBIC when the width grows and INTER_AREA otherwise;
+                    # Kotlin Size.times uses roundToInt.
+                    interpolation = cv2.INTER_CUBIC if size[0] > template.shape[1] else cv2.INTER_AREA
+                    resized = template if scale == 1 else cv2.resize(template, size, interpolation=interpolation)
                     self.recovery_templates[server].append((scale, resized))
 
     def parse(self, result):

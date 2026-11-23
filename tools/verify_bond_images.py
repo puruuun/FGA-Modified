@@ -70,7 +70,9 @@ class Reader:
         roi = self.crop(im, box)
         best = (-1, None)
         for scale in self.scales:
-            tt = cv2.resize(t, (int(t.shape[1]*scale), int(t.shape[0]*scale)), interpolation=cv2.INTER_AREA)
+            size = (int(t.shape[1]*scale), int(t.shape[0]*scale))
+            # DroidCvPattern.resize: INTER_CUBIC when the width grows, INTER_AREA otherwise
+            tt = cv2.resize(t, size, interpolation=cv2.INTER_CUBIC if size[0] > t.shape[1] else cv2.INTER_AREA)
             if tt.shape[0] > roi.shape[0] or tt.shape[1] > roi.shape[1]: continue
             _, value, _, loc = cv2.minMaxLoc(cv2.matchTemplate(roi, tt, cv2.TM_CCOEFF_NORMED))
             if value > best[0]:
