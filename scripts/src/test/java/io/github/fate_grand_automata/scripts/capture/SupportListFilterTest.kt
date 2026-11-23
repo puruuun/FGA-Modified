@@ -101,6 +101,27 @@ class SupportListFilterTest {
         assertTrue(text.contains(""""serverTime":99"""))
     }
 
+    @Test fun otherTypesAreKeptUnchangedEvenWhenEveryFriendAndNonFriendIsRemoved() {
+        val npc = friend("npc", type = 3)
+        val noHash = """{"type":4,"userId":"fixed"}"""
+        val r = run(body(friend("a"), npc, friend("b", type = 2), noHash))!!
+        assertEquals(listOf("npc", "fixed"), ids(r))
+        assertEquals(listOf(npc, noHash).map { Json.parseToJsonElement(it) }, infos(r).toList())
+        assertEquals(SupportListCounts(4, 2), r.counts)
+        // Only other types: nothing is a candidate, so nothing is removed.
+        assertNull(run(body(npc, noHash)))
+    }
+
+    @Test fun missingOrNonIntegerTypeIsKept() {
+        val missing = """{"userId":"m","userSvtLeaderHash":[]}"""
+        val text = """{"type":"1","userId":"s"}"""
+        val dec = """{"type":1.5,"userId":"d"}"""
+        val nul = """{"type":null,"userId":"n"}"""
+        val r = run(body(friend("a"), missing, text, dec, nul))!!
+        assertEquals(listOf("m", "s", "d", "n"), ids(r))
+        assertNull(run(body(missing, text, dec, nul)))
+    }
+
     @Test fun grandSlotsUseCe1AndCe3WhileBondCeStaysOut() {
         fun grand(svt: Long, e1: Long, e2: Long, e3: Long) =
             """{"grandGraphId":1,"svtId":$svt,"equipTarget1":{"svtId":$e1},"equipTarget2":{"svtId":$e2},"equipTarget3":{"svtId":$e3}}"""

@@ -41,6 +41,7 @@ object SupportListFilter {
     const val MAX_DECODED_BYTES = 4 * 1024 * 1024
 
     private val SLOT_HASHES = listOf("userSvtLeaderHash", "eventUserSvtLeaderHash", "userSvtGrandHash")
+    private val FILTERED_TYPES = setOf(1L, 2L)
     private const val GRAND_HASH = "userSvtGrandHash"
 
     /** [wire] is the body as received (encoded as [contentEncoding] says). */
@@ -87,6 +88,11 @@ object SupportListFilter {
             val kept = infos.filter { info ->
                 val candidate = info as? JsonObject ?: return@filter true
                 before++
+                // Story quests may send other kinds (NPC, fixed support) that the game needs; only friends and non-friends are filtered.
+                if (!isFilterable(candidate)) {
+                    after++
+                    return@filter true
+                }
                 val result = matches(candidate, criteria)
                 if (result == null) unknownShape = true
                 val keep = result != false
@@ -99,6 +105,12 @@ object SupportListFilter {
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
         return JsonObject(root + ("cache" to newCache)) to SupportListCounts(before, after)
+    }
+
+    /** type 1 (friend) and 2 (not a friend) as a JSON integer; a string "1" or a missing type is not. */
+    private fun isFilterable(follower: JsonObject): Boolean {
+        val type = follower["type"] as? JsonPrimitive ?: return false
+        return !type.isString && type.longOrNull in FILTERED_TYPES
     }
 
     /** True when one slot of the follower passes, false when none does, null when no slot hash is readable. */
