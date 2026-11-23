@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.HttpReader
 import io.github.fate_grand_automata.scripts.capture.Socks5
+import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.capture.SupportListFilter
 import io.github.fate_grand_automata.scripts.capture.TlsClientHello
 import timber.log.Timber
 import java.io.BufferedInputStream
@@ -62,6 +64,8 @@ class ProxyServer(
     private val onGameResponse: (String, ByteArray, String?) -> Unit = { target, payload, encoding ->
         CaptureTracker.onGameResponse(target, payload, encoding)
     },
+    /** Experiment (#636): criteria for the support list filter, or null while it is off. Read per response. */
+    private val supportListCriteria: () -> SupportListCriteria? = { null },
 ) {
     @Volatile
     private var sslContexts: Map<String, SSLContext> = sslContexts.filterKeys { it in CaptureNames.HOST_SERVERS }
@@ -775,8 +779,15 @@ class ProxyServer(
                 cout.flush()
                 resp = ur.readHead() ?: return
             }
-            cout.write(resp.raw)
-            val body = ur.copyBody(resp, cout, isResponse = true, requestMethod = req.method, captureBody = !account && recordThis)
+            val criteria = if (recordThis && reading && !account && resp.status in 200..299 &&
+                !req.method.equals("HEAD", true) && CaptureNames.path(path) == SupportListFilter.PATH
+            ) runCatching { supportListCriteria() }.getOrNull()?.takeIf { it.servantIds.isNotEmpty() } else null
+            val body = if (criteria != null) {
+                relaySupportList(ur, cout, resp, req.method, criteria)
+            } else {
+                cout.write(resp.raw)
+                ur.copyBody(resp, cout, isResponse = true, requestMethod = req.method, captureBody = !account && recordThis)
+            }
             cout.flush()
             val total = resp.raw.size + body.rawBytes
             val stillReading = reading && recordThis
@@ -805,6 +816,58 @@ class ProxyServer(
             if (req.header("Connection")?.equals("close", true) == true) return
             if (resp.header("Connection")?.equals("close", true) == true) return
         }
+    }
+
+    /**
+     * Experiment (#636): the one path whose body is held back so it can be filtered. The wire bytes are kept up to
+     * [SupportListFilter.MAX_WIRE_BYTES]; past that, or when anything fails, they go to the game exactly as read.
+     * The returned result still carries the original payload, which is what capture records.
+     */
+    private var supportListRewriteHead: (ByteArray, Int) -> ByteArray? = SupportListFilter::rewriteHead
+
+    internal fun setSupportListRewriteHeadForTesting(step: (ByteArray, Int) -> ByteArray?) {
+        supportListRewriteHead = step
+    }
+
+    private fun relaySupportList(
+        ur: HttpReader,
+        cout: OutputStream,
+        resp: io.github.fate_grand_automata.scripts.capture.HttpHead,
+        method: String,
+        criteria: SupportListCriteria,
+    ): io.github.fate_grand_automata.scripts.capture.BodyResult {
+        val held = HeldResponse(cout, resp.raw, SupportListFilter.MAX_WIRE_BYTES)
+        val body = try {
+            ur.copyBody(resp, held, isResponse = true, requestMethod = method, captureBody = true)
+        } catch (t: Throwable) {
+            held.release()
+            throw t
+        }
+        // Everything up to the first byte of the new response is fail-open: a Throwable here sends the original bytes.
+        val replacement: ByteArray? = try {
+            val payload = body.payload
+            val filtered = if (payload != null && !held.released && !body.hadTrailers) {
+                SupportListFilter.apply(payload, resp.header("Content-Encoding"), criteria)
+            } else null
+            val head = filtered?.let { supportListRewriteHead(resp.raw, it.wire.size) }
+            if (filtered != null && head != null) {
+                val c = filtered.counts
+                Timber.d(
+                    "Capture: support list filter friends %d>%d slots %d>%d",
+                    c.friendsBefore, c.friendsAfter, c.slotsBefore, c.slotsAfter,
+                )
+                head + filtered.wire
+            } else null
+        } catch (_: Throwable) {
+            null
+        }
+        if (replacement != null) {
+            held.discard()
+            cout.write(replacement)
+        } else {
+            held.release()
+        }
+        return body
     }
 
     private class ReplaySocket(
@@ -888,3 +951,49 @@ class ProxyServer(
         }
     }
 }
+
+/** Holds the head and body of a response until it is either replaced ([discard]) or sent as it came ([release]). */
+internal class HeldResponse(private val out: OutputStream, private val head: ByteArray, private val limit: Int) : OutputStream() {
+    private var buffer: ByteArrayOutputStream? = ByteArrayOutputStream()
+    var released = false
+        private set
+
+    /** Bytes kept in memory, head included; never above the limit. */
+    val heldBytes: Int get() = if (buffer == null) 0 else head.size + buffer!!.size()
+
+    override fun write(b: Int) = write(byteArrayOf(b.toByte()), 0, 1)
+
+    override fun write(b: ByteArray, off: Int, len: Int) {
+        val held = buffer
+        if (released || held == null) {
+            out.write(b, off, len)
+            return
+        }
+        if (head.size.toLong() + held.size() + len > limit) {
+            release()
+            out.write(b, off, len)
+            return
+        }
+        try {
+            held.write(b, off, len)
+        } catch (_: OutOfMemoryError) {
+            release()
+            out.write(b, off, len)
+        }
+    }
+
+    fun release() {
+        if (released) return
+        val held = buffer
+        released = true
+        buffer = null
+        out.write(head)
+        held?.writeTo(out)
+    }
+
+    fun discard() {
+        released = true
+        buffer = null
+    }
+}
+

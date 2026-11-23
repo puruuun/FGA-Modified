@@ -1,0 +1,557 @@
+{
+ "_comment": "Templates in both app/src/main/assets/Kr and Jp that the existing template finds on both servers reference screenshots (2026-11-20). shown: the text the label shows on the other server; target_text: given where the APK localization does not hold it.",
+ "templates": [
+  "append_level_dialog_title",
+  "append_level_label",
+  "battle_menu",
+  "bond_popup_title",
+  "bond_result_title",
+  "ce_enhance_execute",
+  "ce_enhance_reselect",
+  "close",
+  "execute",
+  "fp_continue",
+  "fp_sell_menu",
+  "fp_sell_sell",
+  "fp_sell_summon_button",
+  "fp_sell_summon_button_free",
+  "fp_sell_summon_menu",
+  "fp_sell_tab",
+  "fp_sell_word_servant",
+  "inven_full",
+  "ok",
+  "quest_item_close",
+  "rank_up",
+  "result",
+  "servant_auto_select",
+  "servant_auto_select_off",
+  "skill_level_dialog_title",
+  "skill_level_label",
+  "skill_level_reselect",
+  "skill_level_result",
+  "skill_level_unlock_button",
+  "support_region_tool",
+  "weekly_close",
+  "weekly_daily",
+  "weekly_gate",
+  "weekly_mi",
+  "weekly_mr1",
+  "weekly_mr15",
+  "weekly_notice",
+  "weekly_terminal"
+ ],
+ "cases": {
+  "append_level_dialog_title": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "강화"
+   }
+  },
+  "ce_enhance_execute": {
+   "shown": {
+    "Jp": "実行",
+    "Kr": "실행"
+   }
+  },
+  "execute": {
+   "shown": {
+    "Jp": "実行",
+    "Kr": "실행"
+   }
+  },
+  "fp_sell_sell": {
+   "shown": {
+    "Jp": "売却",
+    "Kr": "판매"
+   }
+  },
+  "fp_sell_summon_button": {
+   "shown": {
+    "Jp": "召喚",
+    "Kr": "소환"
+   }
+  },
+  "fp_sell_summon_button_free": {
+   "shown": {
+    "Jp": "召喚",
+    "Kr": "소환"
+   }
+  },
+  "fp_sell_word_servant": {
+   "shown": {
+    "Jp": "サーヴァント枠",
+    "Kr": "서번트칸"
+   },
+   "target_text": {
+    "Kr": "서번트칸",
+    "Jp": "サーヴァント枠"
+   }
+  },
+  "fp_sell_tab": {
+   "shown": {
+    "Jp": "サーヴァント",
+    "Kr": "서번트"
+   }
+  },
+  "inven_full": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "강화"
+   }
+  },
+  "skill_level_dialog_title": {
+   "shown": {
+    "Jp": "強化",
+    "Kr": "레벨업"
+   },
+   "target_text": {
+    "Kr": "레벨업",
+    "Jp": "強化"
+   }
+  },
+  "skill_level_unlock_button": {
+   "shown": {
+    "Jp": "解放",
+    "Kr": "해방"
+   },
+   "target_text": {
+    "Kr": "해방",
+    "Jp": "解放"
+   }
+  },
+  "weekly_close": {
+   "shown": {
+    "Jp": "閉じる",
+    "Kr": "닫기"
+   }
+  },
+  "weekly_notice": {
+   "shown": {
+    "Jp": "お知らせ",
+    "Kr": "공지"
+   },
+   "target_text": {
+    "Kr": "공지",
+    "Jp": "お知らせ"
+   }
+  },
+  "weekly_terminal": {
+   "shown": {
+    "Jp": "ターミナル",
+    "Kr": "터미널"
+   },
+   "target_text": {
+    "Kr": "터미널",
+    "Jp": "ターミナル"
+   }
+  },
+  "servant_auto_select": {
+   "shown": {
+    "Jp": "おすすめ選択",
+    "Kr": "추천 선택"
+   }
+  },
+  "servant_auto_select_off": {
+   "shown": {
+    "Jp": "おすすめ選択",
+    "Kr": "추천 선택"
+   }
+  }
+ },
+ "_comment_named": "named: the specified-element run (cross_server.py --named). Per template, keyed by the server whose data, template and one screenshot (the same screenshot as the located run) the element was chosen from; the draft is for the other server. path: regex of the widget path; sprite: the sprite code sets on it (no widget names it in the data); shown: the text the label shows on that screenshot; target_text: the target text where the APK localization does not hold it; art: the element is not drawn from the APK (why); how: how it was chosen. Each choice rests on evidence from the source server only (recorded in how); the one agent that chose them had seen both servers' templates and screenshots during the work, so the choice is not blind.",
+ "named": {
+  "append_level_dialog_title": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/AppendSkillConfirmInfo/UpTitleTxt$",
+    "how": "the dialog is the append skill level-up confirmation (Lv.5 > Lv.6, QP lines); its title label is SetRarityDialog/DlgPanel/AppendSkillConfirmInfo/UpTitleTxt, text set by code (APPEND_SKILL_LVUP_TITLE); the template crops its last word",
+    "shown": "강화"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/AppendSkillConfirmInfo/UpTitleTxt$",
+    "how": "the same dialog on the JP screenshot (append skill level-up confirmation); title label AppendSkillConfirmInfo/UpTitleTxt, text APPEND_SKILL_LVUP_TITLE; the template crops its last word",
+    "shown": "強化"
+   }
+  },
+  "append_level_label": {
+   "Kr": {
+    "art": "the header sprite of AppendSkillCombinePanel/CombineItemSelect/bgSprite/TitleSprite is set by code; CombineAtlas holds the skill-item header (img_txt_skillitem) but no append-item header; find_sprite finds no sprite for the template (best 0.55)"
+   },
+   "Jp": {
+    "art": "as on KR: TitleSprite of AppendSkillCombinePanel is set by code and the append-item header is not in the JP CombineAtlas (find_sprite best 0.76, another header)"
+   }
+  },
+  "battle_menu": {
+   "Kr": {
+    "path": "MenuButtonRoot/btn_menu/Sprite$",
+    "how": "the template is the caption of the battle menu button (diamond, Battle / 배틀 메뉴); BattleUIAtlas/btn_master_menu draws the whole button with its caption, used by BattleScene .../MenuButtonRoot/btn_menu/Sprite"
+   },
+   "Jp": {
+    "path": "MenuButtonRoot/btn_menu/Sprite$",
+    "how": "the JP screenshot does not show the battle menu (the template matches quest-title text there); chosen from the JP data: BattleUIAtlas/btn_master_menu draws the caption the template crops (トル of バトル)"
+   }
+  },
+  "bond_popup_title": {
+   "Kr": {
+    "art": "ResultAtlas in the KR APK holds the JP originals (img_txt_servantbonds02 shows Japanese text); the Korean title is downloaded art"
+   },
+   "Jp": {
+    "art": "the JP APK has no ResultAtlas (downloaded)"
+   }
+  },
+  "bond_result_title": {
+   "Kr": {
+    "art": "ResultAtlas in the KR APK holds the JP originals (img_txt_servantbonds01 shows Japanese text); the Korean title is downloaded art"
+   },
+   "Jp": {
+    "art": "the JP APK has no ResultAtlas (downloaded)"
+   }
+  },
+  "ce_enhance_execute": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/RecommendedMaterialConfigDialog/Window/Buttons/DecideButton/Label$",
+    "how": "the dialog is the recommended-material settings of CE enhancement (kind, rarity, enhanced state, auto set); its decide button label, text set by code",
+    "shown": "실행"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/RecommendedMaterialConfigDialog/Window/Buttons/DecideButton/Label$",
+    "how": "the same dialog on the JP screenshot; its decide button label",
+    "shown": "実行"
+   }
+  },
+  "ce_enhance_reselect": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/TitlePrefab/BackObj/BackAnchor/BtnSelect/BackImg$",
+    "sprite": "btn_txt_synthesis_reselect",
+    "how": "find_sprite: CombineAtlas/btn_txt_synthesis_reselect 0.945; no widget names it, so code sets it on the Combine title bar reselect button (BtnSelect/BackImg, which names btn_txt_servant_reselect in the data)"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/TitlePrefab/BackObj/BackAnchor/BtnSelect/BackImg$",
+    "sprite": "btn_txt_synthesis_reselect",
+    "how": "find_sprite: CombineAtlas/btn_txt_synthesis_reselect 0.740 (next 0.49); set by code on the Combine title bar BtnSelect/BackImg"
+   }
+  },
+  "close": {
+   "Kr": {
+    "path": "^AchievementExchangeConditionsDialog/Window/CloseBtn/Label$",
+    "how": "a gray dialog close button in battle; the common dialog close labels draw alike (0.965-0.968); the first that shows 닫기 itself in the data"
+   },
+   "Jp": {
+    "path": "^AchievementExchangeConditionsDialog/Window/CloseBtn/Label$",
+    "how": "a gray dialog close button (repeat dialog); the common close labels draw alike (0.975); the first that shows 閉じる itself in the data"
+   }
+  },
+  "execute": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/RecommendedMaterialConfigDialog/Window/Buttons/DecideButton/Label$",
+    "how": "the dialog is the recommended-material settings of servant enhancement (ALL / same class / other class, rarity, auto set); its decide button label, text set by code",
+    "shown": "실행"
+   },
+   "Jp": {
+    "path": "^Management/CommonUI/UI Root/SystemUICamera/TopDialogPanel/CommonConfirmDialog/Window/DecideButton/Label$",
+    "how": "a common confirmation dialog (title, message, いいえ / 実行する; 実行する is COMMON_CONFIRM_EXECUTE): the common confirm dialog decide label; the template crops 実行",
+    "shown": "実行"
+   }
+  },
+  "fp_continue": {
+   "Kr": {
+    "path": "SummonScene/UI Root/Camera/GachaResultList/ChangeSceneBtnInfo/SummonBtn/Label$",
+    "shown": "계속해서 100회 소환",
+    "target_text": "続けて100回召喚",
+    "how": "summon result buttons (편성 / 강화 / 계속해서 100회 소환 / 판매): GachaResultList/ChangeSceneBtnInfo/SummonBtn/Label, text CONTINUE_SUMMON_BTN with the count 100 read on the screenshot; target text = the JP entry with 100"
+   },
+   "Jp": {
+    "path": "SummonScene/UI Root/Camera/GachaResultList/ChangeSceneBtnInfo/SummonBtn/Label$",
+    "shown": "続けて100回召喚",
+    "target_text": "계속해서 100회 소환",
+    "how": "summon result buttons under the frame-full dialog: SummonBtn/Label, CONTINUE_SUMMON_BTN with 100; target text = the KR entry with 100"
+   }
+  },
+  "fp_sell_menu": {
+   "Kr": {
+    "path": "^MainMenuBarPrefab/Base/Background/StateImg$",
+    "how": "the MENU button of the main menu bar (img_menu_menu)"
+   },
+   "Jp": {
+    "path": "^MainMenuBarPrefab/Base/Background/StateImg$",
+    "how": "the MENU button of the main menu bar (img_menu_menu)"
+   }
+  },
+  "fp_sell_sell": {
+   "Kr": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/ConfirmBntInfo/SellButton/Label$",
+    "how": "the servant-frame-full dialog (판매 / 강화 / 영기 보관실 / 닫기): its sell button label",
+    "shown": "판매"
+   },
+   "Jp": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/ConfirmBntInfo/SellButton/Label$",
+    "how": "the servant-frame-full dialog: its sell button label",
+    "shown": "売却"
+   }
+  },
+  "fp_sell_summon_button": {
+   "Kr": {
+    "art": "the 100-summon button title is sprite text; the KR GachaAtlas holds the JP originals (btn_txt_summon10 shows 10回召喚) and no Korean summon text (find_sprite best 0.53)"
+   },
+   "Jp": {
+    "art": "the friend-point 100-summon title is not in GachaAtlas (btn_txt_summon01-11 and summon_txt_10 only); the template crops 召喚 of 100回召喚"
+   }
+  },
+  "fp_sell_summon_button_free": {
+   "Kr": {
+    "art": "the free 10-summon title is sprite text (summon_txt_10); the KR APK copy shows the JP original 10回召喚, no Korean"
+   },
+   "Jp": {
+    "path": "FreeGachaBtnInfo/BtnImg/Free10info/TimesImg$",
+    "how": "find_sprite: GachaAtlas/summon_txt_10 0.942, used by SummonScene .../FreeGachaBtnInfo/BtnImg/Free10info/TimesImg"
+   }
+  },
+  "fp_sell_summon_menu": {
+   "Kr": {
+    "path": "^MainMenuBarPrefab/Base/MenuGrid/Button4Summon$",
+    "how": "the summon button of the main menu bar (img_menu_summon); the template crops its caption"
+   },
+   "Jp": {
+    "path": "^MainMenuBarPrefab/Base/MenuGrid/Button4Summon$",
+    "how": "the summon button of the main menu bar (img_menu_summon); the template crops its caption"
+   }
+  },
+  "fp_sell_tab": {
+   "Kr": {
+    "path": "ShopScene/UI Root/Camera/ServantSellMenu/ViewBase/InfomationWindow/ServantButton/Sprite$",
+    "sprite": "btn_txt_servant_on",
+    "how": "the servant tab of the sell list (ShopScene ServantSellMenu); the data names btn_txt_servant_off, the selected tab shows btn_txt_servant_on (find_sprite 0.795)"
+   },
+   "Jp": {
+    "path": "ShopScene/UI Root/Camera/ServantSellMenu/ViewBase/InfomationWindow/ServantButton/Sprite$",
+    "sprite": "btn_txt_servant_on",
+    "how": "the servant tab of the sell list; selected state btn_txt_servant_on (find_sprite 0.756)"
+   }
+  },
+  "fp_sell_word_servant": {
+   "Kr": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/MsgLabel$",
+    "how": "the first word of the servant-frame-full dialog message (MsgLabel)",
+    "shown": "서번트칸",
+    "target_text": "サーヴァント枠"
+   },
+   "Jp": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/MsgLabel$",
+    "how": "the first word of the servant-frame-full dialog message (MsgLabel)",
+    "shown": "サーヴァント枠",
+    "target_text": "서번트칸"
+   }
+  },
+  "inven_full": {
+   "Kr": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/ConfirmBntInfo/PwUpButton/Label$",
+    "how": "the servant-frame-full dialog: its enhance (강화) button label",
+    "shown": "강화"
+   },
+   "Jp": {
+    "path": "^ServantFrameShortDialog/ConfirmWindow/ConfirmBntInfo/PwUpButton/Label$",
+    "how": "the servant-frame-full dialog: its enhance (強化) button label",
+    "shown": "強化"
+   }
+  },
+  "ok": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/ConfirmBtnInfo/ConfirmBtn/ConfirmTxt$",
+    "how": "the append skill level-up confirmation (취소 / 확인): SetRarityDialog/DlgPanel/ConfirmBtnInfo/ConfirmBtn/ConfirmTxt",
+    "shown": "확인"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/CombineLimitUpWarningDialog/Window/Objects/Buttons/DecideButton/Label$",
+    "how": "a CombineScene warning confirmation (title, warning text, キャンセル / 決定); the five CombineScene 決定 labels draw alike (0.957); the warning dialog with that layout",
+    "shown": "決定"
+   }
+  },
+  "quest_item_close": {
+   "Kr": {
+    "path": "^AchievementExchangeConditionsDialog/Window/CloseBtn/Label$",
+    "how": "a gray dialog close button; the common close labels draw alike (0.964); the first showing 닫기 in the data"
+   },
+   "Jp": {
+    "path": "^AchievementExchangeConditionsDialog/Window/CloseBtn/Label$",
+    "how": "a gray dialog close button; the top label showing 閉じる in the data (0.975)"
+   }
+  },
+  "rank_up": {
+   "Kr": {
+    "path": "^CombineResultEffectPrefab/ResultPanel/ResultWindow/BaseWindow/SkillInfo/InfoAft/changeSp/Sprite$",
+    "how": "the skill level-up result window: the chevron between the skill before and after (SkillInfo; img_combine_arrow02)"
+   },
+   "Jp": {
+    "path": "^CombineResultEffectPrefab/ResultPanel/ResultWindow/BaseWindow/SkillInfo/InfoAft/changeSp/Sprite$",
+    "how": "the skill level-up result window: the chevron of SkillInfo (img_combine_arrow02)"
+   }
+  },
+  "result": {
+   "Kr": {
+    "art": "the bond title of the result screen (ResultAtlas): the KR APK copy is the JP original, the Korean art is downloaded"
+   },
+   "Jp": {
+    "art": "the JP APK has no ResultAtlas (downloaded); the template crops the bond title"
+   }
+  },
+  "servant_auto_select": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/SvtCombinePanel/RecommendedMaterialButton/(Label|Bg)$",
+    "how": "servant enhancement: the recommended-material button (label RECOMMENDED_MATERIAL_BUTTON_LABEL on btn_bg_14)",
+    "shown": "추천 선택"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/SvtEquipCombinePanel/RecommendedMaterialButton/(Label|Bg)$",
+    "how": "CE enhancement: the recommended-material button (label on btn_bg_14)",
+    "shown": "おすすめ選択"
+   }
+  },
+  "servant_auto_select_off": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/SvtCombinePanel/RecommendedMaterialButton/(Label|Bg)$",
+    "how": "servant enhancement with no servant: the same button, disabled (its tint is runtime state)",
+    "shown": "추천 선택"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/SvtEquipCombinePanel/RecommendedMaterialButton/(Label|Bg)$",
+    "how": "CE enhancement with no CE: the same button, disabled (runtime tint)",
+    "shown": "おすすめ選択"
+   }
+  },
+  "skill_level_dialog_title": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/SkillUpConfirmInfo/UpTitleTxt$",
+    "how": "the skill level-up confirmation (스킬 레벨업, Lv.3 > Lv.4): SkillUpConfirmInfo/UpTitleTxt; the template crops its last word",
+    "shown": "레벨업",
+    "target_text": "強化"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/SkillUpConfirmInfo/UpTitleTxt$",
+    "how": "the skill level-up confirmation (スキル強化): SkillUpConfirmInfo/UpTitleTxt; the template crops its last word",
+    "shown": "強化",
+    "target_text": "레벨업"
+   }
+  },
+  "skill_level_label": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/ServantSkillNpCombinePanel/CombineItemSelect/bgSprite/TitleSprite$",
+    "how": "find_sprite: CombineAtlas/img_txt_skillitem 0.968; the skill panel header"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/ServantSkillNpCombinePanel/CombineItemSelect/bgSprite/TitleSprite$",
+    "how": "find_sprite: CombineAtlas/img_txt_skillitem 0.991; the skill panel header"
+   }
+  },
+  "skill_level_reselect": {
+   "Kr": {
+    "path": "CombineScene/UI Root/Camera/TitlePrefab/BackObj/BackAnchor/BtnSelect/BackImg$",
+    "how": "find_sprite: CombineAtlas/btn_txt_servant_reselect 0.952; the Combine title bar BtnSelect/BackImg"
+   },
+   "Jp": {
+    "path": "CombineScene/UI Root/Camera/TitlePrefab/BackObj/BackAnchor/BtnSelect/BackImg$",
+    "how": "find_sprite: CombineAtlas/btn_txt_servant_reselect 0.824; the Combine title bar BtnSelect/BackImg"
+   }
+  },
+  "skill_level_result": {
+   "Kr": {
+    "path": "^CombineResultEffectPrefab/ResultPanel/ScreenTouchInformation$",
+    "how": "the skill level-up result: touch-screen caption (img_txt_touchscreen, find_sprite 0.89) of CombineResultEffectPrefab"
+   },
+   "Jp": {
+    "path": "^CombineResultEffectPrefab/ResultPanel/ScreenTouchInformation$",
+    "how": "the skill level-up result: touch-screen caption (img_txt_touchscreen, find_sprite 0.81) of CombineResultEffectPrefab"
+   }
+  },
+  "skill_level_unlock_button": {
+   "Kr": {
+    "art": "the caption of AppendSkillCombinePanel/ConfirmBtn/BtnTxtImg is set by code; CombineAtlas has 강화하기 (buttontxt_synthesis) and 개방 (btn_txt_open) but no 해방"
+   },
+   "Jp": {
+    "art": "as on KR: the JP CombineAtlas has 開放する (btn_txt_open) but no 解放する"
+   }
+  },
+  "support_region_tool": {
+   "Kr": {
+    "path": "^FollowerSelectItemListViewItemPrefab/DispObject/SupportInfoButton/BackSprite$",
+    "how": "the support selection list: the support formation button (PartyOrganizationAtlas/btn_supportform, find_sprite 0.948) of the list item"
+   },
+   "Jp": {
+    "path": "^FollowerSelectItemListViewItemPrefab/DispObject/SupportInfoButton/BackSprite$",
+    "how": "the support selection list: btn_supportform (find_sprite 0.954) of the list item"
+   }
+  },
+  "weekly_close": {
+   "Kr": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "sprite": "img_return_modoru",
+    "how": "the back button of the quest list (TerminalScene title bar); its caption 닫기 is CommonUIAtlas/img_return_modoru (the top find_sprite hit, img_return_info, shows 공지)"
+   },
+   "Jp": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "sprite": "img_return_modoru",
+    "how": "the back button of the quest list; find_sprite: img_return_modoru 0.915"
+   }
+  },
+  "weekly_daily": {
+   "Kr": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.54); downloaded banner"
+   },
+   "Jp": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.52); downloaded banner"
+   }
+  },
+  "weekly_gate": {
+   "Kr": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.50); downloaded banner"
+   },
+   "Jp": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.53); downloaded banner"
+   }
+  },
+  "weekly_mi": {
+   "Kr": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.56); downloaded banner"
+   },
+   "Jp": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.54); downloaded banner"
+   }
+  },
+  "weekly_mr1": {
+   "Kr": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.60); downloaded banner"
+   },
+   "Jp": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.60); downloaded banner"
+   }
+  },
+  "weekly_mr15": {
+   "Kr": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.43); downloaded banner"
+   },
+   "Jp": {
+    "art": "quest banner art: no APK sprite or label draws it (find_sprite best 0.48); downloaded banner"
+   }
+  },
+  "weekly_notice": {
+   "Kr": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "how": "the back button of the terminal (TerminalScene title bar), img_return_info (find_sprite 0.978)"
+   },
+   "Jp": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "how": "the back button of the terminal, img_return_info (find_sprite 0.987)"
+   }
+  },
+  "weekly_terminal": {
+   "Kr": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "sprite": "img_return_terminal",
+    "how": "the back button on a chapter map; find_sprite: img_return_terminal 0.975, which no widget names: set by code on the TerminalScene title bar back button"
+   },
+   "Jp": {
+    "path": "^TerminalScene/UI Root/TitlePrefab/BackObj/BackAnchor/BtnBg/BackImg$",
+    "sprite": "img_return_terminal",
+    "how": "the back button on a chapter map; find_sprite: img_return_terminal 0.971, set by code on the title bar back button"
+   }
+  }
+ }
+}

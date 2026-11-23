@@ -60,14 +60,14 @@ class CardCountLogTest {
         val entry = CaptureLogItem(outside = outsideFixture().copy(period = period))
         assertEquals(setOf("2:10", "-1:10", "-2:10"), logResources(listOf(entry)))
         listOf("2:10", "-1:10", "-2:10").forEach { key ->
-            assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, key, 0))
+            assertEquals(listOf(entry), filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf(key), 0))
         }
         listOf("1:10", "3:10").forEach { key ->
-            assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, key, 0).isEmpty())
+            assertTrue(filterCaptureLogs(listOf(entry), LogTimeFilter.All, setOf(key), 0).isEmpty())
         }
         val loss = CaptureLogItem(outside = outsideFixture().copy(period = OutsidePeriod("synthetic", 1)
             .add(ChangeSource.of("shop/sell"), AccountDelta(svts = mapOf(10L to -1L)), 2)))
-        assertTrue(filterCaptureLogs(listOf(loss), LogTimeFilter.All, "-1:10", 0).isEmpty())
+        assertTrue(filterCaptureLogs(listOf(loss), LogTimeFilter.All, setOf("-1:10"), 0).isEmpty())
     }
 
     @Test fun enhancementAndShopDetailsContainTheirCardTilesBesideItems() {
@@ -89,7 +89,7 @@ class CardCountLogTest {
         val resources = setOf("-1:9700100", "-1:9400010", "-2:10")
         rule.setContent {
             androidx.compose.runtime.CompositionLocalProvider(LocalLogIconLoader provides localIconLoader(context)) {
-                LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 1, resourceLogFixture(resources), names, null, {}, { _, _, _, _, _, _, _ -> })
+                LogFilterDialog(LogTimeFilter.All, emptySet(), null, null, 200, 0, 1, resourceLogFixture(resources), names, null, {}, { _, _, _, _, _, _, _ -> })
             }
         }
         listOf("-1:9700100" to "예지의 맹화 (전체)", "-1:9400010" to "합성 예장", "-2:10" to "합성 코드").forEach { (key, name) ->

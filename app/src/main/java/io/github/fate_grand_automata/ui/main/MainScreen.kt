@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -38,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -61,7 +63,6 @@ import io.github.fate_grand_automata.runner.ScriptRunnerService
 import io.github.fate_grand_automata.scripts.prefs.wantsMediaProjectionToken
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
-import io.github.fate_grand_automata.ui.HeadingButton
 import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.StartMediaProjection
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
@@ -379,13 +380,13 @@ private fun OverlayServiceToggleButton(
     val backgroundColor by animateColorAsState(
         if (serviceStarted)
             MaterialTheme.colorScheme.error
-        else MaterialTheme.colorScheme.secondary
+        else MaterialTheme.colorScheme.primary
     )
 
     val foregroundColor =
         if (serviceStarted)
             MaterialTheme.colorScheme.onError
-        else MaterialTheme.colorScheme.onSecondary
+        else MaterialTheme.colorScheme.onPrimary
 
     ExtendedFloatingActionButton(
         text = {
@@ -419,15 +420,23 @@ internal fun MainBuildStatusRow(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         content = {
             Box(Modifier.testTag("buildBadge")) {
-                HeadingButton(text = "Build: ${BuildConfig.VERSION_NAME}", onClick = openBuild)
+                AssistChip(
+                    onClick = openBuild,
+                    label = { Text("Build: ${BuildConfig.VERSION_NAME}") },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    border = null
+                )
             }
             Surface(
                 onClick = toggleService,
                 // Preserve the old guard against disabling accessibility during an overlay run.
                 enabled = !serviceStarted || !overlayServiceStarted,
                 shape = CircleShape,
-                color = if (serviceStarted) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.errorContainer,
-                contentColor = if (serviceStarted) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onErrorContainer,
+                color = if (serviceStarted) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.errorContainer,
+                contentColor = if (serviceStarted) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.testTag("accessibilityStatus"),
             ) {
                 Text(

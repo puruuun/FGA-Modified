@@ -3,7 +3,13 @@ package io.github.fate_grand_automata.ui.drag_sort
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,11 +21,17 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+
+val DragSortTileHeight = 48.dp
+val DragSortTileMaxWidth = 64.dp
+val DragSortTileGap = 6.dp
+private val DragSortTileShape = RoundedCornerShape(8.dp)
 
 data class DragSortItemStyle(
     val backgroundColor: Color,
@@ -28,14 +40,14 @@ data class DragSortItemStyle(
 )
 
 /**
- * A horizontal row of labelled chips that the user reorders by dragging one sideways. Dragging
+ * A horizontal row of labelled tiles that the user reorders by dragging one sideways. Dragging
  * writes the new order straight into [items].
  *
  * [key] has to be stable per item, since it is what identifies an item across a move. It does
  * not have to be unique - see [uniqueKeys].
  *
  * Dragging starts on a long press. A plain swipe has to stay free for the row's own scrolling,
- * or items that start off-screen can never be brought into view to be dragged at all. The item
+ * or items that start off-screen can never be brought into view to be dragged at all. The tile
  * being dragged shrinks and vibrates, since the long press is otherwise invisible.
  */
 @Composable
@@ -52,41 +64,57 @@ fun <T> DragSort(
     val haptics = LocalHapticFeedback.current
 
     val itemKeys = items.uniqueKeys(key)
+    val panelColor = MaterialTheme.colorScheme.surfaceContainer
 
-    LazyRow(
-        state = listState,
-        modifier = modifier
-    ) {
-        itemsIndexed(items, key = { index, _ -> itemKeys[index] }) { index, item ->
-            ReorderableItem(reorderableState, key = itemKeys[index]) { isDragging ->
-                val itemStyle = style(item)
-                val inset by animateColorAsState(
-                    if (isDragging) MaterialTheme.colorScheme.background else Color.Transparent
-                )
+    BoxWithConstraints(modifier = modifier) {
+        // Equal widths that share the row; the cap keeps a few tiles from stretching across a wide screen.
+        // Rounded down to whole pixels: tiles that each round up would add up to more than the row has.
+        val tileWidth = with(LocalDensity.current) {
+            ((maxWidth - DragSortTileGap * (items.size - 1)) / items.size.coerceAtLeast(1))
+                .coerceAtMost(DragSortTileMaxWidth)
+                .toPx().toInt().toDp()
+        }
 
-                Text(
-                    text = itemStyle.text,
-                    color = itemStyle.contentColor,
-                    fontSize = 16.sp,
-                    modifier = Modifier
-                        .longPressDraggableHandle(
-                            onDragStarted = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
-                            onDragStopped = {
-                                haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                            }
+        LazyRow(
+            state = listState,
+            horizontalArrangement = Arrangement.spacedBy(DragSortTileGap)
+        ) {
+            itemsIndexed(items, key = { index, _ -> itemKeys[index] }) { index, item ->
+                ReorderableItem(reorderableState, key = itemKeys[index]) { isDragging ->
+                    val itemStyle = style(item)
+                    val inset by animateColorAsState(if (isDragging) panelColor else Color.Transparent)
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(tileWidth, DragSortTileHeight)
+                            .longPressDraggableHandle(
+                                onDragStarted = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                },
+                                onDragStopped = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                }
+                            )
+                            .clip(DragSortTileShape)
+                            .background(itemStyle.backgroundColor)
+                            /*
+                             * Painted in the panel colour so the tile reads as shrinking rather than
+                             * gaining an outline. The cue has to stay within the tile's own bounds:
+                             * the dragged tile is not raised above its neighbours, so a shadow or a
+                             * scale would be painted over by the next tile.
+                             */
+                            .border(2.dp, inset, DragSortTileShape)
+                    ) {
+                        Text(
+                            text = itemStyle.text,
+                            color = itemStyle.contentColor,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            softWrap = false
                         )
-                        .background(itemStyle.backgroundColor)
-                        /*
-                         * Painted in the page colour so the chip reads as shrinking rather than
-                         * gaining an outline. The cue has to stay within the chip's own bounds:
-                         * the chips sit edge to edge and the dragged one is not raised above them,
-                         * so a shadow or a scale would be painted over by the next chip.
-                         */
-                        .border(2.dp, inset)
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
-                )
+                    }
+                }
             }
         }
     }

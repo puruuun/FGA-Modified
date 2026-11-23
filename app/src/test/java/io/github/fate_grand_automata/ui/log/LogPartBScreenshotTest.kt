@@ -49,7 +49,7 @@ class LogPartBScreenshotTest(private val width: Int, private val height: Int, pr
             if (width >= 840) LogScreenContent(listOf(battle), {}, {}, names, openOutsideEntries = listOf(outside))
             else Column(Modifier.fillMaxSize()) {
                 LogList(mixedCaptureLogs(listOf(battle), emptyList(), listOf(outside)), "outside:${outside.id}", {},
-                    LogDeleteSelection(), {}, {}, {}, {}, true, "", {}, null, {})
+                    LogDeleteSelection(), {}, {}, {}, {}, true, "", {}, null)
             }
         }
     }

@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.skill_maker
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,7 +82,7 @@ internal fun DirectCardsDialog(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.skill_maker_direct_cards_use), modifier = Modifier.weight(1f))
-                    Switch(checked = enabled, onCheckedChange = { enabled = it })
+                    Switch(checked = enabled, onCheckedChange = { enabled = it }, colors = FGASwitchColors())
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(

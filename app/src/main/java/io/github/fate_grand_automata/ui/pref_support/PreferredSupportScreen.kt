@@ -1,16 +1,15 @@
 package io.github.fate_grand_automata.ui.pref_support
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardDefaults.cardElevation
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,18 +22,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.SupportImageKind
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.OnResume
+import io.github.fate_grand_automata.ui.dialog.FaceThumbnails
 import io.github.fate_grand_automata.ui.icon
 import io.github.fate_grand_automata.ui.prefs.ListPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
@@ -47,6 +51,12 @@ import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
 import io.github.fate_grand_automata.util.stringRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.content.res.AssetManager
+import io.github.fate_grand_automata.ui.dialog.ImageDelete
+import io.github.fate_grand_automata.util.StorageProvider
+import io.github.fate_grand_automata.util.SupportImageExtractor
+import io.github.fate_grand_automata.util.SupportThumbnailIndex
 
 @Composable
 fun PreferredSupportScreen(
@@ -82,6 +92,41 @@ fun PreferredSupportScreen(
     }
 }
 
+/**
+ * Deleting for one picker. Built-in images are protected because the extractor writes them back after an app
+ * update and from the More options screen, so a deleted one would reappear on its own.
+ */
+internal fun supportImageDelete(
+    storage: StorageProvider,
+    kind: SupportImageKind,
+    assets: AssetManager,
+    index: SupportThumbnailIndex,
+    afterDelete: () -> Unit
+): ImageDelete<String> {
+    val builtIn = SupportImageExtractor.builtInEntries(assets, kind)
+    return ImageDelete(
+        isProtected = { it in builtIn },
+        delete = { names ->
+            val removable = names.filterNot { it in builtIn }.toSet()
+            val removed = withContext(Dispatchers.IO) { storage.deleteSupportEntries(kind, removable) }
+            index.forget(removed)
+            afterDelete()
+            removed
+        }
+    )
+}
+
+/** Turns off the checks the screen hides for this state. Only writes a check that is on. */
+internal fun SupportPrefsCore.clearHiddenChecks(hasServants: Boolean, grandServant: Boolean) {
+    if (!hasServants) {
+        if (npLevelCheck.get()) npLevelCheck.set(false)
+        if (score62Check.get()) score62Check.set(false)
+    }
+    if (!hasServants || !grandServant) {
+        if (grandScore16Check.get()) grandScore16Check.set(false)
+    }
+}
+
 @Composable
 internal fun PreferredSupport(
     config: SupportPrefsCore,
@@ -90,6 +135,17 @@ internal fun PreferredSupport(
     val prefServants by config.preferredServants.remember()
     val prefCEs by config.preferredCEs.remember()
     val grandServant by config.grandServant.remember()
+
+    // Runs when the screen opens, which repairs a stored config that breaks the rule, and again whenever a
+    // condition stops holding. A hidden check must not stay active, so it is stored off (#613).
+    // It reads the stored values: the remembered states above start at the defaults until their flows
+    // arrive, and clearing from those would wipe the checks of a valid config on every open.
+    LaunchedEffect(config, prefServants.isNotEmpty(), grandServant) {
+        config.clearHiddenChecks(
+            hasServants = config.preferredServants.get().isNotEmpty(),
+            grandServant = config.grandServant.get()
+        )
+    }
 
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -103,6 +159,19 @@ internal fun PreferredSupport(
     }
     val ceEntries = remember(vm.ces, configuration) {
         vm.ces.mapValues { (_, displayName) -> getLocalizedCEName(context, displayName) }
+    }
+
+    // A new index per refresh, so images saved by "이미지 받기" show up in the reopened list.
+    val servantIndex = remember(vm.servants) { vm.storageProvider.supportThumbnails(SupportImageKind.Servant) }
+    val ceIndex = remember(vm.ces) { vm.storageProvider.supportThumbnails(SupportImageKind.CE) }
+    val servantFaces = remember(servantIndex) { FaceThumbnails(servantIndex::thumbnail) }
+    val ceFaces = remember(ceIndex) { FaceThumbnails(ceIndex::thumbnail) }
+
+    val servantDelete = remember(vm, servantIndex) {
+        supportImageDelete(vm.storageProvider, SupportImageKind.Servant, context.assets, servantIndex) { vm.refresh(context) }
+    }
+    val ceDelete = remember(vm, ceIndex) {
+        supportImageDelete(vm.storageProvider, SupportImageKind.CE, context.assets, ceIndex) { vm.refresh(context) }
     }
 
     CappedWidth {
@@ -131,6 +200,8 @@ internal fun PreferredSupport(
                         config.preferredServants.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_servants),
                             entries = servantEntries,
+                            thumbnails = servantFaces,
+                            imageDelete = servantDelete,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.Servant, select, { vm.refresh(context) })
                             }
@@ -174,23 +245,26 @@ internal fun PreferredSupport(
                                 )
                             }
                         }
-                        config.npLevelCheck.SwitchPreference(
-                            title = stringResource(R.string.p_np_level_check)
-                        )
-                        val npEnabled by config.npLevelCheck.remember()
-                        AnimatedVisibility(npEnabled) {
-                            config.minimumNpLevel.ListPreference(
-                                title = stringResource(R.string.p_np_min_level),
-                                entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
-                            )
-                        }
-                        config.score62Check.SwitchPreference(
-                            title = stringResource(R.string.p_score_62_check)
-                        )
-                        config.grandScore16Check.SwitchPreference(
-                            title = stringResource(R.string.p_grand_score_16_check)
-                        )
                         if (prefServants.isNotEmpty()) {
+                            config.npLevelCheck.SwitchPreference(
+                                title = stringResource(R.string.p_np_level_check)
+                            )
+                            val npEnabled by config.npLevelCheck.remember()
+                            AnimatedVisibility(npEnabled) {
+                                config.minimumNpLevel.ListPreference(
+                                    title = stringResource(R.string.p_np_min_level),
+                                    entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
+                                )
+                            }
+                            config.score62Check.SwitchPreference(
+                                title = stringResource(R.string.p_score_62_check)
+                            )
+                            // The game shows +16 only for Grand servants.
+                            if (grandServant) {
+                                config.grandScore16Check.SwitchPreference(
+                                    title = stringResource(R.string.p_grand_score_16_check)
+                                )
+                            }
                             config.appendSkillCheck.SwitchPreference(
                                 title = stringResource(R.string.p_append_skill_check)
                             )
@@ -198,7 +272,7 @@ internal fun PreferredSupport(
                             AnimatedVisibility(appendEnabled) {
                                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                                     Row(modifier = Modifier.padding(top = 8.dp)) {
-                                        MaxSkills(config.appendSkillsMax, compact = true)
+                                        MaxSkills(config.appendSkillsMax, compact = true, tagPrefix = MaxAppendSkillTagPrefix)
                                     }
                                 }
                             }
@@ -227,6 +301,8 @@ internal fun PreferredSupport(
                         config.preferredCEs.SupportSelectPreference(
                             title = stringResource(R.string.p_battle_config_support_pref_ces),
                             entries = ceEntries,
+                            thumbnails = ceFaces,
+                            imageDelete = ceDelete,
                             imageDownload = { select ->
                                 SupportImageDownload(SupportCatalogKind.CE, select, { vm.refresh(context) })
                             }
@@ -338,10 +414,14 @@ private fun PreferredSupportHelp() {
     }
 }
 
+internal const val MaxSkillTagPrefix = "maxSkill:"
+internal const val MaxAppendSkillTagPrefix = "maxAppendSkill:"
+
 @Composable
-private fun MaxSkills(
+internal fun MaxSkills(
     skills: List<Pref<Boolean>>,
-    compact: Boolean = false
+    compact: Boolean = false,
+    tagPrefix: String = MaxSkillTagPrefix
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -359,32 +439,29 @@ private fun MaxSkills(
 
             var max by pref.remember()
 
-            val backgroundColor =
-                if (max)
-                    MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.surfaceVariant
-
-            val foregroundColor =
-                if (max)
-                    MaterialTheme.colorScheme.onSecondary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-
-            Card(
-                elevation = cardElevation(5.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = backgroundColor,
-                    contentColor = foregroundColor
-                )
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .clickable { max = !max }
-                        .size(if (compact) 36.dp else 40.dp)
-                ) {
-                    Text(skillText(max))
-                }
-            }
+            // No check icon on purpose: the owner wants the gold fill alone to mean "maxed".
+            FilterChip(
+                selected = max,
+                onClick = { max = !max },
+                label = {
+                    Text(
+                        skillText(max),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.widthIn(min = if (compact) 16.dp else 24.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = max,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    selectedBorderColor = Color.Transparent
+                ),
+                modifier = Modifier.testTag("$tagPrefix$index")
+            )
         }
     }
 }

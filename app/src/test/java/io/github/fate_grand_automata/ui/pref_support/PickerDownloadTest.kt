@@ -72,7 +72,7 @@ class PickerDownloadTest {
         save(f)
         closeImport(f)
         compose.onNodeWithText(f.entry.folderName).assertIsDisplayed()
-        compose.onAllNodesWithContentDescription("check").assertCountEquals(3)
+        compose.onAllNodes(isToggleable() and isOn()).assertCountEquals(3)
         compose.runOnIdle { assertEquals(setOf("기존 선택"), f.preference.get()); assertEquals(1, f.reloads) }
         confirm(f)
         compose.runOnIdle { assertEquals(setOf("기존 선택", "추가 선택", f.entry.folderName), f.preference.get()) }
@@ -86,7 +86,7 @@ class PickerDownloadTest {
         compose.runOnIdle { assertEquals(setOf("기존 선택"), f.preference.get()) }
         compose.onNodeWithText(f.title).performClick()
         compose.onNodeWithText(f.entry.folderName).assertIsDisplayed()
-        compose.onAllNodesWithContentDescription("check").assertCountEquals(1)
+        compose.onAllNodes(isToggleable() and isOn()).assertCountEquals(1)
     }
     @Test fun failedImportDoesNotReloadOrSelect() = failed(PortraitImportError.Network, 1)
     @Test fun zeroSavedDoesNotReloadOrSelect() = failed(null, 0)

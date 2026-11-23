@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.battlelog.BattleLogRepository
 import io.github.fate_grand_automata.capture.*
+import io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager
+import io.github.fate_grand_automata.scripts.weekly.AtlasRouteRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.io.File
@@ -32,6 +34,10 @@ class AccountDashboardViewModel @Inject constructor(
     private var customCache: GameNames? = null
     private val cache by lazy { customCache ?: GameNames(File(context.filesDir, "capture/names")) }
     private val appContext = context
+    private val progressLoader by lazy {
+        DashboardProgressLoader(AtlasRouteRepository(File(appContext.cacheDir, "atlas-weekly")), EventInfoStore(File(appContext.cacheDir, "dashboard-events")),
+            allowDownload = { !ChaldeaSyncManager.isScriptRunning })
+    }
 
     internal constructor(repository: BattleLogRepository, context: Context, namesCache: GameNames) : this(repository, context) {
         customCache = namesCache
@@ -74,4 +80,15 @@ class AccountDashboardViewModel @Inject constructor(
             .flowOn(Dispatchers.IO)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardVersion(loading = true))
     }
+
+    /**
+     * The "in progress" block lags behind [account] on purpose: the dashboard renders from the stored state first and
+     * the block fills in when the master data has been read, or downloaded when it was not cached.
+     */
+    internal fun progress(userId: String): Flow<DashboardProgress> = account(userId)
+        .map { it.data?.progressInput to it.server }
+        .distinctUntilChanged()
+        .flatMapLatest { (input, server) -> progressLoader.load(input, server) }
+        .catch { emit(DashboardProgress()) }
+        .flowOn(Dispatchers.IO)
 }

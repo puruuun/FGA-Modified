@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.capture
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.layout.Column
@@ -98,7 +99,7 @@ fun JpRootPreference(state: JpRootState, installed: Boolean, onEnabled: (Boolean
         Preference(title = stringResource(R.string.capture_jp_root_summary), enabled = !state.busy,
             onClick = { onEnabled(!state.enabled) }) {
             if (state.busy) CircularProgressIndicator()
-            else Switch(checked = state.enabled, onCheckedChange = onEnabled, modifier = Modifier.testTag("jp-root-switch"))
+            else Switch(checked = state.enabled, onCheckedChange = onEnabled, modifier = Modifier.testTag("jp-root-switch"), colors = FGASwitchColors())
         }
         if (state.status != JpCaStatus.Unknown) Text(
             when (state.status) {

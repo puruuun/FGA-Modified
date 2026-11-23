@@ -25,6 +25,7 @@ py -3 tools/device-qa/run.py --build --suite support,bond,questItems
 ## Case format (v1)
 
 - Support `view: "CESelection"`: saved full frame through `SupportBoundsFinder` and `CESelection.check`, with `builtInCes`, `mlb`, `bothSlots` and per-row `effects` expectations. Reports contain both bond-template scores and the beta diagnostic line. An explicitly labelled `partial` row uses its measured `y` when its confirm button is outside the capture.
+- `Jp/ce-bonus/jp-tablet-bonus-portraits-720.png`: #618 owner's JP tablet (3040×1904, 16:10) support list during an event, 2026-11-22, scaled to 720p; the left portrait column only (x 0..212, y 100..720 of the 720p frame), so no names or comments. Row 1 has Chaldea Teatime under a "+100%" event bonus label that covers the bottom of the CE strip. Used by `scripts/.../CeTemplateCropTest` (unit test, not a device QA suite).
 - `Jp/wide-2560/27-grand-lancer-support.webp`: #23 owner JP 2560×1080 frame, lossless WebP with player names/comments masked. Row 1 Scáthach uses Foreign God + Chaldea Teatime, MLB and both slots on; NP=true, Default=false, Ignore=true. Partial Grand row 3 has the Default icon and NP=false.
 
 - `frame: "crop"`: the fixture is a crop, placed at `region720` on a black 1280x720 canvas. Reads outside the crop fail the case (coverage, D-4).

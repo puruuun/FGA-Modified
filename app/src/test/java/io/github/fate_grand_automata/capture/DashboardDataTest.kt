@@ -174,16 +174,30 @@ class DashboardDataTest {
         assertEquals(InventoryGroup.Other, inventoryGroup(1001,"svtCoin"))
         assertEquals(
             listOf(
+                InventoryGroup.Grails,
                 InventoryGroup.Materials,
                 InventoryGroup.Gems,
                 InventoryGroup.Pieces,
-                InventoryGroup.Grails,
                 InventoryGroup.Event,
                 InventoryGroup.Coins,
                 InventoryGroup.Other,
             ),
             InventoryGroup.entries,
         )
+    }
+
+    @Test fun dreamFiresAreFoundByTheirAtlasNameInAnyTypeAndJoinTheGrailGroup() {
+        listOf("칼데아의 몽화", "カルデアの夢火", "カルデアの大夢火").forEach { name ->
+            assertEquals(InventoryGroup.Grails, inventoryGroup(94000001, "skillLvUp", name), name)
+            assertEquals(InventoryGroup.Grails, inventoryGroup(94000001, "tdLvUp", name), name)
+            assertEquals(InventoryGroup.Grails, inventoryGroup(94000001, "futureType", name), name)
+        }
+        assertEquals(InventoryGroup.Materials, inventoryGroup(94000001, "skillLvUp", "Gear"))
+        assertEquals(InventoryGroup.Materials, inventoryGroup(94000001, "skillLvUp", null))
+        val names = dashboardNames().copy(itemData = mapOf(
+            94000001L to AtlasBasic(94000001, "칼데아의 몽화", "skillLvUp"), 6510L to AtlasBasic(6510, "Gear", "skillLvUp")))
+        val data = dashboardData(dashboardState("userItem" to """[{"itemId":6510,"num":2},{"itemId":94000001,"num":3}]"""), names)
+        assertEquals(listOf(6510L to InventoryGroup.Materials, 94000001L to InventoryGroup.Grails), data.inventory!!.map { it.id to it.group })
     }
 
     @Test fun coinsFromUserSvtCoinJoinInventoryAfterUserItemsAndSkipZeroOrMissingSvtId() {
@@ -264,8 +278,11 @@ class DashboardDataTest {
         val single = dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":5},{"itemId":94065902,"num":2}]"""), teapotNames())
         assertEquals(DashboardTeapots(7, 94065901L), single.teapots)
     }
-    @Test fun teapotsHiddenAtZeroOrWithoutMetadata() {
-        assertNull(dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":0}]"""), teapotNames()).teapots)
+    @Test fun teapotsShowZeroWithAKnownIconOnceTheItemListIsCapturedAndHiddenWithoutMetadata() {
+        // The lowest known teapot id supplies the icon when none is held.
+        assertEquals(DashboardTeapots(0, 94065901L), dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":0}]"""), teapotNames()).teapots)
+        assertEquals(DashboardTeapots(0, null), dashboardData(dashboardState("userItem" to "[]"), GameNameMap(itemData = mapOf(46L to AtlasBasic(46, "Pure Prism", "purePri")))).teapots)
+        assertNull(dashboardData(dashboardState("userGame" to """[{"qp":1}]"""), teapotNames()).teapots)
         val noMeta = dashboardData(dashboardState("userItem" to """[{"itemId":94065901,"num":5}]"""), GameNameMap())
         assertNull(noMeta.teapots); assertEquals(listOf(94065901L), noMeta.inventory!!.map { it.id })
     }

@@ -24,16 +24,15 @@ class DashboardRound7UiTest {
     @get:Rule val rules = screenshotRules(compose)
     private val fixture by lazy { DashboardUiFixture() }
 
-    private fun show(data: DashboardData = fixture.data, export: (String?) -> Unit = {}) {
+    private fun show(data: DashboardData = fixture.data, export: (String?) -> Unit = {}, initialSection: Int = 0) {
         compose.setContent {
             FGATheme { CompositionLocalProvider(LocalNavigateBack provides {}) {
                 fixture.Icons { AccountDashboardContent(data, fixture.names, "Alias", {}, {},
                     battle = io.github.fate_grand_automata.battlelog.battleLogFixture("recent"),
-                    userId = "dashboard-account", exportAccount = export) }
+                    userId = "dashboard-account", exportAccount = export, initialSection = initialSection) }
             } }
         }
     }
-    private fun bounds(id: Int) = compose.onNodeWithTag("dashboard-section:$id").getUnclippedBoundsInRoot()
     @Test fun jpProfileChipUsesTheAccountServer() {
         compose.setContent { FGATheme {
             fixture.Icons { AccountDashboardContent(fixture.data, fixture.names, "JP sample", {}, {}, server = "JP") }
@@ -67,7 +66,7 @@ class DashboardRound7UiTest {
         }
         compose.onNodeWithTag("dashboard-loading").assertDoesNotExist()
         compose.onNodeWithText(noDataText).assertDoesNotExist()
-        compose.onNodeWithTag("dashboard-section:0").assertExists()
+        compose.onNodeWithTag("dashboard-overview").assertExists()
 
         // An account that genuinely has no stored data shows "no stored data" after loading finishes.
         compose.runOnIdle {
@@ -176,46 +175,6 @@ class DashboardRound7UiTest {
             CaptureTracker.delete()
         }
     }
-    private fun layout(width: Int) {
-        RuntimeEnvironment.setQualifiers("en-w${width}dp-h800dp-hdpi")
-        // A short profile beside a tall collection exposes row-pairing regressions.
-        show(fixture.data.copy(profile = mapOf("name" to "Short"), equips = listOf(DashboardEquip(1,10,true))))
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("샘플 서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        if (width >= 840) {
-            val columns = (0..1).map { compose.onNodeWithTag("dashboard-stack:$it").getUnclippedBoundsInRoot() }
-            val nextY = FloatArray(2) { columns[it].top.value }
-            listOf(0,1,2,3,4,7,5,6).forEach { id ->
-                compose.onAllNodesWithTag("dashboard-section:$id").assertCountEquals(1)
-                val card = bounds(id)
-                val column = if (nextY[0] <= nextY[1]) 0 else 1
-                assertEquals(columns[column].left, card.left)
-                assertEquals(nextY[column], card.top.value, 0.1f)
-                nextY[column] = card.bottom.value + 12f
-            }
-            // Cards in either column share the same page scroll.
-            val beforeLeft = bounds(0).top
-            val beforeRight = bounds(1).top
-            compose.onNodeWithTag("dashboard-page").performTouchInput { swipeUp() }
-            assertTrue(bounds(0).top < beforeLeft)
-            assertEquals((beforeLeft-bounds(0).top).value,(beforeRight-bounds(1).top).value,0.1f)
-        } else {
-            compose.onNodeWithTag("dashboard-stack:0").assertDoesNotExist()
-            val cards = listOf(0,1,2,3,4,7,5,6).map(::bounds)
-            cards.zipWithNext().forEach { (a,b) -> assertTrue(a.bottom<=b.top); assertEquals(a.left,b.left) }
-        }
-    }
-    @Test fun masonryAt840() = layout(840)
-    @Test fun masonryAt1280() = layout(1280)
-    @Test fun singleColumnAt360KeepsCardOrder() = layout(360)
-
-    @Test fun missingSectionsDropOutOfTheirStack() {
-        show(fixture.data.copy(profile = emptyMap(),storage = null, equips = listOf(DashboardEquip(1,10,true))))
-        compose.onNodeWithTag("dashboard-section:0").assertDoesNotExist()
-        compose.onNodeWithTag("dashboard-section:2").assertDoesNotExist()
-        assertEquals(bounds(1).top,bounds(3).top)
-        assertTrue(bounds(4).top >= minOf(bounds(1).bottom, bounds(3).bottom))
-    }
-
     @Test fun exportUsesThisDashboardAccountAndSitsLeftOfSettings() {
         var exported: String? = null
         show(export = { exported = it })
@@ -235,52 +194,47 @@ class DashboardRound7UiTest {
             val id = index.toLong()+1
             DashboardServant(id, AtlasBasic(id,"Servant $id","normal",cls,5), id, id, null, emptyList(),id)
         }
-        show(fixture.data.copy(servants = rows, inventory = null))
+        show(fixture.data.copy(servants = rows, inventory = null), initialSection = 3)
         val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isNotEmpty() }
-        val chips = listOf("Bond","Cost","Lv").map { compose.onNode(hasText(it) and collection) }
+        val chips = ServantSort.entries.map { compose.onNodeWithTag("dashboard-sort:${it.name}") }
         chips[0].assertIsSelected()
         chips.map { it.getUnclippedBoundsInRoot() }.zipWithNext().forEach { (a,b) -> assertTrue(a.left < b.left) }
         chips[1].performClick().assertIsSelected()
         chips[2].performClick().assertIsSelected()
         compose.onAllNodes(hasSetTextAction() and collection).assertCountEquals(0)
-        compose.onNodeWithText("Owned",substring=true).assertDoesNotExist()
+        compose.onNode(hasText("Owned",substring=true) and hasClickAction()).assertDoesNotExist()
         compose.onNodeWithText("Bond ≥10",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Collection no.").assertDoesNotExist()
-        compose.onNode(hasText("All classes") and collection).performClick()
-        compose.onAllNodesWithText("Beast").assertCountEquals(1)
-        compose.onAllNodesWithText("unknownClass").assertCountEquals(1)
-        compose.onNodeWithText("Beast").performClick()
+        compose.onNodeWithTag("dashboard-class:all").assertIsSelected()
+        compose.onAllNodesWithTag("dashboard-class:Beast").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:unknownClass").assertCountEquals(1)
+        compose.onNodeWithTag("dashboard-class:Beast").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isEmpty() }
         (1..3).forEach { compose.onNodeWithText("Servant $it", substring = true).assertExists() }
         (4..6).forEach { compose.onNodeWithText("Servant $it", substring = true).assertDoesNotExist() }
-        compose.onAllNodesWithText("Beast · ★5", substring = true).assertCountEquals(3)
+        compose.onAllNodesWithText("Beast · ★5").assertCountEquals(3)
     }
 
     @Test
     @Config(sdk = [32], qualifiers = "ko-w840dp-h800dp-hdpi")
-    fun unBeastClassShowsSeparatelyInRowAndFilterMenu() {
+    fun unBeastClassShowsSeparatelyInRowAndFilterChips() {
         val rows = listOf("unBeastOlgaMarie", "beastIII", "saber").mapIndexed { index, cls ->
             val id = index.toLong() + 1
             DashboardServant(id, AtlasBasic(id, "서번트 $id", "normal", cls, 5), id, id, null, emptyList(), id)
         }
-        show(fixture.data.copy(servants = rows, inventory = null))
+        show(fixture.data.copy(servants = rows, inventory = null), initialSection = 3)
         val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("서번트 1", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNode(
-            hasText("서번트 1", substring = true) and hasText("언비스트 · ★5", substring = true),
-        ).assertExists()
-        compose.onNode(
-            hasText("서번트 2", substring = true) and hasText("  비스트 · ★5", substring = true),
-        ).assertExists()
+        compose.onAllNodesWithText("언비스트 · ★5").assertCountEquals(1)
+        compose.onAllNodesWithText("비스트 · ★5").assertCountEquals(1)
 
-        compose.onNode(hasText("모든 클래스") and collection).performClick()
-        compose.onAllNodesWithText("언비스트").assertCountEquals(1)
-        compose.onAllNodesWithText("비스트").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:언비스트").assertCountEquals(1)
+        compose.onAllNodesWithTag("dashboard-class:비스트").assertCountEquals(1)
 
-        compose.onNodeWithText("언비스트").performClick()
+        compose.onNodeWithTag("dashboard-class:언비스트").performClick()
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("서번트 2", substring = true).fetchSemanticsNodes().isEmpty()
         }
@@ -308,27 +262,26 @@ class DashboardRound7UiTest {
             }
         }
         compose.waitUntil(10_000) {
-            compose.onAllNodesWithText("+ Servant coins (2)").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("items-group-header:Coins").fetchSemanticsNodes().isNotEmpty()
         }
-        val eventBounds = compose.onNodeWithText("+ Event items (1)").fetchSemanticsNode().boundsInRoot
-        val coinsHeader = compose.onNodeWithText("+ Servant coins (2)")
+        val eventBounds = compose.onNodeWithTag("items-group-header:Event").fetchSemanticsNode().boundsInRoot
+        val coinsHeader = compose.onNodeWithTag("items-group-header:Coins")
         val coinsBounds = coinsHeader.fetchSemanticsNode().boundsInRoot
-        val otherBounds = compose.onNodeWithText("+ Other (1)").fetchSemanticsNode().boundsInRoot
+        val otherBounds = compose.onNodeWithTag("items-group-header:Other").fetchSemanticsNode().boundsInRoot
         assertTrue(eventBounds.bottom <= coinsBounds.top)
         assertTrue(coinsBounds.bottom <= otherBounds.top)
+        coinsHeader.assertTextContains("2", substring = true)
 
         compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
         compose.onNodeWithText("Coin Beta").assertDoesNotExist()
 
         coinsHeader.performScrollTo().performClick()
-        compose.onNodeWithText("− Servant coins (2)").assertExists()
         compose.onNodeWithText("Coin Alpha").assertExists()
         compose.onNodeWithText("Coin Beta").assertExists()
         compose.onNodeWithText("30").assertExists()
         compose.onNodeWithText("10").assertExists()
 
-        compose.onNodeWithText("− Servant coins (2)").performClick()
-        compose.onNodeWithText("+ Servant coins (2)").assertExists()
+        coinsHeader.performClick()
         compose.onNodeWithText("Coin Alpha").assertDoesNotExist()
     }
 }

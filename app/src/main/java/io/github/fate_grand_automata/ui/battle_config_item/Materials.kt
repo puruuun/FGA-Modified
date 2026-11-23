@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
@@ -61,7 +63,7 @@ fun Pref<Set<MaterialEnum>>.Materials(modifier: Modifier = Modifier) {
                     .alignByBaseline(),
                 enabled = current.isNotEmpty()
             ) {
-                Text(stringResource(R.string.clear).uppercase())
+                Text(stringResource(R.string.clear_all))
             }
         }
 
@@ -71,12 +73,13 @@ fun Pref<Set<MaterialEnum>>.Materials(modifier: Modifier = Modifier) {
             prioritySelected = true,
             items = MaterialEnum.entries.toList()
         ) { mat ->
-            Material(mat)
+            Material(mat, size = 32.dp, padding = 0.dp)
 
             Text(
                 stringResource(mat.stringRes),
-                modifier = Modifier
-                    .padding(start = 16.dp)
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -95,14 +98,14 @@ fun Pref<Set<MaterialEnum>>.Materials(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Material(mat: MaterialEnum) {
+fun Material(mat: MaterialEnum, size: Dp = 20.dp, padding: Dp = 3.dp) {
     Image(
         painterResource(mat.drawable),
         contentDescription = stringResource(mat.stringRes),
         contentScale = ContentScale.Crop,
         modifier = Modifier
-            .padding(3.dp)
-            .size(20.dp)
+            .padding(padding)
+            .size(size)
             .clip(CircleShape)
             .border(0.5.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape)
             .alpha(0.8f)

@@ -34,6 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.GameNameMap
 import io.github.fate_grand_automata.scripts.capture.*
+import io.github.fate_grand_automata.ui.dialog.ChipFlow
+import io.github.fate_grand_automata.ui.dialog.FaceChip
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.account.dashboardClass
@@ -458,7 +460,7 @@ internal fun servantPickerName(names: GameNameMap, id: Long): String {
 }
 
 @Composable
-private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, filter: FriendFilter,
+internal fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap, filter: FriendFilter,
     onDismiss: () -> Unit, choose: (Long?) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val displayNames = if (ce) names.equips else counts.keys.associateWith { servantPickerName(names, it) }
@@ -469,17 +471,26 @@ private fun FriendPicker(ce: Boolean, counts: Map<Long, Int>, names: GameNameMap
             TextButton(onClick = onDismiss, modifier = Modifier.testTag("friends-picker-done")) { Text(stringResource(R.string.friends_picker_done)) }
         }
         if (!ce) OutlinedTextField(query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.friends2_search)) }, modifier = Modifier.fillMaxWidth().testTag("friends-search"))
-        LazyColumn(Modifier.weight(1f)) {
-            item { TextButton(onClick = { choose(null) }) { Text(stringResource(if (ce) R.string.friends_all_ces else R.string.friends_all_servants)) } }
-            if (ce && options.firstOrNull()?.id?.let(::isBondCe) == true) item {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            TextButton(onClick = { choose(null) }) { Text(stringResource(if (ce) R.string.friends_all_ces else R.string.friends_all_servants)) }
+            if (ce && options.firstOrNull()?.id?.let(::isBondCe) == true) {
                 Text(stringResource(R.string.friends2_bond_bonus), style = MaterialTheme.typography.titleSmall)
             }
-            itemsIndexed(options, key = { _, option -> option.id }) { index, option ->
-                if (ce && index > 0 && isBondCe(options[index - 1].id) && !isBondCe(option.id)) HorizontalDivider()
-                val label = stringResource(R.string.friends_option_count, option.name, option.count)
-                Row(Modifier.fillMaxWidth().clickable { choose(option.id) }.testTag("friends-pick-" + option.id), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(option.id in (if (ce) filter.ceIds else filter.servantIds), { choose(option.id) })
-                    Text(label)
+            // The bond CEs come first and are set apart from the rest by a divider.
+            val groups = mutableListOf<MutableList<FriendOption>>()
+            for (option in options) {
+                val sameRun = ce && groups.isNotEmpty() && isBondCe(groups.last().last().id) == isBondCe(option.id)
+                if (groups.isEmpty() || (ce && !sameRun)) groups.add(mutableListOf(option)) else groups.last().add(option)
+            }
+            groups.forEachIndexed { index, group ->
+                if (index > 0) HorizontalDivider()
+                ChipFlow {
+                    group.forEach { option ->
+                        val label = stringResource(R.string.friends_option_count, option.name, option.count)
+                        FaceChip(option.id in (if (ce) filter.ceIds else filter.servantIds), { choose(option.id) }, Modifier.testTag("friends-pick-" + option.id)) {
+                            Text(label)
+                        }
+                    }
                 }
             }
         }

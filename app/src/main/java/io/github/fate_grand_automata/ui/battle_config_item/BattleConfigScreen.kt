@@ -60,7 +60,6 @@ import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy
 import io.github.fate_grand_automata.scripts.modules.FaceCardReason
 import io.github.fate_grand_automata.scripts.modules.FaceCardReasonKind
 import io.github.fate_grand_automata.ui.AdaptiveColumns
-import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.VerticalDivider
 import io.github.fate_grand_automata.ui.card_priority.getColorRes
@@ -153,8 +152,7 @@ internal fun BattleConfigContent(
 
                         DropdownMenu(
                             expanded = actionsExpanded,
-                            onDismissRequest = { actionsExpanded = false },
-                            containerColor = FGAMenuContainerColor()
+                            onDismissRequest = { actionsExpanded = false }
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.battle_config_item_export)) },

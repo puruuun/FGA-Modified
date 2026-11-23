@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.launcher
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
@@ -70,7 +71,8 @@ fun fpLauncher(
 
             Switch(
                 checked = shouldLimit,
-                onCheckedChange = { shouldLimit = it }
+                onCheckedChange = { shouldLimit = it },
+                colors = FGASwitchColors()
             )
         }
 
@@ -132,6 +134,6 @@ private fun fpSellSwitch(label: Int, initial: Boolean, save: (Boolean) -> Unit) 
     Row(Modifier.fillMaxWidth().clickable { value = !value; save(value) },
         horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(label), modifier = Modifier.weight(1f))
-        Switch(value, onCheckedChange = { value = it; save(it) })
+        Switch(value, onCheckedChange = { value = it; save(it) }, colors = FGASwitchColors())
     }
 }

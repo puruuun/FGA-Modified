@@ -63,7 +63,7 @@ class DashboardJpNamesScreenshotTest {
                 }
             }) {
             CompositionLocalProvider(LocalNavigateBack provides {}, LocalLogIconLoader provides loader) {
-                AccountDashboardContent(data, names, "합성 JP 계정", {}, {}, userId = "7002", server = "JP")
+                AccountDashboardContent(data, names, "합성 JP 계정", {}, {}, userId = "7002", server = "JP", initialSection = 3)
             }
         }
     }

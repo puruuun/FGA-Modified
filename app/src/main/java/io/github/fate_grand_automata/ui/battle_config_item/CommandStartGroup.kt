@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.battle_config_item
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -207,7 +208,7 @@ fun CommandStartGroup(config: BattleConfigCore) {
                 summary = stringResource(if (enabled) R.string.config_state_on else R.string.command_start_mode_basic),
                 onClick = { setEnabled(!enabled) }
             ) {
-                Switch(checked = enabled, onCheckedChange = ::setEnabled)
+                Switch(checked = enabled, onCheckedChange = ::setEnabled, colors = FGASwitchColors())
             }
             if (enabled) {
                 config.commandStartServant.DropdownPreference(

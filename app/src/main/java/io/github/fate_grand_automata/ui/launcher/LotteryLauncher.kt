@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.launcher
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -63,7 +64,8 @@ fun lotteryLauncher(
 
             Switch(
                 checked = receiveEmbers,
-                onCheckedChange = { receiveEmbers = it }
+                onCheckedChange = { receiveEmbers = it },
+                colors = FGASwitchColors()
             )
         }
 

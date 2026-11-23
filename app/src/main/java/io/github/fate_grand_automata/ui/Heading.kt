@@ -1,23 +1,24 @@
 package io.github.fate_grand_automata.ui
 
 import android.content.res.Configuration
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -99,6 +100,10 @@ fun Heading(
     }
 }
 
+/**
+ * A header action: a compact outlined button, 36dp high (the header row is crowded at 360dp), with an optional leading [icon].
+ * [isDanger] swaps the outline and content to the error role for destructive actions.
+ */
 @Composable
 fun HeadingButton(
     text: String,
@@ -107,35 +112,28 @@ fun HeadingButton(
     icon: VectorIcon? = null,
     isDanger: Boolean = false
 ) {
-    Card(
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            contentColor = if (isDanger) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
-        ),
-        modifier = modifier
-            .animateContentSize()
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(10.dp, 4.dp)
-        ) {
-            if (icon != null) {
-                Icon(
-                    icon.asPainter(),
-                    contentDescription = "icon",
-                    modifier = Modifier
-                        .padding(end = 7.dp)
-                        .size(20.dp)
-                )
-            }
+    val accent = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
-            Text(
-                text.uppercase(),
-                style = MaterialTheme.typography.titleSmall
+    OutlinedButton(
+        onClick = onClick,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = accent),
+        border = BorderStroke(1.dp, if (isDanger) accent else MaterialTheme.colorScheme.outline),
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        modifier = modifier.height(36.dp)
+    ) {
+        if (icon != null) {
+            // The label names the action, so the icon is decoration for screen readers.
+            Icon(
+                icon.asPainter(),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
             )
+            Spacer(Modifier.size(6.dp))
         }
+
+        Text(
+            text.uppercase(),
+            style = MaterialTheme.typography.titleSmall
+        )
     }
 }

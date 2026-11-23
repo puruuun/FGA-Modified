@@ -1,0 +1,20 @@
+server,text,path,screen,research,expected
+kr,주요 획득처,CombineScene/UI Root/Camera/AppendSkillCombinePanel/CombineItemSelect/bgSprite/ItemInfoListButton/Bg/BtnLabel,wide-2560/33.webp,0.932,0.822
+kr,서번트,MyRoomScene/UI Root/Camera/MasterProfilePanel/MasterProfileInfo/UserInfo/SvtHaveNumBg/UserSvtNumInfo/UserSvtLabel,wide-2560/29.webp,0.919,0.952
+jp,強化可能,CombineScene/UI Root/Camera/AppendSkillCombinePanel/SkillNpInfo/CombineTargetGrid/SvtAppendSkillInfoPrefab (2)/StatusLabel,skill-level/0021/19-skill.png,0.881,0.848
+jp,主な獲得先,CombineScene/UI Root/Camera/LimitCntUpPanel/LimitUpItemInfo/BgSprite/ItemInfoListButton/Bg/BtnLabel,wide-21x9/12.webp,0.959,0.961
+jp,強化可能,CombineScene/UI Root/Camera/ServantSkillNpCombinePanel/SkillNpInfo/CombineTargetGrid/SvtSkillInfoPrefab/StatusLabel,skill-level/03.png,0.918,0.879
+jp,2ターン,BattleScene/Performance/Interface/UI Root/01_BackCom Panel/Master/battleInfo/turn/Label,battle/card-swap-super-aoko-arts-mumu.webp,0.907,0.976
+jp,所持,CombineScene/UI Root/Camera/CommandCardExceedPanel/ExceedItemInfo/ItemInfo/Grid/CombineItemInfoPrefab1/ItemInfo/StatusObj/HaveItemInfo/HaveTitleLabel,skill-level/0021/20-skill.png,0.958,0.914
+jp,必要,CombineScene/UI Root/Camera/CommandCardExceedPanel/ExceedItemInfo/ItemInfo/Grid/CombineItemInfoPrefab1/ItemInfo/StatusObj/needItemInfo/needTitleLabel,skill-level/0021/20-skill.png,0.93,0.863
+jp,必要,CombineScene/UI Root/Camera/FriendshipExceedPanel/LimitUpItemInfo/ItemInfo/Grid/CombineItemInfoPrefab0/ItemInfo/StatusObj/needItemInfo/needTitleLabel,skill-level/0021/57-skill.png,0.936,0.867
+jp,先に強化するサーヴァントを選択してください,CombineScene/UI Root/Camera/LimitCntUpPanel/LimitUpItemInfo/BgSprite/MaterialText,skill-level/09.png,0.964,0.948
+jp,自動セット,CombineScene/UI Root/Camera/RecommendedEquipMaterialConfigDialog/Window/ConfigButtons/AutoSetButton/Label,ce-enhance/09.webp,0.98,0.886
+jp,所持,CombineScene/UI Root/Camera/ServantCostumePanel/CostumeCombineInfo/CombineItemSelect/CombineItemInfo/ItemInfoGrid/CombineItemInfoPrefab/ItemInfo/StatusObj/HaveItemInfo/HaveTitleLabel,wide-21x9/12.webp,0.925,0.902
+jp,必要,CombineScene/UI Root/Camera/ServantCostumePanel/CostumeCombineInfo/CombineItemSelect/CombineItemInfo/ItemInfoGrid/CombineItemInfoPrefab/ItemInfo/StatusObj/needItemInfo/needTitleLabel,wide-21x9/12.webp,0.906,0.865
+jp,所持QP：,CombineScene/UI Root/Camera/SetRarityDialog/DlgPanel/CostumeCombineConfirmInfo/HaveQpInfo/TextLabel,skill-level/18.png,0.987,0.961
+jp,強化に使用する概念礼装を選択,CombineScene/UI Root/Camera/SvtEquipCombinePanel/SelectMaterialObject/DetailInfo/DetailTxt,ce-enhance/13.webp,0.895,0.891
+jp,サーヴァント,MyRoomScene/UI Root/Camera/MasterProfilePanel/MasterProfileInfo/UserInfo/SvtHaveNumBg/UserSvtNumInfo/UserSvtLabel,wide-21x9/06.webp,0.924,0.869
+jp,強化,SummonScene/UI Root/Camera/GachaResultList/ChangeSceneBtnInfo/CombineBtn/Label,wide-2560/22.webp,0.943,0.955
+jp,編成,SummonScene/UI Root/Camera/GachaResultList/ChangeSceneBtnInfo/DeckBtn/Label,wide-2560/22.webp,0.93,0.931
+jp,売却,SummonScene/UI Root/Camera/GachaResultList/ChangeSceneBtnInfo/SellBtn/Label,wide-2560/22.webp,0.929,0.929

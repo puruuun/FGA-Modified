@@ -67,4 +67,30 @@ class OutsidePeriodTest {
         assertEquals(2, period.sources.single().fruitUsed[100])
         assertEquals(2, period.fruitUsed[100])
     }
+
+    @Test fun loginsAreKeptInOrderAndSurviveLaterAdds() {
+        val a = LoginBreakdown(at = 11, friend = 5)
+        val b = LoginBreakdown(at = 12, follow = 7)
+        val period = OutsidePeriod("fictional", 10)
+            .add(ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = 5), 11).withLogin(a)
+            .add(ChangeSource.of("present/receive"), AccountDelta(qp = 1), 11)
+            .add(ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = 7), 12).withLogin(b)
+        assertEquals(listOf(a, b), period.logins)
+        assertEquals(period, period.withLogin(null))
+    }
+
+    @Test fun oldPeriodJsonWithoutLoginsLoadsAndIsWrittenBackUnchanged() {
+        val old = """{"accountId":"fictional","startedAt":10,"endedAt":11}"""
+        val loaded = Json.decodeFromString<OutsidePeriod>(old)
+        assertEquals(emptyList(), loaded.logins)
+        assertFalse(Json.encodeToString(OutsidePeriod.serializer(), loaded).contains("logins"))
+    }
+
+    @Test fun loginsRoundTripAndAreSmall() {
+        val login = LoginBreakdown(at = 1793754000, friend = 300, follow = 50, normal = LoginTopServant(100100, 120))
+        val period = OutsidePeriod("fictional", 10).withLogin(login)
+        val text = Json.encodeToString(OutsidePeriod.serializer(), period)
+        assertTrue(text.contains("""{"at":1793754000,"friend":300,"follow":50,"normal":{"svtId":100100,"friendPoint":120}}"""), text)
+        assertEquals(period, Json.decodeFromString<OutsidePeriod>(text))
+    }
 }

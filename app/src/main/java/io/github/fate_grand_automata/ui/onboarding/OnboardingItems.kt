@@ -209,7 +209,7 @@ class DisableBatteryOptimization(vm: OnboardingViewModel) : OnboardingItem(vm) {
                                 url = linkText,
                                 styles = TextLinkStyles(
                                     style = SpanStyle(
-                                        color = MaterialTheme.colorScheme.tertiary,
+                                        color = MaterialTheme.colorScheme.primary,
                                         textDecoration = TextDecoration.Underline
                                     )
                                 )

@@ -3,13 +3,11 @@ package io.github.fate_grand_automata.ui.dialog
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,8 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.ui.DimmedIcon
 import io.github.fate_grand_automata.ui.VectorIcon
@@ -201,7 +199,7 @@ fun <T> FgaDialog.multiChoiceList(
 ) {
     constrained { modifier ->
         LazyColumn(
-            contentPadding = PaddingValues(16.dp, 0.dp),
+            contentPadding = PaddingValues(8.dp, 0.dp),
             modifier = modifier
                 .fillMaxWidth()
         ) {
@@ -213,7 +211,7 @@ fun <T> FgaDialog.multiChoiceList(
                 false -> items
             }
             items(rearrangeItems) {
-                ChoiceListItem(
+                FaceChoiceRow(
                     isSelected = it in selected,
                     onClick = { onSelectedChange(selected.toggle(it)) },
                     modifier = Modifier.animateItem(
@@ -229,6 +227,11 @@ fun <T> FgaDialog.multiChoiceList(
     }
 }
 
+/**
+ * One choice of a single-choice dialog list: a radio button and the content.
+ * The whole row is the touch target, so the button itself carries no click of its own.
+ * Multi-select lists use [FaceChoiceRow] instead.
+ */
 @Composable
 fun ChoiceListItem(
     modifier: Modifier = Modifier,
@@ -236,37 +239,23 @@ fun ChoiceListItem(
     onClick: () -> Unit,
     content: @Composable RowScope.() -> Unit
 ) {
-    Card(
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(
-            containerColor =
-            if (isSelected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        modifier = Modifier
-            .padding(bottom = 7.dp)
-            .then(modifier)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick)
+            .padding(end = 8.dp)
     ) {
+        RadioButton(selected = isSelected, onClick = null)
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clickable(onClick = onClick)
-                .padding(16.dp, 5.dp)
+                .weight(1f)
+                .padding(start = 16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f)
-            ) {
-                content()
-            }
-
-            if (isSelected) {
-                Icon(
-                    rememberVectorPainter(Icons.Default.Check),
-                    contentDescription = "check"
-                )
-            }
+            content()
         }
     }
 }

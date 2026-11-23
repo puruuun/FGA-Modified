@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.exit
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -337,7 +338,8 @@ fun BattleExit(
 
                     Switch(
                         checked = stopAfterThisRun,
-                        onCheckedChange = { stopAfterThisRun = it }
+                        onCheckedChange = { stopAfterThisRun = it },
+                        colors = FGASwitchColors()
                     )
                 }
             }

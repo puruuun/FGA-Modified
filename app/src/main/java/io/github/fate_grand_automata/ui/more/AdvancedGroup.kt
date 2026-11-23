@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.more
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -225,7 +226,8 @@ private fun RootForScreenshots(
             Switch(
                 checked = state,
                 onCheckedChange = action,
-                enabled = enabled
+                enabled = enabled,
+                colors = FGASwitchColors()
             )
         }
     }

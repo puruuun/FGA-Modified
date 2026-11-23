@@ -18,6 +18,17 @@ bars that leaves the image itself taller. That is the resolution matching runs a
 taken from a reference image is exactly the pixels the script compares, with no resampling in
 between. Downscale a contributed screenshot before committing it.
 
+Templates are cut from the owner's screenshots first (`extract-template-asset`). Only when no
+screenshot of a screen can be had does the `apk-template-asset` skill
+(`.claude/skills/apk-template-asset/`) draw one from the APK. Its "When to use this skill" section says
+which element types may be used that way and what margins they must clear on real screens.
+
+## NA: not a target
+
+The owner decided on 2026-11-20 that the fork's features are for KR and official JP only. NA cannot be
+checked on a device, so no NA branches, templates or tests are added for the fork's features. Upstream NA
+behaviour and the `En/` templates stay as they are, and upstream syncs keep merging them.
+
 Server choice and app language are independent: a user can run the JP server with the app's
 UI in English, or the EN server in Korean. Don't assume they're coupled when reading prefs or
 adding server-specific behavior.

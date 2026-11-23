@@ -52,17 +52,25 @@ internal fun friendsText(keep: String, count: Int?): String {
 internal fun JsonObject.number(key: String) = (this[key] as? JsonPrimitive)?.longOrNull
 internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
 
-enum class InventoryGroup { Materials, Gems, Pieces, Grails, Event, Coins, Other }
+/** Declaration order is the display order: the grail group leads (owner, 2026-11-22). */
+enum class InventoryGroup { Grails, Materials, Gems, Pieces, Event, Coins, Other }
 enum class ServantSort { Bond, Cost, Level }
 enum class StoredKind { Servant, Equip, Other }
 
+/** Atlas `type` values of the servants a player can own; everything else in `basic_servant` (enemies, CEs, ...) is not counted. */
+internal val PLAYABLE_SERVANT_TYPES = setOf("normal", "heroine")
+
 internal fun storedKind(id: Long?, names: GameNameMap): StoredKind = when {
-    names.servantData[id]?.type in setOf("normal", "heroine") -> StoredKind.Servant
+    names.servantData[id]?.type in PLAYABLE_SERVANT_TYPES -> StoredKind.Servant
     id in names.equipData -> StoredKind.Equip
     else -> StoredKind.Other
 }
 
-internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
+/** Chaldea dream fires: KR "칼데아의 몽화", JP "カルデアの夢火" and "カルデアの大夢火". Matched by their Atlas item name. */
+internal fun isDreamFire(name: String?) = name != null && ("몽화" in name || "夢火" in name)
+
+internal fun inventoryGroup(id: Long, type: String?, name: String? = null): InventoryGroup = when {
+    isDreamFire(name) -> InventoryGroup.Grails
     // Pure Prism (type purePri) and Beast's Footprint (type commandCardPrmUp) are matched by explicit id only.
     id == 46L || id == 2000L -> InventoryGroup.Materials
     // Atlas groups gems/Lore under skillLvUp and pieces/Grails under tdLvUp.
@@ -74,9 +82,15 @@ internal fun inventoryGroup(id: Long, type: String?): InventoryGroup = when {
     else -> InventoryGroup.Other
 }
 
+/** Filled command code slots out of the unlocked ones; a locked slot is stored as -1. */
+data class DashboardServantCodes(val filled: Int, val unlocked: Int)
+/** Sum of the five card enhancement values and how many cards are enhanced. */
+data class DashboardCardBoost(val sum: Long, val cards: Int)
+
 data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long?, val friendship: Long?,
     val np: Long?, val skills: List<Long?>, val maxLevel: Long?, val level: Long? = null,
-    val appends: List<Long?> = List(5) { null }) {
+    val appends: List<Long?> = List(5) { null },
+    val commandCodes: DashboardServantCodes? = null, val cardBoost: DashboardCardBoost? = null) {
     val name get() = atlas?.name ?: "#$id"
     // basic_servant has rarity but no cost. Mash always has zero party cost.
     val cost: Int? get() = if (id == 800100L) 0 else when (atlas?.rarity) {
@@ -84,7 +98,8 @@ data class DashboardServant(val id: Long, val atlas: AtlasBasic?, val bond: Long
     }
 }
 /** Summed friendshipUpItem holdings; the icon comes from the held teapot with the largest count (ties: larger id). */
-data class DashboardTeapots(val total: Long, val iconId: Long)
+/** [iconId] is null when no teapot is known in the item master, which only happens with a total of 0. */
+data class DashboardTeapots(val total: Long, val iconId: Long?)
 internal const val SUMMON_TICKET_ID = 4001L
 internal const val STORM_POD_ID = 49L
 data class DashboardItem(val id: Long, val count: Long, val group: InventoryGroup)
@@ -137,6 +152,33 @@ data class DashboardSummons(
     val recentLog: List<DashboardSummonLog>,
 )
 
+/** Login counts as of the last login; each field is null when its table is missing. */
+data class DashboardLogin(val total: Long?, val seq: Long?, val nextRewardDay: Long?) {
+    /** Null unless both counts are known and the next milestone is still ahead. */
+    val daysLeft: Long? get() = if (total != null && nextRewardDay != null && nextRewardDay > total) nextRewardDay - total else null
+}
+
+data class DashboardPartyCe(val svtId: Long, val level: Long?, val limitCount: Long?)
+
+/** [svtId] is null for the support slot, which belongs to a friend and has no servant of the owner's. */
+/** [ceMissing] is true when the slot names a CE the owned-Servant list does not hold, so "no CE" must not be shown. */
+data class DashboardPartySlot(
+    val position: Int, val svtId: Long?, val level: Long?, val np: Long?, val ces: List<DashboardPartyCe>, val ceMissing: Boolean = false,
+) {
+    val support get() = svtId == null
+}
+
+data class DashboardParty(val deckNo: Long, val name: String?, val slots: List<DashboardPartySlot>, val mysticCodeId: Long?)
+
+/** A group-0 event point row the Overview may turn into a line; [updatedAt] is epoch seconds. */
+data class DashboardEventPoint(val eventId: Long, val value: Long, val updatedAt: Long)
+
+/**
+ * What the "in progress" block needs from the stored state; the master data it is joined with is loaded later.
+ * [achievedMissions] is null when the account's mission table is missing, so a missing table is not read as 0 done.
+ */
+data class DashboardProgressInput(val snapshotTime: Long, val achievedMissions: Set<Long>?, val eventPoints: List<DashboardEventPoint>)
+
 /** Version-specific projection built once on Dispatchers.Default, never during composition. */
 data class DashboardData(
     val profile: Map<String, String>, val snapshotTime: Long, val lastUpdateTime: Long,
@@ -150,6 +192,14 @@ data class DashboardData(
     val commandCodes: DashboardCommandCodes? = null,
     val classBoards: List<DashboardClassBoard>? = null,
     val summons: DashboardSummons? = null,
+    /** True when the account's item list was captured; only then is a missing resource a real 0. */
+    val itemsCaptured: Boolean = false,
+    /** The playable servants (collectionNo > 0) of the account's own server list; null when that list is not loaded. */
+    val servantCatalog: List<AtlasBasic>? = null,
+    val login: DashboardLogin? = null,
+    /** Parties with at least one servant of the owner's, by party number. */
+    val parties: List<DashboardParty> = emptyList(),
+    val progressInput: DashboardProgressInput? = null,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -195,6 +245,8 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     val teapotHeld = items?.filter { (id, count) -> count > 0 && names.itemData[id]?.type == "friendshipUpItem" }.orEmpty()
     val teapots = teapotHeld.entries.maxWithOrNull(compareBy<Map.Entry<Long, Long>>({ it.value }, { it.key }))
         ?.let { DashboardTeapots(teapotHeld.values.sum(), it.key) }
+        // Without item metadata a held teapot cannot be told from other items, so a 0 would be invented.
+        ?: items?.takeIf { names.itemData.isNotEmpty() }?.let { DashboardTeapots(0, names.itemData.values.filter { row -> row.type == "friendshipUpItem" }.minOfOrNull { row -> row.id }) }
     val teapotIds = teapotHeld.keys
     val classified = names.servantData.isNotEmpty() && names.equipData.isNotEmpty()
     val svts = rows("userSvt")
@@ -211,9 +263,11 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     }
     val appendRows = rows("userSvtAppendPassiveSkillLv").orEmpty().groupBy { it.number("userSvtId") }
     val collectionRows = rows("userSvtCollection")
+    val codeSlots = projectServantCodes(rows("userSvtCommandCode"))
+    val cardBoosts = projectCardBoosts(rows("userSvtCommandCard"))
     val servants = collectionRows?.takeIf { names.servantData.isNotEmpty() }?.filter { it.number("status") == 2L }?.mapNotNull { row ->
         val id = row.number("svtId") ?: return@mapNotNull null
-        if (names.servantData[id]?.type !in setOf("normal", "heroine")) return@mapNotNull null
+        if (names.servantData[id]?.type !in PLAYABLE_SERVANT_TYPES) return@mapNotNull null
         val copy = owned[id]
         val stats = copy ?: row
         val appends = MutableList<Long?>(5) { null }
@@ -227,11 +281,11 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
         } }
         DashboardServant(id, names.servantData[id], row.number("friendshipRank"), row.number("friendship"),
             stats.number("treasureDeviceLv1"), (1..3).map { stats.number("skillLv$it") }, row.number("maxLv"),
-            copy?.number("lv"), appends)
+            copy?.number("lv"), appends, codeSlots[id], cardBoosts[id])
     }
     val aliases = mapOf(5L to 1L, 6L to 2L, 7L to 2L, 11L to 16L)
     val userItems = items?.filter { (id, count) -> count > 0 && id !in resources && aliases[id] !in resources && id !in teapotIds }?.map { (id, count) ->
-        DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type))
+        DashboardItem(id, count, inventoryGroup(id, names.itemData[id]?.type, names.itemData[id]?.name))
     }
     val coins = rows("userSvtCoin")?.mapNotNull { row ->
         val svtId = row.number("svtId") ?: return@mapNotNull null
@@ -256,7 +310,89 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
     val classBoards = projectClassBoards(rows("userClassBoardSquare"), names)
     val summons = projectSummons(rows("userGacha"), rows("userGachaDrawLog"), names, timeZone)
     return DashboardData(profile, state.snapshotTime, state.lastUpdateTime, game, resources, split, storage, servants, inventory, equips, teapots,
-        OwnFormations.from(state, game), presentBox, commandCodes, classBoards, summons)
+        OwnFormations.from(state, game), presentBox, commandCodes, classBoards, summons,
+        itemsCaptured = items != null,
+        servantCatalog = names.accountServants.values
+            .filter { it.type in PLAYABLE_SERVANT_TYPES && (it.collectionNo ?: 0L) > 0L }
+            .takeIf { it.isNotEmpty() },
+        login = projectLogin(rows("userLogin"), rows("mstTotalLogin")),
+        parties = projectParties(rows("userDeck"), svts, rows("userEquip")),
+        progressInput = projectProgressInput(state.snapshotTime, rows("userEventMission"), rows("userEventPoint")))
+}
+
+private fun JsonObject.bool(key: String) = (this[key] as? JsonPrimitive)?.let { it.booleanOrNull ?: (it.longOrNull == 1L) } == true
+
+internal fun projectServantCodes(rows: List<JsonObject>?): Map<Long, DashboardServantCodes> {
+    val out = mutableMapOf<Long, DashboardServantCodes>()
+    for (row in rows.orEmpty()) {
+        val svtId = row.number("svtId") ?: continue
+        val ids = (row["userCommandCodeIds"] as? JsonArray)?.map { (it as? JsonPrimitive)?.longOrNull } ?: continue
+        val unlocked = ids.count { it != null && it != -1L }
+        if (unlocked > 0) out[svtId] = DashboardServantCodes(ids.count { it != null && it > 0L }, unlocked)
+    }
+    return out
+}
+
+internal fun projectCardBoosts(rows: List<JsonObject>?): Map<Long, DashboardCardBoost> {
+    val out = mutableMapOf<Long, DashboardCardBoost>()
+    for (row in rows.orEmpty()) {
+        val svtId = row.number("svtId") ?: continue
+        val values = ((row["commandCardParam"] as? JsonArray) ?: continue).mapNotNull { (it as? JsonPrimitive)?.longOrNull }.filter { it > 0L }
+        if (values.isNotEmpty()) out[svtId] = DashboardCardBoost(values.sum(), values.size)
+    }
+    return out
+}
+
+internal fun projectLogin(login: List<JsonObject>?, milestones: List<JsonObject>?): DashboardLogin? {
+    val row = login?.firstOrNull()
+    val total = row?.number("totalLoginCount")
+    // `mstTotalLogin.script` is a string on KR and an object on JP and is never read.
+    val days = milestones?.mapNotNull { it.number("day") }
+    val next = days?.filter { total == null || it > total }?.minOrNull() ?: days?.maxOrNull()
+    return DashboardLogin(total, row?.number("seqLoginCount"), next).takeIf { it.total != null || it.seq != null || it.nextRewardDay != null }
+}
+
+/** `svtId` inside `deckInfo` is always 0, so servants and CEs are found through `userSvtId` and `userSvtEquipIds`. */
+internal fun projectParties(decks: List<JsonObject>?, svts: List<JsonObject>?, equips: List<JsonObject>?): List<DashboardParty> {
+    if (decks == null || svts == null) return emptyList()
+    val svtById = svts.mapNotNull { row -> row.number("id")?.let { it to row } }.toMap()
+    val equipById = equips.orEmpty().mapNotNull { row -> row.number("id")?.let { it to row } }.toMap()
+    return decks.mapNotNull { deck ->
+        val deckNo = deck.number("deckNo") ?: return@mapNotNull null
+        val info = deck["deckInfo"] as? JsonObject ?: return@mapNotNull null
+        val slots = ((info["svts"] as? JsonArray).orEmpty()).mapIndexedNotNull { index, element ->
+            val slot = element as? JsonObject ?: return@mapIndexedNotNull null
+            val position = slot.number("initPos")?.toInt() ?: (index + 1)
+            if (slot.bool("isFollowerSvt")) return@mapIndexedNotNull DashboardPartySlot(position, null, null, null, emptyList())
+            val own = slot.number("userSvtId")?.takeIf { it > 0L }?.let(svtById::get) ?: return@mapIndexedNotNull null
+            val ceIds = ((slot["userSvtEquipIds"] as? JsonArray).orEmpty()).mapNotNull { (it as? JsonPrimitive)?.longOrNull?.takeIf { id -> id > 0L } }
+            val ces = ceIds.mapNotNull { id ->
+                val ce = svtById[id] ?: return@mapNotNull null
+                ce.number("svtId")?.let { DashboardPartyCe(it, ce.number("lv"), ce.number("limitCount")) }
+            }
+            own.number("svtId")?.let { DashboardPartySlot(position, it, own.number("lv"), own.number("treasureDeviceLv1"), ces, ceMissing = ces.size < ceIds.size) }
+        }.sortedBy { it.position }
+        if (slots.none { !it.support }) return@mapNotNull null
+        val mystic = info.number("userEquipId")?.let(equipById::get)?.number("equipId")
+        DashboardParty(deckNo, deck.text("name")?.trim()?.takeIf { it.isNotEmpty() }, slots, mystic)
+    }.sortedBy { it.deckNo }
+}
+
+private const val EVENT_POINT_WINDOW_SECONDS = 30L * 24 * 3600
+
+internal fun projectProgressInput(snapshotTime: Long, missions: List<JsonObject>?, points: List<JsonObject>?): DashboardProgressInput? {
+    if (missions == null && points == null) return null
+    // 4 = achieved, 5 = reward received; a mission without a row is not done.
+    val achieved = missions?.mapNotNull { row ->
+        row.number("missionId")?.takeIf { row.number("missionProgressType") in setOf(4L, 5L) }
+    }?.toSet()
+    val events = points.orEmpty().mapNotNull { row ->
+        if (row.number("groupId") != 0L) return@mapNotNull null
+        val updated = row.number("updatedAt") ?: return@mapNotNull null
+        if (updated < snapshotTime - EVENT_POINT_WINDOW_SECONDS) return@mapNotNull null
+        DashboardEventPoint(row.number("eventId") ?: return@mapNotNull null, row.number("value") ?: return@mapNotNull null, updated)
+    }.sortedByDescending { it.updatedAt }
+    return DashboardProgressInput(snapshotTime, achieved, events)
 }
 
 private fun projectPresentBox(rows: List<JsonObject>?): DashboardPresentBox? {

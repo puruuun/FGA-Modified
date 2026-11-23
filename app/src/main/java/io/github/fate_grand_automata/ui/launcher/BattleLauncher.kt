@@ -1,6 +1,9 @@
 package io.github.fate_grand_automata.ui.launcher
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -456,19 +461,38 @@ fun battleLauncher(
                     }
                     QuestItemCheckbox(bond.stop, true, stringResource(R.string.p_bond_stop)) { changeBond(bond.copy(stop = it)) }
                     if (bond.stop) {
-                        Text(stringResource(R.string.p_bond_ignore_characters), style = MaterialTheme.typography.bodySmall)
-                        Row {
+                        Text(
+                            stringResource(R.string.p_bond_ignore_characters),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(start = 8.dp, top = 8.dp)
+                        )
+                        Row(Modifier.padding(top = 8.dp)) {
                             for (slot in 1..5) {
-                                androidx.compose.foundation.layout.Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                // The label and the box toggle together so the box sits right under the label (owner,
+                                // 2026-11-22); the column keeps the 48dp touch target.
+                                androidx.compose.foundation.layout.Column(
+                                    Modifier
+                                        .weight(1f)
+                                        .heightIn(min = 48.dp)
+                                        .toggleable(value = slot in bond.ignored, role = Role.Checkbox, onValueChange = { checked ->
+                                            changeBond(bond.copy(ignored = if (checked) bond.ignored + slot else bond.ignored - slot))
+                                        })
+                                        .testTag("$LauncherBondIgnoreTagPrefix$slot"),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
                                     Text(stringResource(R.string.p_bond_position, slot), style = MaterialTheme.typography.bodySmall)
-                                    Checkbox(checked = slot in bond.ignored, onCheckedChange = { checked ->
-                                        changeBond(bond.copy(ignored = if (checked) bond.ignored + slot else bond.ignored - slot))
-                                    })
+                                    // Without its own click the checkbox takes no 48dp area of its own.
+                                    Checkbox(
+                                        checked = slot in bond.ignored, onCheckedChange = null,
+                                        modifier = Modifier.testTag("$LauncherBondIgnoreBoxTagPrefix$slot")
+                                    )
                                 }
                             }
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                    HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
                 }
             }
 
@@ -492,11 +516,7 @@ fun battleLauncher(
                                 .padding(end = 8.dp),
                             horizontalArrangement = Arrangement.End
                         ) {
-                            Card(
-                                shape = CircleShape,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                ),
+                            FilledTonalButton(
                                 enabled = resetAllButton,
                                 onClick = {
                                     shouldLimitRuns = false
@@ -505,21 +525,19 @@ fun battleLauncher(
                                     limitCEs = 1
                                     shouldLimitMats = false
                                     limitMats = 1
-                                }
+                                },
+                                // The text stays labelSmall; only the button shrinks. The 48dp touch target is kept, as the
+                                // button keeps its minimum interactive size.
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .testTag(LauncherResetAllTag)
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .padding(10.dp, 4.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.reset_all).uppercase(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                        color = if (resetAllButton) MaterialTheme.colorScheme.onSecondaryContainer
-                                        else MaterialTheme.colorScheme.onSecondaryContainer.copy(0.38f)
-                                    )
-                                }
+                                Text(
+                                    text = stringResource(R.string.reset_all).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
 
@@ -576,6 +594,9 @@ fun battleLauncher(
     )
 }
 
+internal const val LauncherResetAllTag = "launcher-reset-all"
+internal const val LauncherBondIgnoreTagPrefix = "launcher-bond-ignore:"
+internal const val LauncherBondIgnoreBoxTagPrefix = "launcher-bond-ignore-box:"
 internal const val LauncherConfigListTag = "launcher-config-list"
 internal const val LauncherSettingsListTag = "launcher-settings-list"
 internal const val LauncherFolderBoxTagPrefix = "launcher-folder-box:"
