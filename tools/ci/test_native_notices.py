@@ -14,6 +14,7 @@ MIT = ('Copyright (c) 2020 The A Authors\n\nPermission is hereby granted, free o
        'obtaining a copy of this software.\n')
 APACHE = ('                              Apache License\n                        Version 2.0, January 2004\n'
           '   TERMS AND CONDITIONS FOR USE\n   (c) You must retain the notices\n   END OF TERMS AND CONDITIONS\n')
+TOOLCHAIN = '[toolchain]\nchannel = "1.100.0"\nprofile = "minimal"\n'
 ISC = ('Copyright 2015 Someone.\n\nPermission to use, copy, modify, and/or distribute this software\n'
        'THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n')
 
@@ -50,6 +51,7 @@ class GeneratorTest(unittest.TestCase):
         self.add('gamma', '3.1.0', 'MIT', {})
         self.notice = self.write('NOTICE.txt', 'The model, under Apache-2.0.\n\n' + APACHE)
         self.output = os.path.join(self.root, 'THIRD_PARTY_NOTICES.txt')
+        self.toolchain = TOOLCHAIN
 
     def write(self, rel, text):
         path = os.path.join(self.root, rel)
@@ -83,7 +85,8 @@ class GeneratorTest(unittest.TestCase):
         meta_path = self.write('metadata.json', json.dumps(metadata or self.metadata()))
         tree_path = self.write('tree.txt', '\n'.join(tree or self.tree()) + '\n')
         p = subprocess.run([sys.executable, SCRIPT, mode, '--metadata', meta_path, '--tree', tree_path,
-                            '--output', self.output, '--model-notice', self.notice], capture_output=True)
+                            '--output', self.output, '--model-notice', self.notice,
+                            '--toolchain', self.write('rust-toolchain.toml', self.toolchain)], capture_output=True)
         return p.returncode, (p.stdout + p.stderr).decode('utf-8', 'replace')
 
     def test_generate_then_check_passes(self):
@@ -92,15 +95,15 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(code, 0, out)
 
     def test_output_is_deterministic_and_has_unix_line_ends(self):
-        first = n.build(self.metadata(), self.tree(), n.read_text(self.notice))
+        first = n.build(self.metadata(), self.tree(), n.read_text(self.notice), TOOLCHAIN)
         self.packages.reverse()
-        second = n.build(self.metadata(), list(reversed(self.tree())), n.read_text(self.notice))
+        second = n.build(self.metadata(), list(reversed(self.tree())), n.read_text(self.notice), TOOLCHAIN)
         self.assertEqual(first, second)
         self.assertNotIn('\r', first)
         self.assertTrue(first.endswith('\n'))
 
     def test_contents(self):
-        text = n.build(self.metadata(), self.tree(), n.read_text(self.notice))
+        text = n.build(self.metadata(), self.tree(), n.read_text(self.notice), TOOLCHAIN)
         self.assertIn('The model, under Apache-2.0.', text)
         self.assertIn('alpha 1.0.0\n  Licence: MIT OR Apache-2.0\n  Used under: MIT\n', text)
         self.assertIn('  Copyright (c) 2020 The A Authors\n', text)
@@ -112,6 +115,10 @@ class GeneratorTest(unittest.TestCase):
                       '  Licence files in the crate: none; the licence is taken from its Cargo.toml\n'
                       '  No copyright line in its licence files. Authors in its Cargo.toml: Ann Author\n', text)
         self.assertIn('2. Rust crates linked into libfga_ffi.so (3)', text)
+        self.assertIn('Rust standard library (std, core, alloc), Rust 1.100.0\n  Licence: MIT OR Apache-2.0\n'
+                      '  Used under: MIT\n', text)
+        self.assertIn('  Copyright (c) The Rust Project Contributors\n', text)
+        self.assertIn('MIT (used by 2 crates and the Rust standard library;', text)
         self.assertNotIn('fga-ffi 0.1.0', text)
 
     def test_a_changed_lock_entry_fails_the_check(self):
@@ -131,6 +138,17 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(self.run_cli('generate')[0], 0)
         self.write(os.path.join('registry', 'beta-0.2.1', 'LICENSE-ISC'), ISC.replace('2015', '2016'))
         self.assertEqual(self.run_cli('check')[0], 1)
+
+    def test_a_toolchain_bump_fails_the_check(self):
+        self.assertEqual(self.run_cli('generate')[0], 0)
+        self.toolchain = TOOLCHAIN.replace('1.100.0', '1.101.0')
+        self.assertEqual(self.run_cli('check')[0], 1)
+
+    def test_a_toolchain_file_without_a_channel_fails(self):
+        self.toolchain = '[toolchain]\nprofile = "minimal"\n'
+        code, out = self.run_cli('generate')
+        self.assertEqual(code, 1)
+        self.assertIn('channel', out)
 
     def test_missing_output_fails_the_check(self):
         self.assertEqual(self.run_cli('check')[0], 1)

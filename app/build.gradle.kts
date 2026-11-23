@@ -130,13 +130,15 @@ androidComponents {
  * once, by carriesEngine; the packaged files, BuildConfig.NATIVE_READER, the keep rules and the
  * checks below all read it, so they cannot disagree.
  *
- * Design 0026, D-6: beta, release and rust carry it; debug, ci and deviceTest do not, so a
- * Kotlin-only build (Main CI's assembleCi and unit tests) needs no Rust tools and has no Rust task
- * in its task graph. `-Pfga.native=true` adds the engine to every variant (the device-test and
- * probe builds of rust-native.md); `-Pfga.native=false` takes it out of every variant, the
- * emergency switch of the design's risk table, which builds beta and release as the public builds
- * were before the engine. D-7: a carrying variant fails when a Rust tool is missing; it never
- * silently packages no engine.
+ * Design 0026, D-6: beta and rust carry it by default; debug, ci, deviceTest and release do not,
+ * so a Kotlin-only build (Main CI's assembleCi and unit tests) needs no Rust tools and has no Rust
+ * task in its task graph. The stable APK is the ci build type built with `-Pfga.native=true`, which
+ * adds the engine to every variant (also the device-test and probe builds of rust-native.md); the
+ * release procedure checks the staged file with tools/ci/apk_check.py, since nothing in the build
+ * can tell a stable build from Main CI's. release is upstream's Play build type, which this fork
+ * does not ship, so it has no default of its own. `-Pfga.native=false` takes the engine out of
+ * every variant, the emergency switch of the design's risk table. D-7: a carrying variant fails
+ * when a Rust tool is missing; it never silently packages no engine.
  */
 val nativeSwitch: Boolean? = when (val raw = providers.gradleProperty("fga.native").orNull) {
     null -> null
@@ -144,7 +146,7 @@ val nativeSwitch: Boolean? = when (val raw = providers.gradleProperty("fga.nativ
     "false" -> false
     else -> throw GradleException("-Pfga.native must be true or false, got '$raw'")
 }
-val engineBuildTypes = setOf("beta", "release", "rust")
+val engineBuildTypes = setOf("beta", "rust")
 fun carriesEngine(buildType: String?): Boolean = nativeSwitch ?: (buildType in engineBuildTypes)
 // Some variant may carry the engine, so the Rust tasks are registered. Registering runs nothing:
 // only a carrying variant's tasks depend on them.

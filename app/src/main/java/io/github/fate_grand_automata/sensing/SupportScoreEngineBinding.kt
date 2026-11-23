@@ -8,7 +8,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 /**
  * Owner decision (issue #568, kept by design 0026): users of the public app see nothing of the
  * Rust engine, no setting, text or mode. A build that packages the engine ([BuildConfig.NATIVE_READER]:
- * beta, release and the rust build type) gives the support selection the real engine, which falls
+ * the beta, the stable build made with -Pfga.native=true, and the rust build type) gives the support selection the real engine, which falls
  * back to the existing reader without a word when it cannot load. Every other build gets
  * [NoSupportScoreEngine], and [create] (the only path to `System.loadLibrary`) is never called there.
  */
