@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
@@ -152,7 +153,7 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: the name on its own line, then a centered AP ring with its details and the update time. Level
+ * secondary text. Wide: the name centered on its own line, then a centered AP ring with its details and the update time. Level
  * and server live in the Overview account block, not here. Narrow: a row of a small ring and three lines, to keep the
  * header short above the tab row.
  */
@@ -161,7 +162,6 @@ private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, 
     val profile = data.profile
     val name = listOfNotNull(displayName, profile["name"]).distinct().takeIf { it.isNotEmpty() }?.joinToString(" · ")
     val ap = dashboardAp(data.game, now)
-    val carry = data.game?.number("carryOverActPoint")?.takeIf { it > 0 }
     val updated = @Composable {
         val age = relativeAge(now, data.lastUpdateTime)
         val ageText = when (age.unit) {
@@ -180,7 +180,7 @@ private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, 
             // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
             Text(
                 it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                overflow = TextOverflow.Ellipsis, textAlign = if (wide) TextAlign.Center else null,
                 autoSize = TextAutoSize.StepBased(minFontSize = NAME_MIN, maxFontSize = if (wide) NAME_MAX_WIDE else NAME_MAX_NARROW),
             )
         }
@@ -193,7 +193,7 @@ private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, 
         // The line parts the account name from its AP (owner, 2026-11-23).
         if (ap != null) {
             HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
-            HeaderAp(ap, carry, now)
+            HeaderAp(ap, now)
         }
         updated()
     } else Row(
@@ -206,7 +206,6 @@ private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, 
             if (ap != null) {
                 val summary = listOfNotNull(
                     "AP ${ap.current.grouped()} / ${ap.max.grouped()}", apFullText(ap, now),
-                    carry?.let { "${stringResource(R.string.dashboard_carry_ap)} ${it.grouped()}" },
                 ).joinToString(" · ")
                 Text(summary, Modifier.testTag("header-ap-detail"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -223,7 +222,7 @@ private fun apFullText(ap: DashboardAp, now: Long): String =
 internal fun apFraction(current: Long, max: Long): Float = if (max > 0) (current.toFloat() / max).coerceIn(0f, 1f) else 0f
 
 @Composable
-private fun HeaderAp(ap: DashboardAp, carry: Long?, now: Long) {
+private fun HeaderAp(ap: DashboardAp, now: Long) {
     Column(Modifier.fillMaxWidth().testTag("header-ap"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ApRing(ap, 112.dp, 7.dp, showMax = true)
         Column(Modifier.testTag("header-ap-detail"), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -235,9 +234,6 @@ private fun HeaderAp(ap: DashboardAp, carry: Long?, now: Long) {
                     Text(stringResource(R.string.capture_ap_full), style = MaterialTheme.typography.bodySmall, color = onVariant)
                     Text(clock(ap.recoverAt), style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
                 }
-            }
-            carry?.let {
-                Text("${stringResource(R.string.dashboard_carry_ap)} ${it.grouped()}", Modifier.testTag("header-ap-carry"), style = MaterialTheme.typography.bodySmall, color = onVariant)
             }
         }
     }

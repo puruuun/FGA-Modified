@@ -1184,7 +1184,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_copy">Copy friend code</string>
     <string name="dashboard_snapshot">Snapshot</string>
     <string name="dashboard_updated">Last update</string>
-    <string name="dashboard_carry_ap">Carry-over AP</string>
     <string name="dashboard_command_spell">Command spell recovery</string>
     <string name="dashboard_servants_others">Servants + other</string>
     <string name="dashboard_storage_detail">Servants / other (EXP, Fou, etc.)</string>

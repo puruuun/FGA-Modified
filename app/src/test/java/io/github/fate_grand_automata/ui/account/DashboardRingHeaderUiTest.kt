@@ -127,9 +127,6 @@ class DashboardRingHeaderUiTest {
         assertTrue("ring $ring label $label", label.top >= ring.bottom)
         assertEquals("label $label time $time", (label.top + label.bottom).value, (time.top + time.bottom).value, 4f)
         assertEquals((pane.left + pane.right).value / 2, (label.left + time.right).value / 2, 2f)
-        val carry = box("header-ap-carry")
-        assertTrue("carry $carry label $label", carry.top >= label.bottom)
-        assertEquals((pane.left + pane.right).value / 2, (carry.left + carry.right).value / 2, 2f)
     }
 
     @Test fun aFullApSaysOnlyFullCentredBelowTheRing() {
@@ -142,8 +139,8 @@ class DashboardRingHeaderUiTest {
 
     @Test fun theUpdateTimeIsCentredBelowEverything() {
         show(1280, recovering(carry = 12))
-        val pane = box("dashboard-nav-pane"); val updated = box("dashboard-updated"); val carry = box("header-ap-carry")
-        assertTrue("carry $carry updated $updated", updated.top >= carry.bottom)
+        val pane = box("dashboard-nav-pane"); val updated = box("dashboard-updated"); val ap = box("header-ap")
+        assertTrue("ap $ap updated $updated", updated.top >= ap.bottom)
         assertEquals((pane.left + pane.right).value / 2, (updated.left + updated.right).value / 2, 2f)
     }
 
@@ -157,17 +154,27 @@ class DashboardRingHeaderUiTest {
         show(360, recovering())
         compose.onNodeWithTag("header-ap-max", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("header-ap-current", useUnmergedTree = true).assertExists()
-        assertTrue(texts("header-ap-detail"), Regex("""AP \d+ / 147 · \d{2}:\d{2} 가득 참 · 이월 AP 12""").matches(texts("header-ap-detail")))
+        assertTrue(texts("header-ap-detail"), Regex("""AP \d+ / 147 · \d{2}:\d{2} 가득 참""").matches(texts("header-ap-detail")))
     }
 
-    @Test fun theCarryOverLineIsHiddenAtZeroOnWideAndNarrow() {
-        show(1280, recovering(carry = 0))
+    private fun assertNoCarryOver(width: Int) {
+        show(width, recovering(carry = 12))
         compose.onNodeWithTag("header-ap-carry", useUnmergedTree = true).assertDoesNotExist()
+        compose.onAllNodes(hasText("이월", substring = true) and hasAnyAncestor(hasTestTag("dashboard-account-header")), useUnmergedTree = true).assertCountEquals(0)
+        assertFalse(texts("header-ap-detail"), texts("header-ap-detail").contains("이월"))
     }
 
-    @Test fun theNarrowSummaryHasNoCarryOverPartAtZero() {
-        show(360, recovering(carry = 0))
-        assertFalse(texts("header-ap-detail"), texts("header-ap-detail").contains("이월"))
+    @Test fun theWideHeaderHasNoCarryOverEvenWhenTheValueIsPresent() = assertNoCarryOver(1280)
+    @Test fun theNarrowHeaderHasNoCarryOverEvenWhenTheValueIsPresent() = assertNoCarryOver(360)
+
+    @Test fun theWideNameIsCentredInThePane() {
+        show(1280, named("샘플"))
+        val pane = box("dashboard-nav-pane"); val name = box("header-name")
+        val layout = layoutOf(hasTestTag("header-name"))
+        val density = layout.layoutInput.density
+        val left = name.left + with(density) { layout.getLineLeft(0).toDp() }
+        val right = name.left + with(density) { layout.getLineRight(0).toDp() }
+        assertEquals("pane $pane name $name", (pane.left + pane.right).value / 2, (left + right).value / 2, 2f)
     }
 
     @Test fun theUpdateTimeFollowsTheApRowWithoutALineBetween() {
@@ -180,11 +187,6 @@ class DashboardRingHeaderUiTest {
         show(1280, recovering())
         val name = box("header-name"); val line = box("header-divider"); val ap = box("header-ap")
         assertTrue("name $name line $line ap $ap", line.top >= name.bottom && line.bottom <= ap.top)
-    }
-
-    @Test fun theCarryOverLineShowsOnWideWhenAboveZero() {
-        show(1280, recovering(carry = 12))
-        compose.onNodeWithTag("header-ap-carry", useUnmergedTree = true).assertTextEquals("이월 AP 12")
     }
 
     private fun assertNoRing(width: Int) {

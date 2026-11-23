@@ -869,7 +869,6 @@
     <string name="dashboard_copy">フレンドコードをコピー</string>
     <string name="dashboard_snapshot">スナップショット日時</string>
     <string name="dashboard_updated">最終更新</string>
-    <string name="dashboard_carry_ap">持ち越しAP</string>
     <string name="dashboard_command_spell">令呪回復日時</string>
     <string name="dashboard_servants_others">サーヴァント＋その他</string>
     <string name="dashboard_storage_detail">サーヴァント／その他（種火・フォウなど）</string>

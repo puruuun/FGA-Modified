@@ -1113,7 +1113,6 @@
     <string name="dashboard_copy">친구 코드 복사</string>
     <string name="dashboard_snapshot">스냅샷 시각</string>
     <string name="dashboard_updated">마지막 갱신</string>
-    <string name="dashboard_carry_ap">이월 AP</string>
     <string name="dashboard_command_spell">영주 회복 시각</string>
     <string name="dashboard_servants_others">서번트 + 기타</string>
     <string name="dashboard_storage_detail">서번트 / 기타 (종화·포우 등)</string>
