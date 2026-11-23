@@ -378,7 +378,8 @@ mod tests {
         }
     }
 
-    // The reader width and the Python results' width, the two the device cases load.
+    // The widths a device case loads: 320 (the reader's, which is also RapidOCR's) and 256, the
+    // narrower width the earlier reader used.
     #[test]
     fn score_reader_widths_are_accepted_and_others_refused() {
         for width in [256, 320] {

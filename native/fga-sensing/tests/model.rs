@@ -156,9 +156,11 @@ mod checks {
         }
     }
 
-    /// The support-score reader (issue #555) on seven fixed crops, one per case the rules exist
-    /// for. The reasons are the reader's own, so a rule that stops firing fails here with the
-    /// file name.
+    /// The support-score reader (issue #555) on seven fixed crops, one per case below. The reasons
+    /// are the reader's own, so a rule that stops firing fails here with the file name. No stored
+    /// sample is refused for its format at the default (the refused ones are blank, clipped or
+    /// low-confidence), so `Reason::Format` is guarded by the unit tests of `format.rs` and of the
+    /// reader, not by a real crop.
     pub fn support_score_reader_decides_fixed_samples<B: Backend>(test: &str) {
         use fga_sensing::readers::support_score::{
             Display, Reason, Score, ScoreConfig, SupportScoreReader,
@@ -214,8 +216,7 @@ mod checks {
                 Score::Unknown(Reason::Clipped),
                 Display::Unknown,
             ),
-            // A faint leading plus: the whole crop at width 256 reads "62/+16", which the strict
-            // format refuses; without the label rows at width 320 the plus is read.
+            // A compound whose leading plus is faint.
             (
                 "0168.png",
                 Score::Value(62),
@@ -295,6 +296,8 @@ mod checks {
         }
         // Per direction: F62, F16, OTHER, correct 62 or 16.
         let mut split = std::collections::BTreeMap::<&str, [usize; 4]>::new();
+        // Which wrong number each OTHER is: "class N" or "grand N".
+        let mut others = std::collections::BTreeMap::<String, usize>::new();
         let mut wrong_picks = Vec::new();
         for (file, class, grand, list) in &work {
             let crop = samples::load_gray(&dir.join(file)).unwrap();
@@ -320,6 +323,7 @@ mod checks {
                         wrong_picks.push(format!("F62: {at}"));
                     } else {
                         counts[2] += 1;
+                        *others.entry(format!("class {value}")).or_default() += 1;
                     }
                 }
                 if let Some(value) = score.grand.value() {
@@ -330,6 +334,7 @@ mod checks {
                         wrong_picks.push(format!("F16: {at}"));
                     } else {
                         counts[2] += 1;
+                        *others.entry(format!("grand {value}")).or_default() += 1;
                     }
                 }
             }
@@ -338,7 +343,7 @@ mod checks {
         let other: usize = split.values().map(|c| c[2]).sum();
         let correct: usize = split.values().map(|c| c[3]).sum();
         println!(
-            "{test}: per direction [F62, F16, OTHER, correct 62/16]: {split:?}; OTHER {other} (bound {measured_other})"
+            "{test}: per direction [F62, F16, OTHER, correct 62/16]: {split:?}; OTHER {other} {others:?} (bound {measured_other})"
         );
         // Zero wrong picks also holds for a reader that never answers, so some 62 or 16 must
         // have been accepted on a cut crop: the smallest shifts leave the field whole.
@@ -363,16 +368,36 @@ mod checks {
             sample.py_text
         );
 
-        // Three crops side by side: 180x30 becomes 288 columns, wider than tract's 256 plan, so
-        // tract plans that width on first use.
-        let wide: Vec<u8> = crop
-            .pixels()
-            .chunks(crop.width())
-            .flat_map(|row| row.iter().chain(row).chain(row).copied())
-            .collect();
-        let wide = GrayImage::new(crop.width() * 3, crop.height(), wide).unwrap();
+        // Copies of the crop side by side until the model input is wider than the 320 columns
+        // every backend pads to, so a backend that plans its width must handle a wider input.
+        let wide = side_by_side(&crop, |image| {
+            fga_sensing::preprocess::prepare_crop_with(
+                image,
+                fga_sensing::preprocess::DEFAULT_UPSCALE,
+                fga_sensing::preprocess::MIN_MODEL_WIDTH,
+            )
+            .unwrap()
+            .width()
+                > fga_sensing::preprocess::MIN_MODEL_WIDTH
+        });
         let text = recognizer.recognize(&wide, None).unwrap().text;
         assert!(text.contains(&sample.py_text), "{text:?}");
+    }
+
+    /// `crop` repeated side by side, one copy more each time, until `wide_enough` holds.
+    pub fn side_by_side(crop: &GrayImage, wide_enough: impl Fn(&GrayImage) -> bool) -> GrayImage {
+        for copies in 2..=32 {
+            let pixels: Vec<u8> = crop
+                .pixels()
+                .chunks(crop.width())
+                .flat_map(|row| (0..copies).flat_map(move |_| row.iter().copied()))
+                .collect();
+            let image = GrayImage::new(crop.width() * copies, crop.height(), pixels).unwrap();
+            if wide_enough(&image) {
+                return image;
+            }
+        }
+        panic!("no number of copies is wide enough");
     }
 }
 
@@ -384,7 +409,7 @@ mod tract {
     use fga_sensing::backend::{Backend, READER_MIN_WIDTH, TractBackend, TractSettings};
     use fga_sensing::preprocess::MIN_MODEL_WIDTH;
 
-    /// The width the Python results used, not the reader's.
+    /// The width the Python results used, RapidOCR's 320.
     #[cfg(test)]
     fn at_python_width(model: &Path) -> TractBackend {
         let settings = TractSettings {
@@ -428,6 +453,32 @@ mod tract {
     }
 
     #[test]
+    fn an_input_wider_than_the_plan_gets_its_own_plan() {
+        let Some(model) = std::env::var_os("FGA_OCR_MODEL") else {
+            println!("tract wide plan: skipped, FGA_OCR_MODEL is not set");
+            return;
+        };
+        let mut recognizer =
+            Recognizer::new(TractBackend::load_file(Path::new(&model)).unwrap()).unwrap();
+        let crop = fga_sensing::image::GrayImage::new(60, 30, vec![128; 60 * 30]).unwrap();
+        let wide = super::checks::side_by_side(&crop, |image| {
+            fga_sensing::preprocess::prepare_crop_with(
+                image,
+                fga_sensing::preprocess::DEFAULT_UPSCALE,
+                READER_MIN_WIDTH,
+            )
+            .unwrap()
+            .width()
+                > READER_MIN_WIDTH
+        });
+        recognizer.recognize(&wide, None).unwrap();
+        let widths = recognizer.backend().planned_widths();
+        assert_eq!(widths.len(), 2, "{widths:?}");
+        assert_eq!(widths[0], READER_MIN_WIDTH);
+        assert!(widths[1] > READER_MIN_WIDTH, "{widths:?}");
+    }
+
+    #[test]
     fn support_score_reader_decides_fixed_samples() {
         super::checks::support_score_reader_decides_fixed_samples::<TractBackend>(
             "tract support score",
@@ -435,6 +486,9 @@ mod tract {
     }
 
     #[test]
+    // 48 is a run of this test at the default, tract and ort alike: right 44, left 4, down 0,
+    // up 0; the wrong numbers are Grand 1 (41), Grand 10 (3) and class 16 (4, the far-left `+16`
+    // crops the sweep injects), none a 62 or a Grand 16. `--nocapture` prints the split.
     fn cut_sweep_has_no_wrong_pick() {
         super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep", 48);
     }
@@ -513,6 +567,9 @@ mod ort {
     }
 
     #[test]
+    // 48 is a run of this test at the default, tract and ort alike: right 44, left 4, down 0,
+    // up 0; the wrong numbers are Grand 1 (41), Grand 10 (3) and class 16 (4, the far-left `+16`
+    // crops the sweep injects), none a 62 or a Grand 16. `--nocapture` prints the split.
     fn cut_sweep_has_no_wrong_pick() {
         super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep", 48);
     }

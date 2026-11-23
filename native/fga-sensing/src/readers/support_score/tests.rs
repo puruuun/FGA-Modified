@@ -609,7 +609,7 @@ fn no_trim_gives_the_model_the_whole_crop() {
 
 #[test]
 fn the_pixel_rules_still_judge_the_whole_crop() {
-    // The flat band lies only in rows 26..30, which the model no longer sees.
+    // The flat band lies only in rows 26..30, which the model is not given.
     let mut pixels = panel();
     for y in 10..26 {
         pixels[y * W + 30] = 40;
@@ -646,4 +646,57 @@ fn a_trim_that_leaves_no_rows_is_an_error() {
     assert!(all.apply(&striped()).is_err());
     assert!(RowTrim { top: 31, bottom: 0 }.apply(&striped()).is_err());
     assert_eq!(RowTrim::NONE.apply(&striped()).unwrap(), striped());
+}
+
+#[test]
+fn texture_only_in_the_trimmed_rows_is_not_blank_by_the_pixel_rule() {
+    // Rows 3..26 are flat, so the model's image alone would be featureless; the crop is not.
+    let mut pixels = vec![146u8; W * H];
+    for (i, p) in panel().iter().enumerate() {
+        if i / W < 3 || i / W >= 26 {
+            pixels[i] = *p;
+        }
+    }
+    let image = crop(pixels);
+    assert!(is_featureless(&image.rows(3, 26).unwrap()));
+    let mut reader = reader(Scripted::text("+62/+16", 0.99), ScoreConfig::default());
+    let score = reader.read(&image).unwrap();
+    assert!(!score.observation.featureless);
+    assert_ne!(score.class, Score::Unknown(Reason::Blank));
+}
+
+#[test]
+fn a_trim_larger_than_the_crop_is_an_error_not_a_panic() {
+    let image = striped();
+    for trim in [
+        RowTrim {
+            top: 0,
+            bottom: H + 1,
+        },
+        RowTrim { top: 0, bottom: H },
+        RowTrim {
+            top: 20,
+            bottom: 10,
+        },
+        RowTrim {
+            top: 20,
+            bottom: 11,
+        },
+        RowTrim { top: H, bottom: 0 },
+    ] {
+        assert!(trim.apply(&image).is_err(), "{trim:?}");
+        let config = ScoreConfig {
+            row_trim: trim,
+            ..ScoreConfig::default()
+        };
+        let mut reader = reader(Scripted::text("+62/+16", 0.99), config);
+        assert!(reader.read(&image).is_err(), "{trim:?}");
+    }
+    assert_eq!(
+        RowTrim { top: 29, bottom: 0 }
+            .apply(&image)
+            .unwrap()
+            .height(),
+        1
+    );
 }

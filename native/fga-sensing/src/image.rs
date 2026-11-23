@@ -89,6 +89,25 @@ mod tests {
     }
 
     #[test]
+    fn rows_cuts_the_asked_range() {
+        let image = GrayImage::new(2, 4, vec![0, 1, 2, 3, 4, 5, 6, 7]).unwrap();
+        assert_eq!(image.rows(0, 1).unwrap().pixels(), &[0, 1]);
+        assert_eq!(image.rows(3, 4).unwrap().pixels(), &[6, 7]);
+        let middle = image.rows(1, 3).unwrap();
+        assert_eq!((middle.width(), middle.height()), (2, 2));
+        assert_eq!(middle.pixels(), &[2, 3, 4, 5]);
+        assert_eq!(image.rows(0, 4).unwrap(), image);
+    }
+
+    #[test]
+    fn rows_refuses_an_empty_or_out_of_range_request() {
+        let image = GrayImage::new(2, 4, vec![0; 8]).unwrap();
+        for (top, bottom) in [(2, 2), (3, 2), (0, 5), (4, 4), (5, 9)] {
+            assert!(image.rows(top, bottom).is_err(), "{top}..{bottom}");
+        }
+    }
+
+    #[test]
     fn rejects_wrong_pixel_count() {
         assert_eq!(
             GrayImage::new(3, 2, vec![0; 5]),

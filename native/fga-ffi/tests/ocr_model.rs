@@ -82,6 +82,8 @@ mod model {
         for (file, class, grand, reason) in [
             ("0183.png", Some(62), Some(16), None),
             ("0070.png", None, None, Some("clipped")),
+            // A compound with a faint leading plus, read; no stored sample is refused for its
+            // format at the default.
             ("0168.png", Some(62), Some(16), None),
         ] {
             let (pixels, width, height) = first_channel(&dir.join(file));

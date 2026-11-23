@@ -264,8 +264,13 @@ fn read_all(
 #[derive(Default)]
 struct Summary {
     n: usize,
-    /// A value was read and no field of it is wrong (a read with no known truth counts here).
+    /// A value was read and every field of it equals a known truth.
     correct: usize,
+    /// A value was read, no field of it is wrong, and some field has no truth to be compared
+    /// with (a sample labelled only by a flag, or a crop with no label at all).
+    unlabelled: usize,
+    /// Partial crops that were read at all.
+    read: usize,
     wrong: usize,
     refused: BTreeMap<&'static str, usize>,
     pos62: usize,
@@ -290,10 +295,12 @@ impl Summary {
             .map(|(r, n)| format!("{r} {n}"))
             .collect();
         format!(
-            "n {} correct {} refused {} [{}] WRONG {} | +62 {}/{} +16 {}/{} F62 {} F16 {} | \
-             conf min {} char min {} below0.90 {} borderline {}",
+            "n {} correct {} unlabelled {} read {} refused {} [{}] WRONG {} | +62 {}/{} +16 {}/{} \
+             F62 {} F16 {} | conf min {} char min {} below0.90 {} borderline {}",
             self.n,
             self.correct,
+            self.unlabelled,
+            self.read,
             self.refused.values().sum::<usize>(),
             refused.join(", "),
             self.wrong,
@@ -326,6 +333,11 @@ fn summarise(set: &Set, items: &[Item], scores: &[SupportScore]) -> Summary {
         }
         if partial {
             if class.is_some() || grand.is_some() {
+                // Whatever is read from a cut crop has no label to be right against, so a 62 or a
+                // 16 counts as a false one.
+                s.read += 1;
+                s.f62 += usize::from(class == Some(62));
+                s.f16 += usize::from(grand == Some(16));
                 s.extras.push(format!(
                     "READ {}: {:?} class {class:?} grand {grand:?} conf {:.5}",
                     item.file, obs.text, obs.confidence
@@ -360,7 +372,13 @@ fn summarise(set: &Set, items: &[Item], scores: &[SupportScore]) -> Summary {
             ));
             continue;
         }
-        s.correct += 1;
+        let compared = (class.is_none() || item.expect.truth.0.is_some())
+            && (grand.is_none() || item.expect.truth.1.is_some());
+        if compared {
+            s.correct += 1;
+        } else {
+            s.unlabelled += 1;
+        }
         s.lowest_conf = Some(
             s.lowest_conf
                 .map_or(obs.confidence, |c| c.min(obs.confidence)),

@@ -105,7 +105,7 @@ private const val HWM_NOTE =
 /**
  * The width the Python results (`py_text`, `py_conf`) were read at, RapidOCR's. The tract-memory
  * and tract-recognise cases load at it, as the thread cases at 320 do, so `minEqual` keeps
- * comparing with Python; ocrLoad plans the reader's narrower width (issue #591).
+ * comparing with Python; ocrLoad plans the reader's width, which is 320 as well.
  */
 private const val PYTHON_WIDTH = 320
 

@@ -144,7 +144,8 @@ pub struct ScoreConfig {
 ///
 /// Measured on real KR and JP device crops and on shifted and rescaled copies of them: the label
 /// rows at the top and the dark band under the row are what moves a read when the field is a
-/// pixel or two off, and without them the model reads the digits at width 320 whatever the shift.
+/// pixel or two off. With them removed the model reads the digits at width 320 on the worst of 21
+/// shifted and rescaled copies in 388 of 391 JP crops and 221 of 221 KR crops (whole crop: 364 and 216).
 /// The pixel rules ([`inspect_clipping`], [`is_featureless`], the size check) were fitted on the
 /// whole crop and keep judging it: a flat band that lies only in the removed rows must still count
 /// as a cut field.
