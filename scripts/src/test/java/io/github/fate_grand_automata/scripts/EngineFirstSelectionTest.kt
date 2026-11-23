@@ -143,6 +143,18 @@ class EngineFirstSelectionTest {
         assertThat(direct.logs).isEqualTo(outcome.logs)
     }
 
+    @Test
+    fun `a selection that checks no score never asks the engine`() {
+        // Both switches off; on KR a +16 switch alone is ignored (no Grand scores there).
+        for ((server, class62, grand16) in listOf(Triple(GameServer.Jp.Original, false, false), Triple(GameServer.Kr, false, true))) {
+            val f = ReaderFixture(server, "+62/+16", 92, true)
+            val engine = FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }
+            assertThat(f.check(EngineFirstSupportScoreReader(f.api, engine, f.reader), class62, grand16), "$server").isEqualTo(true)
+            assertThat(engine.reasonAsks, "$server").isEqualTo(0)
+            assertThat(engine.reads, "$server").isEmpty()
+        }
+    }
+
     /** The support list, at the level of the append-support tests: every other condition passes. */
     private class ListFixture(
         engineAnswers: Map<Int, io.github.fate_grand_automata.scripts.supportSelection.EngineScore>,

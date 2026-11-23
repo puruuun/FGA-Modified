@@ -55,6 +55,25 @@ class EngineScoreCompletenessTest {
         Row("ordinary, class unknown", shape(range, notShown, EngineDisplay.Ordinary), emptySet(), null),
         Row("ordinary, class +62, Grand not 'not shown'", shape(value62, range, EngineDisplay.Ordinary),
             setOf(Conditions.ClassOnly), SupportScores(62, null, SupportScoreDisplay.Ordinary)),
+        // Each row below fails when the rule line named in its comment is taken out.
+        // Unknown display -> return null.
+        Row("display unknown, class +62, Grand not shown", shape(value62, notShown, EngineDisplay.Unknown),
+            setOf(Conditions.ClassOnly), SupportScores(62, null, SupportScoreDisplay.Unknown)),
+        // Ordinary: Grand must be NotShown.
+        Row("ordinary, class +62, Grand +16", shape(value62, value16, EngineDisplay.Ordinary),
+            setOf(Conditions.ClassOnly), SupportScores(62, null, SupportScoreDisplay.Ordinary)),
+        // Ordinary: either clause refuses it; it fails only when both are taken out.
+        Row("ordinary, class unknown, Grand +16", shape(range, value16, EngineDisplay.Ordinary), emptySet(), null),
+        // Unknown display -> return null.
+        Row("display unknown, class +62, Grand +16", shape(value62, value16, EngineDisplay.Unknown),
+            setOf(Conditions.ClassOnly), SupportScores(62, 16, SupportScoreDisplay.Unknown)),
+        // Unknown display -> return null (under checkGrand alone nothing else refuses it).
+        Row("display unknown, class unknown, Grand +16", shape(range, value16, EngineDisplay.Unknown), emptySet(), null),
+        // Compound: Grand must be a value (under checkGrand alone); class value (with checkClass).
+        Row("compound, both unknown", shape(range, range, EngineDisplay.Compound), emptySet(), null),
+        // Compound: Grand must be a value.
+        Row("compound, class +62, Grand not shown", shape(value62, notShown, EngineDisplay.Compound),
+            setOf(Conditions.ClassOnly), SupportScores(62, null, SupportScoreDisplay.Compound)),
     )
 
     private fun check(rows: List<Row>) {

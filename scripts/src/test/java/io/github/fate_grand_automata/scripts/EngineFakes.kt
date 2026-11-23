@@ -29,14 +29,26 @@ object EngineAnswers {
         "+$classScore/+$grandScore", 0.98f, 0.95f, 33.milliseconds, 27_000.microseconds,
     )
 
-    /** One of the reader's refusals: Blank, LowConfidence, Format, Range (joint), Clipped, CropSize. */
-    fun refused(reason: EngineUnknownReason, text: String = "+6") = EngineScore(
-        EngineField.Unknown(reason), EngineField.Unknown(reason), EngineDisplay.Unknown,
-        if (reason == EngineUnknownReason.Blank || reason == EngineUnknownReason.CropSize) "" else text,
-        if (reason == EngineUnknownReason.CropSize) null else 0.5f,
-        if (reason == EngineUnknownReason.CropSize) null else 0.4f,
-        30.milliseconds, 24_000.microseconds,
-    )
+    /**
+     * One of the reader's refusals: Blank, LowConfidence, Format, Range (joint), Clipped, CropSize.
+     * A blank read has an empty text and so no character confidence. A crop of another size is
+     * refused before the model runs (wire.rs `encode_unknown`): no text, no confidences and an
+     * engine time of 0, which ScoreWire decodes as zero, not as none.
+     */
+    fun refused(reason: EngineUnknownReason, text: String = "+6") = when (reason) {
+        EngineUnknownReason.CropSize -> EngineScore(
+            EngineField.Unknown(reason), EngineField.Unknown(reason), EngineDisplay.Unknown,
+            "", null, null, 1.milliseconds, Duration.ZERO,
+        )
+        EngineUnknownReason.Blank -> EngineScore(
+            EngineField.Unknown(reason), EngineField.Unknown(reason), EngineDisplay.Unknown,
+            "", 0.0f, null, 30.milliseconds, 24_000.microseconds,
+        )
+        else -> EngineScore(
+            EngineField.Unknown(reason), EngineField.Unknown(reason), EngineDisplay.Unknown,
+            text, 0.5f, 0.4f, 30.milliseconds, 24_000.microseconds,
+        )
+    }
 
     val REFUSALS = listOf(
         EngineUnknownReason.Blank, EngineUnknownReason.LowConfidence, EngineUnknownReason.Format,

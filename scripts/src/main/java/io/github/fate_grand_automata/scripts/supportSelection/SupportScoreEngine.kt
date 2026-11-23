@@ -34,9 +34,10 @@ interface SupportScoreEngine : AutoCloseable {
 }
 
 /**
- * The engine's input, cut the same way wherever the engine reads: the row's score number region
- * from the caller's current snapshot. The engine was measured on exactly this crop, 60x30 grayscale
- * at 720p; a crop of another size (a row cut by the screen edge) is never given to it.
+ * The engine's input, cut the same way by the selection and the score scan: the row's score number
+ * region from the caller's current snapshot. The engine was measured on exactly this crop, 60x30
+ * grayscale at 720p. The selection gives it a crop of another size (a row cut by the screen edge)
+ * only after [fits]; the scan gives it every crop and logs the engine's `CropSize` refusal.
  */
 object SupportScoreEngineField {
     const val WIDTH = 60

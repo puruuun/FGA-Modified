@@ -7,6 +7,7 @@ import io.github.fate_grand_automata.scripts.supportSelection.EngineFirstSupport
 import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreReader
+import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,6 +34,8 @@ class SupportScoreReaderBindingTest {
         assertTrue(SupportScoreReader::class.java in types)
         assertTrue(SupportScoreEngine::class.java in types)
         assertFalse(ISupportScoreReader::class.java in types)
+        // One per run: the selection's reads and its diagnostics cap share the instance.
+        assertTrue(EngineFirstSupportScoreReader::class.java.isAnnotationPresent(ScriptScope::class.java))
     }
 
     @Test fun `the score scan injects the existing reader itself`() {

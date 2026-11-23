@@ -73,7 +73,8 @@ class EngineFirstSupportScoreReader(
         const val DIAGNOSTIC_READER = "support-score-engine"
         const val FIELD_TAG = "support_score_engine_field"
 
-        /** The same cap as the existing reader's records. */
+        // Fallback rows get a record here and one from the existing reader, so the two folders
+        // stop at the same row and stay comparable.
         const val MAX_DIAGNOSTIC_CANDIDATES = SupportScoreReader.MAX_DIAGNOSTIC_CANDIDATES
     }
 

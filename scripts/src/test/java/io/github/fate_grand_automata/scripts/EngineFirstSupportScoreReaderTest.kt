@@ -213,6 +213,28 @@ class EngineFirstSupportScoreReaderTest {
     }
 
     @Test
+    fun `an engine closed between the availability ask and the read hands the row to the existing reader`() {
+        val engine = FakeSupportScoreEngine { EngineAnswers.unavailable() }
+        val existing = Existing(SupportScores(62, 16, SupportScoreDisplay.Compound))
+        assertThat(reader(engine, existing).read(bounds, true, true, 0, 0)).isSameInstanceAs(existing.answer)
+        assertThat(engine.reads).containsExactly(field)
+        assertThat(existing.calls.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `the field-size fallback is recorded without an engine block or an image`() {
+        every { field.height } returns 22
+        val diagnostics = Recording(true)
+        reader(FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }, Existing(), diagnostics).read(bounds, true, true, 1, 2)
+        val record = diagnostics.records.single()
+        assertThat(record.stem).isEqualTo("1-2")
+        assertThat(record.images).isEqualTo(emptyMap())
+        assertThat(record.json).contains("\"answeredBy\":\"kotlin\"")
+        assertThat(record.json).contains("\"fallback\":{\"why\":\"fieldSize\",\"size\":[60,22]}")
+        assertThat(record.json).contains("\"engine\":null")
+    }
+
+    @Test
     fun `diagnostics stop at the existing reader's cap`() {
         val diagnostics = Recording(true)
         val reader = reader(FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }, Existing(), diagnostics)
