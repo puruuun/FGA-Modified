@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Light-theme shots of the wide header of #648: a short name and a 12-character name. */
+/** Light-theme shots of #648: the wide header with a short name and a 12-character name, and the Overview account block. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])
@@ -26,7 +26,7 @@ class DashboardCenteredHeaderScreenshotTest {
     @get:Rule val rules = screenshotRules(compose)
     private val fixture by lazy { Round615Fixture() }
 
-    private fun shot(name: String, accountName: String) {
+    private fun shot(name: String, accountName: String, scrollTo: String? = null) {
         val recoverAt = System.currentTimeMillis() / 1000 + 5 * 3600
         val data = fixture.data().copy(
             profile = fixture.data().profile + ("name" to accountName),
@@ -35,6 +35,7 @@ class DashboardCenteredHeaderScreenshotTest {
         compose.shoot("dashboard-648", name, 1280, 800, false, "ko", beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready").fetchSemanticsNodes().isNotEmpty() ||
                 compose.onAllNodesWithTag("dashboard-section:3").fetchSemanticsNodes().isEmpty() }
+            scrollTo?.let { compose.onNodeWithTag(it).performScrollTo(); compose.waitForIdle() }
         }) {
             fixture.case.fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) {
                 AccountDashboardContent(data, fixture.names, null, {}, {}, battle = battleLogFixture("recent"), userId = "synthetic",
@@ -45,4 +46,5 @@ class DashboardCenteredHeaderScreenshotTest {
 
     @Test fun headerWideShortName() = shot("HeaderWideShortName", "샘플")
     @Test fun headerWideTwelveCharacterName() = shot("HeaderWideTwelveCharacterName", "가나다라마바사아자차카타")
+    @Test fun accountBlockWide() = shot("AccountBlockWide", "샘플", scrollTo = "overview-account")
 }

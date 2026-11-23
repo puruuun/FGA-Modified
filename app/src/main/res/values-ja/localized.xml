@@ -863,6 +863,8 @@
     <string name="dashboard_friends">フレンド上限</string>
     <string name="dashboard_created">アカウント作成日</string>
     <string name="dashboard_friend_points">フレンドポイント</string>
+    <string name="dashboard_account_level">レベル</string>
+    <string name="dashboard_server">サーバー</string>
     <string name="dashboard_friend_code">フレンドコード</string>
     <string name="dashboard_copy">フレンドコードをコピー</string>
     <string name="dashboard_snapshot">スナップショット日時</string>
@@ -1137,7 +1139,6 @@
     <string name="dashboard_nav_formations">編成</string>
     <string name="dashboard_nav_collection">図鑑・召喚</string>
     <string name="dashboard_nav_present_box">プレゼントボックス</string>
-    <string name="dashboard_level_short">Lv %1$s</string>
     <string name="dashboard_updated_just_now">たった今更新</string>
     <plurals name="dashboard_updated_minutes">
         <item quantity="other">%1$d分前に更新</item>

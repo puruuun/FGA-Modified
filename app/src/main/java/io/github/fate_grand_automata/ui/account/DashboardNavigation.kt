@@ -69,7 +69,7 @@ internal fun DashboardNavigation(
         if (wide) Row(Modifier.fillMaxSize()) {
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.width(240.dp).fillMaxHeight().testTag("dashboard-nav-pane")) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AccountHeader(data, displayName, server, now, wide = true, Modifier.padding(horizontal = HEADER_PADDING))
+                    AccountHeader(data, displayName, now, wide = true, Modifier.padding(horizontal = HEADER_PADDING))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Column {
                         sections.forEach { section ->
@@ -78,9 +78,9 @@ internal fun DashboardNavigation(
                     }
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, progress, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, server, now, true, openLogs, target, initialSection, progress, Modifier.weight(1f))
         } else Column(Modifier.fillMaxSize()) {
-            AccountHeader(data, displayName, server, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
+            AccountHeader(data, displayName, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
             PrimaryScrollableTabRow(selectedTabIndex = sections.indexOf(selected).coerceAtLeast(0), edgePadding = 8.dp) {
                 sections.forEach { section ->
                     Tab(
@@ -90,7 +90,7 @@ internal fun DashboardNavigation(
                     )
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, progress, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, server, now, false, openLogs, target, initialSection, progress, Modifier.weight(1f))
         }
     }
 }
@@ -116,7 +116,7 @@ private fun RailItem(label: String, selected: Boolean, onClick: () -> Unit, name
 @Composable
 private fun SectionPane(
     selected: DashboardSection, data: DashboardData, names: GameNameMap, battle: BattleLogEntry?, outside: OutsideLogEntry?,
-    friendCount: Int?, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress, modifier: Modifier,
+    friendCount: Int?, server: String, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress, modifier: Modifier,
 ) {
     key(selected) {
         Column(
@@ -127,7 +127,7 @@ private fun SectionPane(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             when (selected) {
-                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, battle, outside, now, wide, openLogs, progress)
+                DashboardSection.Overview -> DashboardOverview(data, names, friendCount, server, battle, outside, now, wide, openLogs, progress)
                 DashboardSection.Servants -> DashboardServantsSection(data)
                 DashboardSection.Items -> data.inventory?.let { DashboardItemsSection(it, names) }
                 DashboardSection.Formations -> DashboardFormationsSection(data, names)
@@ -152,11 +152,12 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: name with level and server at the end of the same line, then a centered AP ring with its
- * details and the update time. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
+ * secondary text. Wide: the name on its own line, then a centered AP ring with its details and the update time. Level
+ * and server live in the Overview account block, not here. Narrow: a row of a small ring and three lines, to keep the
+ * header short above the tab row.
  */
 @Composable
-private fun AccountHeader(data: DashboardData, displayName: String?, server: String, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
+private fun AccountHeader(data: DashboardData, displayName: String?, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
     val profile = data.profile
     val name = listOfNotNull(displayName, profile["name"]).distinct().takeIf { it.isNotEmpty() }?.joinToString(" · ")
     val ap = dashboardAp(data.game, now)
@@ -176,8 +177,7 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
     }
     val nameLine = @Composable { nameModifier: Modifier ->
         name?.let {
-            // One line that shrinks before it cuts. On the wide rail the level and server take their width first, so a
-            // name of 12 wide characters ends in an ellipsis there rather than pushing them out.
+            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
             Text(
                 it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -185,25 +185,12 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
             )
         }
     }
-    val levelLine = @Composable {
-        Row(Modifier.testTag("header-level"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            profile["lv"]?.let {
-                Text(stringResource(R.string.dashboard_level_short, it), maxLines = 1, softWrap = false, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
-                Text(server, Modifier.padding(horizontal = 8.dp, vertical = 2.dp), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelMedium)
-            }
-        }
-    }
     if (wide) Column(
         modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            nameLine(Modifier.weight(1f))
-            levelLine()
-        }
-        // The line parts the account (name, level, server) from its AP (owner, 2026-11-23).
+        nameLine(Modifier.fillMaxWidth())
+        // The line parts the account name from its AP (owner, 2026-11-23).
         if (ap != null) {
             HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
             HeaderAp(ap, carry, now)
@@ -216,7 +203,6 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
         if (ap != null) Box(Modifier.testTag("header-ap")) { ApRing(ap, 56.dp, 5.dp, showMax = false) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             nameLine(Modifier.fillMaxWidth())
-            levelLine()
             if (ap != null) {
                 val summary = listOfNotNull(
                     "AP ${ap.current.grouped()} / ${ap.max.grouped()}", apFullText(ap, now),

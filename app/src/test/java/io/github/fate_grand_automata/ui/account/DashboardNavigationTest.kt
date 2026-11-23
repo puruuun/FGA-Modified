@@ -171,13 +171,13 @@ class DashboardNavigationTest(private val width: Int) {
         compose.onNodeWithTag("dashboard-overview").assertExists()
     }
 
-    @Test fun headerShowsNamesServerLevelAndRelativeUpdateTimeButNotTheFriendCode() {
+    @Test fun headerShowsNamesAndRelativeUpdateTimeButNotTheLevelServerOrFriendCode() {
         val updated = System.currentTimeMillis() / 1000 - 5 * 60 - 20
         show(all.copy(lastUpdateTime = updated))
         val header = hasAnyAncestor(hasTestTag("dashboard-account-header"))
         compose.onNode(hasText("샘플 · 샘플 마스터") and header).assertExists()
-        compose.onNode(hasText("KR") and header).assertExists()
-        compose.onNode(hasText("Lv 160") and header).assertExists()
+        compose.onNode(hasText("KR") and header).assertDoesNotExist()
+        compose.onNode(hasText("Lv", substring = true) and header).assertDoesNotExist()
         compose.onNode(hasText("123456789") and header).assertDoesNotExist()
         compose.onNodeWithTag("dashboard-updated").assertTextEquals("5분 전 갱신")
         val description = compose.onNodeWithTag("dashboard-updated").fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()

@@ -55,7 +55,7 @@ class DashboardJpNamesScreenshotTest {
                 compose.waitUntil(10_000) {
                     compose.onAllNodesWithText("日本の騎士", substring = true).fetchSemanticsNodes().isNotEmpty()
                 }
-                compose.onNodeWithText("JP").assertIsDisplayed()
+                compose.onNode(hasText("JP") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
                 compose.onNodeWithText("한국 기사", substring = true).assertIsDisplayed()
                 compose.onNodeWithText("日本の騎士", substring = true).assertIsDisplayed()
                 compose.waitUntil(10_000) {

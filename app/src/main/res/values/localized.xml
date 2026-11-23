@@ -1178,6 +1178,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_friends">Friend limit</string>
     <string name="dashboard_created">Account created</string>
     <string name="dashboard_friend_points">Friend points</string>
+    <string name="dashboard_account_level">Level</string>
+    <string name="dashboard_server">Server</string>
     <string name="dashboard_friend_code">Friend code</string>
     <string name="dashboard_copy">Copy friend code</string>
     <string name="dashboard_snapshot">Snapshot</string>
@@ -1450,7 +1452,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_nav_formations">Formations</string>
     <string name="dashboard_nav_collection">Collection and summons</string>
     <string name="dashboard_nav_present_box">Present box</string>
-    <string name="dashboard_level_short">Lv %1$s</string>
     <string name="dashboard_updated_just_now">Updated just now</string>
     <plurals name="dashboard_updated_minutes">
         <item quantity="one">Updated %1$d minute ago</item>

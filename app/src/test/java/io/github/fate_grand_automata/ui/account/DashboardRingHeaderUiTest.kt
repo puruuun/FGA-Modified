@@ -60,31 +60,56 @@ class DashboardRingHeaderUiTest {
         return layouts.single()
     }
 
-    // The rail is 240dp with 24dp padding, so the level and the server chip leave about 100dp for the name: twelve wide
-    // characters end in an ellipsis there, and what must hold is one line with the level intact beside it.
-    private fun assertNameOneLineAndLevelWhole(name: String) {
+    private fun assertOneLineWithoutEllipsis(name: String) {
         show(1280, named(name))
-        assertEquals(name, 1, layoutOf(hasTestTag("header-name")).lineCount)
-        val level = layoutOf(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")))
-        assertEquals(name, 1, level.lineCount)
-        val levelText = compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertTrue("$name $levelText ${level.size}", !level.isLineEllipsized(0) &&
-            levelText.right - levelText.left >= with(level.layoutInput.density) { (level.getLineRight(0) - level.getLineLeft(0)).toDp() } - 0.5.dp)
-        val pane = box("dashboard-nav-pane"); val nameBox = box("header-name"); val levelBox = box("header-level")
-        assertTrue("name $nameBox level $levelBox pane $pane", nameBox.right <= levelBox.left && levelBox.right <= pane.right)
-        compose.onNode(hasText("KR") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
+        val layout = layoutOf(hasTestTag("header-name"))
+        assertEquals(name, 1, layout.lineCount)
+        assertFalse(name, layout.hasVisualOverflow)
+        assertEquals(name, name.length, layout.getLineEnd(0, visibleEnd = true))
     }
 
-    @Test fun aTwelveCharacterKoreanNameStaysOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("가나다라마바사아자차카타")
-    @Test fun aTwelveCharacterJapaneseNameStaysOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("あいうえおかきくけこさし")
-    @Test fun twelveWideLatinCharactersStayOnOneLineWithTheLevelWhole() = assertNameOneLineAndLevelWhole("WWWWWWWWWWWW")
+    @Test fun aTwelveCharacterKoreanNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("가나다라마바사아자차카타")
+    @Test fun aTwelveCharacterJapaneseNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("あいうえおかきくけこさし")
+    @Test fun twelveWideLatinCharactersFitOneLineOnTheRail() = assertOneLineWithoutEllipsis("WWWWWWWWWWWW")
 
-    @Test fun theLevelAndTheServerSitOnTheNamesLine() {
+    private fun assertNoLevelOrServerInTheHeader(width: Int) {
+        show(width, named("샘플 마스터"))
+        compose.onNodeWithTag("header-level", useUnmergedTree = true).assertDoesNotExist()
+        val inHeader = hasAnyAncestor(hasTestTag("dashboard-account-header"))
+        compose.onAllNodes(hasText("Lv", substring = true) and inHeader, useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodes(hasText("KR") and inHeader, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test fun theWideHeaderHasNoLevelOrServer() = assertNoLevelOrServerInTheHeader(1280)
+    @Test fun theNarrowHeaderHasNoLevelOrServer() = assertNoLevelOrServerInTheHeader(360)
+
+    @Test fun theWideNameTakesTheFullLine() {
         show(1280, named("샘플 마스터"))
-        val name = box("header-name"); val level = box("header-level")
-        val centre = (level.top + level.bottom) / 2
-        assertTrue("name $name level $level", centre >= name.top && centre <= name.bottom && level.left >= name.right)
-        compose.onNode(hasText("Lv 160") and hasAnyAncestor(hasTestTag("header-level")), useUnmergedTree = true).assertExists()
+        val pane = box("dashboard-nav-pane"); val name = box("header-name")
+        assertEquals("pane $pane name $name", (pane.right - pane.left).value - 48f, (name.right - name.left).value, 1f)
+    }
+
+    private fun assertAccountBlockHasLevelAndServer(width: Int) {
+        show(width, fixture.data())
+        compose.onNode(hasText("160") and hasAnyAncestor(hasTestTag("overview-account:level")), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("레벨") and hasAnyAncestor(hasTestTag("overview-account:level")), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("서버") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
+        compose.onNode(hasText("KR") and hasAnyAncestor(hasTestTag("overview-account:server")), useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun theWideAccountBlockHasTheLevelAndTheServer() = assertAccountBlockHasLevelAndServer(1280)
+    @Test fun theNarrowAccountBlockHasTheLevelAndTheServer() = assertAccountBlockHasLevelAndServer(360)
+
+    @Test fun theLevelAndTheServerComeFirstInTheAccountBlock() {
+        show(1280, fixture.data())
+        val level = box("overview-account:level"); val server = box("overview-account:server"); val code = box("overview-account:friendCode")
+        assertTrue("level $level server $server code $code", level.top <= code.top && server.top <= code.top && level.left < server.left)
+    }
+
+    @Test fun withoutALevelTheAccountBlockLeavesOutTheLevelField() {
+        show(1280, fixture.data().copy(profile = fixture.data().profile - "lv"))
+        compose.onNodeWithTag("overview-account:level", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithTag("overview-account:server", useUnmergedTree = true).assertExists()
     }
 
     @Test fun theRingIsCentredInThePaneAtOneHundredTwelveDp() {
@@ -151,10 +176,10 @@ class DashboardRingHeaderUiTest {
         assertTrue("ap $ap updated $updated", updated.top - ap.bottom < 12.dp)
     }
 
-    @Test fun aLineSitsBetweenTheLevelAndTheApRingOnWide() {
+    @Test fun aLineSitsBetweenTheNameAndTheApRingOnWide() {
         show(1280, recovering())
-        val level = box("header-level"); val line = box("header-divider"); val ap = box("header-ap")
-        assertTrue("level $level line $line ap $ap", line.top >= level.bottom && line.bottom <= ap.top)
+        val name = box("header-name"); val line = box("header-divider"); val ap = box("header-ap")
+        assertTrue("name $name line $line ap $ap", line.top >= name.bottom && line.bottom <= ap.top)
     }
 
     @Test fun theCarryOverLineShowsOnWideWhenAboveZero() {
@@ -167,7 +192,6 @@ class DashboardRingHeaderUiTest {
         compose.onNodeWithTag("header-ap-ring", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("header-ap", useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag("header-name", useUnmergedTree = true).assertExists()
-        compose.onNodeWithTag("header-level", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("dashboard-updated", useUnmergedTree = true).assertExists()
     }
 

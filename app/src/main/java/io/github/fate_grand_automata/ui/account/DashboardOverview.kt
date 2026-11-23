@@ -40,7 +40,7 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 
 @Composable
 internal fun DashboardOverview(
-    data: DashboardData, names: GameNameMap, friendCount: Int?, battle: BattleLogEntry?, outside: OutsideLogEntry?,
+    data: DashboardData, names: GameNameMap, friendCount: Int?, server: String, battle: BattleLogEntry?, outside: OutsideLogEntry?,
     now: Long, wide: Boolean, openLogs: () -> Unit, progress: DashboardProgress = DashboardProgress(),
 ) {
     Column(Modifier.fillMaxWidth().testTag("dashboard-overview"), verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -56,7 +56,7 @@ internal fun DashboardOverview(
             data.storage?.let { OverviewStorage(it) }
             if (battle != null || outside != null) OverviewRecent(battle, outside, names, openLogs)
             // The left column is the longer one, so the account block fills the empty end of the right column.
-            if (wide) OverviewAccount(data, friendCount, now)
+            if (wide) OverviewAccount(data, friendCount, server, now)
         }
         // Narrow keeps one column in the order of the two wide columns; the account block closes it.
         if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
@@ -66,7 +66,7 @@ internal fun DashboardOverview(
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = first)
             Column(verticalArrangement = Arrangement.spacedBy(20.dp), content = second)
         }
-        if (!wide) OverviewAccount(data, friendCount, now)
+        if (!wide) OverviewAccount(data, friendCount, server, now)
     }
 }
 
@@ -310,9 +310,12 @@ private fun gainLine(resources: List<LogResource>, names: GameNameMap): String =
     resources.take(3).map { "${resourceName(it.type, it.id, names)} ${it.count?.let(::signedOutsideCount) ?: "—"}" }.joinToString(" · ")
 
 @Composable
-private fun OverviewAccount(data: DashboardData, friendCount: Int?, now: Long) {
+private fun OverviewAccount(data: DashboardData, friendCount: Int?, server: String, now: Long) {
     val profile = data.profile
     val fields = buildList {
+        // The level and server left the header (owner, 2026-11-23); they come first here.
+        profile["lv"]?.let { add(Triple("level", R.string.dashboard_account_level, it)) }
+        add(Triple("server", R.string.dashboard_server, server))
         profile["friendCode"]?.let { add(Triple("friendCode", R.string.dashboard_friend_code, it)) }
         profile["friendPoint"]?.let { add(Triple("friendPoint", R.string.dashboard_friend_points, it.toLongOrNull()?.grouped() ?: it)) }
         profile["exp"]?.let { add(Triple("exp", R.string.dashboard_exp, it.toLongOrNull()?.grouped() ?: it)) }
