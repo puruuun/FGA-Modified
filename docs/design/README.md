@@ -27,6 +27,7 @@
 | 18 | [0018 칼데아 서포트 설정 가져오기](0018-chaldea-support-import.md) | 완료 (정규 1.6.2) | 0006, 0011 |
 | 22 | [0022 직접 지정 공격의 카드 부족 fallback](0022-direct-cards-fallback.md) | 베타 구현 (1.6.7-beta.1, PR #19, 소유자 실사용 확인 대기) | 없음 |
 | 25 | [0025 Rust 코어 단계적 전환](0025-rust-engine-migration.md) | 승인 (2026-11-18), 시작 전 | 0004 A, 0005 A |
+| 26 | [0026 Rust 서포트 점수 판독기의 정식판 통합](0026-rust-score-reader-release.md) | 승인 (2026-11-23), 시작 전 | 0025 |
 
 ## 문서 형식
 
