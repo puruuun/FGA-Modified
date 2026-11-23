@@ -80,7 +80,7 @@ published (unless the owner explicitly requests an immediate stable release):
 **The Rust test APK is not a release.** The `rust` build type (package
 `io.github.fate_grand_automata.rust`, app name `FGA Rust`, version name
 `<beta.versionName>-rust.<N>` with the beta's version code) is an owner-only test build of the
-Rust engine (issue #568). It is built only from the `rust` branch, with the command in
+Rust engine (issue #568). It is built with the command in
 [`rust-native.md`](rust-native.md) ("Rust test APK"); it is never published, never attached to a
 GitHub Release, and never changes `version.properties`.
 

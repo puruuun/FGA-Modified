@@ -99,10 +99,10 @@ pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
     Ok("0".to_owned())
 }
 
-/// The tract backend's defaults: the reader width (320) on one thread. The accuracy of 320 with
-/// the trimmed crop is measured on the PC only (real device crops, shifted copies, the cut
-/// sweep); the device times known so far are those of width 256 on the whole crop. A test pins
-/// the settings, so a change of the default reaches the product only on purpose.
+/// The tract backend's defaults: the reader width (320) on one thread, the setting the stored
+/// samples, the device probe and the live scans were measured with (docs/qa/0025-stage-0-baseline.md,
+/// sections 4.15 and 4.16). A test pins the settings, so a change of the default reaches the
+/// product only on purpose.
 pub fn settings() -> TractSettings {
     TractSettings::default()
 }

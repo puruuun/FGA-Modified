@@ -36,8 +36,10 @@
   `app/build.gradle.kts` extracts the 16 KB aligned copy from a separately pinned
   `opencv_aligned_libcxx_version` and packages that instead. Both catalog entries are the same
   Maven coordinate; bump them by hand and only together with a vetted OpenCV bump.
-- Build types: `debug`, `release`, and `ci` (`initWith(release)`, debug-signed, ARM-only
-  ABIs). The `ci` type must exist in every Android module (`app`, `prefs`).
+- Build types: `debug`, `release`, `ci` (`initWith(release)`, debug-signed, ARM-only
+  ABIs), `beta`, `deviceTest` and `rust` (the owner's Rust test APK; which of them package the
+  Rust engine is in [`rust-native.md`](rust-native.md)). The `ci` type must exist in every
+  Android module (`app`, `prefs`).
 - CI's Gradle cache comes from `gradle/actions/setup-gradle`, not `setup-java`'s
   `cache: 'gradle'` — don't re-add the latter, it would cache the same directories twice
   with worse invalidation.
