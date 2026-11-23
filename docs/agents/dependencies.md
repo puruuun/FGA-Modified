@@ -18,9 +18,10 @@
   `build/intermediates/built_in_kotlinc/`, not `build/tmp/kotlin-classes/`, and the root
   block's `tasks.withType<KotlinCompile>` no longer reaches them: per-module compiler
   settings belong in that module's `android { kotlin { compilerOptions { } } }`.
-- `compileSdk` is **37** while `targetSdk` stays **36** — recent androidx libraries force
+- `compileSdk` is **37.1** while `targetSdk` stays **36** — recent androidx libraries force
   the compile level, but nothing opts into new runtime behavior. Keep the two decoupled;
-  bumping `targetSdk` is a separate, user-visible decision.
+  bumping `targetSdk` is a separate, user-visible decision. A minor API level needs the
+  `compileSdk { version = release(37) { minorApiLevel = 1 } }` block, not `compileSdk = 37`.
 - **OpenCV is pinned to 4.11.0**; do not bump it with the other libraries. Every release bundles
   ARM's KleidiCV; 4.11.0's (0.3.0) never calls its SVE kernels, 4.12.0's and later do. BlueStacks
   Air on macOS advertises `HWCAP2_SVE2` without implementing SVE, so those later builds die with

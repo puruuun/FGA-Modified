@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -133,6 +135,7 @@ class PickDirectory(vm: OnboardingViewModel) : OnboardingItem(vm) {
         )
 
         val context = LocalContext.current
+        val resources = LocalResources.current
         val scope = rememberCoroutineScope()
 
         val dirPicker = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
@@ -142,7 +145,7 @@ class PickDirectory(vm: OnboardingViewModel) : OnboardingItem(vm) {
                     if (vm.storageProvider.shouldExtractSupportImages) {
                         scope.launch(Dispatchers.Main) {
                             // Toast needs to happen in the UI thread
-                            val msg = context.getString(R.string.support_imgs_extracting)
+                            val msg = resources.getString(R.string.support_imgs_extracting)
                             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                         }
                         SupportImageExtractor(context, vm.storageProvider).extract()

@@ -22,6 +22,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import kotlin.math.roundToInt
 import org.opencv.core.Size as CvSize
+import androidx.core.graphics.createBitmap
 
 class DroidCvPattern(
     private var mat: Mat = Mat(),
@@ -105,11 +106,18 @@ class DroidCvPattern(
         mask?.release()
     }
 
+    /**
+     * Shrinks with INTER_AREA, which the templates' similarity thresholds are tuned for. Enlarges
+     * with INTER_CUBIC, since INTER_AREA enlarges blockily and that breaks OCR of upscaled text.
+     */
     private fun resize(source: Mat, target: Mat, size: Size) {
+        val isEnlarging = size.width > source.width()
+        val interpolation = if (isEnlarging) Imgproc.INTER_CUBIC else Imgproc.INTER_AREA
+
         Imgproc.resize(
             source, target,
             CvSize(size.width.toDouble(), size.height.toDouble()),
-            0.0, 0.0, Imgproc.INTER_AREA
+            0.0, 0.0, interpolation
         )
     }
 
@@ -205,6 +213,27 @@ class DroidCvPattern(
         }
     }
 
+    // Reads only the best score, so the result Mat is released before returning
+    // instead of staying open in a suspended findMatches sequence
+    override fun findBestMatch(template: Pattern, similarity: Double): Match? =
+        match(template)?.use {
+            val minMaxLocResult = Core.minMaxLoc(it)
+            val score = minMaxLocResult.maxVal
+
+            if (score >= similarity) {
+                val loc = minMaxLocResult.maxLoc
+                Match(
+                    Region(
+                        loc.x.roundToInt(),
+                        loc.y.roundToInt(),
+                        template.width,
+                        template.height
+                    ),
+                    score
+                ).also { match -> Timber.d("Matched $template with a score of ${match.score}") }
+            } else null
+        }
+
     override val width get() = mat.width()
     override val height get() = mat.height()
 
@@ -219,7 +248,7 @@ class DroidCvPattern(
     }
 
     fun asBitmap(): Bitmap {
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bmp = createBitmap(width, height)
 
         Mat().use {
             val conversion = if (mat.type() == CvType.CV_8UC1)

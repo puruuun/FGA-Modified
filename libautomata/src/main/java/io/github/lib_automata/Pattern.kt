@@ -11,7 +11,8 @@ interface Pattern : AutoCloseable {
     var tag: String
 
     /**
-     * Creates a resized image with the specified size.
+     * Creates a resized image with the specified size. Enlarging interpolates smoothly, so text
+     * stays readable for OCR.
      *
      * @param size the size of the new image
      */
@@ -34,6 +35,19 @@ interface Pattern : AutoCloseable {
      * @return a list of [Match] objects
      */
     fun findMatches(template: Pattern, similarity: Double): Sequence<Match>
+
+    /**
+     * Finds an image match if its similarity is high enough.
+     * The default implementation returns the first match of [findMatches], which is the best one
+     * when that yields matches from the highest score down.
+     * Implementations that hold resources while matching should override this to release them before returning,
+     * since taking the first of [findMatches] leaves its sequence suspended.
+     *
+     * @param template the image to match with
+     * @param similarity the minimum similarity
+     */
+    fun findBestMatch(template: Pattern, similarity: Double): Match? =
+        findMatches(template, similarity).firstOrNull()
 
     /**
      * Crops the image to be within the bounds of the given [region].
