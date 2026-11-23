@@ -228,10 +228,7 @@ abstract class CargoNdkBuild : DefaultTask() {
     val ndk: String
         get() {
             val dir = resolveNdk()
-            val revision = Properties().apply { File(dir, "source.properties").inputStream().use { load(it) } }
-                .getProperty("Pkg.Revision")?.trim()
-                ?: throw GradleException("${dir.path}/source.properties has no Pkg.Revision")
-            return "${dir.path} $revision"
+            return "${dir.path} ${NdkLocator.revision(dir)}"
         }
 
     private fun resolveNdk(): File {
@@ -243,14 +240,7 @@ abstract class CargoNdkBuild : DefaultTask() {
             return dir
         }
         val root = File(sdkDirectory.get(), "ndk")
-        fun version(dir: File) = dir.name.split('.').map { it.toIntOrNull() ?: -1 }
-        val comparator = Comparator<File> { a, b ->
-            val va = version(a)
-            val vb = version(b)
-            (0 until maxOf(va.size, vb.size)).map { (va.getOrNull(it) ?: -1).compareTo(vb.getOrNull(it) ?: -1) }
-                .firstOrNull { it != 0 } ?: 0
-        }
-        return root.listFiles().orEmpty().filter { File(it, "source.properties").isFile }.maxWithOrNull(comparator)
+        return NdkLocator.newest(root)
             ?: throw GradleException("No NDK: ANDROID_NDK_HOME is not set and ${root.path} holds none")
     }
 
@@ -327,6 +317,9 @@ abstract class CheckRustTools : DefaultTask() {
     @get:Input
     abstract val pinnedNdk: Property<String>
 
+    @get:Input
+    abstract val allowOtherNdk: Property<Boolean>
+
     init {
         // Tools are installed and removed outside Gradle's view, so the answer is never reused.
         outputs.upToDateWhen { false }
@@ -353,22 +346,52 @@ abstract class CheckRustTools : DefaultTask() {
         if (exit != 0) {
             throw GradleException("cargo-ndk is not installed (`cargo ndk --version`: ${output.trim().take(300)}). $optOut")
         }
-        // cargo-ndk takes ANDROID_NDK_HOME, else an NDK under the SDK's ndk/ folder.
+        // cargo-ndk takes ANDROID_NDK_HOME, else an NDK under the SDK's ndk/ folder; cargoNdkBuild
+        // resolves it the same way (NdkLocator).
         val explicit = ndkHome.orNull
-        if (explicit != null) {
-            if (!File(explicit, "source.properties").isFile) {
-                throw GradleException("ANDROID_NDK_HOME is $explicit, which holds no NDK (no source.properties). $optOut")
+        val ndkDir = if (explicit != null) {
+            File(explicit).also {
+                if (!File(it, "source.properties").isFile) {
+                    throw GradleException("ANDROID_NDK_HOME is $explicit, which holds no NDK (no source.properties). $optOut")
+                }
             }
         } else {
             val ndkRoot = File(sdkDirectory.get(), "ndk")
-            if (ndkRoot.listFiles()?.none { File(it, "source.properties").isFile } != false) {
-                throw GradleException(
-                    "The Android NDK is missing: ANDROID_NDK_HOME is not set and ${ndkRoot.path} holds no NDK " +
-                        "(install NDK ${pinnedNdk.get()}, the version native/ndk-version.txt names). $optOut",
-                )
-            }
+            NdkLocator.newest(ndkRoot) ?: throw GradleException(
+                "The Android NDK is missing: ANDROID_NDK_HOME is not set and ${ndkRoot.path} holds no NDK " +
+                    "(install NDK ${pinnedNdk.get()}, the version native/ndk-version.txt names). $optOut",
+            )
+        }
+        // The libraries of a local build must come from the NDK that CI checks, or a local APK is not
+        // the one CI proved.
+        val revision = NdkLocator.revision(ndkDir)
+        if (revision != pinnedNdk.get() && !allowOtherNdk.get()) {
+            throw GradleException(
+                "The NDK at ${ndkDir.path} is $revision, but native/ndk-version.txt pins ${pinnedNdk.get()}. " +
+                    "Set ANDROID_NDK_HOME to NDK ${pinnedNdk.get()}, or pass -Pfga.native.otherNdk=true to try " +
+                    "this NDK on purpose (never for a release build).",
+            )
         }
     }
+}
+
+/** How cargo-ndk picks an NDK when ANDROID_NDK_HOME is not set: the newest version under the SDK's ndk/. */
+object NdkLocator {
+    fun newest(root: File): File? {
+        fun version(dir: File) = dir.name.split('.').map { it.toIntOrNull() ?: -1 }
+        val comparator = Comparator<File> { a, b ->
+            val va = version(a)
+            val vb = version(b)
+            (0 until maxOf(va.size, vb.size)).map { (va.getOrNull(it) ?: -1).compareTo(vb.getOrNull(it) ?: -1) }
+                .firstOrNull { it != 0 } ?: 0
+        }
+        return root.listFiles().orEmpty().filter { File(it, "source.properties").isFile }.maxWithOrNull(comparator)
+    }
+
+    fun revision(dir: File): String =
+        Properties().apply { File(dir, "source.properties").inputStream().use { load(it) } }
+            .getProperty("Pkg.Revision")?.trim()
+            ?: throw GradleException("${dir.path}/source.properties has no Pkg.Revision")
 }
 
 if (engineRegistered) {
@@ -385,6 +408,7 @@ if (engineRegistered) {
                 text.lines().map { it.trim() }.single { it.isNotEmpty() && !it.startsWith("#") }
             },
         )
+        allowOtherNdk.set(providers.gradleProperty("fga.native.otherNdk").map { it == "true" }.orElse(false))
     }
 
     val cargoNdkBuild = tasks.register<CargoNdkBuild>("cargoNdkBuild") {

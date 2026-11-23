@@ -15,12 +15,12 @@ Every error path must lead to "true" / failure, never to a skipped build.
 import re
 import sys
 
-# Same list and same glob meaning as the former paths-ignore of main-ci.yml.
+# Glob meaning as in GitHub's paths filters. .gitattributes is not here: it decides the line ends,
+# and so the bytes, of files that the APK packages (LICENSE, the notices) on a Windows checkout.
 DOC_PATTERNS = [
     '.idea/**',
     '.github/instructions/**',
     '.github/copilot-instructions.md',
-    '.gitattributes',
     '.gitignore',
     '*.md',
     'LICENSE',

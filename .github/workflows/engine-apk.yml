@@ -17,7 +17,6 @@ on:
       - '!.idea/**'
       - '!.github/instructions/**'
       - '!.github/copilot-instructions.md'
-      - '!.gitattributes'
       - '!.gitignore'
       - '!*.md'
       - '!LICENSE'

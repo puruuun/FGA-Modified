@@ -22,7 +22,6 @@ class ClassifyTest(unittest.TestCase):
         self.doc('.idea/x/y.xml')
         self.doc('.github/instructions/a.md')
         self.doc('.github/copilot-instructions.md')
-        self.doc('.gitattributes')
         self.doc('.gitignore')
         self.doc('README.md')
         self.doc('LICENSE')
@@ -47,6 +46,7 @@ class ClassifyTest(unittest.TestCase):
         self.code('sub/gitignore')
         self.code('.gitignore/x')
         self.code('.idea')
+        self.code('.gitattributes')
 
     def test_mixed_and_empty(self):
         self.code('README.md', 'app/src/A.kt')

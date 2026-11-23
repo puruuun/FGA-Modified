@@ -105,7 +105,7 @@
 
 - `app/build.gradle.kts`: D-6의 빌드 타입별 포함, `NATIVE_READER`와 `SCORE_SCAN` 분리, `proguard-rust.pro`와 `checkRustKeepRules`를 라이브러리가 든 모든 빌드 타입에 적용, 도구가 없을 때의 실패 메시지(D-7).
 - `SupportScoreEngineBinding.kt`: `NATIVE_READER`로 판단.
-- `tools/ci/apk_check.py`와 그 테스트, `tools/ci/ci_gate.py`, `.github/workflows/native-ci.yml`의 `engine-apk` 작업(Rust 도구 설치와 캐시)과 `main-ci.yml`의 연결: D-8.
+- `tools/ci/apk_check.py`와 그 테스트, `tools/ci/ci_gate.py`, `.github/workflows/engine-apk.yml`(Rust 도구 설치와 캐시)과 `main-ci.yml`의 연결: D-8.
 - `ProvideOcrModel`: Gradle 사용자 홈의 로컬 캐시. D-9의 주 주소와 예비 주소는 이 PR에 들지 않습니다(D-9 참고). 모델 주소는 지금의 ModelScope 하나입니다.
 - `THIRD_PARTY_NOTICES.txt`, 그 검사, 라이선스 화면 항목: D-10.
 - 16 KB 페이지 정렬을 Gradle이 만든 APK 안의 `.so`로 검사합니다(지금은 cargo가 직접 만든 파일만 검사).
