@@ -5,6 +5,8 @@ import io.github.fate_grand_automata.scripts.capture.AccountState
 import io.github.fate_grand_automata.scripts.capture.AccountSummary
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.FriendRoster
+import io.github.fate_grand_automata.scripts.capture.SupportListFilter
+import io.github.fate_grand_automata.scripts.capture.SupportListShape
 import io.github.fate_grand_automata.scripts.util.replaceFile
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -234,6 +236,24 @@ internal class CaptureAccounts(
                 writeCaptureStream(File(root, "diagnostics/friend-fields.json")) { it.write(diagnostic.toString().toByteArray(Charsets.UTF_8)) }
             }
         }.onFailure { warn("writing friend field diagnostics failed") }
+    }
+
+    /**
+     * Local shape diagnostics of a support list response (issue #669), built from the original response tree. Types,
+     * lengths and small counts only; see [SupportListShape]. Any failure is swallowed so capture never depends on it.
+     */
+    fun recordSupportListShape(target: String, body: JsonObject, now: Long) {
+        if (CaptureNames.path(target) != SupportListFilter.PATH) return
+        val root = directory?.parentFile ?: return
+        val server = CaptureNames.server(target) ?: return
+        runCatching {
+            val diagnostic = SupportListShape.build(body, server, now) ?: return
+            disk.run {
+                writeCaptureStream(File(root, "diagnostics/support-list-shape-${server.lowercase()}.json")) {
+                    it.write(diagnostic.toString().toByteArray(Charsets.UTF_8))
+                }
+            }
+        }.onFailure { warn("writing support list shape diagnostics failed") }
     }
 
     /** Feeds a friend list or support list response for [id]; returns true when the roster changed. */
