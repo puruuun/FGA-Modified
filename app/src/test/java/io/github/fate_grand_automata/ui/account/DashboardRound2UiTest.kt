@@ -59,7 +59,7 @@ class DashboardRound2UiTest {
         assertEquals(3f, (bar.right - bar.left).value, 0.5f)
         dashboardSections(fixture.data).forEach {
             val item = compose.onNodeWithTag("dashboard-nav:${it.name}").getUnclippedBoundsInRoot()
-            assertTrue("$it ${item.bottom - item.top}", (item.bottom - item.top).value >= 47.99f)
+            assertTrue("$it ${item.bottom - item.top}", (item.bottom - item.top).value >= 48f)
         }
     }
 

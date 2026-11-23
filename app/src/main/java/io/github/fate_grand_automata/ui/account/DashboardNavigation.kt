@@ -155,8 +155,8 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: the name with the update time at the end of its line, the level and server, then the AP number,
- * its full time and a bar. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
+ * secondary text. Wide: the name, the level and server, the AP number with its full time and a bar, then the update
+ * time. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
  */
 @Composable
 private fun AccountHeader(data: DashboardData, displayName: String?, server: String, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
@@ -173,14 +173,12 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
         }
         // The absolute time is not shown, but a screen reader and the tests can read it from the description.
         val absolute = "${stringResource(R.string.dashboard_updated)}: ${date(data.lastUpdateTime)}"
-        // Wide: it ends the name's line, so it must neither shrink nor wrap.
-        Text(ageText, Modifier.semantics { contentDescription = absolute }.testTag("dashboard-updated"), maxLines = 1, softWrap = !wide,
+        Text(ageText, Modifier.semantics { contentDescription = absolute }.testTag("dashboard-updated"),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     val nameLine = @Composable { nameModifier: Modifier ->
         name?.let {
-            // One line that shrinks before it cuts. Wide: the update time takes its width first, so a 12-character name
-            // keeps one line and its last characters give way to the ellipsis.
+            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
             Text(
                 it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -199,16 +197,14 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
         }
     }
     if (wide) Column(modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (name != null) nameLine(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
-            updated()
-        }
+        nameLine(Modifier.fillMaxWidth())
         levelLine()
         // The line parts the account (name, level, server) from its AP (owner, 2026-11-23).
         if (ap != null) {
             HorizontalDivider(Modifier.testTag("header-divider"), color = MaterialTheme.colorScheme.outlineVariant)
             HeaderAp(ap, now)
         }
+        updated()
     } else Row(
         modifier.fillMaxWidth().testTag("dashboard-account-header"), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

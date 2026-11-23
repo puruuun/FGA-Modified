@@ -63,30 +63,46 @@ class DashboardRingHeaderUiTest {
     private fun fullAp(max: Int) = game("""{"actMax":$max,"actRecoverAt":1,"carryOverActPoint":12}""")
     private fun paneContent() = box("dashboard-nav-pane").let { it.left + 24.dp to it.right - 24.dp }
 
-    // The update time takes its width first, so on 192dp the last characters of a 12-wide-character name give way.
-    private fun assertNameOneLineAndUpdateWhole(name: String) {
+    private fun assertOneLineWithoutEllipsis(name: String) {
         show(1280, named(name))
-        assertEquals(name, 1, layoutOf("header-name").lineCount)
-        val updated = layoutOf("dashboard-updated")
-        assertEquals(name, 1, updated.lineCount)
-        assertFalse(name, updated.isLineEllipsized(0))
-        val nameBox = box("header-name"); val updatedBox = box("dashboard-updated")
-        assertTrue("name $nameBox updated $updatedBox", nameBox.right <= updatedBox.left && updatedBox.right <= paneContent().second + 0.5.dp)
-        val textWidth = with(updated.layoutInput.density) { (updated.getLineRight(0) - updated.getLineLeft(0)).toDp() }
-        assertTrue("updated $updatedBox text $textWidth", updatedBox.right - updatedBox.left >= textWidth - 0.5.dp)
+        val layout = layoutOf("header-name")
+        assertEquals(name, 1, layout.lineCount)
+        assertFalse(name, layout.hasVisualOverflow)
+        assertEquals(name, name.length, layout.getLineEnd(0, visibleEnd = true))
     }
 
-    @Test fun aTwelveCharacterKoreanNameStaysOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("가나다라마바사아자차카타")
-    @Test fun aTwelveCharacterJapaneseNameStaysOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("あいうえおかきくけこさし")
-    @Test fun twelveWideLatinCharactersStayOnOneLineWithTheUpdateTimeWhole() = assertNameOneLineAndUpdateWhole("WWWWWWWWWWWW")
+    @Test fun aTwelveCharacterKoreanNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("가나다라마바사아자차카타")
+    @Test fun aTwelveCharacterJapaneseNameFitsOneLineOnTheRail() = assertOneLineWithoutEllipsis("あいうえおかきくけこさし")
+    @Test fun twelveWideLatinCharactersFitOneLineOnTheRail() = assertOneLineWithoutEllipsis("WWWWWWWWWWWW")
 
-    @Test fun theUpdateTimeEndsTheNamesLineOnWide() {
+    @Test fun theNameTakesTheWholeFirstLineOnWide() {
         show(1280, named("샘플 마스터"))
-        val name = box("header-name"); val updated = box("dashboard-updated")
-        val centre = (updated.top + updated.bottom) / 2
-        assertTrue("name $name updated $updated", centre >= name.top && centre <= name.bottom && updated.left >= name.right)
-        assertEquals((paneContent().second).value, updated.right.value, 0.5f)
-        assertEquals(paneContent().first.value, name.left.value, 0.5f)
+        val name = box("header-name"); val (left, right) = paneContent()
+        assertEquals(left.value, name.left.value, 0.5f)
+        assertEquals(right.value, name.right.value, 0.5f)
+    }
+
+    @Test fun theUpdateTimeIsItsOwnStartAlignedLineBelowTheBar() {
+        show(1280, recovering())
+        val updated = box("dashboard-updated"); val bar = box("header-ap-bar"); val name = box("header-name")
+        assertTrue("bar $bar updated $updated", updated.top >= bar.bottom)
+        assertEquals(paneContent().first.value, updated.left.value, 0.5f)
+        assertTrue("name $name updated $updated", updated.top >= name.bottom)
+    }
+
+    @Test fun theUpdateTimeIsBelowEverythingInTheHeader() {
+        show(1280, recovering())
+        val updated = box("dashboard-updated")
+        listOf("header-name", "header-level", "header-divider", "header-ap", "header-ap-detail", "header-ap-bar").forEach {
+            assertTrue("$it ${box(it)} updated $updated", updated.top >= box(it).bottom)
+        }
+    }
+
+    @Test fun withoutApDataTheUpdateTimeFollowsTheLevelLine() {
+        show(1280, fixture.data().copy(game = null))
+        val level = box("header-level"); val updated = box("dashboard-updated")
+        assertTrue("level $level updated $updated", updated.top >= level.bottom && updated.top - level.bottom < 16.dp)
+        assertEquals(paneContent().first.value, updated.left.value, 0.5f)
     }
 
     @Test fun theLevelLineIsBelowTheNameOnWide() {
