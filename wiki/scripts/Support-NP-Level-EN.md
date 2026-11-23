@@ -3,12 +3,12 @@
 ## How to configure
 
 1. Under **Battle Configs → Support**, set **Selection Mode** to **Preferred** and open the **Preferred Servants** section.
-2. Turn on **Check support NP level**. This setting appears above the Append Skill settings.
+2. Turn on **Check support NP level**. It is shown only when at least one Preferred Servant is chosen; Preferred CEs alone do not show it. This setting appears above the Append Skill settings.
 3. Set **Minimum NP level** from `2` to `5` (`Lv.2 or higher` through `Lv.5 or higher`; `Lv.1 or higher` is omitted because every support satisfies it). Choosing `Lv.3 or higher` accepts `Lv.3`, `Lv.4`, and `Lv.5`, and rejects `Lv.1` and `Lv.2`.
 
 The toggle starts off by default, and the initial minimum level is `Lv.5 or higher`. Turning the toggle off preserves your chosen minimum level. When importing a legacy config with `1`, the toggle starts off and selects `Lv.5 or higher` by default when re-enabled. When importing from Chaldea, a friend's NP level of `1` turns off NP level checking while keeping your saved minimum, and `2–5` turns checking on with that level. It is included in config copy, export, and import.
 
-You can combine this with Preferred Servants, Preferred CEs, and Friend names, or use the NP level condition on its own. Friend-only restriction follows the existing **Friends Only** setting.
+You can combine this with Preferred Servants, Preferred CEs, and Friend names. If you clear all Preferred Servants, the option is hidden and the stored check is turned off; choosing a servant again shows it off, and the earlier value is not restored. Friend-only restriction follows the existing **Friends Only** setting.
 
 This filter applies to **Preferred** selection mode. If **Fallback** is set to **First**, it can bypass your preferred conditions; set **Fallback** to **Manual** if you want the condition strictly enforced.
 

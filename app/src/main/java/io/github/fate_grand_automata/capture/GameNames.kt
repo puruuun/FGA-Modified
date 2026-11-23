@@ -31,6 +31,11 @@ data class GameNameMap(
     val commandCodeData: Map<Long, AtlasBasic> = emptyMap(),
     val classBoards: Map<Long, ClassBoardSummary> = emptyMap(),
     val gachas: Map<Long, GachaSummary> = emptyMap(),
+    /**
+     * The `basic_servant` list of the account's own server alone (KR or JP), never merged with the other one;
+     * [servantData] is merged, so it cannot give a per-server total. Empty when that list is not available.
+     */
+    val accountServants: Map<Long, AtlasBasic> = emptyMap(),
 ) {
     fun item(id: Long) = items[id] ?: "Item #$id"
     fun servant(id: Long) = servants[id] ?: "Servant #$id"
@@ -111,12 +116,15 @@ class GameNames(
     }
 
     suspend fun resolve(runs: List<RunGains>, outsideItemIds: List<Long> = emptyList(), includeCards: Boolean = false,
-        hasJpAccount: Boolean = false, cardIds: Collection<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
+        hasJpAccount: Boolean = false, cardIds: Collection<Long> = emptyList(),
+        extraServantIds: Collection<Long> = emptyList()): GameNameMap = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val kr = resolveKr(runs, outsideItemIds)
-            val names = if (includeCards) kr.copy(
+            val kr = resolveKr(runs, outsideItemIds, servantIds = extraServantIds)
+            val withCards = if (includeCards) kr.copy(
                 svtData = metadata("basic_svt"), commandCodeData = metadata("basic_command_code"),
             ) else kr
+            // Servant faces come from servantData; only the callers that show faces (the login breakdown) ask for it.
+            val names = if (extraServantIds.isEmpty()) withCards else withCards.copy(servantData = metadata("basic_servant"))
             val drops = runs.flatMap { it.items }
             val itemIds = drops.filter { it.type == 2 }.map { it.objectId } + outsideItemIds
             val servantIds = drops.filter { it.type == 1 }.map { it.objectId } + runs.flatMap { it.bond.keys }
@@ -124,7 +132,7 @@ class GameNames(
             val missingCards = includeCards && cardIds.any { it !in names.svtData }
             val need = if (hasJpAccount) JpNeed.All else JpNeed(
                 items = itemIds.any { it !in names.items },
-                servants = servantIds.any { it !in names.servants } || missingCards,
+                servants = servantIds.any { it !in names.servants } || extraServantIds.any { it !in names.servants || it !in names.servantData } || missingCards,
                 equips = equipIds.any { it !in names.equips } || missingCards,
             )
             jpFallback.merge(withJpLists(names, need, includeCards), itemIds)
@@ -283,7 +291,9 @@ class GameNames(
             } else {
                 emptyMap()
             }
+            val accountServants = if (hasJpAccount) cachedMetadata("basic_servant", "JP") else servants
             resolved.copy(
+                accountServants = accountServants,
                 svtData = mergedSvtCards,
                 commandCodeData = mergedCommandCodes,
                 classBoards = classBoards,

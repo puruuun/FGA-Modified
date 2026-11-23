@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.scripts.enums.GameServers
-import io.github.fate_grand_automata.ui.FGAMenuContainerColor
 import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
@@ -51,8 +50,7 @@ fun ServerSelection(
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor = FGAMenuContainerColor()
+            onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
                 text = { Text(anyLabel) },

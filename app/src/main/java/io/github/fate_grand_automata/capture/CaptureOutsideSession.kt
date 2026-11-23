@@ -3,7 +3,9 @@ package io.github.fate_grand_automata.capture
 import io.github.fate_grand_automata.scripts.capture.AccountDelta
 import io.github.fate_grand_automata.scripts.capture.CaptureNames
 import io.github.fate_grand_automata.scripts.capture.ChangeSource
+import io.github.fate_grand_automata.scripts.capture.LoginBreakdown
 import io.github.fate_grand_automata.scripts.capture.LoginGrant
+import io.github.fate_grand_automata.scripts.capture.gameDay
 import io.github.fate_grand_automata.scripts.capture.OutsidePeriod
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -123,6 +125,11 @@ internal class CaptureOutsideSession(
         val matchesScript = scriptServer == null || server == scriptServer
         if (scriptActive && matchesScript) return
         if (CaptureNames.classify(target) == CaptureNames.ApiPath.Login) {
+            // The 04:00 reset forces a re-login, so the first login of a new game day closes the old period and its
+            // grant opens the new one. A battle or result before that login still belongs to the old day.
+            periods[response.id]?.let {
+                if (gameDay(it.period.startedAt * 1000) != gameDay(now() * 1000)) close(response.id)
+            }
             // A login replaces the account, so it is never diffed; the grant the server reports is the one change kept.
             checkpoint(response)
             val state = response.next
@@ -130,7 +137,9 @@ internal class CaptureOutsideSession(
             // (a failed login with cache.serverTime or updated tables), carries the previous String over, so reference
             // identity tells this login apart from an inherited one. snapshotTime would miss two logins in one second.
             val grant = if (state != null && state.rawLoginResponse !== response.previous?.rawLoginResponse) LoginGrant.friendPoints(state.rawLoginResponse) else 0L
-            if (grant > 0) record(response, ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = grant))
+            // The breakdown rides on the same condition as the grant, so it can never exist without its tile.
+            if (grant > 0) record(response, ChangeSource(ChangeSource.Group.Login), AccountDelta(friendPoint = grant),
+                LoginGrant.breakdown(state!!.rawLoginResponse, now()))
             return
         }
         val delta = AccountDelta.between(response.previous, response.next)
@@ -141,11 +150,11 @@ internal class CaptureOutsideSession(
         record(response, ChangeSource.of(target).copy(script = scriptMade && matchesScript), delta)
     }
 
-    private fun record(response: CaptureAccounts.Response, source: ChangeSource, delta: AccountDelta) {
+    private fun record(response: CaptureAccounts.Response, source: ChangeSource, delta: AccountDelta, login: LoginBreakdown? = null) {
         val time = now()
         val previous = periods[response.id] ?: Pending(UUID.randomUUID().toString(), OutsidePeriod(response.id, time))
         val next = previous.copy(
-            period = previous.period.add(source, delta, time),
+            period = previous.period.add(source, delta, time).withLogin(login),
             resourceBaseline = response.next!!.rawTables.filterKeys { it in outsideResourceTables }.mapValues { RawTable(it.value) },
             baselineTime = response.next.lastUpdateTime,
         )

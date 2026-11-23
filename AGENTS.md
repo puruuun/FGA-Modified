@@ -103,7 +103,7 @@ app  ──▶ scripts ──▶ libautomata
 
 ## Repo conventions
 
-- Target servers: new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`) only**. Do not add branches, tests or walkthrough steps for BetterFGO, NA, CN or TW, and do not ask the owner about them. Existing upstream code for those servers stays, and upstream syncs keep merging it.
+- Target servers: new features and fixes are designed, specified and tested for **KR and official JP (`GameServer.Jp.Original`)**. The owner plays both. Do not add branches, tests or walkthrough steps for NA, BetterFGO, CN or TW, and do not ask the owner about them; see [`docs/agents/servers-and-assets.md`](docs/agents/servers-and-assets.md). Existing upstream code for those servers stays, and upstream syncs keep merging it.
 - Kotlin official code style; `kotlin.time.Duration` is used everywhere for waits.
 - Comments:
   - Write comments for *why*: constraints, external facts (for example 1440p coordinates or the 1px `fillText` border) and owner decisions.

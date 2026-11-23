@@ -8,7 +8,7 @@ From top to bottom, the screen is arranged as **Split by** → Wave/Turn tabs (s
 
 ## Up to 10 entries
 
-You can add **up to 10 entries** per wave (or turn). If the battle progresses past the last entry, the **last entry repeats**. Tap `+` to the right of the tabs to add an entry, and `x` on the last entry to remove it. Each new entry copies **Style** and **Use Servant Priority** from the entry right before it, and copies the priority list from the first entry.
+You can add **up to 10 entries** per wave (or turn). If the battle progresses past the last entry, the **last entry repeats**. Each entry is a tab in the row at the top; tap a tab to switch to that entry. Tap `+` right after the last tab to add an entry (it moves right as entries are added; on a narrow screen, scroll the tab row sideways to reach it), and the `x` button at the right end of the tab row to remove the last entry. Each new entry copies **Style** and **Use Servant Priority** from the entry right before it, and copies the priority list from the first entry.
 
 ## Split by: Wave / Turn
 

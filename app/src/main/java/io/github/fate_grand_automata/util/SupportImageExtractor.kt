@@ -16,14 +16,7 @@ class SupportImageExtractor(
     val context: Context,
     val storageProvider: StorageProvider
 ) {
-    private val SupportImageKind.assetFolder
-        get() = "Support/" + when (this) {
-            SupportImageKind.Servant -> "servant"
-            SupportImageKind.CE -> "ce"
-            SupportImageKind.Friend -> "friend"
-            // No built-in NP images ship; NP images are always made by the user (0006 D-3).
-            SupportImageKind.NoblePhantasm -> "np"
-        }
+    private val SupportImageKind.assetFolder get() = assetFolder(this)
 
     private fun extract(kind: SupportImageKind) {
         val assetFolder = kind.assetFolder
@@ -93,5 +86,21 @@ class SupportImageExtractor(
 
     companion object {
         private val extractionLock = Mutex()
+
+        private fun assetFolder(kind: SupportImageKind) = "Support/" + when (kind) {
+            SupportImageKind.Servant -> "servant"
+            SupportImageKind.CE -> "ce"
+            SupportImageKind.Friend -> "friend"
+            // No built-in NP images ship; NP images are always made by the user (0006 D-3).
+            SupportImageKind.NoblePhantasm -> "np"
+        }
+
+        /**
+         * The entries [extract] writes for [kind]: a servant folder or a CE file. Extraction recreates any of
+         * them that is missing (after an app update, or from the More options screen), so a deleted one would
+         * come back.
+         */
+        fun builtInEntries(assets: AssetManager, kind: SupportImageKind): Set<String> =
+            assets.list(assetFolder(kind))?.map { it.substringBefore('/') }?.toSet().orEmpty()
     }
 }

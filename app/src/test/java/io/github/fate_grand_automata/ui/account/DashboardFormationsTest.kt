@@ -65,7 +65,7 @@ class DashboardFormationsUiTest {
 
     private fun show(case: FormationCase, data: DashboardData = case.data) = compose.setContent {
         FGATheme { CompositionLocalProvider(LocalNavigateBack provides {}) {
-            case.fixture.Icons { AccountDashboardContent(data, case.names, "별명", {}, {}, userId = "formations") }
+            case.fixture.Icons { AccountDashboardContent(data, case.names, "별명", {}, {}, userId = "formations", initialSection = 7) }
         } }
     }
 
@@ -139,7 +139,7 @@ class DashboardFormationsUiTest {
         val longName = "아주 긴 개념예장 이름을 반복해서 한 줄보다 길게 표시하는 테스트"
         compose.setContent { FGATheme { case.fixture.Icons {
             AccountDashboardContent(case.data, case.names.copy(equips = case.names.equips.mapValues { longName }),
-                "샘플", {}, {})
+                "샘플", {}, {}, initialSection = 7)
         } } }
         val ceText = hasAnyAncestor(hasTestTag("formation-ce-line")) and hasText(longName)
         val names = compose.onAllNodes(ceText, useUnmergedTree = true)
@@ -199,7 +199,7 @@ class DashboardFormationsScreenshotTest(private val width: Int, private val heig
 
     private fun shot(name: String, case: FormationCase) = compose.shoot("dashboard-formations", name, width, height, locale = "ko") {
         CompositionLocalProvider(LocalNavigateBack provides {}) {
-            case.fixture.Icons { AccountDashboardContent(case.data, case.names, "샘플 별명", {}, {}, userId = "formations") }
+            case.fixture.Icons { AccountDashboardContent(case.data, case.names, "샘플 별명", {}, {}, userId = "formations", initialSection = 7) }
         }
     }
 

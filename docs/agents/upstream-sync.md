@@ -52,6 +52,10 @@ features, so every sync follows the same rules instead of being decided again ea
 | Removed upstream leftovers: `fastlane/`, `Gemfile`, `Gemfile.lock`, `FUNDING.yml`, `.github/ISSUE_TEMPLATE/`, `.github/workflows/publish-wiki.yml` | **Fork (deleted)** | Keep them deleted (owner, 2026-10-30). The fork does not publish to the Play Store or the GitHub wiki, does not take donations for upstream, and files issues through the planner |
 | Removed upstream wiki pages: `wiki/Home.md`, `_Sidebar.md`, `_Footer.md`, `Donations.md`, `Privacy-Policy.md`, `Troubleshooting.md`, `Running-on-Emulators.md`, `Game-Area-detection.md`, `Fine-tune.md`, `Friend-Point-Summon.md`, `Gift-Box.md`, `wiki/scripts/_Sidebar.md`, `Battle.md`, `Lottery.md`, `Support-Image-Maker.md`, `wiki/img/` | **Fork (deleted)** | Keep them deleted (owner, 2026-10-30). `wiki/` holds only the fork's manual; readers who need the original guides use the upstream wiki linked from the README |
 
+Upstream's `.claude/skills/render-template-asset/` (v3073) is not taken (owner, 2026-11-19): the fork
+drafts templates from a server's APK with `.claude/skills/apk-template-asset/` instead. Keep it
+deleted if a sync brings it in.
+
 When upstream changes something the fork has deleted (modify/delete conflict), keep it deleted
 unless the table says otherwise.
 

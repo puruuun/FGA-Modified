@@ -592,6 +592,7 @@ After pressing on the button, switch the app filter from \"Not optimized\" to \"
     <string name="config_state_on">On</string>
     <string name="config_state_off">Off</string>
     <string name="clear">"Clear"</string>
+    <string name="clear_all">"Clear all"</string>
     <string name="navigate_back">"Back"</string>
     <string name="battle_config_server_any">"Any"</string>
     <string name="battle_config_party_default">"Default"</string>
@@ -1106,6 +1107,15 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_outside_title">Changes outside scripts</string>
     <string name="capture_outside_totals">Totals</string>
     <string name="capture_outside_sources">By source</string>
+    <string name="capture_login_received">Received</string>
+    <string name="capture_login_friend">Friend</string>
+    <string name="capture_login_follow">Follow</string>
+    <string name="capture_login_recommend">Recommended support</string>
+    <string name="capture_login_top">Top earning servants</string>
+    <string name="capture_login_top_normal">Normal</string>
+    <string name="capture_login_top_event">Event</string>
+    <string name="capture_login_top_grand">Grand</string>
+    <string name="capture_login_top_none">None</string>
     <string name="capture_outside_gained">Gains (+)</string>
     <string name="capture_outside_used">Uses (−)</string>
     <string name="capture_source_gift_box">Gift box</string>
@@ -1142,7 +1152,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_log_retention">Records to keep (per type)</string>
     <string name="capture_log_retention_confirm">Keep the newest %1$d battle records and %1$d outside records? Older records will be permanently deleted.</string>
     <string name="capture_log_apply">Apply</string>
-    <string name="capture_log_clear_filter">Clear</string>
+    <string name="capture_log_reset_filters">Reset</string>
+    <string name="capture_log_resources_more">%1$s and %2$d more</string>
 
     <!-- Account dashboard -->
     <string name="dashboard_title">Account dashboard</string>
@@ -1183,16 +1194,47 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_sort_cost">Cost</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">All classes</string>
+    <string name="dashboard_filter_all">All</string>
+    <string name="dashboard_col_name">Name</string>
+    <string name="dashboard_col_np">NP</string>
+    <string name="dashboard_col_skills">Skills</string>
+    <string name="dashboard_col_appends">Appends</string>
     <string name="dashboard_bond">Bond %1$d</string>
     <string name="dashboard_show_all">Show all (%1$d)</string>
     <string name="dashboard_group_materials">Enhancement materials</string>
     <string name="dashboard_teapots">Teapots</string>
     <string name="dashboard_group_gems">Gems</string>
     <string name="dashboard_group_pieces">Pieces and monuments</string>
-    <string name="dashboard_group_grails">Grails and Lore</string>
+    <string name="dashboard_group_grails">Holy Grails, Lores and Dream Fires</string>
     <string name="dashboard_group_event">Event items</string>
     <string name="dashboard_group_coins">Servant coins</string>
     <string name="dashboard_group_other">Other</string>
+    <string name="dashboard_items_search">Search by name</string>
+    <string name="dashboard_items_search_clear">Clear search</string>
+    <string name="dashboard_items_search_open">Search items</string>
+    <string name="dashboard_overview_servants">Servants</string>
+    <string name="dashboard_stat_owned">Owned</string>
+    <string name="dashboard_stat_star5_np">★5 NP total</string>
+    <string name="dashboard_stat_all_np">All NP total</string>
+    <string name="dashboard_items_no_match">No matching items</string>
+    <string name="dashboard_items_show_more">Show more (%1$d)</string>
+    <string name="dashboard_items_none">none</string>
+    <plurals name="dashboard_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="dashboard_item_row_gem">Gem</string>
+    <string name="dashboard_item_row_magic_gem">Magic Gem</string>
+    <string name="dashboard_item_row_secret_gem">Secret Gem</string>
+    <string name="dashboard_item_row_piece">Piece</string>
+    <string name="dashboard_item_row_monument">Monument</string>
+    <string name="dashboard_item_class_short_saber">Sab</string>
+    <string name="dashboard_item_class_short_archer">Arc</string>
+    <string name="dashboard_item_class_short_lancer">Lan</string>
+    <string name="dashboard_item_class_short_rider">Rid</string>
+    <string name="dashboard_item_class_short_caster">Cas</string>
+    <string name="dashboard_item_class_short_assassin">Ass</string>
+    <string name="dashboard_item_class_short_berserker">Ber</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">Equipped</string>
     <string name="dashboard_quest">Quest #%1$d</string>
@@ -1294,6 +1336,10 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="widget_settings_show_service_button">Show service start/stop button</string>
     <string name="widget_settings_show_log_button">Show log collection button</string>
     <string name="support_picker_download">Download images</string>
+    <string name="support_picker_delete_count">"%d selected"</string>
+    <string name="support_picker_delete_confirm_message">"Are you sure you want to delete %d image(s)?"</string>
+    <string name="support_picker_delete_failed">"Could not delete some images."</string>
+    <string name="support_picker_builtin_locked">"Built-in images come back with app updates, so they cannot be deleted."</string>
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">Profile</string>
     <string name="capture_log_all_profiles">All profiles</string>
@@ -1382,7 +1428,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="screen_capture_permission_denied">"Screen capture permission was not granted, so nothing was started."</string>
     <!-- Dashboard account cards (#379) -->
     <string name="dashboard_present_box_header">Present box (%1$d)</string>
-    <string name="dashboard_present_box_notice">Gifts received after the last login are shown after the next login.</string>
     <string name="dashboard_present_box_empty">No gifts</string>
     <string name="dashboard_command_code_collection">Command code collection</string>
     <string name="dashboard_command_codes_progress">Command codes: %1$d / %2$d owned</string>
@@ -1399,6 +1444,35 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_summon_count">%1$s pulls</string>
     <string name="dashboard_recent_summon_log">Recent summon log</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
+    <string name="dashboard_nav_overview">Overview</string>
+    <string name="dashboard_nav_servants">Servants</string>
+    <string name="dashboard_nav_items">Items</string>
+    <string name="dashboard_nav_formations">Formations</string>
+    <string name="dashboard_nav_collection">Collection and summons</string>
+    <string name="dashboard_nav_present_box">Present box</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
+    <string name="dashboard_updated_just_now">Updated just now</string>
+    <plurals name="dashboard_updated_minutes">
+        <item quantity="one">Updated %1$d minute ago</item>
+        <item quantity="other">Updated %1$d minutes ago</item>
+    </plurals>
+    <plurals name="dashboard_updated_hours">
+        <item quantity="one">Updated %1$d hour ago</item>
+        <item quantity="other">Updated %1$d hours ago</item>
+    </plurals>
+    <plurals name="dashboard_updated_days">
+        <item quantity="one">Updated %1$d day ago</item>
+        <item quantity="other">Updated %1$d days ago</item>
+    </plurals>
+    <string name="dashboard_ap_full_at">Full at %1$s</string>
+    <string name="dashboard_overview_fruits">Fruit</string>
+    <string name="dashboard_overview_resources">Resources</string>
+    <string name="dashboard_overview_storage">Storage</string>
+    <string name="dashboard_overview_recent">Recent records</string>
+    <string name="dashboard_overview_account">Account</string>
+    <string name="dashboard_view_all">View all</string>
+    <string name="dashboard_legend_servants">Servants</string>
+    <string name="dashboard_legend_others">Other</string>
     <string name="p_app_theme">"Dark mode"</string>
     <string name="p_app_theme_system">"Follow system"</string>
     <string name="p_app_theme_light">"Light"</string>
@@ -1478,4 +1552,44 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_root_adguard_vpn_note">"Set AdGuard to 'Automatic proxy' mode, and exclude both FGO and FGA from AdGuard filtering. Can be used together with personal VPNs such as WireGuard."</string>
     <string name="card_swap_detection">Detect Aoko card change</string>
     <string name="card_swap_detection_summary">When on, applies to every wave and turn: a card with the swap icon is treated as Arts</string>
+    <string name="capture_log_view">View</string>
+    <string name="capture_log_view_record">By record</string>
+    <string name="capture_log_view_day">By day</string>
+    <string name="capture_log_day_source_battle">Battle</string>
+    <string name="capture_log_day_changes">Changes</string>
+    <string name="capture_log_day_scripts">Scripts run</string>
+    <string name="capture_log_day_included">Includes %1$d battle logs</string>
+    <string name="capture_log_day_breakdown">Show breakdown by source</string>
+    <string name="capture_log_day_collapse">Hide breakdown by source</string>
+    <string name="capture_log_day_no_changes">No changes recorded</string>
+    <string name="capture_log_day_no_scripts">No script runs recorded on this day</string>
+    <string name="capture_log_day_zone_note">Game day starts at 04:00 Korea/Japan time</string>
+    <!-- Dashboard: in-progress block, login counts, parties, servant command codes (#615) -->
+    <string name="dashboard_overview_progress">In progress</string>
+    <string name="dashboard_progress_weekly">Weekly missions · %1$s ~ %2$s · %3$d / %4$d done</string>
+    <string name="dashboard_progress_event_open">%1$s · Points %2$s</string>
+    <string name="dashboard_login_total">Total logins</string>
+    <string name="dashboard_login_seq">Login streak</string>
+    <string name="dashboard_login_next">Next total reward</string>
+    <plurals name="dashboard_login_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="dashboard_login_next_value">%1$s (in %2$s)</string>
+    <string name="dashboard_formation_parties">Parties</string>
+    <string name="dashboard_party_title">Party %1$d · %2$s</string>
+    <string name="dashboard_party_title_plain">Party %1$d</string>
+    <string name="dashboard_party_chip">Party %1$d</string>
+    <string name="dashboard_party_support">Support</string>
+    <string name="dashboard_party_mystic">Mystic Code: %1$s</string>
+    <string name="dashboard_formation_deck_named">Deck %1$d · %2$s</string>
+    <string name="dashboard_servant_codes">Command Codes %1$d / %2$d</string>
+    <string name="dashboard_servant_card_boost">Card boost +%1$s (%2$d cards)</string>
+    <string name="dashboard_col_codes">Codes</string>
+    <string name="dashboard_col_card_boost">Card boost</string>
+    <string name="capture_support_filter_header">"Experimental"</string>
+    <string name="capture_support_filter">"Support list filter (experimental)"</string>
+    <string name="capture_support_filter_summary">"While log collection runs, support servants that do not match are left out of the list the game receives. Nothing the game sends is changed."</string>
+    <string name="capture_support_filter_servants">"Servants: %1$d chosen"</string>
+    <string name="capture_support_filter_ces">"CEs: %1$d chosen (optional)"</string>
 </resources>

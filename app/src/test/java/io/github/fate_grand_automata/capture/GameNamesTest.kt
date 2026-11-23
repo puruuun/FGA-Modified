@@ -149,6 +149,35 @@ class GameNamesTest {
         assertEquals(names, offline)
     }
 
+    @Test fun loginBreakdownServantsGetNamesAndFaceDataFromKrAndJp() = runBlocking {
+        val cache = GameNames(directory, { url ->
+            when {
+                "/JP/basic_servant" in url -> """[{"id":2,"name":"JP servant","className":"ruler"}]"""
+                "/KR/basic_servant" in url -> """[{"id":1,"name":"한국 서번트","className":"saber"}]"""
+                else -> """[{"id":100,"name":"item"}]"""
+            }
+        }) { 1000 }
+        val names = cache.resolve(emptyList(), hasJpAccount = true, extraServantIds = setOf(1, 2))
+        assertEquals("한국 서번트", names.servants[1])
+        assertEquals("saber", names.servantData[1]?.className)
+        assertEquals("JP servant", names.servants[2])
+        assertEquals("ruler", names.servantData[2]?.className)
+        assertTrue(GameNames(File(directory, "other"), { """[{"id":100,"name":"item"}]""" }) { 1000 }.resolve(emptyList()).servantData.isEmpty())
+    }
+    @Test fun loginBreakdownServantsWithoutAJpAccountStillResolveKrNamesAndJpOnlyIds() = runBlocking {
+        val cache = GameNames(directory, { url ->
+            when {
+                "/JP/basic_servant" in url -> """[{"id":2,"name":"JP servant","className":"ruler"}]"""
+                "/KR/basic_servant" in url -> """[{"id":1,"name":"한국 서번트","className":"saber"}]"""
+                else -> """[{"id":100,"name":"item"}]"""
+            }
+        }) { 1000 }
+        File(directory, "basic_servant.json").writeText("""{"9":"기존 서번트"}""")
+        val names = cache.resolve(emptyList(), hasJpAccount = false, extraServantIds = setOf(1, 2))
+        assertEquals("한국 서번트", names.servants[1])
+        assertEquals("JP servant", names.servants[2])
+        assertEquals("ruler", names.servantData[2]?.className)
+    }
     @Test fun collectionNumbersIsCacheOnlyUnionSkippingZeroAndNullAndNeverThrows() {
         val cache = GameNames(directory, { error("must never download") }) { 1000 }
         assertEquals(ChaldeaCollectionNumbers.EMPTY, cache.collectionNumbers())

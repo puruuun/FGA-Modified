@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.ui.prefs
 
+import io.github.fate_grand_automata.ui.FGASwitchColors
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +32,8 @@ fun Pref<Boolean>.SwitchPreference(
         Switch(
             checked = state,
             onCheckedChange = { state = it },
-            enabled = enabled
+            enabled = enabled,
+            colors = FGASwitchColors()
         )
     }
 }

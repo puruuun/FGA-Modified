@@ -79,7 +79,7 @@ class CaptureVpnService : VpnService() {
                 jpEnabled,
             )
             if (contexts.isEmpty()) Timber.w("Capture: no certificate, the game host is tunnelled and not read")
-            val p = ProxyServer(contexts)
+            val p = ProxyServer(contexts, supportListCriteria = { supportFilterCriteria(prefs) })
             val port = p.start()
             proxy = p
 

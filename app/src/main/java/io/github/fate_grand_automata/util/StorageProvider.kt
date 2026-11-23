@@ -197,6 +197,40 @@ class StorageProvider @Inject constructor(
             .mapNotNull { it.name }
     }
 
+    /** Read-only, so it never creates the support folders the way [list] does. */
+    fun supportThumbnails(kind: SupportImageKind) = SupportThumbnailIndex {
+        dirRoot?.findFile(supportFolderName)?.findFile(SupportThumbnailIndex.folderName(kind))?.takeIf { it.isDirectory }
+    }
+
+    /**
+     * Deletes servant folders or CE entries from the user's support folder and returns the names that are gone.
+     * Read-only lookup of the folder: it never creates one.
+     */
+    fun deleteSupportEntries(
+        kind: SupportImageKind,
+        names: Set<String>,
+        delete: (DocumentFile) -> Boolean = DocumentFile::delete
+    ): Set<String> {
+        require(kind == SupportImageKind.Servant || kind == SupportImageKind.CE)
+        val folder = dirRoot?.findFile(supportFolderName)?.findFile(SupportThumbnailIndex.folderName(kind))
+            ?.takeIf { it.isDirectory } ?: return emptySet()
+        val removed = deleteSupportEntries(folder, names, delete)
+        removeFromSelections(kind, removed)
+        return removed
+    }
+
+    // A preferred image that no longer exists stops the script at the first support screen, so every config
+    // drops the entries that are really gone, and nothing else in it changes.
+    private fun removeFromSelections(kind: SupportImageKind, removed: Set<String>) {
+        if (removed.isEmpty()) return
+        for (id in prefsCore.battleConfigList.get()) {
+            val support = prefsCore.forBattleConfig(id).support
+            val preferred = if (kind == SupportImageKind.CE) support.preferredCEs else support.preferredServants
+            val selected = preferred.get()
+            if (selected.any { it in removed }) preferred.set(selected - removed)
+        }
+    }
+
     override fun list(kind: SupportImageKind) = kind.imageFolder
         .listFiles()
         .mapNotNull { it.name }

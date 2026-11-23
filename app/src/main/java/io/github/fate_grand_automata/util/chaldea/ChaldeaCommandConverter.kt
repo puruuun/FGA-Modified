@@ -305,5 +305,7 @@ private fun JsonObject.hasFunction(type: String? = null, target: String? = null)
         (type == null || it.text("funcType") == type) && (target == null || it.text("funcTargetType") == target)
     }
 
-private fun JsonObject.targetsAlly() = hasFunction(target = "ptOne") ||
+// ptOneOther ("all allies except the selected one") still makes the player select one ally in game, so it needs a
+// target like ptOne; Himiko & Iyo and Odysseus have it without any ptOne function.
+private fun JsonObject.targetsAlly() = hasFunction(target = "ptOne") || hasFunction(target = "ptOneOther") ||
     obj("script")?.array("condBranchSkillInfo")?.isNotEmpty() == true

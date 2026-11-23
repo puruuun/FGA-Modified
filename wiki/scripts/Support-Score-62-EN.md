@@ -2,7 +2,7 @@
 
 ## Settings and passing conditions
 
-Turn on **Require Class score +62** and **Require Grand score +16** independently under **Battle Configs → Support → Preferred Servants**. When both toggles are enabled, both conditions must be met. Both toggles are included in copy, export, and import.
+Turn on **Require Class score +62** and **Require Grand score +16** independently under **Battle Configs → Support → Preferred Servants**. When both toggles are enabled, both conditions must be met. Both toggles are shown only when at least one Preferred Servant is chosen, and the Grand toggle also needs **Grand Servant** turned on, because the game shows +16 only for Grand servants. A toggle that becomes hidden is also stored off; when it reappears it is off and the earlier value is not restored. Both toggles are included in copy, export, and import.
 
 | Actual display | Class only | Grand only | Both enabled |
 |---|---|---|---|

@@ -43,6 +43,30 @@ class OutsideLogStoreTest {
         assertEquals(listOf(entry), OutsideLogStore(directory).apply { load() }.entries)
     }
 
+    @Test fun oldOutsideLogWithoutLoginsLoadsWithoutBreakdownAndIsNotRewrittenWithOne() {
+        val entry = outsideFixture()
+        val legacy = Json.encodeToString(listOf(entry))
+        assertFalse(legacy.contains("logins"))
+        File(directory, "outside-log.json").writeText(legacy)
+        val store = OutsideLogStore(directory).apply { load() }
+        assertTrue(store.entries.single().period.logins.isEmpty())
+        store.add(outsideFixture("later", 1_793_800_000_000))
+        assertFalse(File(directory, "outside-log.json").readText().contains("logins"))
+    }
+
+    @Test fun loginBreakdownRoundTripsThroughTheStoreFile() {
+        val login = io.github.fate_grand_automata.scripts.capture.LoginBreakdown(
+            at = 150, friend = 300, follow = 50, recommend = 20,
+            normal = io.github.fate_grand_automata.scripts.capture.LoginTopServant(100100, 120))
+        val period = io.github.fate_grand_automata.scripts.capture.OutsidePeriod("fictionalA", 100)
+            .add(io.github.fate_grand_automata.scripts.capture.ChangeSource(io.github.fate_grand_automata.scripts.capture.ChangeSource.Group.Login),
+                io.github.fate_grand_automata.scripts.capture.AccountDelta(friendPoint = 370), 150).withLogin(login)
+        val entry = OutsideLogEntry("login-entry", "fictionalA", "Sample", 100_000, 150_000, period)
+        OutsideLogStore(directory).add(entry)
+        val loaded = OutsideLogStore(directory).apply { load() }.entries.single()
+        assertEquals(listOf(login), loaded.period.logins)
+        assertEquals(entry, loaded)
+    }
     @Test fun keepsNewest200AndReplayReplacesSameId() {
         File(directory, "outside-log.json").writeText(Json.encodeToString((1..200).map { outsideFixture("$it", it * 1000L) }))
         val store = OutsideLogStore(directory)

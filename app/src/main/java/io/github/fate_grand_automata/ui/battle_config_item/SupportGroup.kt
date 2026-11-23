@@ -6,22 +6,22 @@ import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardDefaults.cardElevation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -165,13 +167,16 @@ fun SupportGroup(
     }
 }
 
+const val SupportClassTagPrefix = "supportClass:"
+
+val SupportClassIconMax = 30.dp
+
 @Composable
 fun SupportClassPicker(
     selected: SupportClass,
     onSelectedChange: (SupportClass) -> Unit
 ) {
     Card(
-        elevation = cardElevation(2.dp),
         modifier = Modifier
             .padding(16.dp, 5.dp)
             .fillMaxWidth(),
@@ -180,13 +185,15 @@ fun SupportClassPicker(
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
-        LazyRow(
+        // Exception to the 48dp touch target rule, by owner decision: the ten classes stay on one row as before,
+        // each taking an equal share of the width. The diamond is drawn at most SupportClassIconMax wide (#613),
+        // while the touch target keeps its share of the row and the 48dp height it had before the diamonds shrank.
+        Row(
             modifier = Modifier
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(5.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .fillMaxWidth()
+                .padding(5.dp)
         ) {
-            items(SupportClass.entries.drop(1)) {
+            SupportClass.entries.drop(1).forEach {
                 val isSelected = selected == it
                 val transition = updateTransition(isSelected, label = "Selected")
                 val alpha by transition.animateFloat(label = "alpha") { selected ->
@@ -194,27 +201,42 @@ fun SupportClassPicker(
                 }
                 val borderClass by transition.animateColor(label = "border color") { selected ->
                     if (selected)
-                        MaterialTheme.colorScheme.secondary
+                        MaterialTheme.colorScheme.primary
                     else Color.Transparent
                 }
 
-                AsyncImage(
-                    it.drawable,
-                    contentDescription = it.name,
-                    contentScale = ContentScale.Crop,
-                    alpha = alpha,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(25.dp)
-                        .border(2.dp, borderClass, DiamondShape)
-                        .clip(DiamondShape)
-                        .clickable {
-                            onSelectedChange(
-                                if (isSelected)
-                                    SupportClass.None
-                                else it
-                            )
-                        }
-                )
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = {
+                                onSelectedChange(
+                                    if (isSelected)
+                                        SupportClass.None
+                                    else it
+                                )
+                            }
+                        )
+                        .padding(horizontal = 2.dp, vertical = 4.dp)
+                        .testTag("$SupportClassTagPrefix${it.name}")
+                ) {
+                    AsyncImage(
+                        it.drawable,
+                        contentDescription = it.name,
+                        contentScale = ContentScale.Crop,
+                        alpha = alpha,
+                        modifier = Modifier
+                            .widthIn(max = SupportClassIconMax)
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .border(2.dp, borderClass, DiamondShape)
+                            .clip(DiamondShape)
+                    )
+                }
             }
         }
     }
@@ -284,7 +306,6 @@ fun PreferredSummary(
 
             if (servants.isNotEmpty()) {
                 Card(
-                    elevation = cardElevation(2.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant

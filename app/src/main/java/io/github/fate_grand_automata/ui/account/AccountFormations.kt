@@ -43,7 +43,7 @@ internal fun SupportFormation(formations: OwnFormations?, names: GameNameMap) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("formation-decks")) {
         decks.forEach { option ->
             FilterChip(selected = option.index == deck?.index, onClick = { deckIndex = option.index },
-                label = { Text(stringResource(R.string.dashboard_formation_deck, option.index)) })
+                label = { Text(option.name?.let { stringResource(R.string.dashboard_formation_deck_named, option.index, it) } ?: stringResource(R.string.dashboard_formation_deck, option.index)) })
         }
     }
     if (deck == null) {
@@ -88,7 +88,7 @@ private fun FormationRow(slot: FriendSlot, grand: FriendGrandSlot?, names: GameN
 }
 
 @Composable
-private fun ResponsiveSlotRow(
+internal fun ResponsiveSlotRow(
     svtId: Long,
     svtName: String,
     detail: String,
@@ -167,7 +167,7 @@ private fun FormationCes(slot: FriendSlot, grand: FriendGrandSlot?, names: GameN
 
 /** Reserve the level/MLB suffix first: only the CE name may ellipsize. No CE image. */
 @Composable
-private fun FormationCe(id: Long, limitCount: Int, level: Int?, names: GameNameMap, showMax: Boolean = true) {
+internal fun FormationCe(id: Long, limitCount: Int, level: Int?, names: GameNameMap, showMax: Boolean = true) {
     Row(Modifier.fillMaxWidth().testTag("formation-ce-line"), verticalAlignment = Alignment.CenterVertically) {
         if (id == 0L) {
             Text(stringResource(R.string.friends_ce_none), style = MaterialTheme.typography.bodySmall,

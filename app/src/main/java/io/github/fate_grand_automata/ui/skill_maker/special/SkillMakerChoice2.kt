@@ -91,7 +91,7 @@ fun SkillMakerChoice2(
                         else -> onOption2()
                     }
                 },
-                color = MaterialTheme.colorScheme.tertiary,
+                color = MaterialTheme.colorScheme.primary,
                 text = stringResource(choice2Type.targetBStringRes),
                 enabled = !mustSelect || choice2Type != Choice2Type.Generic,
             )

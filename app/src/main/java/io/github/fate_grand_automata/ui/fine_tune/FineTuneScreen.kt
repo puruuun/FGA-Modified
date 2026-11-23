@@ -67,7 +67,7 @@ fun FineTuneScreen(
                     text = {
                         Text(
                             stringResource(R.string.fine_tune_menu_reset_to_defaults),
-                            color = MaterialTheme.colorScheme.onSecondary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     },
                     onClick = { vm.resetAll() },
@@ -75,10 +75,10 @@ fun FineTuneScreen(
                         Icon(
                             painterResource(R.drawable.ic_refresh),
                             contentDescription = stringResource(R.string.fine_tune_menu_reset_to_defaults),
-                            tint = MaterialTheme.colorScheme.onSecondary
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     },
-                    containerColor = MaterialTheme.colorScheme.secondary,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp)

@@ -41,7 +41,7 @@ class LogSourceScreenshotTest(private val width: Int, private val locale: String
     @Test fun sourceDialog() {
         RuntimeEnvironment.setQualifiers(locale + "-w" + width + "dp-h800dp-notnight-mdpi")
         rule.setContent { FGATheme(false) {
-            LogFilterDialog(LogTimeFilter.All, null, null, null, 200, 0, 1,
+            LogFilterDialog(LogTimeFilter.All, emptySet(), null, null, 200, 0, 1,
                 mixedCaptureLogs(emptyList(), listOf(outside)), GameNameMap(), null, {}, { _, _, _, _, _, _, _ -> },
                 source = LogSourceFilter.Script)
         } }

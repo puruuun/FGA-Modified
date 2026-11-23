@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,15 +18,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.ui.Stepper
 import io.github.fate_grand_automata.ui.dialog.FgaDialog
 import io.github.fate_grand_automata.ui.prefs.remember
+
+const val RaidDelayToggleTagPrefix = "raidDelay:"
 
 @Composable
 fun RaidDelay(
@@ -77,56 +78,21 @@ fun RaidDelay(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Card(
-                    shape = RoundedCornerShape(25),
-                    colors = CardDefaults.cardColors(
-                        containerColor =
-                        if (currentAddRaidTurnDelay) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    onClick = {
-                        currentAddRaidTurnDelay = true
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 2.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.config_state_on).uppercase(),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        textAlign = TextAlign.Center,
-                        fontWeight = if (currentAddRaidTurnDelay) FontWeight.Bold else null
-                    )
-                }
-                Card(
-                    shape = RoundedCornerShape(25),
-                    colors = CardDefaults.cardColors(
-                        containerColor =
-                        if (!currentAddRaidTurnDelay) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    onClick = {
-                        currentAddRaidTurnDelay = false
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 2.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.config_state_off).uppercase(),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        textAlign = TextAlign.Center,
-                        fontWeight = if (!currentAddRaidTurnDelay) FontWeight.Bold else null
-                    )
+                listOf(
+                    true to stringResource(R.string.config_state_on),
+                    false to stringResource(R.string.config_state_off)
+                ).forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = currentAddRaidTurnDelay == value,
+                        onClick = { currentAddRaidTurnDelay = value },
+                        shape = SegmentedButtonDefaults.itemShape(index, 2),
+                        modifier = Modifier.testTag("$RaidDelayToggleTagPrefix$value")
+                    ) {
+                        Text(label.uppercase())
+                    }
                 }
             }
 

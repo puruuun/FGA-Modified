@@ -792,6 +792,15 @@
     <string name="capture_outside_title">スクリプト外の変化</string>
     <string name="capture_outside_totals">合計</string>
     <string name="capture_outside_sources">入手・使用先別</string>
+    <string name="capture_login_received">獲得内訳</string>
+    <string name="capture_login_friend">フレンド</string>
+    <string name="capture_login_follow">フォロー</string>
+    <string name="capture_login_recommend">おすすめサポート</string>
+    <string name="capture_login_top">最も稼いだサーヴァント</string>
+    <string name="capture_login_top_normal">通常</string>
+    <string name="capture_login_top_event">イベント</string>
+    <string name="capture_login_top_grand">冠位</string>
+    <string name="capture_login_top_none">なし</string>
     <string name="capture_outside_gained">獲得 (+)</string>
     <string name="capture_outside_used">使用 (−)</string>
     <string name="capture_source_gift_box">プレゼントボックス</string>
@@ -828,7 +837,8 @@
     <string name="capture_log_retention">ログの保存件数（種類ごと）</string>
     <string name="capture_log_retention_confirm">戦闘記録とスクリプト外の記録を、それぞれ最新の%1$d件だけ保存しますか？古い記録は完全に削除されます。</string>
     <string name="capture_log_apply">適用</string>
-    <string name="capture_log_clear_filter">解除</string>
+    <string name="capture_log_reset_filters">リセット</string>
+    <string name="capture_log_resources_more">%1$s ほか%2$d件</string>
 
     <!-- Account dashboard -->
     <string name="dashboard_title">アカウントダッシュボード</string>
@@ -869,16 +879,46 @@
     <string name="dashboard_sort_cost">コスト</string>
     <string name="dashboard_sort_level">Lv</string>
     <string name="dashboard_all_classes">全クラス</string>
+    <string name="dashboard_filter_all">すべて</string>
+    <string name="dashboard_col_name">名前</string>
+    <string name="dashboard_col_np">宝具</string>
+    <string name="dashboard_col_skills">スキル</string>
+    <string name="dashboard_col_appends">アペンド</string>
     <string name="dashboard_bond">絆 %1$d</string>
     <string name="dashboard_show_all">すべて表示（%1$d）</string>
     <string name="dashboard_group_materials">強化素材</string>
     <string name="dashboard_teapots">ティーポット</string>
     <string name="dashboard_group_gems">輝石・魔石・秘石</string>
     <string name="dashboard_group_pieces">ピース・モニュメント</string>
-    <string name="dashboard_group_grails">聖杯・伝承結晶</string>
+    <string name="dashboard_group_grails">聖杯・伝承結晶・夢火</string>
     <string name="dashboard_group_event">イベントアイテム</string>
     <string name="dashboard_group_coins">サーヴァントコイン</string>
     <string name="dashboard_group_other">その他</string>
+    <string name="dashboard_items_search">名前で探す</string>
+    <string name="dashboard_items_search_clear">検索語を消す</string>
+    <string name="dashboard_items_search_open">アイテムを検索</string>
+    <string name="dashboard_overview_servants">サーヴァント</string>
+    <string name="dashboard_stat_owned">所持</string>
+    <string name="dashboard_stat_star5_np">★5 宝具Lv合計</string>
+    <string name="dashboard_stat_all_np">全体 宝具Lv合計</string>
+    <string name="dashboard_items_no_match">一致するアイテムがありません</string>
+    <string name="dashboard_items_show_more">もっと見る (%1$d種)</string>
+    <string name="dashboard_items_none">なし</string>
+    <plurals name="dashboard_items_count">
+        <item quantity="other">%1$d種</item>
+    </plurals>
+    <string name="dashboard_item_row_gem">輝石</string>
+    <string name="dashboard_item_row_magic_gem">魔石</string>
+    <string name="dashboard_item_row_secret_gem">秘石</string>
+    <string name="dashboard_item_row_piece">ピース</string>
+    <string name="dashboard_item_row_monument">モニュメント</string>
+    <string name="dashboard_item_class_short_saber">Sab</string>
+    <string name="dashboard_item_class_short_archer">Arc</string>
+    <string name="dashboard_item_class_short_lancer">Lan</string>
+    <string name="dashboard_item_class_short_rider">Rid</string>
+    <string name="dashboard_item_class_short_caster">Cas</string>
+    <string name="dashboard_item_class_short_assassin">Ass</string>
+    <string name="dashboard_item_class_short_berserker">Ber</string>
     <string name="dashboard_level_value">Lv %1$d</string>
     <string name="dashboard_equipped">装備中</string>
     <string name="dashboard_quest">クエスト #%1$d</string>
@@ -982,6 +1022,10 @@
     <string name="widget_settings_show_service_button">サービス開始/停止ボタンを表示</string>
     <string name="widget_settings_show_log_button">ログ収集ボタンを表示</string>
     <string name="support_picker_download">画像を取得</string>
+    <string name="support_picker_delete_count">"%d件選択中"</string>
+    <string name="support_picker_delete_confirm_message">"本当に %d 枚の画像を削除しますか?"</string>
+    <string name="support_picker_delete_failed">"一部の画像を削除できませんでした。"</string>
+    <string name="support_picker_builtin_locked">"内蔵画像はアプリの更新で復元されるため、削除できません。"</string>
     <!-- Log screen profile filter -->
     <string name="capture_log_profile">プロフィール</string>
     <string name="capture_log_all_profiles">すべて</string>
@@ -1071,7 +1115,6 @@
     <string name="screen_capture_permission_denied">"画面キャプチャの許可がないため開始しませんでした。"</string>
     <!-- アカウントダッシュボード追加カード (#379) -->
     <string name="dashboard_present_box_header">プレゼントボックス（%1$d）</string>
-    <string name="dashboard_present_box_notice">最終ログイン以降に受け取ったプレゼントは次回のログイン時に反映されます。</string>
     <string name="dashboard_present_box_empty">プレゼントなし</string>
     <string name="dashboard_command_code_collection">コマンドコード図鑑</string>
     <string name="dashboard_command_codes_progress">所持 %1$d / 全体 %2$d</string>
@@ -1088,6 +1131,32 @@
     <string name="dashboard_summon_count">%1$s回</string>
     <string name="dashboard_recent_summon_log">最近の召喚履歴</string>
     <string name="dashboard_summon_log_count">×%1$d</string>
+    <string name="dashboard_nav_overview">概要</string>
+    <string name="dashboard_nav_servants">サーヴァント</string>
+    <string name="dashboard_nav_items">アイテム</string>
+    <string name="dashboard_nav_formations">編成</string>
+    <string name="dashboard_nav_collection">図鑑・召喚</string>
+    <string name="dashboard_nav_present_box">プレゼントボックス</string>
+    <string name="dashboard_level_short">Lv %1$s</string>
+    <string name="dashboard_updated_just_now">たった今更新</string>
+    <plurals name="dashboard_updated_minutes">
+        <item quantity="other">%1$d分前に更新</item>
+    </plurals>
+    <plurals name="dashboard_updated_hours">
+        <item quantity="other">%1$d時間前に更新</item>
+    </plurals>
+    <plurals name="dashboard_updated_days">
+        <item quantity="other">%1$d日前に更新</item>
+    </plurals>
+    <string name="dashboard_ap_full_at">%1$s に全回復</string>
+    <string name="dashboard_overview_fruits">リンゴ</string>
+    <string name="dashboard_overview_resources">所持資源</string>
+    <string name="dashboard_overview_storage">所持枠</string>
+    <string name="dashboard_overview_recent">最近の記録</string>
+    <string name="dashboard_overview_account">アカウント</string>
+    <string name="dashboard_view_all">すべて表示</string>
+    <string name="dashboard_legend_servants">サーヴァント</string>
+    <string name="dashboard_legend_others">その他</string>
     <string name="p_app_theme">"ダークモード"</string>
     <string name="p_app_theme_system">"システム設定に従う"</string>
     <string name="p_app_theme_light">"ライト"</string>
@@ -1167,4 +1236,44 @@
     <string name="capture_root_adguard_vpn_note">"AdGuard は「自動プロキシ」モードにし、AdGuard のフィルタリングから FGO と FGA の両方を除外してください。WireGuard などの個人 VPN と併用できます。"</string>
     <string name="card_swap_detection">青子のカード変化を検出</string>
     <string name="card_swap_detection_summary">オンにするとすべてのウェーブとターンに適用されます。変換アイコンのあるカードをArtsとして扱います</string>
+    <string name="capture_log_view">表示</string>
+    <string name="capture_log_view_record">記録別</string>
+    <string name="capture_log_view_day">日別</string>
+    <string name="capture_log_day_source_battle">戦闘</string>
+    <string name="capture_log_day_changes">変動</string>
+    <string name="capture_log_day_scripts">実行したスクリプト</string>
+    <string name="capture_log_day_included">バトル%1$d回を含む</string>
+    <string name="capture_log_day_breakdown">出所別の内訳を表示</string>
+    <string name="capture_log_day_collapse">出所別の内訳を閉じる</string>
+    <string name="capture_log_day_no_changes">記録された変動はありません</string>
+    <string name="capture_log_day_no_scripts">この日に記録されたスクリプト実行はありません</string>
+    <string name="capture_log_day_zone_note">韓国・日本時間 04:00 基準</string>
+    <!-- ダッシュボード: 進行中ブロック、ログイン日数、パーティ、サーヴァントのコマンドコード (#615) -->
+    <string name="dashboard_overview_progress">進行中</string>
+    <string name="dashboard_progress_weekly">週間ミッション · %1$s ~ %2$s · %3$d / %4$d 達成</string>
+    <string name="dashboard_progress_event_open">%1$s · ポイント %2$s</string>
+    <string name="dashboard_login_total">累計ログイン</string>
+    <string name="dashboard_login_seq">連続ログイン</string>
+    <string name="dashboard_login_next">次の累計報酬</string>
+    <plurals name="dashboard_login_days">
+        <item quantity="other">%1$s日</item>
+    </plurals>
+    <string name="dashboard_login_next_value">%1$s (%2$s後)</string>
+    <string name="dashboard_formation_parties">パーティ編成</string>
+    <string name="dashboard_party_title">パーティ%1$d · %2$s</string>
+    <string name="dashboard_party_title_plain">パーティ%1$d</string>
+    <string name="dashboard_party_chip">パーティ%1$d</string>
+    <string name="dashboard_party_support">サポート</string>
+    <string name="dashboard_party_mystic">魔術礼装: %1$s</string>
+    <string name="dashboard_formation_deck_named">編成%1$d · %2$s</string>
+    <string name="dashboard_servant_codes">コマンドコード %1$d / %2$d</string>
+    <string name="dashboard_servant_card_boost">カード強化 +%1$s (%2$d枚)</string>
+    <string name="dashboard_col_codes">コード</string>
+    <string name="dashboard_col_card_boost">カード強化</string>
+    <string name="clear_all">"すべて解除"</string>
+    <string name="capture_support_filter_header">"実験機能"</string>
+    <string name="capture_support_filter">"サポート一覧フィルター (実験)"</string>
+    <string name="capture_support_filter_summary">"ログ収集中、条件に合わないサポートをゲームが受け取る一覧から除きます。ゲームがサーバーへ送る内容は変更しません。"</string>
+    <string name="capture_support_filter_servants">"サーヴァント: %1$d件選択"</string>
+    <string name="capture_support_filter_ces">"礼装: %1$d件選択 (任意)"</string>
 </resources>

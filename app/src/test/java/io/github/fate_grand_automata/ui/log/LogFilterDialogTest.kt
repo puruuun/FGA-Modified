@@ -24,7 +24,7 @@ class LogFilterDialogTest {
     private val names = GameNameMap(svtData = (1L..20L).associateWith { AtlasBasic(it, if (it % 2 == 0L) "Apple $it" else "Banana $it", "normal") })
     private val keys = (1L..20L).map { "${LogResource.SVT}:$it" }.toSet()
 
-    private fun show(selected: String? = null) = rule.setContent {
+    private fun show(selected: Set<String> = emptySet()) = rule.setContent {
         FGATheme(darkTheme = false) {
             LogFilterDialog(LogTimeFilter.All, selected, null, null, 200, 0, 0, resourceLogFixture(keys), names, null, {}, { _, _, _, _, _, _, _ -> })
         }
@@ -47,7 +47,7 @@ class LogFilterDialogTest {
     }
 
     @Test fun searchNarrowsTheListWhileAllAndTheSelectedChipStay() {
-        show(selected = "${LogResource.SVT}:1")
+        show(selected = setOf("${LogResource.SVT}:1"))
         rule.onNodeWithTag("log-filter-search").performTextInput("apple")
         rule.onNodeWithText("Apple 2").assertExists()
         rule.onNodeWithText("Banana 3").assertDoesNotExist()

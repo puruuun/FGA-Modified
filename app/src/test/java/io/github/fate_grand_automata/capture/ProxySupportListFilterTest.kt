@@ -1,0 +1,353 @@
+package io.github.fate_grand_automata.capture
+
+import io.github.fate_grand_automata.scripts.capture.BodyDecoder
+import io.github.fate_grand_automata.scripts.capture.CaptureNames
+import io.github.fate_grand_automata.scripts.capture.HttpHead
+import io.github.fate_grand_automata.scripts.capture.HttpReader
+import io.github.fate_grand_automata.scripts.capture.SingleUseCa
+import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.capture.SupportListFilter
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import org.junit.Test
+import java.io.ByteArrayOutputStream
+import java.io.FilterInputStream
+import java.io.InputStream
+import java.net.InetAddress
+import java.net.Socket
+import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.zip.GZIPOutputStream
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SNIHostName
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLServerSocket
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.TrustManagerFactory
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class ProxySupportListFilterTest {
+    private val gameHost = CaptureNames.JP_HOST
+
+    private fun slot(svt: Long) = """{"supportDeckId":1,"classId":1,"svtId":$svt,"equipTarget1":{"svtId":0}}"""
+
+    private val listJson = """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[""" +
+        """{"type":1,"userId":"a","userSvtLeaderHash":[${slot(100)},${slot(999)}]},""" +
+        """{"type":1,"userId":"b","userSvtLeaderHash":[${slot(999)}]}]}]},"serverTime":1},"sign":"s"}"""
+
+    private val criteria = SupportListCriteria(setOf(100L))
+
+    /** What the game received for one response, and what the fake upstream and capture saw around it. */
+    private class Exchange(
+        val clientWire: ByteArray,
+        val head: HttpHead,
+        val body: ByteArray,
+        val captured: List<ByteArray>,
+        val upstreamReceived: ByteArray,
+    )
+
+    private class Step(val request: ByteArray, val response: ByteArray)
+
+    private val request = "POST /follower/list?_userId=1&token=t HTTP/1.1\r\nHost: $gameHost\r\nContent-Length: 11\r\n\r\nhello=world".toByteArray()
+
+    private fun gzip(text: String) = ByteArrayOutputStream().also { o -> GZIPOutputStream(o).use { it.write(text.toByteArray()) } }.toByteArray()
+
+    private fun response(body: ByteArray, headers: String = "", chunked: Boolean = false, status: String = "200 OK", trailers: String = ""): ByteArray {
+        val out = ByteArrayOutputStream()
+        if (chunked) {
+            out.write("HTTP/1.1 $status\r\nContent-Type: application/json\r\n${headers}Transfer-Encoding: chunked\r\n\r\n".toByteArray())
+            body.toList().chunked(7).forEach { part ->
+                out.write("${part.size.toString(16)}\r\n".toByteArray())
+                out.write(part.toByteArray())
+                out.write("\r\n".toByteArray())
+            }
+            out.write("0\r\n${trailers}\r\n".toByteArray())
+        } else {
+            out.write("HTTP/1.1 $status\r\nContent-Type: application/json\r\n${headers}Content-Length: ${body.size}\r\n\r\n".toByteArray())
+            out.write(body)
+        }
+        return out.toByteArray()
+    }
+
+    private class Recording(input: InputStream, val sink: ByteArrayOutputStream) : FilterInputStream(input) {
+        override fun read(): Int = super.read().also { if (it >= 0) sink.write(it) }
+        override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) sink.write(b, off, it) }
+    }
+
+    /**
+     * Runs [steps] over one keep-alive connection. The fake upstream records every byte it receives until the
+     * client closes, so anything the proxy adds to a request shows up in [Exchange.upstreamReceived].
+     */
+    private fun exchangeAll(
+        steps: List<Step>,
+        criteria: SupportListCriteria?,
+        readingOff: Boolean = false,
+        configure: ProxyServer.() -> Unit = {},
+    ): List<Exchange> {
+        val upstreamCerts = SingleUseCa.issue(gameHost)
+        val mitmCerts = SingleUseCa.issue(gameHost)
+        val upstreamClientCtx = trust(upstreamCerts)
+        val mitmClientCtx = trust(mitmCerts)
+        val captured = CopyOnWriteArrayList<ByteArray>()
+        val upstreamSaw = ByteArrayOutputStream()
+        val upstreamDone = CountDownLatch(1)
+        val mockServer = (serverContext(upstreamCerts).serverSocketFactory.createServerSocket(0, 50, InetAddress.getByName("127.0.0.1")) as SSLServerSocket)
+        val serverThread = Thread {
+            runCatching {
+                (mockServer.accept() as SSLSocket).use { sock ->
+                    sock.startHandshake()
+                    val recording = Recording(sock.getInputStream(), upstreamSaw)
+                    val r = HttpReader(recording)
+                    for (step in steps) {
+                        val req = r.readHead() ?: break
+                        r.copyBody(req, ByteArrayOutputStream(), isResponse = false, captureBody = false)
+                        sock.getOutputStream().apply { write(step.response); flush() }
+                    }
+                    val drain = ByteArray(1024)
+                    while (recording.read(drain) >= 0) Unit
+                }
+            }
+            upstreamDone.countDown()
+        }.apply { isDaemon = true; start() }
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true, maxConnections = 8),
+            onGameResponse = { _, payload, _ -> captured += payload },
+            supportListCriteria = { criteria },
+        ).apply {
+            upstreamSslFactoryForTesting = upstreamClientCtx.socketFactory
+            upstreamHostnameVerifierForTesting = HostnameVerifier { host, session ->
+                val leaf = session.peerCertificates.firstOrNull() as? X509Certificate ?: return@HostnameVerifier false
+                leaf.subjectAlternativeNames?.any { entry -> entry.size >= 2 && entry[1] == host } == true
+            }
+            configure()
+        }
+        proxy.setContexts(mapOf(gameHost to serverContext(mitmCerts)))
+        val proxyPort = proxy.start(0)
+        try {
+            val raw = Socket("127.0.0.1", proxyPort)
+            raw.soTimeout = 5000
+            raw.getOutputStream().apply {
+                write("CONNECT 127.0.0.1:${mockServer.localPort} HTTP/1.1\r\nHost: 127.0.0.1:${mockServer.localPort}\r\n\r\n".toByteArray())
+                flush()
+            }
+            val connect = StringBuilder()
+            while (!connect.endsWith("\r\n\r\n")) connect.append(raw.getInputStream().read().toChar())
+            val tls = mitmClientCtx.socketFactory.createSocket(raw, "127.0.0.1", mockServer.localPort, true) as SSLSocket
+            tls.sslParameters = tls.sslParameters.apply { serverNames = listOf(SNIHostName(gameHost)) }
+            tls.startHandshake()
+            // Reading goes off only after the connection is up, so the next request is the one that is not recorded.
+            if (readingOff) proxy.setContexts(emptyMap())
+            val reader = HttpReader(tls.getInputStream())
+            val results = steps.map { step ->
+                tls.getOutputStream().apply { write(step.request); flush() }
+                val head = reader.readHead()!!
+                val wire = ByteArrayOutputStream()
+                wire.write(head.raw)
+                // copyBody tees the wire bytes, chunk framing included, so head + tee is what the game received.
+                val body = reader.copyBody(head, wire, isResponse = true, requestMethod = "POST")
+                Triple(wire.toByteArray(), head, body.payload!!)
+            }
+            tls.close()
+            assertTrue(upstreamDone.await(5, TimeUnit.SECONDS))
+            return results.map { (wire, head, body) -> Exchange(wire, head, body, captured.toList(), upstreamSaw.toByteArray()) }
+        } finally {
+            proxy.stop()
+            mockServer.close()
+        }
+    }
+
+    private fun exchange(
+        upstreamResponse: ByteArray,
+        criteria: SupportListCriteria?,
+        sent: ByteArray = request,
+        readingOff: Boolean = false,
+        configure: ProxyServer.() -> Unit = {},
+    ): Exchange = exchangeAll(listOf(Step(sent, upstreamResponse)), criteria, readingOff, configure).single()
+
+    private fun filteredPlain() = SupportListFilter.apply(listJson.toByteArray(), null, criteria)!!.wire
+
+    private fun kept(body: ByteArray, encoding: String? = null) = Json.parseToJsonElement(String(BodyDecoder.decode(body, encoding)))
+        .jsonObject["cache"]!!.jsonObject["updated"]!!.jsonObject["userFollower"]!!.jsonArray[0].jsonObject["followerInfo"]!!.jsonArray
+
+    private fun contentLength(head: HttpHead) = head.header("Content-Length")?.toInt()
+
+    @Test(timeout = 20000)
+    fun switchOffRelaysSupportListByteForByte() {
+        for (chunked in listOf(false, true)) {
+            val upstream = response(listJson.toByteArray(), chunked = chunked)
+            val e = exchange(upstream, null)
+            assertContentEquals(upstream, e.clientWire)
+        }
+    }
+
+    @Test(timeout = 20000)
+    fun noServantChosenRelaysByteForByte() {
+        val upstream = response(listJson.toByteArray())
+        assertContentEquals(upstream, exchange(upstream, SupportListCriteria(emptySet())).clientWire)
+    }
+
+    @Test(timeout = 20000)
+    fun otherPathIsRelayedByteForByteWithSwitchOn() {
+        val upstream = response(listJson.toByteArray())
+        val sent = "POST /friend/top HTTP/1.1\r\nHost: $gameHost\r\nContent-Length: 0\r\n\r\n".toByteArray()
+        assertContentEquals(upstream, exchange(upstream, criteria, sent).clientWire)
+    }
+
+    @Test(timeout = 20000)
+    fun nonSuccessStatusIsRelayedByteForByteWithSwitchOn() {
+        for (status in listOf("500 Internal Server Error", "404 Not Found", "302 Found")) {
+            val upstream = response(listJson.toByteArray(), status = status)
+            assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+        }
+    }
+
+    @Test(timeout = 20000)
+    fun captureNotReadingRelaysByteForByteWithSwitchOn() {
+        val upstream = response(listJson.toByteArray())
+        val e = exchange(upstream, criteria, readingOff = true)
+        assertContentEquals(upstream, e.clientWire)
+        assertTrue(e.captured.isEmpty())
+    }
+
+    @Test(timeout = 20000)
+    fun switchOnFiltersPlainBodyWithMatchingHeaders() {
+        val e = exchange(response(listJson.toByteArray()), criteria)
+        assertEquals(1, kept(e.body).size)
+        assertContentEquals(filteredPlain(), e.body)
+        assertEquals(e.body.size, contentLength(e.head))
+        assertNull(e.head.header("Transfer-Encoding"))
+    }
+
+    @Test(timeout = 20000)
+    fun switchOnFiltersGzipBodyAndKeepsTheEncoding() {
+        val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), criteria)
+        assertEquals("gzip", e.head.header("Content-Encoding"))
+        assertEquals(e.body.size, contentLength(e.head))
+        assertEquals(1, kept(e.body, "gzip").size)
+    }
+
+    @Test(timeout = 20000)
+    fun switchOnFiltersChunkedBodyAndSendsALength() {
+        val e = exchange(response(listJson.toByteArray(), chunked = true), criteria)
+        assertNull(e.head.header("Transfer-Encoding"))
+        assertEquals(e.body.size, contentLength(e.head))
+        assertEquals(1, kept(e.body).size)
+        assertEquals(e.head.raw.size + e.body.size, e.clientWire.size)
+    }
+
+    @Test(timeout = 20000)
+    fun parseErrorPassesTheOriginalBytes() {
+        for (chunked in listOf(false, true)) {
+            val upstream = response("""{"cache":{"updated":{"userFollower":[""".toByteArray(), chunked = chunked)
+            assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+        }
+    }
+
+    @Test(timeout = 20000)
+    fun unknownEncodingPassesTheOriginalBytes() {
+        val upstream = response(listJson.toByteArray(), "Content-Encoding: br\r\n")
+        assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+    }
+
+    @Test(timeout = 20000)
+    fun headersThatDescribeTheOriginalBodyPassTheOriginalBytes() {
+        for (header in listOf("ETag: \"abc\"\r\n", "Content-MD5: abc\r\n", "Digest: sha-256=abc\r\n", "Trailer: X-Sum\r\n")) {
+            val upstream = response(listJson.toByteArray(), header)
+            assertContentEquals(upstream, exchange(upstream, criteria).clientWire, header)
+        }
+    }
+
+    @Test(timeout = 20000)
+    fun chunkedBodyWithTrailersPassesTheOriginalBytes() {
+        val upstream = response(listJson.toByteArray(), chunked = true, trailers = "X-Sum: 1\r\n")
+        assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+    }
+
+    @Test(timeout = 20000)
+    fun failureWhileBuildingTheNewHeadPassesTheOriginalBytes() {
+        for (chunked in listOf(false, true)) {
+            val upstream = response(listJson.toByteArray(), chunked = chunked)
+            val e = exchange(upstream, criteria, configure = { setSupportListRewriteHeadForTesting { _, _ -> error("boom") } })
+            assertContentEquals(upstream, e.clientWire)
+        }
+    }
+
+    @Test(timeout = 30000)
+    fun bodyOverTheLimitPassesTheOriginalBytesAndStillStreams() {
+        val padded = (listJson + " ".repeat(SupportListFilter.MAX_WIRE_BYTES)).toByteArray()
+        for (chunked in listOf(false, true)) {
+            val upstream = response(padded, chunked = chunked)
+            val e = exchange(upstream, criteria)
+            assertContentEquals(upstream, e.clientWire)
+        }
+    }
+
+    @Test(timeout = 20000)
+    fun captureRecordsTheOriginalResponse() {
+        val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), criteria)
+        assertEquals(1, e.captured.size)
+        assertContentEquals(gzip(listJson), e.captured[0])
+        assertEquals(2, kept(e.captured[0], "gzip").size)
+    }
+
+    @Test(timeout = 20000)
+    fun upstreamReceivesExactlyTheBytesTheClientSentWithSwitchOn() {
+        val e = exchange(response(listJson.toByteArray()), criteria)
+        assertContentEquals(request, e.upstreamReceived)
+    }
+
+    @Test(timeout = 30000)
+    fun keepAliveConnectionDeliversBothRequestsAndResponsesIntact() {
+        val second = "POST /battle/result HTTP/1.1\r\nHost: $gameHost\r\nContent-Length: 4\r\n\r\nabcd".toByteArray()
+        val secondResponse = response("""{"ok":true}""".toByteArray())
+        val results = exchangeAll(listOf(Step(request, response(gzip(listJson), "Content-Encoding: gzip\r\n")), Step(second, secondResponse)), criteria)
+        assertContentEquals(request + second, results[0].upstreamReceived)
+        assertEquals(1, kept(results[0].body, "gzip").size)
+        assertEquals(results[0].body.size, contentLength(results[0].head))
+        assertContentEquals(secondResponse, results[1].clientWire)
+    }
+
+    @Test
+    fun heldResponseNeverKeepsMoreThanItsLimitAndSendsEverythingInOrder() {
+        val out = ByteArrayOutputStream()
+        val head = ByteArray(10) { 1 }
+        val held = HeldResponse(out, head, 100)
+        val data = ByteArray(250) { it.toByte() }
+        var highest = 0
+        for (i in data.indices step 7) {
+            held.write(data, i, minOf(7, data.size - i))
+            highest = maxOf(highest, held.heldBytes)
+        }
+        assertTrue(highest <= 100, "held $highest")
+        assertTrue(held.released)
+        assertEquals(0, held.heldBytes)
+        assertContentEquals(head + data, out.toByteArray())
+    }
+
+    private fun serverContext(certs: io.github.fate_grand_automata.scripts.capture.IssuedCerts): SSLContext {
+        val ks = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+            load(null, null)
+            setKeyEntry("server", certs.leafKey, CharArray(0), certs.chain.toTypedArray())
+        }
+        val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(ks, CharArray(0)) }
+        return SSLContext.getInstance("TLS").apply { init(kmf.keyManagers, null, null) }
+    }
+
+    private fun trust(certs: io.github.fate_grand_automata.scripts.capture.IssuedCerts): SSLContext {
+        val ks = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+            load(null, null)
+            setCertificateEntry("ca", certs.caCert)
+        }
+        val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(ks) }
+        return SSLContext.getInstance("TLS").apply { init(null, tmf.trustManagers, null) }
+    }
+}

@@ -159,9 +159,8 @@ fun rememberCaptureMain(
     )
 }
 
-// Fixed pairs retain their contrast in both themes: white on blue and dark on yellow, both above 4.5:1.
-val captureStartBackground = Color(0xFF1565C0)
-val captureStartForeground = Color.White
+// Owner decision (#613): the collecting state is yellow, as on the widget tile (widget_log_tile_on.xml), in both themes.
+// The dark text on this yellow stays above 4.5:1 whatever the theme.
 val captureStopBackground = Color(0xFFFFD54F)
 val captureStopForeground = Color(0xFF1B1B1B)
 
@@ -170,8 +169,8 @@ fun CaptureMainButton(running: Boolean, onClick: () -> Unit) {
     val collecting = captureButtonState(running) == CaptureButtonState.Stop
     ExtendedFloatingActionButton(
         onClick = onClick,
-        containerColor = if (collecting) captureStopBackground else captureStartBackground,
-        contentColor = if (collecting) captureStopForeground else captureStartForeground,
+        containerColor = if (collecting) captureStopBackground else MaterialTheme.colorScheme.primary,
+        contentColor = if (collecting) captureStopForeground else MaterialTheme.colorScheme.onPrimary,
     ) {
         Icon(Icons.Default.VpnKey, contentDescription = null)
         Spacer(Modifier.width(12.dp))
