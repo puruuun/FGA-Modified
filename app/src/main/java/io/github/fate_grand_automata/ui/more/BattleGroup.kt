@@ -177,8 +177,9 @@ private fun InlineSubStepperRow(
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
     }
 
-    // Match ListItem's container/padding/leading slot (16 + 40 + 16) plus 16 dp sub-item indent
-    // without ListItem's mergeDescendants, keeping the title and stepper nodes individually addressable.
+    // Match ListItem's container/padding/leading slot (16 + 40 + 12; the content-slot ListItem that
+    // Preference uses since Material3 1.5 puts 12 dp after the leading content) plus 16 dp sub-item
+    // indent, without ListItem's mergeDescendants, keeping the title and stepper nodes individually addressable.
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -193,7 +194,7 @@ private fun InlineSubStepperRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Spacer(Modifier.width(40.dp))
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(12.dp))
                 Row(
                     modifier = Modifier.padding(start = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
