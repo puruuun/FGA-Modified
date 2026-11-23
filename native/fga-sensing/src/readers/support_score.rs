@@ -136,20 +136,48 @@ pub struct ScoreConfig {
     /// The crop size (width, height) the pixel rules are built for: the score region at 720p. A
     /// crop of another size is unknown, since the constants of those rules would not fit it.
     pub expected_size: (usize, usize),
+    /// The rows the recogniser reads; the pixel rules still judge the whole crop.
+    pub row_trim: RowTrim,
+}
+
+/// Rows removed from the top and the bottom of the crop before the recogniser reads it.
+///
+/// Measured on real KR and JP device crops and on shifted and rescaled copies of them: the label
+/// rows at the top and the dark band under the row are what moves a read when the field is a
+/// pixel or two off, and without them the model reads the digits at width 320 whatever the shift.
+/// The pixel rules ([`inspect_clipping`], [`is_featureless`], the size check) were fitted on the
+/// whole crop and keep judging it: a flat band that lies only in the removed rows must still count
+/// as a cut field.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RowTrim {
+    pub top: usize,
+    pub bottom: usize,
+}
+
+impl RowTrim {
+    /// Reads the crop as it is.
+    pub const NONE: RowTrim = RowTrim { top: 0, bottom: 0 };
+    /// Rows 3..26 of the 60x30 crop (issue #639).
+    pub const MEASURED: RowTrim = RowTrim { top: 3, bottom: 4 };
+
+    /// The image the recogniser reads. Fails when no row would be left.
+    pub fn apply(self, crop: &GrayImage) -> Result<GrayImage, Error> {
+        let bottom = crop.height().saturating_sub(self.bottom);
+        crop.rows(self.top, bottom)
+    }
 }
 
 /// The score region of a support row at 720p.
 pub const EXPECTED_CROP_SIZE: (usize, usize) = (60, 30);
 
 /// A margin, not a measured boundary: 0.05 below the lowest confidence of a correct read on the
-/// 370 labelled samples when the floors were set (0.91163, at model width 320). It separates
+/// 370 labelled samples when the floors were set (0.91163, whole crop at model width 320). It separates
 /// nothing there, because no wrong read of a valid text exists on those samples; the format and
 /// the pixel rule do the real work.
 pub const DEFAULT_MIN_CONFIDENCE: f64 = 0.86;
 
 /// A character the model itself gives less than even odds is not a read. Not fitted: it costs no
-/// labelled read on the 370 samples at model width 320 or at the reader's 256, though at 256 the
-/// weakest character of `0299`'s correct read lies just above it.
+/// labelled read on the 370 samples at model width 320.
 pub const DEFAULT_MIN_CHAR_CONFIDENCE: f32 = 0.5;
 
 impl Default for ScoreConfig {
@@ -165,6 +193,7 @@ impl Default for ScoreConfig {
             restrict_characters: false,
             check_clipping: true,
             expected_size: EXPECTED_CROP_SIZE,
+            row_trim: RowTrim::MEASURED,
         }
     }
 }
@@ -221,7 +250,12 @@ impl<B: Backend> SupportScoreReader<B> {
     }
 
     pub fn observe(&mut self, crop: &GrayImage) -> Result<Observation, Error> {
-        observe_with(&mut self.recognizer, self.allowed.as_ref(), crop)
+        observe_with(
+            &mut self.recognizer,
+            self.allowed.as_ref(),
+            &self.config,
+            crop,
+        )
     }
 
     pub fn read(&mut self, crop: &GrayImage) -> Result<SupportScore, Error> {
@@ -232,19 +266,32 @@ impl<B: Backend> SupportScoreReader<B> {
 
 /// [`SupportScoreReader::observe`] on a recogniser somebody else holds: the device probe keeps
 /// its loaded recogniser in a static, and the reader must not take it over.
+///
+/// A crop that is not `config.expected_size` is not read and not trimmed: [`decide`] refuses it
+/// by size whatever the recogniser would say, and a trim fitted to the expected crop would cut
+/// some other crop in the wrong place. The recogniser gets the rows of `config.row_trim`; the
+/// pixel rules look at the whole crop.
 pub fn observe_with<B: Backend>(
     recognizer: &mut Recognizer<B>,
     allowed: Option<&AllowedSet>,
+    config: &ScoreConfig,
     crop: &GrayImage,
 ) -> Result<Observation, Error> {
-    let decoded = recognizer.recognize(crop, allowed)?;
-    let min_char_confidence = decoded.char_confidences.iter().copied().reduce(f32::min);
+    let crop_size = (crop.width(), crop.height());
+    let (text, confidence, min_char_confidence) = if crop_size == config.expected_size {
+        let seen = config.row_trim.apply(crop)?;
+        let decoded = recognizer.recognize(&seen, allowed)?;
+        let weakest = decoded.char_confidences.iter().copied().reduce(f32::min);
+        (decoded.text, decoded.confidence, weakest)
+    } else {
+        (String::new(), 0.0, None)
+    };
     Ok(Observation {
-        text: decoded.text,
-        confidence: decoded.confidence,
+        text,
+        confidence,
         min_char_confidence,
         clip: inspect_clipping(crop),
-        crop_size: (crop.width(), crop.height()),
+        crop_size,
         featureless: is_featureless(crop),
     })
 }
@@ -259,7 +306,7 @@ pub fn read_with<B: Backend>(
     } else {
         None
     };
-    let observation = observe_with(recognizer, allowed.as_ref(), crop)?;
+    let observation = observe_with(recognizer, allowed.as_ref(), config, crop)?;
     Ok(decide(observation, config))
 }
 

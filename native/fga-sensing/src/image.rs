@@ -40,6 +40,22 @@ impl GrayImage {
         &self.pixels
     }
 
+    /// The rows `top..bottom` as an image of their own. Fails when the range is empty or reaches
+    /// past the image, so a trim can never silently read a smaller or different crop than asked.
+    pub fn rows(&self, top: usize, bottom: usize) -> Result<GrayImage, Error> {
+        let slice = (top < bottom && bottom <= self.height)
+            .then(|| self.pixels.get(top * self.width..bottom * self.width))
+            .flatten();
+        match slice {
+            Some(pixels) => GrayImage::new(self.width, bottom - top, pixels.to_vec()),
+            None => Err(Error::InvalidImage {
+                width: self.width,
+                height: self.height,
+                pixels: self.pixels.len(),
+            }),
+        }
+    }
+
     /// The pixel at (x, y) with coordinates clamped into the image, which is the border rule
     /// (replicate) that OpenCV's resize uses.
     pub(crate) fn clamped(&self, x: isize, y: isize) -> u8 {

@@ -5,7 +5,7 @@
 //! cargo run --release -p fga-sensing --features tract --example support_score_eval -- \
 //!     tract <model.onnx> <samples dir> <output.tsv> [--analysis] [--sweep] [--restricted] \
 //!     [--format strict|compound-class-plus|class-plus|plus-optional] [--range independent|joint] [--floor 0.9] \
-//!     [--char-floor 0.5] [--no-clipping]
+//!     [--char-floor 0.5] [--no-clipping] [--trim 3:4]
 //!
 //! Without `--analysis` it prints the R4 summary for one configuration (the defaults of
 //! `ScoreConfig`, changed by the flags) and writes the TSV. With `--analysis` it prints the
@@ -27,8 +27,8 @@ use std::time::Instant;
 use fga_sensing::Recognizer;
 use fga_sensing::backend::Backend;
 use fga_sensing::readers::support_score::{
-    Format, MAX_CLASS_SCORE, MAX_GRAND_SCORE, Observation, RangePolicy, Reason, Score, ScoreConfig,
-    SupportScore, SupportScoreReader, decide, parse,
+    Format, MAX_CLASS_SCORE, MAX_GRAND_SCORE, Observation, RangePolicy, Reason, RowTrim, Score,
+    ScoreConfig, SupportScore, SupportScoreReader, decide, parse,
 };
 use samples::Sample;
 
@@ -55,7 +55,7 @@ fn main() -> ExitCode {
 fn parse_args() -> Result<Args, String> {
     let usage = "usage: support_score_eval <tract|ort> <model.onnx> <samples dir> <output.tsv> \
                  [--analysis] [--sweep] [--restricted] [--format strict|compound-class-plus|class-plus|plus-optional] \
-                 [--range independent|joint] [--floor <0..1>] [--char-floor <0..1>] [--no-clipping]";
+                 [--range independent|joint] [--floor <0..1>] [--char-floor <0..1>] [--no-clipping] [--trim <top>:<bottom>]";
     let mut args = std::env::args().skip(1);
     let mut next = || args.next().ok_or_else(|| usage.to_string());
     let backend = next()?;
@@ -77,6 +77,15 @@ fn parse_args() -> Result<Args, String> {
             "--sweep" => parsed.sweep = true,
             "--restricted" => parsed.config.restrict_characters = true,
             "--no-clipping" => parsed.config.check_clipping = false,
+            "--trim" => {
+                let value = next()?;
+                let (top, bottom) = value.split_once(':').ok_or_else(|| usage.to_string())?;
+                let part = |v: &str| v.parse::<usize>().map_err(|_| usage.to_string());
+                parsed.config.row_trim = RowTrim {
+                    top: part(top)?,
+                    bottom: part(bottom)?,
+                };
+            }
             "--format" => {
                 parsed.config.format = match next()?.as_str() {
                     "strict" => Format::Strict,
@@ -394,13 +403,15 @@ fn write_tsv(
 
 fn describe(config: &ScoreConfig) -> String {
     format!(
-        "format={:?} range={:?} floor={} char_floor={} restricted={} clipping={}",
+        "format={:?} range={:?} floor={} char_floor={} restricted={} clipping={} trim={}:{}",
         config.format,
         config.range_policy,
         config.min_confidence,
         config.min_char_confidence,
         config.restrict_characters,
-        config.check_clipping
+        config.check_clipping,
+        config.row_trim.top,
+        config.row_trim.bottom
     )
 }
 

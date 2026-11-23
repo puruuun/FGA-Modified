@@ -14,11 +14,17 @@
 //! be wrong on them and every other width is scored relative to it there; set B and the cut sweep
 //! are scored against their own labels.
 //!
+//! `--table <model> <ocr dir> <out dir> [--widths 256,320] [--trims 0:0,3:4]` is a separate mode
+//! (`width_decode_eval/table.rs`): the shipped reader on every local sample set at each width and
+//! row trim, as one table (issue #639).
+//!
 //! `--time-only` runs `--timing`'s measurement for the given widths and evaluates nothing, so no
 //! 320 run is added.
 
 #[path = "../tests/support/samples.rs"]
 mod samples;
+#[path = "width_decode_eval/table.rs"]
+mod table;
 #[path = "../tests/support/wrong.rs"]
 mod wrong;
 
@@ -57,6 +63,15 @@ struct Args {
 }
 
 fn main() -> ExitCode {
+    if std::env::args().nth(1).as_deref() == Some("--table") {
+        return match table::run(std::env::args().skip(2)) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(message) => {
+                eprintln!("width_decode_eval --table: {message}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     match parse_args().and_then(|args| run(&args)) {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {

@@ -232,10 +232,10 @@ mod tests {
 
     #[test]
     fn load_result_shape() {
-        let value = json(&load_json(1234, 18710, 256));
+        let value = json(&load_json(1234, 18710, 320));
         assert_eq!(value["loadMs"], 1234);
         assert_eq!(value["classes"], 18710);
-        assert_eq!(value["minWidth"], 256);
+        assert_eq!(value["minWidth"], 320);
         assert_eq!(value.as_object().unwrap().len(), 3);
     }
 

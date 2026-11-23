@@ -29,7 +29,7 @@ mod model {
         let model_path = model.to_str().unwrap().to_owned();
         let loaded = ok_json(&run_guarded(|| ocr_load(&model_path)));
         assert_eq!(loaded["classes"], 18710);
-        assert_eq!(loaded["minWidth"], 256);
+        assert_eq!(loaded["minWidth"], 320);
         // A second load replaces the first.
         let reloaded = ok_json(&run_guarded(|| ocr_load(&model_path)));
         assert_eq!(reloaded["classes"], 18710);
@@ -82,7 +82,7 @@ mod model {
         for (file, class, grand, reason) in [
             ("0183.png", Some(62), Some(16), None),
             ("0070.png", None, None, Some("clipped")),
-            ("0168.png", None, None, Some("format")),
+            ("0168.png", Some(62), Some(16), None),
         ] {
             let (pixels, width, height) = first_channel(&dir.join(file));
             let read = ok_json(&run_guarded(|| support_score_read(pixels, width, height)));
@@ -112,17 +112,15 @@ mod model {
                 "{file}"
             );
         }
-        // Issue #591: ocrLoad reads at the reader width. The padded width changes every
-        // confidence, so ocrLoad's read of a crop must equal the one at 256 to the last bit and
-        // differ from the one at 320. Whether the reader accepts the crop plays no part: 0299 is
-        // the sample whose answer differs between the widths, and its weakest character sits
-        // just above the floor at 256, so only its texts are printed.
+        // ocrLoad reads at the reader width. The padded width changes every confidence, so
+        // ocrLoad's read of a crop must equal the one at 320 to the last bit and differ from the
+        // one at 256. Whether the reader accepts the crop plays no part, so only texts are printed.
         let (pixels, width, height) = first_channel(&dir.join("0299.png"));
         let mut reads = Vec::new();
         for (call, min_width) in [
-            ("ocrLoad", 256),
-            ("ocrLoadTract", 256),
+            ("ocrLoad", 320),
             ("ocrLoadTract", 320),
+            ("ocrLoadTract", 256),
         ] {
             let loaded = if call == "ocrLoad" {
                 ok_json(&run_guarded(|| ocr_load(&model_path)))

@@ -107,6 +107,7 @@ fn config() -> ScoreConfig {
         restrict_characters: false,
         check_clipping: true,
         expected_size: (W, H),
+        row_trim: RowTrim::NONE,
     }
 }
 
@@ -340,6 +341,7 @@ fn the_defaults_are_pinned() {
     assert!(!default.restrict_characters);
     assert!(default.check_clipping);
     assert_eq!(default.expected_size, (60, 30));
+    assert_eq!(default.row_trim, RowTrim { top: 3, bottom: 4 });
 }
 
 fn reader(script: Scripted, config: ScoreConfig) -> SupportScoreReader<Scripted> {
@@ -520,4 +522,128 @@ fn a_text_without_character_confidences_is_not_confident() {
         assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
         assert_eq!(score.display, Display::Unknown);
     }
+}
+
+/// Records every tensor it is given and reads nothing, so a test can see which rows of the crop
+/// reached the model.
+struct Recording {
+    characters: CharacterList,
+    seen: std::rc::Rc<std::cell::RefCell<Vec<Vec<f32>>>>,
+}
+
+impl Backend for Recording {
+    fn load_file(_: &Path) -> Result<Self, Error> {
+        Err(Error::Backend("not loadable".to_owned()))
+    }
+
+    fn load_bytes(_: &[u8]) -> Result<Self, Error> {
+        Err(Error::Backend("not loadable".to_owned()))
+    }
+
+    fn run(&mut self, input: &InputTensor) -> Result<Probabilities, Error> {
+        self.seen.borrow_mut().push(input.data().to_vec());
+        let steps = input.width() / 8;
+        let classes = self.characters.class_count();
+        let mut data = vec![0.0f32; steps * classes];
+        for step in 0..steps {
+            data[step * classes] = 1.0;
+        }
+        Probabilities::new(steps, classes, data)
+    }
+
+    fn characters(&self) -> &CharacterList {
+        &self.characters
+    }
+}
+
+type Seen = std::rc::Rc<std::cell::RefCell<Vec<Vec<f32>>>>;
+
+fn recording() -> (Recognizer<Recording>, Seen) {
+    let seen = Seen::default();
+    let backend = Recording {
+        characters: CharacterList::from_metadata(CHARACTERS).unwrap(),
+        seen: seen.clone(),
+    };
+    (Recognizer::new(backend).unwrap(), seen)
+}
+
+/// Rows differ from each other, so a model that is given other rows gets another tensor.
+fn striped() -> GrayImage {
+    crop((0..W * H).map(|i| (20 + (i / W) * 7) as u8).collect())
+}
+
+fn tensor_of(image: &GrayImage) -> Vec<f32> {
+    let (mut recognizer, seen) = recording();
+    recognizer.recognize(image, None).unwrap();
+    let tensors = seen.borrow();
+    tensors[0].clone()
+}
+
+#[test]
+fn the_default_reader_gives_the_model_rows_3_to_26() {
+    let image = striped();
+    let (recognizer, seen) = recording();
+    let mut reader = SupportScoreReader::new(recognizer, ScoreConfig::default()).unwrap();
+    reader.read(&image).unwrap();
+    let rows = image.rows(3, 26).unwrap();
+    assert_eq!((rows.width(), rows.height()), (W, 23));
+    assert_eq!(seen.borrow().len(), 1);
+    assert_eq!(seen.borrow()[0], tensor_of(&rows));
+    assert_ne!(seen.borrow()[0], tensor_of(&image));
+}
+
+#[test]
+fn no_trim_gives_the_model_the_whole_crop() {
+    let image = striped();
+    let (recognizer, seen) = recording();
+    let config = ScoreConfig {
+        row_trim: RowTrim::NONE,
+        ..ScoreConfig::default()
+    };
+    SupportScoreReader::new(recognizer, config)
+        .unwrap()
+        .read(&image)
+        .unwrap();
+    assert_eq!(seen.borrow()[0], tensor_of(&image));
+}
+
+#[test]
+fn the_pixel_rules_still_judge_the_whole_crop() {
+    // The flat band lies only in rows 26..30, which the model no longer sees.
+    let mut pixels = panel();
+    for y in 10..26 {
+        pixels[y * W + 30] = 40;
+    }
+    for y in 26..H {
+        for x in 0..W {
+            pixels[y * W + x] = 146;
+        }
+    }
+    let image = crop(pixels);
+    assert!(!inspect_clipping(&image.rows(3, 26).unwrap()).vertical);
+    assert_cut_is_unknown(image, "flat band only in the trimmed rows");
+}
+
+#[test]
+fn a_crop_of_another_size_is_refused_before_any_trim_or_read() {
+    let (recognizer, seen) = recording();
+    let mut reader = SupportScoreReader::new(recognizer, ScoreConfig::default()).unwrap();
+    for (w, h) in [(W + 10, H), (W, H + 1), (W, 5), (W, 7), (W, 4)] {
+        let other = GrayImage::new(w, h, vec![120; w * h]).unwrap();
+        let score = reader.read(&other).unwrap();
+        assert_eq!(score.class, Score::Unknown(Reason::CropSize), "{w}x{h}");
+        assert_eq!(score.observation.crop_size, (w, h));
+    }
+    assert!(seen.borrow().is_empty());
+}
+
+#[test]
+fn a_trim_that_leaves_no_rows_is_an_error() {
+    let all = RowTrim {
+        top: 15,
+        bottom: 15,
+    };
+    assert!(all.apply(&striped()).is_err());
+    assert!(RowTrim { top: 31, bottom: 0 }.apply(&striped()).is_err());
+    assert_eq!(RowTrim::NONE.apply(&striped()).unwrap(), striped());
 }

@@ -214,12 +214,13 @@ mod checks {
                 Score::Unknown(Reason::Clipped),
                 Display::Unknown,
             ),
-            // The leading plus not read: "62/+16".
+            // A faint leading plus: the whole crop at width 256 reads "62/+16", which the strict
+            // format refuses; without the label rows at width 320 the plus is read.
             (
                 "0168.png",
-                Score::Unknown(Reason::Format),
-                Score::Unknown(Reason::Format),
-                Display::Unknown,
+                Score::Value(62),
+                Score::Value(16),
+                Display::Compound,
             ),
         ];
         for (file, class, grand, display) in cases {
@@ -435,7 +436,7 @@ mod tract {
 
     #[test]
     fn cut_sweep_has_no_wrong_pick() {
-        super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep", 46);
+        super::checks::cut_sweep_has_no_wrong_pick::<TractBackend>("tract cut sweep", 48);
     }
 
     #[test]
@@ -513,7 +514,7 @@ mod ort {
 
     #[test]
     fn cut_sweep_has_no_wrong_pick() {
-        super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep", 47);
+        super::checks::cut_sweep_has_no_wrong_pick::<OrtBackend>("ort cut sweep", 48);
     }
 
     #[test]

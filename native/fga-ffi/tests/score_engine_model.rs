@@ -92,25 +92,24 @@ mod model {
             format!("ERR: {ALREADY_LOADED}")
         );
         assert_eq!(is_loaded_entry(), CODE_YES);
-        // Issue #591: the engine reads at the reader width. The padded width changes every
-        // confidence, so the engine's reply must equal the probe's at 256 in every field and
-        // differ from the probe's at 320 in its confidence; whether the reader accepts the crop
-        // plays no part.
+        // The engine reads at the reader width. The padded width changes every confidence, so the
+        // engine's reply must equal the probe's at 320 in every field and differ from the
+        // probe's at 256 in its confidence; whether the reader accepts the crop plays no part.
         let (pixels_0299, w_0299, h_0299) = first_channel(&dir.join("0299.png"));
         let reply = read_entry(|_| Ok(pixels_0299.clone()), w_0299, h_0299);
-        for min_width in [256, 320] {
+        for min_width in [320, 256] {
             let loaded = ok_json(&run_guarded(|| ocr_load_tract(&model_path, min_width, 1)));
             assert_eq!(loaded["minWidth"], min_width);
             let probe = ok_json(&run_guarded(|| {
                 support_score_read(pixels_0299.clone(), w_0299, h_0299)
             }));
-            if min_width == 256 {
+            if min_width == 320 {
                 assert_same("0299.png", &reply, &probe);
             } else {
                 assert_ne!(
                     f32::from_bits(reply[7] as u32),
                     probe["confidence"].as_f64().unwrap() as f32,
-                    "0299.png at 320: {probe}"
+                    "0299.png at 256: {probe}"
                 );
             }
         }

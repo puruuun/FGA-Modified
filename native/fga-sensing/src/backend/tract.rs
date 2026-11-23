@@ -20,11 +20,11 @@ const MAX_PLANS: usize = 3;
 /// count of current phone CPUs, while a mistaken argument cannot ask for thousands of threads.
 pub const MAX_TRACT_THREADS: usize = 16;
 
-/// The input width the support-score reader plans at load, narrower than RapidOCR's 320 (issue
-/// #591): on the stored samples and the live-scan crops it gives the same answers with one more
-/// +16 read and no wrong value, and on three devices it reads a field about 19% faster.
-/// Narrower widths lose reads (docs/agents/rust-native.md).
-pub const READER_MIN_WIDTH: usize = 256;
+/// The input width the support-score reader plans at load: RapidOCR's 320. The reader gives the
+/// model the crop without its label rows (issue #639), and only with that trim and this width did
+/// every real device crop of both servers read under shifted and rescaled copies as well;
+/// narrower widths lose reads (docs/agents/rust-native.md).
+pub const READER_MIN_WIDTH: usize = 320;
 
 /// How a [`TractBackend`] is set up (issue #549). The default is what [`Backend::load_file`]
 /// gives: the [`READER_MIN_WIDTH`] plan at load and tract's single-threaded kernels.
@@ -271,9 +271,9 @@ mod tests {
     }
 
     #[test]
-    fn the_default_is_256_on_one_thread() {
-        assert_eq!(READER_MIN_WIDTH, 256);
-        assert_eq!(TractSettings::default(), settings(256, 1));
+    fn the_default_is_320_on_one_thread() {
+        assert_eq!(READER_MIN_WIDTH, 320);
+        assert_eq!(TractSettings::default(), settings(320, 1));
         assert_eq!(TractSettings::default().check(), Ok(()));
     }
 

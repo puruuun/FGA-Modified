@@ -99,7 +99,7 @@ pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
     Ok("0".to_owned())
 }
 
-/// The tract backend's defaults: the reader width (256) on one thread, the settings the reader's
+/// The tract backend's defaults: the reader width (320) on one thread, the settings the reader's
 /// floors and device times were measured with. A test pins them, so a change of the default
 /// reaches the product only on purpose.
 pub fn settings() -> TractSettings {
@@ -221,7 +221,7 @@ mod tests {
         assert_eq!(
             settings(),
             TractSettings {
-                min_width: 256,
+                min_width: 320,
                 threads: 1
             }
         );

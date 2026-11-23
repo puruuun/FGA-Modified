@@ -59,7 +59,7 @@ object NativeProbe {
     external fun memoryStatus(): String
 
     // Issue #549: the same tract recogniser with a chosen minimum model width (8..4096; ocrLoad
-    // plans the reader's 256, the Python results used 320) and kernel thread count (0..16, 0 and 1 mean the calling thread). It
+    // plans the reader's 320, the Python results' width too) and kernel thread count (0..16, 0 and 1 mean the calling thread). It
     // fills the slot ocrRead and ocrUnload use. More than one thread needs a library built with
     // `-Pfga.native.threads=true`; otherwise the call returns `ERR`.
     /** `{"loadMs":…,"classes":…,"minWidth":…,"threads":…}`. */
