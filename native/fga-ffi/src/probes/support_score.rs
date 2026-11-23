@@ -18,7 +18,7 @@ pub fn support_score_read(pixels: Vec<u8>, width: i32, height: i32) -> Result<St
         ));
     }
     let crop = crop_from(pixels, width, height)?;
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     let loaded = slot.as_mut().ok_or(NOT_LOADED)?;
     // The recogniser, the pixel checks and the rules, as the device case compares them with the
     // Kotlin reader; the JNI copies are not reader cost.

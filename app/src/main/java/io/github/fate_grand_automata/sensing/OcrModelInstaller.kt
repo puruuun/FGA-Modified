@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.sensing
 
+import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -28,9 +29,20 @@ data class OcrModelPin(val file: String, val sha256: String, val size: Long) {
  * into [dir] (the app's no-backup folder, so a 21 MB file never goes into a backup) under a name
  * that holds its SHA-256. The copy streams through a 64 KB buffer, so the Java heap never holds the
  * model, and it is checked by size and SHA-256 while it is written; only a checked copy gets the
- * final name. A later run reuses a file of that name and the pinned size, so a truncated copy is
- * replaced; any other file in [dir] (another model's copy, a part file) is deleted first, so a
+ * final name. A later run reuses a file of that name only after reading it again and finding the
+ * pinned size and SHA-256, so a truncated or otherwise damaged copy is replaced from the asset,
+ * once per call; any other file in [dir] (another model's copy, a part file) is deleted first, so a
  * stale copy never stays behind.
+ *
+ * Why the reused copy is hashed at every engine load (once per run, at the engine's first use):
+ * the damage this guards against is a same-size change of the file's bytes (storage corruption),
+ * which neither the size nor a marker written after an earlier check (size, modification time)
+ * can see, and Rust would load such a file without complaint when only weights changed. The cost
+ * is one read of 21 MB: 12 ms warm (30 ms on the first, cold run) on the owner's PC with the JDK's
+ * SHA-256 and a 64 KB buffer; the first load of a run, which already hashes the model once while
+ * copying it, took 146 ms on the tablet, 388 ms on MuMu and 581 ms on BlueStacks (the ocrProbe
+ * device suite's rust-engine case, docs/agents/rust-native.md), so the hash adds a part of that
+ * once per run, on the script thread.
  */
 object OcrModelInstaller {
     const val PART_SUFFIX = ".part"
@@ -42,11 +54,10 @@ object OcrModelInstaller {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("cannot create ${dir.path}")
         val target = File(dir, fileName(pin))
         dir.listFiles()?.forEach { if (it != target) it.deleteRecursively() }
-        // A reused copy is trusted by its size: only this function writes the folder, it is app-private
-        // and never backed up, and a file gets the final name only after its hash matched, so a
-        // same-size difference would take storage corruption. Hashing 21 MB again at each run start
-        // costs time (12 to 28 ms on the owner's PC with Python's SHA-256, more on a phone).
-        if (target.isFile && target.length() == pin.size) return target
+        if (target.isFile && target.length() == pin.size) {
+            if (sha256Of(target) == pin.sha256) return target
+            Timber.w("The installed OCR model copy %s does not match its SHA-256; copying it again", target.name)
+        }
         target.delete()
         val part = File(dir, target.name + PART_SUFFIX)
         try {
@@ -66,7 +77,7 @@ object OcrModelInstaller {
                 }
             }
             if (total != pin.size) throw IOException("model asset has $total bytes, the pin says ${pin.size}")
-            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            val actual = hex(digest.digest())
             if (actual != pin.sha256) throw IOException("model asset has SHA-256 $actual, the pin says ${pin.sha256}")
             if (!part.renameTo(target)) throw IOException("cannot rename ${part.name} to ${target.name}")
             return target
@@ -74,4 +85,19 @@ object OcrModelInstaller {
             part.delete()
         }
     }
+
+    private fun sha256Of(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return hex(digest.digest())
+    }
+
+    private fun hex(bytes: ByteArray) = bytes.joinToString("") { "%02x".format(it) }
 }

@@ -39,6 +39,33 @@ class OcrModelInstallerTest {
         assertContentEquals(model, file.readBytes())
     }
 
+    @Test fun `a damaged copy of the pinned size is replaced from the asset`() {
+        val file = File(dir, OcrModelInstaller.fileName(pin))
+        file.writeBytes(model.copyOf().also { it[100_000] = (it[100_000] + 1).toByte() })
+        assertEquals(file, OcrModelInstaller.install(pin, dir, asset()))
+        assertEquals(1, opened)
+        assertContentEquals(model, file.readBytes())
+    }
+
+    @Test fun `a damaged copy with a damaged asset gives an error and leaves no file`() {
+        val damaged = model.copyOf().also { it[7] = (it[7] + 1).toByte() }
+        File(dir, OcrModelInstaller.fileName(pin)).writeBytes(damaged)
+        val error = assertFailsWith<IOException> { OcrModelInstaller.install(pin, dir, asset(damaged)) }
+        assertTrue(error.message!!.contains("SHA-256"), error.message)
+        assertEquals(1, opened)
+        assertEquals(emptyList(), dir.list()!!.toList())
+    }
+
+    @Test fun `an intact copy is read but not rewritten`() {
+        val file = File(dir, OcrModelInstaller.fileName(pin)).apply { writeBytes(model) }
+        val written = 1_600_000_000_000L
+        assertTrue(file.setLastModified(written))
+        assertEquals(file, OcrModelInstaller.install(pin, dir, asset()))
+        assertEquals(0, opened)
+        assertEquals(written, file.lastModified())
+        assertContentEquals(model, file.readBytes())
+    }
+
     @Test fun `stale copies and part files are removed`() {
         File(dir, "0000-old.onnx").writeBytes(byteArrayOf(1))
         File(dir, OcrModelInstaller.fileName(pin) + OcrModelInstaller.PART_SUFFIX).writeBytes(byteArrayOf(2))

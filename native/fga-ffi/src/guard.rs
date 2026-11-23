@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Runs `body` and renders its outcome as the `OK: ` / `ERR: ` text Kotlin receives.
 ///
@@ -26,6 +27,35 @@ where
         Ok(result) => result,
         Err(payload) => Err(format!("panic: {}", panic_message(payload.as_ref()))),
     }
+}
+
+/// Locks a slot that holds a loaded model.
+///
+/// A panic while the lock was held poisons it. The panic guard has already turned that panic into
+/// the failed call's error, so the poison only says that the model in the slot may have stopped in
+/// the middle of a call. Such a model is not trusted again: it is taken out and dropped, the poison
+/// is cleared, and the caller gets the slot empty, as after an unload. The slot itself is
+/// consistent at that point because every write to it is one whole assignment (`Some(model)` after
+/// the model was built, or `take()`), so a panic leaves either the old value or the new one, never
+/// a half-written `Option`; whatever partial state a panic left lives inside the model that is
+/// dropped here. The slot is emptied before the model is dropped, so a panic in the model's own
+/// drop poisons the lock again with the slot already empty, and the next call recovers the same
+/// way.
+pub(crate) fn lock_slot<T>(slot: &'static Mutex<Option<T>>) -> MutexGuard<'static, Option<T>> {
+    slot.lock()
+        .unwrap_or_else(|poisoned| recover_slot(slot, poisoned))
+}
+
+/// [`lock_slot`]'s recovery, for a caller that met the poison through `try_lock`.
+pub(crate) fn recover_slot<T>(
+    slot: &'static Mutex<Option<T>>,
+    poisoned: PoisonError<MutexGuard<'static, Option<T>>>,
+) -> MutexGuard<'static, Option<T>> {
+    let mut guard = poisoned.into_inner();
+    let untrusted = guard.take();
+    slot.clear_poison();
+    drop(untrusted);
+    guard
 }
 
 fn panic_message(payload: &(dyn Any + Send)) -> &str {

@@ -16,8 +16,8 @@ pub use cpu::cpu_probe;
 #[cfg(feature = "test-hooks")]
 pub use ocr::poison_lock_for_tests;
 pub use ocr::{
-    NOT_LOADED, POISONED, THREADS_NOT_BUILT, TRACT_THREADS_BUILT, memory_status, ocr_load,
-    ocr_load_tract, ocr_read, ocr_tract_features, ocr_unload, tract_settings,
+    NOT_LOADED, THREADS_NOT_BUILT, TRACT_THREADS_BUILT, memory_status, ocr_load, ocr_load_tract,
+    ocr_read, ocr_tract_features, ocr_unload, tract_settings,
 };
 #[cfg(all(feature = "ort-probe", feature = "test-hooks"))]
 pub use ocr_ort::poison_ort_lock_for_tests;

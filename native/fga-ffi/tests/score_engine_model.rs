@@ -13,10 +13,20 @@ mod model {
     use fga_ffi::probes::{ocr_load, ocr_load_tract, ocr_unload, support_score_read};
     use fga_ffi::run_guarded;
     use fga_ffi::score_engine::{
-        ALREADY_LOADED, CODE_NO, CODE_YES, NOT_LOADED, is_loaded_entry, load_entry, read_entry,
-        unload_entry, wire,
+        ALREADY_LOADED, CODE_NO, CODE_YES, NOT_LOADED, ScoreModel, install_for_tests,
+        is_loaded_entry, load_entry, read_entry, unload_entry, wire,
     };
+    use fga_sensing::image::GrayImage;
+    use fga_sensing::readers::support_score::SupportScore;
     use serde_json::Value;
+
+    struct Panicking;
+
+    impl ScoreModel for Panicking {
+        fn read(&mut self, _crop: &GrayImage) -> Result<SupportScore, String> {
+            panic!("the model panicked mid-read")
+        }
+    }
 
     fn text(reply: &[i32]) -> String {
         reply[wire::HEADER_LEN..]
@@ -147,6 +157,23 @@ mod model {
         // A failed load leaves nothing loaded.
         assert!(load_entry(|| Ok("no/such/model.onnx".to_owned())).starts_with("ERR: "));
         assert_eq!(is_loaded_entry(), CODE_NO);
+
+        // After a read that panicked under the lock, the real model loads and reads again.
+        assert_eq!(install_for_tests(Box::new(Panicking)), Ok("0".to_owned()));
+        assert_eq!(
+            read_entry(|_| Ok(pixels.clone()), w, h),
+            wire::encode_error("panic: the model panicked mid-read")
+        );
+        let loaded = load_entry(|| Ok(model_path.clone()));
+        assert!(loaded.starts_with("OK: "), "{loaded}");
+        let reply = read_entry(|_| Ok(pixels.clone()), w, h);
+        assert_eq!(
+            &reply[1..4],
+            &[wire::STATUS_READ, 62, 16],
+            "{}",
+            text(&reply)
+        );
+        assert_eq!(unload_entry(), CODE_YES);
         println!("score engine model test: 25 samples equal to the probe, slots independent");
     }
 }

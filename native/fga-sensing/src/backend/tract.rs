@@ -192,8 +192,8 @@ fn in_scope<T>(executor: &Executor, run: impl FnOnce() -> TractResult<T>) -> Res
     match multithread_tract_scope(executor.clone(), || catch_unwind(AssertUnwindSafe(run))) {
         Ok(result) => result.map_err(backend_error),
         // Not a new panic: the one tract raised continues, as it does in a build without the
-        // feature, so the caller's panic guard reports it and fga-ffi's recogniser lock is
-        // poisoned instead of a recogniser that stopped mid-run being used again.
+        // feature, so the caller's panic guard reports it and fga-ffi drops the recogniser that
+        // stopped mid-run (its lock is poisoned) instead of using it again.
         Err(payload) => resume_unwind(payload),
     }
 }

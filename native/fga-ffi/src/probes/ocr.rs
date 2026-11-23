@@ -12,22 +12,21 @@ use fga_sensing::backend::{Backend, MAX_TRACT_THREADS, TractBackend, TractSettin
 use fga_sensing::image::GrayImage;
 use fga_sensing::preprocess::check_min_width;
 
+use crate::guard::lock_slot;
+
 static RECOGNIZER: Mutex<Option<Recognizer<TractBackend>>> = Mutex::new(None);
 
 pub const NOT_LOADED: &str = "no model is loaded; call ocrLoad first";
 
-pub const POISONED: &str =
-    "the recogniser lock is poisoned: an earlier call panicked while holding it";
-
-/// A panic while the lock was held (caught by the guard) leaves it poisoned. The recogniser may
-/// then be half-updated, so every later call reports that instead of using it.
-pub(super) fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<TractBackend>>>, String>
-{
-    RECOGNIZER.lock().map_err(|_| POISONED.to_owned())
+/// After a panic while the lock was held (caught by the guard, which answered that call with an
+/// error), the recogniser may have stopped mid-call, so the next call drops it and finds the slot
+/// empty, as the product engine does (`guard::lock_slot`).
+pub(super) fn recognizer() -> MutexGuard<'static, Option<Recognizer<TractBackend>>> {
+    lock_slot(&RECOGNIZER)
 }
 
-/// Only for tests/ocr_poisoned.rs: no recogniser call panics on demand, and the poisoned-lock
-/// path must still be exercised. It has no JNI export, and the `test-hooks` feature keeps it out
+/// Only for tests/ocr_poisoned.rs: no recogniser call panics on demand, and the recovery from a
+/// poisoned lock must still be exercised. It has no JNI export, and the `test-hooks` feature keeps it out
 /// of every build but the tests.
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
@@ -44,7 +43,7 @@ pub fn poison_lock_for_tests() -> Result<String, String> {
 /// engine loads it, so the `rust-reader` device case reads at the product's width. A comparison
 /// with the Python results loads through [`ocr_load_tract`] at 320, the width they used.
 pub fn ocr_load(model_path: &str) -> Result<String, String> {
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     // Dropped before the new model loads, so two models never sit in memory together and a
     // memory reading after a reload shows one model. A failed load therefore leaves none.
     *slot = None;
@@ -93,7 +92,7 @@ pub fn tract_settings(min_width: i32, threads: i32) -> Result<TractSettings, Str
 /// `ocrRead` and `ocrUnload` serve both.
 pub fn ocr_load_tract(model_path: &str, min_width: i32, threads: i32) -> Result<String, String> {
     let settings = tract_settings(min_width, threads)?;
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     // As in ocr_load: the old model goes first, so two never sit in memory together.
     *slot = None;
     let started = Instant::now();
@@ -121,7 +120,7 @@ pub fn ocr_tract_features() -> Result<String, String> {
 /// `allowed` empty means no restriction.
 pub fn ocr_read(pixels: Vec<u8>, width: i32, height: i32, allowed: &str) -> Result<String, String> {
     let crop = crop_from(pixels, width, height)?;
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     let loaded = slot.as_mut().ok_or(NOT_LOADED)?;
     let allowed = if allowed.is_empty() {
         None
@@ -146,7 +145,7 @@ pub(super) fn crop_from(pixels: Vec<u8>, width: i32, height: i32) -> Result<Gray
 }
 
 pub fn ocr_unload() -> Result<String, String> {
-    let dropped = recognizer()?.take().is_some();
+    let dropped = recognizer().take().is_some();
     Ok(format!("{{\"dropped\":{dropped}}}"))
 }
 

@@ -14,14 +14,16 @@ use std::time::Instant;
 use fga_sensing::Recognizer;
 use fga_sensing::backend::OrtBackend;
 
-use super::ocr::{POISONED, crop_from, read_json};
+use super::ocr::{crop_from, read_json};
+use crate::guard::lock_slot;
 
 static RECOGNIZER: Mutex<Option<Recognizer<OrtBackend>>> = Mutex::new(None);
 
 pub const ORT_NOT_LOADED: &str = "no ONNX Runtime model is loaded; call ocrLoadOrt first";
 
-fn recognizer() -> Result<MutexGuard<'static, Option<Recognizer<OrtBackend>>>, String> {
-    RECOGNIZER.lock().map_err(|_| POISONED.to_owned())
+/// Recovers from a panic like the tract slot (`ocr::recognizer`).
+fn recognizer() -> MutexGuard<'static, Option<Recognizer<OrtBackend>>> {
+    lock_slot(&RECOGNIZER)
 }
 
 #[cfg(feature = "test-hooks")]
@@ -56,7 +58,7 @@ pub fn intra_threads(threads: i32) -> Result<Option<NonZeroUsize>, String> {
 
 pub fn ocr_load_ort(model_path: &str, threads: i32) -> Result<String, String> {
     let threads = intra_threads(threads)?;
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     // As in ocr_load: the old model goes first, so a memory reading after a reload shows one.
     *slot = None;
     let started = Instant::now();
@@ -77,7 +79,7 @@ pub fn ocr_read_ort(
     allowed: &str,
 ) -> Result<String, String> {
     let crop = crop_from(pixels, width, height)?;
-    let mut slot = recognizer()?;
+    let mut slot = recognizer();
     let loaded = slot.as_mut().ok_or(ORT_NOT_LOADED)?;
     let allowed = if allowed.is_empty() {
         None
@@ -92,7 +94,7 @@ pub fn ocr_read_ort(
 }
 
 pub fn ocr_unload_ort() -> Result<String, String> {
-    let dropped = recognizer()?.take().is_some();
+    let dropped = recognizer().take().is_some();
     Ok(format!("{{\"dropped\":{dropped}}}"))
 }
 

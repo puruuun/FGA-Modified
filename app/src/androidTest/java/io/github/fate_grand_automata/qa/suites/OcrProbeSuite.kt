@@ -9,9 +9,11 @@ import io.github.fate_grand_automata.qa.FixtureApi
 import io.github.fate_grand_automata.qa.MeasuredOcr
 import io.github.fate_grand_automata.qa.NativeProbe
 import io.github.fate_grand_automata.qa.SupportDeviceTestRunner
+import io.github.fate_grand_automata.sensing.OcrModelPin
 import io.github.fate_grand_automata.sensing.RustSupportScoreEngine
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
+import io.github.fate_grand_automata.scripts.supportSelection.EngineDisplay
 import io.github.fate_grand_automata.scripts.supportSelection.EngineField
 import io.github.fate_grand_automata.scripts.supportSelection.EngineScore
 import io.github.fate_grand_automata.scripts.supportSelection.EngineUnknownReason
@@ -25,6 +27,8 @@ import org.opencv.core.Mat
 import org.opencv.core.MatOfByte
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.File
+import java.io.RandomAccessFile
+import java.security.MessageDigest
 import kotlin.math.ceil
 
 /**
@@ -44,6 +48,12 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
     val test = case.getString("test")
     // Issue #549: the current Kotlin reader needs no Rust library.
     if (test == "kotlin-reader") return kotlinReader(runner, case).also { Log.i(TAG, "$test: $it") }.put("test", test)
+    // Design 0026, completion criterion 3: these use the product binding, which must answer
+    // unavailable with a reason, not crash, also in an APK without libfga_ffi.so.
+    when (test) {
+        "rust-engine-damaged-model", "rust-engine-short-model" -> return damagedModelCase(runner, case, test).also { Log.i(TAG, "$test: $it") }.put("test", test)
+        "rust-engine-after-close" -> return afterCloseCase(runner, case).also { Log.i(TAG, "$test: $it") }.put("test", test)
+    }
     if (!NativeProbe.loaded) {
         val reason = NativeProbe.skipReason()
         Log.w(TAG, "$test: skipped, $reason")
@@ -995,6 +1005,43 @@ private fun rustEngine(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     collectGarbage()
     readings += engineMemory("beforeLoad")
     val engine = RustSupportScoreEngine.forApp(context)
+    val reads = EngineReads()
+    var loadPeaks = JSONObject()
+    try {
+        val (available, peaks) = sampledPeaks { engine.available }
+        loadPeaks = peaks
+        readings += engineMemory("afterLoad")
+        if (!available) {
+            val why = Mat(30, 60, CvType.CV_8UC1).let { mat -> DroidCvPattern(mat).use { engine.read(it).detail } }
+            throw AssertionError("rust-engine: the engine is not available: $why")
+        }
+        reads.readSamples(runner, dir, rows, engine, "rust-engine")
+        readings += engineMemory("afterReadingAll")
+    } finally {
+        engine.close()
+    }
+    collectGarbage()
+    readings += engineMemory("afterCloseAndGc")
+    val copyAfter = copyDir.listFiles()?.map { it.name } ?: emptyList()
+    val timingReport = timing(reads.perField)
+    val report = JSONObject()
+        .put("note", "RustSupportScoreEngine.forApp on the packaged model; perField is engine.read() as a script sees it (gray copy, JNI, reply parsing); rust-reader's Rust-side time for the same samples is beside it. Memory: vmHwmKb after the load is the load's own peak when hwmReset is true; peaksDuringLoad samples the Java heap and VmRSS every 5 ms during the load, the model copy included")
+        .put("samples", rows.size)
+        .put("loadMs", engine.loadMillis)
+        .put("modelCopy", JSONObject().put("before", JSONArray(copyBefore)).put("after", JSONArray(copyAfter)))
+        .put("hwmReset", hwmReset)
+        .put("peaksDuringLoad", loadPeaks)
+        .put("memory", JSONArray(readings))
+    reads.putInto(report, minRead62, minRead16)
+    Log.i(TAG, "rust-engine: ${reads.summary()}, load ${engine.loadMillis} ms, per field median ${timingReport.opt("medianUs")} us p90 ${timingReport.opt("p90Us")} us max ${timingReport.opt("maxUs")} us, " +
+        "memory ${readings.joinToString { "${it.getString("point")} rss ${it.opt("vmRssKb")} hwm ${it.opt("vmHwmKb")} heap ${it.opt("javaHeapKb")} native ${it.opt("nativeHeapKb")}" }}, " +
+        "peaks during load $loadPeaks, hwmReset $hwmReset, model copy before $copyBefore after $copyAfter")
+    reads.failure(rows.size, minRead62, minRead16)?.let { throw AssertionError("rust-engine: $it. $report") }
+    return report
+}
+
+/** What [readSamples] found, with rust-engine's rules for a pass. */
+private class EngineReads {
     val tally = mutableMapOf<String, Int>()
     fun count(key: String) { tally[key] = (tally[key] ?: 0) + 1 }
     fun tallied(key: String) = tally[key] ?: 0
@@ -1007,111 +1054,269 @@ private fun rustEngine(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     val perFieldRust = mutableListOf<Long>()
     val reasons = mutableMapOf<String, Int>()
     var compared = 0
-    var loadPeaks = JSONObject()
-    try {
-        val (available, peaks) = sampledPeaks { engine.available }
-        loadPeaks = peaks
-        readings += engineMemory("afterLoad")
-        if (!available) {
-            val why = Mat(30, 60, CvType.CV_8UC1).let { mat -> DroidCvPattern(mat).use { engine.read(it).detail } }
-            throw AssertionError("rust-engine: the engine is not available: $why")
-        }
-        for (row in rows) {
-            val file = row.getString("file")
-            val path = "$dir/$file"
-            checkScoreCrop(runner, path)
-            val reference = checkNotNull(rustReaderReads[file]) { "rust-reader has no read of $file" }
-            val fixture = JSONObject().put("name", path).put("suite", "support").put("frame", "crop")
-                .put("file", path).put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", row.getString("server"))
-            val api = FixtureApi(runner, fixture, JSONObject())
-            val score = try {
-                with(api) {
-                    val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
-                    useSameSnapIn {
-                        SupportScoreLayout.numberRegion(bound.region).getPattern("rust-engine").use { pattern ->
-                            val gray = pattern.grayPixels()
-                            if (gray == null || pattern.width != SCORE_CROP_WIDTH || pattern.height != SCORE_CROP_HEIGHT || !gray.contentEquals(reference.gray)) {
-                                val first = gray?.indices?.firstOrNull { it >= reference.gray.size || gray[it] != reference.gray[it] }
-                                pixelMismatch += "$file ${pattern.width}x${pattern.height}" + if (gray == null) " not gray" else " first differing byte $first"
-                            }
-                            engine.read(pattern)
-                        }
-                    }
-                }.also { api.checkCoverage() }
-            } finally {
-                api.close()
-            }
-            perField += score.duration.inWholeMicroseconds
-            val classScore = score.classScore
-            val grandScore = score.grandScore
-            val failed = listOf(EngineUnknownReason.EngineError, EngineUnknownReason.Unavailable).map { EngineField.Unknown(it) }
-            if (classScore in failed || grandScore in failed) {
-                engineErrors += "$file ${score.detail}"
-                continue
-            }
-            for ((key, field) in listOf("classReason" to classScore, "grandReason" to grandScore)) {
-                field.reasonName()?.let { reasons["$key.$it"] = (reasons["$key.$it"] ?: 0) + 1 }
-            }
-            compared++
-            differencesFrom(score, reference.json).takeIf { it.isNotEmpty() }?.let { fieldMismatch += "$file: ${it.joinToString()}" }
-            perFieldRust += reference.json.getLong("micros")
-            val cls = classScore.valueOrNull
-            val grand = grandScore.valueOrNull
-            when (row.boolOrNull("is62")) {
-                true -> {
-                    count("positives62")
-                    if (cls == 62) count("read62") else if (cls != null && row.intOrNull("cls") == null) wrong += "$file class $cls, is62"
-                }
-                false -> if (cls == 62) falseAccepts += "$file +62"
-                null -> Unit
-            }
-            when (row.boolOrNull("is16")) {
-                true -> {
-                    count("positives16")
-                    if (grand == 16) count("read16") else if (grand != null && row.intOrNull("grand") == null) wrong += "$file grand $grand, is16"
-                }
-                false -> if (grand == 16) falseAccepts += "$file +16"
-                null -> Unit
-            }
-            row.intOrNull("cls")?.let { label -> if (cls != null && cls != label) wrong += "$file class $cls, label $label" }
-            row.intOrNull("grand")?.let { label -> if (grand != null && grand != label) wrong += "$file grand $grand, label $label" }
-        }
-        readings += engineMemory("afterReadingAll")
-    } finally {
-        engine.close()
+
+    fun putInto(report: JSONObject, minRead62: Int, minRead16: Int) {
+        report.put("compared", compared)
+            .put("perField", timing(perField))
+            .put("rustReaderPerFieldRust", timing(perFieldRust))
+            .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62")).put("minRead62", minRead62))
+            .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16")).put("minRead16", minRead16))
+            .put("unknownReasons", JSONObject().apply { for ((key, value) in reasons.toSortedMap()) put(key, value) })
+            .put("pixelMismatchCount", pixelMismatch.size).put("pixelMismatch", JSONArray(pixelMismatch.take(MAX_LISTED)))
+            .put("fieldMismatchCount", fieldMismatch.size).put("fieldMismatch", JSONArray(fieldMismatch.take(MAX_LISTED)))
+            .put("engineErrorCount", engineErrors.size).put("engineErrors", JSONArray(engineErrors.take(MAX_LISTED)))
+            .put("falseAccepts", JSONArray(falseAccepts.take(MAX_LISTED))).put("wrong", JSONArray(wrong.take(MAX_LISTED)))
     }
-    collectGarbage()
-    readings += engineMemory("afterCloseAndGc")
-    val copyAfter = copyDir.listFiles()?.map { it.name } ?: emptyList()
-    val timingReport = timing(perField)
-    val report = JSONObject()
-        .put("note", "RustSupportScoreEngine.forApp on the packaged model; perField is engine.read() as a script sees it (gray copy, JNI, reply parsing); rust-reader's Rust-side time for the same samples is beside it. Memory: vmHwmKb after the load is the load's own peak when hwmReset is true; peaksDuringLoad samples the Java heap and VmRSS every 5 ms during the load, the model copy included")
-        .put("samples", rows.size)
-        .put("compared", compared)
-        .put("loadMs", engine.loadMillis)
-        .put("modelCopy", JSONObject().put("before", JSONArray(copyBefore)).put("after", JSONArray(copyAfter)))
-        .put("perField", timingReport)
-        .put("rustReaderPerFieldRust", timing(perFieldRust))
-        .put("hwmReset", hwmReset)
-        .put("peaksDuringLoad", loadPeaks)
-        .put("memory", JSONArray(readings))
-        .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62")).put("minRead62", minRead62))
-        .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16")).put("minRead16", minRead16))
-        .put("unknownReasons", JSONObject().apply { for ((key, value) in reasons.toSortedMap()) put(key, value) })
-        .put("pixelMismatchCount", pixelMismatch.size).put("pixelMismatch", JSONArray(pixelMismatch.take(MAX_LISTED)))
-        .put("fieldMismatchCount", fieldMismatch.size).put("fieldMismatch", JSONArray(fieldMismatch.take(MAX_LISTED)))
-        .put("engineErrorCount", engineErrors.size).put("engineErrors", JSONArray(engineErrors.take(MAX_LISTED)))
-        .put("falseAccepts", JSONArray(falseAccepts.take(MAX_LISTED))).put("wrong", JSONArray(wrong.take(MAX_LISTED)))
-    Log.i(TAG, "rust-engine: +62 read ${tallied("read62")} of ${tallied("positives62")}, +16 read ${tallied("read16")} of ${tallied("positives16")}, " +
+
+    fun summary() = "+62 read ${tallied("read62")} of ${tallied("positives62")}, +16 read ${tallied("read16")} of ${tallied("positives16")}, " +
         "false accepts ${falseAccepts.size}, wrong ${wrong.size}, pixel mismatch ${pixelMismatch.size}, field mismatch ${fieldMismatch.size} of $compared, " +
-        "engine errors ${engineErrors.size}, load ${engine.loadMillis} ms, per field median ${timingReport.opt("medianUs")} us p90 ${timingReport.opt("p90Us")} us max ${timingReport.opt("maxUs")} us, " +
-        "memory ${readings.joinToString { "${it.getString("point")} rss ${it.opt("vmRssKb")} hwm ${it.opt("vmHwmKb")} heap ${it.opt("javaHeapKb")} native ${it.opt("nativeHeapKb")}" }}, " +
-        "peaks during load $loadPeaks, hwmReset $hwmReset, model copy before $copyBefore after $copyAfter")
-    val belowFloor = tallied("read62") < minRead62 || tallied("read16") < minRead16
-    if (engineErrors.isNotEmpty() || pixelMismatch.isNotEmpty() || fieldMismatch.isNotEmpty() || compared != rows.size ||
-        falseAccepts.isNotEmpty() || wrong.isNotEmpty() || belowFloor
-    ) {
-        throw AssertionError("rust-engine: engine errors ${engineErrors.take(5)}, pixel mismatch ${pixelMismatch.take(5)}, field mismatch ${fieldMismatch.take(5)}, compared $compared of ${rows.size}, false accepts ${falseAccepts.take(5)}, wrong ${wrong.take(5)}, +62 read ${tallied("read62")} (need $minRead62), +16 read ${tallied("read16")} (need $minRead16). $report")
+        "engine errors ${engineErrors.size}"
+
+    /** Null when every rule of rust-engine holds. */
+    fun failure(rows: Int, minRead62: Int, minRead16: Int): String? {
+        val belowFloor = tallied("read62") < minRead62 || tallied("read16") < minRead16
+        if (engineErrors.isEmpty() && pixelMismatch.isEmpty() && fieldMismatch.isEmpty() && compared == rows &&
+            falseAccepts.isEmpty() && wrong.isEmpty() && !belowFloor
+        ) return null
+        return "engine errors ${engineErrors.take(5)}, pixel mismatch ${pixelMismatch.take(5)}, field mismatch ${fieldMismatch.take(5)}, compared $compared of $rows, false accepts ${falseAccepts.take(5)}, wrong ${wrong.take(5)}, +62 read ${tallied("read62")} (need $minRead62), +16 read ${tallied("read16")} (need $minRead16)"
+    }
+}
+
+/**
+ * Reads every sample of [rows] with [engine] through the Pattern path a script uses and compares
+ * each with rust-reader's read of the same sample, as rust-engine does.
+ */
+private fun EngineReads.readSamples(runner: SupportDeviceTestRunner, dir: String, rows: List<JSONObject>, engine: RustSupportScoreEngine, tag: String) {
+    for (row in rows) {
+        val file = row.getString("file")
+        val path = "$dir/$file"
+        checkScoreCrop(runner, path)
+        val reference = checkNotNull(rustReaderReads[file]) { "rust-reader has no read of $file" }
+        val fixture = JSONObject().put("name", path).put("suite", "support").put("frame", "crop")
+            .put("file", path).put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", row.getString("server"))
+        val api = FixtureApi(runner, fixture, JSONObject())
+        val score = try {
+            with(api) {
+                val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
+                useSameSnapIn {
+                    SupportScoreLayout.numberRegion(bound.region).getPattern(tag).use { pattern ->
+                        val gray = pattern.grayPixels()
+                        if (gray == null || pattern.width != SCORE_CROP_WIDTH || pattern.height != SCORE_CROP_HEIGHT || !gray.contentEquals(reference.gray)) {
+                            val first = gray?.indices?.firstOrNull { it >= reference.gray.size || gray[it] != reference.gray[it] }
+                            pixelMismatch += "$file ${pattern.width}x${pattern.height}" + if (gray == null) " not gray" else " first differing byte $first"
+                        }
+                        engine.read(pattern)
+                    }
+                }
+            }.also { api.checkCoverage() }
+        } finally {
+            api.close()
+        }
+        perField += score.duration.inWholeMicroseconds
+        val classScore = score.classScore
+        val grandScore = score.grandScore
+        val failed = listOf(EngineUnknownReason.EngineError, EngineUnknownReason.Unavailable).map { EngineField.Unknown(it) }
+        if (classScore in failed || grandScore in failed) {
+            engineErrors += "$file ${score.detail}"
+            continue
+        }
+        for ((key, field) in listOf("classReason" to classScore, "grandReason" to grandScore)) {
+            field.reasonName()?.let { reasons["$key.$it"] = (reasons["$key.$it"] ?: 0) + 1 }
+        }
+        compared++
+        differencesFrom(score, reference.json).takeIf { it.isNotEmpty() }?.let { fieldMismatch += "$file: ${it.joinToString()}" }
+        perFieldRust += reference.json.getLong("micros")
+        val cls = classScore.valueOrNull
+        val grand = grandScore.valueOrNull
+        when (row.boolOrNull("is62")) {
+            true -> {
+                count("positives62")
+                if (cls == 62) count("read62") else if (cls != null && row.intOrNull("cls") == null) wrong += "$file class $cls, is62"
+            }
+            false -> if (cls == 62) falseAccepts += "$file +62"
+            null -> Unit
+        }
+        when (row.boolOrNull("is16")) {
+            true -> {
+                count("positives16")
+                if (grand == 16) count("read16") else if (grand != null && row.intOrNull("grand") == null) wrong += "$file grand $grand, is16"
+            }
+            false -> if (grand == 16) falseAccepts += "$file +16"
+            null -> Unit
+        }
+        row.intOrNull("cls")?.let { label -> if (cls != null && cls != label) wrong += "$file class $cls, label $label" }
+        row.intOrNull("grand")?.let { label -> if (grand != null && grand != label) wrong += "$file grand $grand, label $label" }
+    }
+}
+
+/** The rows of the samples' index, checked against what rust-reader read earlier in this run. */
+private fun engineRows(runner: SupportDeviceTestRunner, case: JSONObject, test: String): List<JSONObject> {
+    val dir = case.getString("samples")
+    check(rustReaderPassed) { "$test compares with rust-reader, which must pass earlier in the same run" }
+    val index = JSONArray(runner.fixture("$dir/index.json").toString(Charsets.UTF_8))
+    val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    check(rows.isNotEmpty()) { "$dir/index.json has no rows" }
+    check(rows.size == rustReaderReads.size) { "rust-reader read ${rustReaderReads.size} samples, the index has ${rows.size}" }
+    return rows
+}
+
+/** Reads the samples with [engine] and fails on rust-engine's rules; the counts go into [report]. */
+private fun checkSampleReads(runner: SupportDeviceTestRunner, case: JSONObject, test: String, engine: RustSupportScoreEngine, report: JSONObject) {
+    val rows = engineRows(runner, case, test)
+    val minRead62 = case.getInt("minRead62")
+    val minRead16 = case.getInt("minRead16")
+    val reads = EngineReads()
+    reads.readSamples(runner, case.getString("samples"), rows, engine, test)
+    reads.putInto(report.put("samples", rows.size), minRead62, minRead16)
+    Log.i(TAG, "$test: ${reads.summary()}")
+    reads.failure(rows.size, minRead62, minRead16)?.let { throw AssertionError("$test: $it. $report") }
+}
+
+private fun sha256(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { input ->
+        val buffer = ByteArray(1 shl 16)
+        while (true) {
+            val read = input.read(buffer)
+            if (read < 0) break
+            digest.update(buffer, 0, read)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+private fun modelPin(runner: SupportDeviceTestRunner): OcrModelPin =
+    runner.targetContext.assets.open(RustSupportScoreEngine.PIN_ASSET).use { OcrModelPin.parse(it) }
+
+/** Offsets inside the 21 MB model, where a size check cannot see a change. */
+private val DAMAGE_OFFSETS = listOf(1_000_000L, 5_000_000L, 10_000_000L, 15_000_000L, 20_000_000L)
+
+/** What a call into the product binding answered; an exception out of it fails the case. */
+private inline fun <T> noThrow(test: String, what: String, block: () -> T): T = try {
+    block()
+} catch (error: Throwable) {
+    throw AssertionError("$test: $what threw out of the engine: $error", error)
+}
+
+/** In an APK without libfga_ffi.so: the engine must be unavailable with the loader's reason. */
+private fun checkUnavailableWithoutLibrary(test: String, available: Boolean, reason: String?) {
+    check(!available && reason != null && reason.startsWith("libfga_ffi.so did not load")) {
+        "$test: without the library the engine must be unavailable with the loader's reason; available $available, reason $reason"
+    }
+}
+
+/**
+ * Design 0026, completion criterion 3, on the installed copy of the model (issue #665).
+ * `rust-engine-damaged-model` inverts a few bytes inside the copy (same size), `rust-engine-short-model`
+ * cuts it to half. The rule (OcrModelInstaller) is that the engine's first use finds the copy does not
+ * match the pin, copies it again from the asset and loads: so with the library the case fails unless
+ * the engine is available, the copy matches the pin again afterwards and the stored samples read as in
+ * rust-engine. Without the library (an APK repackaged without libfga_ffi.so) it fails unless the engine
+ * is unavailable with the loader's reason. An exception out of the engine fails it either way.
+ *
+ * The copy is restored from a backup in `finally`. A run killed in between leaves the damaged copy
+ * (and the backup in the cache folder): the next engine load finds it does not match and replaces it.
+ */
+private fun damagedModelCase(runner: SupportDeviceTestRunner, case: JSONObject, test: String): JSONObject {
+    val context = runner.targetContext
+    val libraryLoads = NativeProbe.loaded
+    val pin = modelPin(runner)
+    // The intact copy an earlier run leaves; the copy needs no library.
+    val installed = RustSupportScoreEngine.installedModel(context)
+    val backup = File(copyDir(runner), "engine-model-backup.onnx")
+    checkNotNull(backup.parentFile).mkdirs()
+    installed.copyTo(backup, overwrite = true)
+    val report = JSONObject().put("libraryLoads", libraryLoads)
+    try {
+        RandomAccessFile(installed, "rw").use { file ->
+            if (test == "rust-engine-short-model") {
+                file.setLength(pin.size / 2)
+            } else {
+                for (offset in DAMAGE_OFFSETS) {
+                    file.seek(offset)
+                    val byte = file.read()
+                    file.seek(offset)
+                    file.write(byte xor 0xff)
+                }
+            }
+        }
+        val damage = if (test == "rust-engine-short-model") "cut to ${installed.length()} of ${pin.size} bytes" else "${DAMAGE_OFFSETS.size} bytes inverted, size ${installed.length()}"
+        report.put("damage", damage).put("damagedCopyMatchesPin", sha256(installed) == pin.sha256)
+        val engine = RustSupportScoreEngine.forApp(context)
+        try {
+            val started = System.nanoTime()
+            val available = noThrow(test, "available") { engine.available }
+            val firstUseMs = (System.nanoTime() - started) / 1_000_000
+            val reason = noThrow(test, "unavailableReason") { engine.unavailableReason }
+            val repaired = installed.isFile && installed.length() == pin.size && sha256(installed) == pin.sha256
+            report.put("available", available).put("reason", reason).put("firstUseMs", firstUseMs)
+                .put("loadMs", engine.loadMillis).put("copyMatchesPinAfter", repaired)
+            Log.i(TAG, "$test: $damage, available $available, reason $reason, first use $firstUseMs ms, copy matches the pin after $repaired")
+            if (!libraryLoads) {
+                checkUnavailableWithoutLibrary(test, available, reason)
+                return report.put("outcome", "unavailable")
+            }
+            check(available) { "$test: the engine did not replace the copy and load: $reason. $report" }
+            check(repaired) { "$test: the engine loaded, but the installed copy does not match the pin. $report" }
+            report.put("outcome", "repaired")
+            checkSampleReads(runner, case, test, engine, report)
+        } finally {
+            engine.close()
+        }
+    } finally {
+        backup.copyTo(installed, overwrite = true)
+        backup.delete()
+    }
+    return report
+}
+
+/**
+ * Issue #665: an engine that was closed reads every field as unavailable and says why, and a new
+ * engine in the same process loads into the slot the closed one unloaded and reads the stored
+ * samples as in rust-engine. Without the library both engines are unavailable with the loader's
+ * reason, and the closed one still answers unavailable.
+ */
+private fun afterCloseCase(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+    val test = "rust-engine-after-close"
+    val context = runner.targetContext
+    val libraryLoads = NativeProbe.loaded
+    val report = JSONObject().put("libraryLoads", libraryLoads)
+    fun blankRead(engine: RustSupportScoreEngine): EngineScore =
+        Mat(SCORE_CROP_HEIGHT, SCORE_CROP_WIDTH, CvType.CV_8UC1).let { mat -> DroidCvPattern(mat).use { noThrow(test, "read") { engine.read(it) } } }
+
+    val first = RustSupportScoreEngine.forApp(context)
+    val firstAvailable: Boolean
+    val firstReason: String?
+    try {
+        firstAvailable = noThrow(test, "available") { first.available }
+        firstReason = noThrow(test, "unavailableReason") { first.unavailableReason }
+        if (firstAvailable) blankRead(first)
+    } finally {
+        first.close()
+    }
+    val closed = blankRead(first)
+    val unavailable = EngineField.Unknown(EngineUnknownReason.Unavailable)
+    report.put("firstAvailable", firstAvailable).put("firstReason", firstReason)
+        .put("afterClose", JSONObject().put("class", closed.classScore.toString()).put("grand", closed.grandScore.toString())
+            .put("display", closed.display.toString()).put("detail", closed.detail).put("reason", first.unavailableReason))
+    check(closed.classScore == unavailable && closed.grandScore == unavailable && closed.display == EngineDisplay.Unknown && closed.text.isEmpty()) {
+        "$test: a closed engine read a field: $report"
+    }
+    check(first.unavailableReason == RustSupportScoreEngine.CLOSED && closed.detail == RustSupportScoreEngine.CLOSED) { "$test: a closed engine gave another reason: $report" }
+    if (!libraryLoads) {
+        checkUnavailableWithoutLibrary(test, firstAvailable, firstReason)
+        return report.put("outcome", "unavailable")
+    }
+    check(firstAvailable) { "$test: the first engine did not load: $firstReason" }
+    val second = RustSupportScoreEngine.forApp(context)
+    try {
+        val available = noThrow(test, "available") { second.available }
+        report.put("secondAvailable", available).put("secondReason", second.unavailableReason).put("secondLoadMs", second.loadMillis)
+        check(available) { "$test: a new engine after the close did not load: ${second.unavailableReason}" }
+        report.put("outcome", "reloaded")
+        checkSampleReads(runner, case, test, second, report)
+    } finally {
+        second.close()
     }
     return report
 }

@@ -177,6 +177,25 @@ class RustSupportScoreEngineTest {
         assertEquals(unavailable, engine.read(field).classScore)
     }
 
+    @Test fun `a damaged installed copy and a damaged asset make the engine unavailable without a load`() {
+        val dir = java.nio.file.Files.createTempDirectory("ocr-model").toFile()
+        try {
+            val bytes = ByteArray(4096) { it.toByte() }
+            val pin = OcrModelPin("m.onnx", java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }, bytes.size.toLong())
+            val damaged = bytes.copyOf().also { it[10] = (it[10] + 1).toByte() }
+            File(dir, OcrModelInstaller.fileName(pin)).writeBytes(damaged)
+            val native = FakeNative()
+            val engine = engine(native, prepare = { OcrModelInstaller.install(pin, dir) { damaged.inputStream() } })
+            assertFalse(engine.available)
+            assertTrue(engine.unavailableReason!!.startsWith("IOException: model asset has SHA-256"), engine.unavailableReason)
+            assertEquals(unavailable, engine.read(field).classScore)
+            assertEquals(listOf("library"), native.work)
+            assertEquals(emptyList(), dir.list()!!.toList())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
     @Test fun `a failed load makes the engine unavailable for the run`() {
         val native = FakeNative(loadAnswer = "ERR: inference backend: no such file")
         val engine = engine(native)

@@ -10,6 +10,10 @@
 //! that host tests (the `test-hooks` feature) can put a marker engine into the slot without a model
 //! file, which CI does not have.
 //!
+//! A call that panics while it holds the engine lock answers with an error like any other failure,
+//! and the model it was using is dropped: the next call finds the slot empty (see
+//! `guard::lock_slot`), so `unload` answers that nothing was loaded and a later `load` loads again.
+//!
 //! The `*_entry` functions are what the JNI exports call: each runs the whole call, the reading of
 //! the Java arguments included, inside the panic guard, so a host test can drive the guard
 //! through the same path as the export.
@@ -27,7 +31,7 @@ use fga_sensing::readers::support_score::{
     EXPECTED_CROP_SIZE, Reason, ScoreConfig, SupportScore, read_with,
 };
 
-use crate::guard::{catch_panic, run_guarded};
+use crate::guard::{catch_panic, lock_slot, recover_slot, run_guarded};
 
 /// What the engine slot holds: something that reads one 60x30 crop with the default `ScoreConfig`.
 pub trait ScoreModel: Send {
@@ -47,25 +51,24 @@ static ENGINE: Mutex<Slot> = Mutex::new(None);
 pub const NOT_LOADED: &str = "the support-score engine is not loaded";
 pub const ALREADY_LOADED: &str =
     "the support-score engine is already loaded; unload it before loading again";
-pub const POISONED: &str =
-    "the support-score engine lock is poisoned: an earlier call panicked while holding it";
 
 /// `unload` and `isLoaded` answer with these; anything else is an error on the Kotlin side.
 pub const CODE_NO: i32 = 0;
 pub const CODE_YES: i32 = 1;
 /// `isLoaded` only: another call holds the engine lock (a load or a read), so the slot is in use.
 pub const CODE_BUSY: i32 = 2;
-/// A poisoned lock or a caught panic.
+/// A caught panic.
 pub const CODE_ERROR: i32 = -1;
 /// The call left a Java exception pending, which the export cleared.
 pub const CODE_PENDING_EXCEPTION: i32 = -2;
 
-fn engine() -> Result<MutexGuard<'static, Slot>, String> {
-    ENGINE.lock().map_err(|_| POISONED.to_owned())
+fn engine() -> MutexGuard<'static, Slot> {
+    lock_slot(&ENGINE)
 }
 
-/// Only for tests/score_engine_poisoned.rs; the `test-hooks` feature keeps it out of every build
-/// but the tests, as `poison_lock_for_tests` for the probes.
+/// Only for tests/score_engine_poisoned.rs: a panic while holding the lock with nothing loaded;
+/// the `test-hooks` feature keeps it out of every build but the tests, as `poison_lock_for_tests`
+/// for the probes.
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 #[expect(
@@ -82,7 +85,7 @@ pub fn poison_engine_lock_for_tests() -> Result<String, String> {
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 pub fn with_engine_locked_for_tests<R>(body: impl FnOnce() -> R) -> Result<R, String> {
-    let _held = engine()?;
+    let _held = engine();
     Ok(body())
 }
 
@@ -91,7 +94,7 @@ pub fn with_engine_locked_for_tests<R>(body: impl FnOnce() -> R) -> Result<R, St
 #[cfg(feature = "test-hooks")]
 #[doc(hidden)]
 pub fn install_for_tests(model: Box<dyn ScoreModel>) -> Result<String, String> {
-    let mut slot = engine()?;
+    let mut slot = engine();
     if slot.is_some() {
         return Err(ALREADY_LOADED.to_owned());
     }
@@ -110,7 +113,7 @@ pub fn settings() -> TractSettings {
 /// Loads the model at `model_path` with the tract backend at [`settings`]; the recogniser pads to
 /// the width the backend planned. Returns the load time in milliseconds.
 pub fn load(model_path: &str) -> Result<String, String> {
-    let mut slot = engine()?;
+    let mut slot = engine();
     if slot.is_some() {
         return Err(ALREADY_LOADED.to_owned());
     }
@@ -124,7 +127,7 @@ pub fn load(model_path: &str) -> Result<String, String> {
 }
 
 pub fn unload() -> Result<bool, String> {
-    Ok(engine()?.take().is_some())
+    Ok(engine().take().is_some())
 }
 
 /// `Some(filled)`, or `None` when another call holds the lock. It never waits: Kotlin polls it
@@ -134,7 +137,9 @@ pub fn is_loaded() -> Result<Option<bool>, String> {
     match ENGINE.try_lock() {
         Ok(slot) => Ok(Some(slot.is_some())),
         Err(TryLockError::WouldBlock) => Ok(None),
-        Err(TryLockError::Poisoned(_)) => Err(POISONED.to_owned()),
+        Err(TryLockError::Poisoned(poisoned)) => {
+            Ok(Some(recover_slot(&ENGINE, poisoned).is_some()))
+        }
     }
 }
 
@@ -155,7 +160,7 @@ where
     let pixels = fetch(length)?;
     let crop =
         GrayImage::new(expected_width, expected_height, pixels).map_err(|e| e.to_string())?;
-    let mut slot = engine()?;
+    let mut slot = engine();
     let loaded = slot.as_mut().ok_or(NOT_LOADED)?;
     let started = Instant::now();
     let score = loaded.read(&crop)?;
