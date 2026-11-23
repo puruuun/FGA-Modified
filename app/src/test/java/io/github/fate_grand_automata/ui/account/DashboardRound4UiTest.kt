@@ -5,7 +5,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.FGATheme
@@ -144,7 +143,7 @@ class DashboardRound4UiTest {
         compose.onNode(hasText(fixture.context.getString(R.string.weekly_route_settings)) and hasContentDescription("icon"))
             .assertIsDisplayed().performClick()
         assertEquals(1,weekly)
-        if(BuildConfig.BUILD_TYPE=="beta") compose.onNodeWithText(fixture.context.getString(R.string.p_support_reader_diagnostics)).assertExists()
+        if(io.github.fate_grand_automata.util.readerDiagnosticsOffered()) compose.onNodeWithText(fixture.context.getString(R.string.p_support_reader_diagnostics)).assertExists()
         else compose.onNodeWithText(fixture.context.getString(R.string.p_support_reader_diagnostics)).assertDoesNotExist()
         compose.onNodeWithText(fixture.context.getString(R.string.p_script_mode_battle)).performClick()
         listOf(R.string.p_weekly_route_feature_enabled,R.string.p_bond_tracking_feature_enabled,R.string.p_enable_quest_item_control).forEach {

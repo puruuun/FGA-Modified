@@ -249,6 +249,30 @@ Owner decision: users of the public app see nothing of the engine change. The Ru
 - Without `-Pfga.native=true` the `rust` variant does not exist (`beforeVariants`), so `assemble`, `test` and `check` run as before and every other variant is unchanged. `assembleRust`, `installRust`, `bundleRust` and `packageRust` (with or without `:app:`) stop the build with a message that names the property; an abbreviation or any other rust task gets Gradle's own "not found". No automatic test covers the variant filter, so after changing it check by hand that `./gradlew -m :app:assemble` and `./gradlew -m check` without the property list no task with `Rust` in its name, and that the `-m :app:assembleCi :app:assembleBeta` list is unchanged.
 - `packageRust` and `packageRustBundle` (so `assembleRust`, `installRust` and `bundleRust` too) depend on `checkRustKeepRules`, which reads R8's `app/build/outputs/mapping/rust/seeds.txt` and `mapping.txt` and fails the build unless `RustSensing`, its `INSTANCE` and its four native methods are kept under their own names (`app/proguard-rust.pro`). Without the rule R8 drops three of the natives and the build would still pass.
 - `BuildConfig.RUST_TEST_BUILD` is true only in this build type. It is the one switch that lets product code reach the engine.
+- **Reader diagnostics.** The support reader diagnostics switch (Settings, Advanced, the bug icon) is offered in the beta and in this build type, by one predicate, `readerDiagnosticsOffered` (`app/.../util/ReaderDiagnosticsAvailability.kt`), which both the switch and `StorageReaderDiagnostics.enabled` read; `debug`, `ci`, `release` and `deviceTest` neither show nor honour it. The value is the boolean `support_reader_diagnostics` (default off) in the app's own `shared_prefs/<application id>_preferences.xml`, so this APK (`io.github.fate_grand_automata.rust`) starts with it off whatever the beta has. With it on, every score-checked row of a run writes, inside the storage folder picked in this APK's setup (a SAF tree, so there is no fixed path):
+  - `diagnostics/support-score-engine/<run>/<screen>-<row>.json`, and `<screen>-<row>.png` (the 60x30 field) when the engine answered;
+  - `diagnostics/support-score/<run>/<screen>-<row>.json`, `.png` and `-wide.png` from the existing reader, unchanged, for the rows it read.
+
+  `<run>` is the run's start (`yyyy-MM-dd-HHmmss-SSS`), `<screen>` counts the selection's screens from 1 in the run, `<row>` counts its rows from 0. For a folder on the primary storage the pull is (the folder name is the one picked in setup):
+
+  ```bash
+  adb -s <serial> pull "/sdcard/<picked folder>/diagnostics/support-score-engine" build/support-score-engine
+  adb -s <serial> pull "/sdcard/<picked folder>/diagnostics/support-score" build/support-score
+  ```
+
+  | field | meaning |
+  |---|---|
+  | `schema`, `reader` | `1`, `supportScoreEngineFirst` |
+  | `server`, `time`, `run`, `screen`, `row`, `rowY1440` | where and when the row was read |
+  | `checkClass`, `checkGrand` | the conditions asked |
+  | `answeredBy` | `engine`, or `kotlin` when the existing reader answered |
+  | `fallback` | null when the engine answered; else `why`: `unavailable` (with `detail`, the engine's `unavailableReason`), `fieldSize` (with `size`), or `incomplete` (with the engine's `class`, `grand`, `display` and `detail`) |
+  | `engine` | null when the engine was not asked; else `class` and `grand` (a value or a reason name), `display`, `text`, `confidence`, `minCharConfidence`, `engineTimeUs`, `callTimeUs`, `detail` |
+  | `engineLoadMs` | the engine's first load in this run, null before it ran |
+  | `result`, `matched` | what the selection decided on (`class`, `grand`, `display`) and whether the row passed |
+  | `elapsedMs` | the whole row, both readers included |
+
+  At most 500 rows a run are recorded, like the existing reader's records.
 
 **The model.** `native/ocr-model/model.properties` pins the file name, URL, size and SHA-256 (RapidOCR's model listing names the same URL and hash); `native/ocr-model/NOTICE.txt` is its licence notice (Apache-2.0, PaddleOCR, converted by RapidOCR). To change the model, change `url`, `sha256` and `size` together, and only for a model the support-score reader has been measured with. With `fga.native` on, `provideOcrModel` takes the file from `-Pfga.ocr.model=<path>` or, without it, downloads the URL; it refuses a file whose size or SHA-256 differs (a part file never gets the final name and is deleted on failure) and writes `PP-OCRv6_rec_small.onnx`, `ocr-model.properties` and `PP-OCRv6_rec_small.NOTICE.txt` into `app/build/generated/ocrModelAssets/ocr/`, which the APK carries as `assets/ocr/`. The URL and every redirect must be `https`; a malformed redirect stops the build with the same kind of message. Like `libfga_ffi.so`, the asset goes into every variant Gradle builds with the property on (so the device-test APK has it too); off, the task does not exist. The model is never committed: `tools/ci/repo_guard.py` refuses `.onnx` files, `build/` is ignored, and `tools/ci/apk_check.py` fails a CI APK that holds any `.onnx` entry.
 

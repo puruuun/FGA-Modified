@@ -1,6 +1,5 @@
 package io.github.fate_grand_automata.util
 
-import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.IStorageProvider
 import io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
@@ -22,7 +21,7 @@ class StorageReaderDiagnostics @Inject constructor(
     private val storage: IStorageProvider
 ) : IReaderDiagnostics {
     override val enabled: Boolean
-        get() = BuildConfig.BUILD_TYPE == "beta" && prefs.supportReaderDiagnostics
+        get() = readerDiagnosticsOffered() && prefs.supportReaderDiagnostics
 
     override val runId: String =
         SimpleDateFormat("yyyy-MM-dd-HHmmss-SSS", Locale.US).format(Date())
