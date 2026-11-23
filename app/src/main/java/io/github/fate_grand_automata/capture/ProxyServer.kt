@@ -104,6 +104,7 @@ class ProxyServer(
         val filtered = contexts.filterKeys { it in CaptureNames.HOST_SERVERS }
         this.sslContexts = filtered
         this.reading = filtered.isNotEmpty()
+        if (!reading) SupportListLastResult.clear()
     }
 
     fun start(preferredPort: Int = 8899, allowFallback: Boolean = true): Int {

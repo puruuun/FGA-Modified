@@ -12,6 +12,7 @@ import java.util.zip.GZIPOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertSame
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -254,9 +255,9 @@ class SupportListFilterTest {
     private val limitKeys = listOf("dispLimitCount", "imageLimitCount", "commandCardLimitCount", "iconLimitCount", "portraitLimitCount")
 
     /** A filled slot in the real key order; JP adds transformVal and grand adds the extra keys. */
-    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0, jp: Boolean = false, grand: Boolean = false, user: Long = 555, at: Long = 1708036772): String {
+    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0, jp: Boolean = false, grand: Boolean = false, user: Long = 555, at: Long = 1708036772, rich: Boolean = false): String {
         val parts = mutableListOf<String>()
-        parts += """"afterTransformSvtInfo":null"""
+        parts += if (rich) """"afterTransformSvtInfo":{"svtId":5,"lv":3,"addSkills":[1]}""" else """"afterTransformSvtInfo":null"""
         parts += limitKeys.map { """"$it":4""" }
         parts += """"battleVoice":2,"grandSvt":1"""
         if (jp) parts += """"transformVal":5"""
@@ -266,7 +267,7 @@ class SupportListFilterTest {
             parts += """"equipTarget2":{"userId":9,"svtId":77,"lv":1,"addSkills":[],"updatedAt":5}"""
             parts += """"equipTarget3":{"userId":9,"svtId":78,"lv":1,"addSkills":[],"updatedAt":5}"""
         }
-        parts += """"commandCode":[{"id":1}],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1}],"script":{},"eventSvtPoint":5,"imagePartsGroupInfo":[1]"""
+        parts += """"commandCode":[{"id":1}],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1}],"script":${if (rich) """{"a":"b","n":1}""" else "{}"},"eventSvtPoint":5,"imagePartsGroupInfo":[1]"""
         if (grand) parts += """"grandGraphId":7,"isSetClassBoardBaseIds":[1,2]"""
         parts += """"userId":$user,"supportDeckId":$deck,"classId":$cls,"userSvtId":42,"svtId":$svt,"limitCount":4,"lv":90,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
         parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":$at"""
@@ -313,6 +314,14 @@ class SupportListFilterTest {
         assertEquals(canonical(serverEmptySlot(3, 2)), blanked.toString())
     }
 
+    @Test fun afterTransformSvtInfoBecomesNullAndScriptBecomesEmptyWhateverTheFilledSlotHeld() {
+        val f = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1), (2 to 3) to realSlot(999, 2, 3, rich = true)))
+        val blanked = slotsOf(infos(run(body(f))!!)[0], "userSvtLeaderHash")[9 + 3].jsonObject
+        assertEquals("null", blanked["afterTransformSvtInfo"].toString())
+        assertEquals("{}", blanked["script"].toString())
+        assertEquals(canonical(serverEmptySlot(2, 3)), blanked.toString())
+    }
+
     @Test fun jpAndGrandOnlyKeysAreBlankedByTheTypeRule() {
         val keep = realSlot(100, 1, 1, jp = true)
         val jpOther = realSlot(999, 1, 2, jp = true, user = 77, at = 5)
@@ -331,21 +340,50 @@ class SupportListFilterTest {
     }
 
     @Test fun matchingAndAlreadyEmptySlotsStayTheOriginalObjects() {
-        val match = realSlot(100, 2, 4)
-        val other = realSlot(999, 2, 5)
-        val f = realFollower("a", main = mapOf((2 to 4) to match, (2 to 5) to other), event = mapOf((1 to 0) to realSlot(200, 1, 0)))
-        val before = Json.parseToJsonElement(f).jsonObject
-        val out = infos(run(body(f))!!)[0].jsonObject
+        val f = realFollower("a", main = mapOf((2 to 4) to realSlot(100, 2, 4), (2 to 5) to realSlot(999, 2, 5)), event = mapOf((1 to 0) to realSlot(200, 1, 0)))
+        val root = Json.parseToJsonElement(body(f, realFollower("b"))).jsonObject
+        fun follower(r: kotlinx.serialization.json.JsonObject) =
+            r["cache"]!!.jsonObject["updated"]!!.jsonObject["userFollower"]!!.jsonArray[0].jsonObject["followerInfo"]!!.jsonArray[0].jsonObject
+        val before = follower(root)
+        val out = follower(SupportListFilter.filter(root, criteria)!!.first)
         for (key in listOf("userSvtLeaderHash", "eventUserSvtLeaderHash")) {
             val was = before[key]!!.jsonArray
             val now = out[key]!!.jsonArray
             for (i in was.indices) {
                 val blanked = was[i].jsonObject["svtId"]!!.jsonPrimitive.content == "999"
-                if (blanked) assertEquals("0", now[i].jsonObject["svtId"]!!.jsonPrimitive.content) else assertEquals(was[i], now[i], "$key $i")
+                if (blanked) assertEquals("0", now[i].jsonObject["svtId"]!!.jsonPrimitive.content) else assertSame(was[i], now[i], "$key $i")
             }
         }
         assertEquals(before["mainSupportDeckIds"], out["mainSupportDeckIds"])
         assertEquals(before["userId"], out["userId"])
+    }
+
+    @Test fun aCeSvtIdThatIsNotAPlainIntegerLeavesEverythingUnchanged() {
+        val c = SupportListCriteria(setOf(100L), setOf(7L))
+        val ok = realFollower("ok", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7), (1 to 2) to realSlot(999, 1, 2)))
+        for (bad in listOf("\"7\"", "7.5", "null", "true", "[7]")) {
+            val slot = realSlot(100, 1, 1, ce = 8).replace(""""equipTarget1":{"userId":9,"userSvtId":8,"svtId":8""", """"equipTarget1":{"userId":9,"userSvtId":8,"svtId":$bad""")
+            assertNull(run(body(ok, realFollower("x", main = mapOf((1 to 1) to slot))), c), bad)
+        }
+        // A CE target that is a string is not an object either.
+        val notObject = realSlot(100, 1, 1).replace(""""equipTarget1":{""", """"equipTarget1":"x","unused":{""")
+        assertNull(run(body(ok, realFollower("y", main = mapOf((1 to 1) to notObject))), c))
+        // The same shapes in a slot whose servant is not chosen are never read.
+        val unread = realSlot(999, 1, 3).replace(""""svtId":0,"limitCount":4,"lv":100""", """"svtId":"9400000","limitCount":4,"lv":100""")
+        assertNotNull(run(body(ok, realFollower("z", main = mapOf((1 to 3) to unread))), c))
+    }
+
+    @Test fun aMissingOrNullCeTargetHasNoCeAndTheSlotIsBlanked() {
+        val c = SupportListCriteria(setOf(100L), setOf(7L))
+        val ok = realFollower("ok", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7)))
+        val noTarget = realSlot(100, 1, 2).replace(Regex(""""equipTarget1":\{[^}]*\[[^\]]*\][^}]*\},"""), "")
+        val nullTarget = realSlot(100, 1, 3).replace(Regex(""""equipTarget1":\{[^}]*\[[^\]]*\][^}]*\},"""), """"equipTarget1":null,""")
+        assertTrue("equipTarget1" !in noTarget && """"equipTarget1":null""" in nullTarget)
+        val f = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7), (1 to 2) to noTarget, (1 to 3) to nullTarget))
+        val out = slotsOf(infos(run(body(f, ok), c)!!)[0], "userSvtLeaderHash")
+        assertEquals("0", out[2].jsonObject["svtId"]!!.toString())
+        assertEquals("0", out[3].jsonObject["svtId"]!!.toString())
+        assertEquals("100", out[1].jsonObject["svtId"]!!.toString())
     }
 
     @Test fun aKeptFollowerKeepsAll27SlotsInOrder() {

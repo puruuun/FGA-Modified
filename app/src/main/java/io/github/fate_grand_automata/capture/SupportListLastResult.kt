@@ -27,7 +27,10 @@ object SupportListLastResult {
         state.value = Result.Unchanged
     }
 
-    internal fun resetForTesting() {
+    /** Called when the filter stops running, so an old result is not shown for a filter that is off. */
+    fun clear() {
         state.value = null
     }
+
+    internal fun resetForTesting() = clear()
 }

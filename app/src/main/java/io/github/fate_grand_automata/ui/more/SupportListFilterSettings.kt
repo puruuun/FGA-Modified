@@ -68,8 +68,13 @@ internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SupportListFilterSettings(prefs: PrefsCore) {
+internal fun SupportListFilterSettings(prefs: PrefsCore) {
     var enabled by prefs.captureSupportFilterEnabled.remember()
+    // An old result must not stay on screen once the filter is off.
+    val setEnabled = { on: Boolean ->
+        enabled = on
+        if (!on) SupportListLastResult.clear()
+    }
     var servants by remember { mutableStateOf(prefs.captureSupportFilterServants.get().mapNotNull { it.toLongOrNull() }.toSet()) }
     var ces by remember { mutableStateOf(prefs.captureSupportFilterCes.get().mapNotNull { it.toLongOrNull() }.toSet()) }
     var picker by remember { mutableStateOf<Boolean?>(null) }
@@ -93,9 +98,9 @@ private fun SupportListFilterSettings(prefs: PrefsCore) {
         Preference(
             title = stringResource(R.string.capture_support_filter),
             summary = stringResource(R.string.capture_support_filter_summary),
-            onClick = { enabled = !enabled },
-        ) { Switch(checked = enabled, onCheckedChange = { enabled = it }, colors = FGASwitchColors()) }
-        SupportListLastResultLine(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            onClick = { setEnabled(!enabled) },
+        ) { Switch(checked = enabled, onCheckedChange = setEnabled, colors = FGASwitchColors()) }
+        if (enabled) SupportListLastResultLine(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { picker = false }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.capture_support_filter_servants, servants.size))

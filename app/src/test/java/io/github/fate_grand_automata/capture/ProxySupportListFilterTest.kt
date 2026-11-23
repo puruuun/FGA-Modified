@@ -331,6 +331,21 @@ class ProxySupportListFilterTest {
         assertEquals(SupportListLastResult.Result.Unchanged, SupportListLastResult.last.value)
     }
 
+    @Test
+    fun readingTurnedOffClearsTheLastResult() {
+        val proxy = ProxyServer(
+            sslContexts = emptyMap(),
+            options = ProxyOptions(socks5 = true, ipSniff = true, maxConnections = 8),
+            onGameResponse = { _, _, _ -> },
+        )
+        val certs = SingleUseCa.issue(gameHost)
+        SupportListLastResult.filtered(SupportListCounts(2, 1, 2, 1))
+        proxy.setContexts(mapOf(gameHost to serverContext(certs)))
+        assertEquals(SupportListLastResult.Result.Filtered(SupportListCounts(2, 1, 2, 1)), SupportListLastResult.last.value)
+        proxy.setContexts(emptyMap())
+        assertNull(SupportListLastResult.last.value)
+    }
+
     @Test(timeout = 20000)
     fun captureRecordsTheOriginalResponse() {
         val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), criteria)

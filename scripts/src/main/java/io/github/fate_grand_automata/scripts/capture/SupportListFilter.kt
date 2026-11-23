@@ -172,7 +172,12 @@ object SupportListFilter {
             }
             if (svtId <= 0L) return slot
             filledBefore++
-            if (passes(row, grand, criteria)) {
+            val matches = passes(row, grand, criteria)
+            if (matches == null) {
+                failed = true
+                return slot
+            }
+            if (matches) {
                 filledAfter++
                 anyMatch = true
                 return slot
@@ -196,14 +201,39 @@ object SupportListFilter {
         return Reduced(if (changed && anyMatch) JsonObject(entries) else follower, anyMatch, filledBefore, filledAfter)
     }
 
-    /** A filled slot matches when its servant is chosen and, if CEs are chosen, one of its CEs is. */
-    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria): Boolean {
+    /**
+     * A filled slot matches when its servant is chosen and, if CEs are chosen, one of its CEs is. Null when a CE of
+     * a slot with a chosen servant has a shape this code has not seen, so the caller passes the response through.
+     */
+    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria): Boolean? {
         val svtId = row.long("svtId")
         if (svtId == null || svtId <= 0L || svtId !in criteria.servantIds) return false
         if (criteria.ceIds.isEmpty()) return true
         // Grand slots hold their CEs in equipTarget1 and equipTarget3; equipTarget2 is the bond CE and stays out of the match.
         val ceKeys = if (grand) listOf("equipTarget1", "equipTarget3") else listOf("equipTarget1", "equipTarget2")
-        return ceKeys.any { ((row[it] as? JsonObject)?.long("svtId")) in criteria.ceIds }
+        var matched = false
+        for (key in ceKeys) {
+            val ce = ceId(row, key)
+            if (ce == UNKNOWN_CE) return null
+            if (ce in criteria.ceIds) matched = true
+        }
+        return matched
+    }
+
+    private const val UNKNOWN_CE = Long.MIN_VALUE
+
+    /**
+     * The CE's svtId, or null when there is no CE (the key or its svtId is missing, or the key is null). A present value
+     * that is not a plain integer, or an equipTarget that is not an object, is [UNKNOWN_CE]: it must not count as "no match".
+     */
+    private fun ceId(row: JsonObject, key: String): Long? {
+        val target = row[key] ?: return null
+        if (target is JsonNull) return null
+        val obj = target as? JsonObject ?: return UNKNOWN_CE
+        val value = obj["svtId"] ?: return null
+        val number = value as? JsonPrimitive ?: return UNKNOWN_CE
+        if (number.isString || number is JsonNull) return UNKNOWN_CE
+        return number.longOrNull ?: UNKNOWN_CE
     }
 
     private val SLOT_OWN_KEYS = setOf("userId", "supportDeckId", "classId", "updatedAt")
@@ -212,7 +242,7 @@ object SupportListFilter {
     /**
      * The server's own form of a slot with no servant, built from the slot it replaces: same keys in the same order;
      * the slot's own userId, supportDeckId, classId and updatedAt stay, the five *LimitCount are 1, commandCardParam is
-     * five zeros and every other value is blanked by type, nested objects included. The game already shows a follower
+     * five zeros, afterTransformSvtInfo is null, script is {} and every other value is blanked by type, nested objects included. The game already shows a follower
      * whose slot has this form as "no support".
      */
     internal fun blankSlot(slot: JsonObject): JsonObject = JsonObject(
@@ -221,6 +251,9 @@ object SupportListFilter {
                 key in SLOT_OWN_KEYS -> value
                 key in LIMIT_COUNT_KEYS -> JsonPrimitive(1)
                 key == "commandCardParam" -> JsonArray(List(5) { JsonPrimitive(0) })
+                // The server's empty slot has exactly these two values, whatever a filled slot holds here.
+                key == "afterTransformSvtInfo" -> JsonNull
+                key == "script" -> JsonObject(emptyMap())
                 else -> blankValue(value)
             }
         },
