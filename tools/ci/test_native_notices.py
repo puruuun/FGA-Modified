@@ -164,6 +164,12 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn('BSD-3-Clause', out)
 
+    def test_standard_library_licence_without_a_crate_text_fails(self):
+        self.packages = [p for p in self.packages if p['name'] == 'beta']
+        code, out = self.run_cli('generate')
+        self.assertEqual(code, 1, out)
+        self.assertIn('MIT', out)
+
     def test_model_notice_without_the_apache_text_fails(self):
         self.write('NOTICE.txt', 'The model, under Apache-2.0.\n')
         code, out = self.run_cli('generate')

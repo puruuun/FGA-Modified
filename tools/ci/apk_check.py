@@ -2,15 +2,20 @@
 """Checks whether an APK carries the Rust engine, in the mode the caller names (design 0026, D-8).
 
   apk_check.py absent APK...    every APK is a readable zip without a libfga_ffi.so entry and
-                                without an .onnx entry (a build without the engine: the ci APK).
-  apk_check.py present APK...   every APK holds libfga_ffi.so for both shipped ABIs, the pinned OCR
-                                model, its notice and the third-party notices, and its arm64-v8a
-                                library is 16 KB page aligned: every ELF LOAD segment aligned to
-                                0x4000 and, when the library is stored uncompressed, its data at a
-                                16 KB boundary of the APK (a beta, release or rust APK).
+                                without an .onnx entry (a build without the engine: Main CI's ci APK).
+  apk_check.py present APK...   every APK holds each entry of app/engine-apk-entries.txt, the list
+                                that the build's checkEngineApk<V> reads too (libfga_ffi.so for both
+                                shipped ABIs, the pinned OCR model, its pin file, its notice and the
+                                third-party notices), and its arm64-v8a library is 16 KB page
+                                aligned: a 64-bit little-endian ELF file whose every LOAD segment is
+                                aligned to a non-zero multiple of 0x4000 and, when the library is
+                                stored uncompressed, whose data starts at a 16 KB boundary of the APK
+                                (the beta, the rust APK and the stable ci APK built with
+                                -Pfga.native=true).
 
 There is no default mode: an APK checked for the wrong kind of build must fail, not pass. A missing
-argument, an unknown mode or an unreadable file fails: an error never counts as a pass.
+argument, an unknown mode or an unreadable file fails: an error never counts as a pass. A 32-bit,
+big-endian or truncated arm64-v8a library fails with a message that names it, not with a traceback.
 """
 import os
 import struct
@@ -19,11 +24,10 @@ import zipfile
 
 LIBRARY = 'libfga_ffi.so'
 MODEL_EXTENSION = '.onnx'
-# The ABIs of shippedAbis in app/build.gradle.kts.
-SHIPPED_ABIS = ['arm64-v8a', 'armeabi-v7a']
 PAGE = 0x4000
-PIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'native', 'ocr-model', 'model.properties')
-NOTICES = 'assets/ocr/THIRD_PARTY_NOTICES.txt'
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
+PIN = os.path.join(ROOT, 'native', 'ocr-model', 'model.properties')
+ENTRIES = os.path.join(ROOT, 'app', 'engine-apk-entries.txt')
 
 
 def forbidden_entries(names):
@@ -44,9 +48,41 @@ def pinned_model(pin_path=PIN):
     raise ValueError('%s names no model file' % pin_path)
 
 
-def required_entries(model):
-    return (['lib/%s/%s' % (abi, LIBRARY) for abi in SHIPPED_ABIS] +
-            ['assets/ocr/' + model, 'assets/ocr/' + model[:-len(MODEL_EXTENSION)] + '.NOTICE.txt', NOTICES])
+def read_entry_list(text):
+    """(abis, entry templates) of app/engine-apk-entries.txt; a line it cannot read is an error."""
+    abis, templates = [], []
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith('#'):
+            continue
+        kind, _, value = line.partition(' ')
+        value = value.strip()
+        if kind not in ('abi', 'entry') or not value or ' ' in value:
+            raise ValueError('line %d of the entry list is not "abi NAME" or "entry PATH": %r' % (number, raw))
+        (abis if kind == 'abi' else templates).append(value)
+    if not abis or not templates:
+        raise ValueError('the entry list names no abi or no entry')
+    return abis, templates
+
+
+def expand_entries(abis, templates, model):
+    stem = model[:-len(MODEL_EXTENSION)]
+    out = []
+    for template in templates:
+        for abi in (abis if '{abi}' in template else [None]):
+            entry = template.replace('{model_stem}', stem).replace('{model}', model)
+            if abi is not None:
+                entry = entry.replace('{abi}', abi)
+            if '{' in entry or '}' in entry:
+                raise ValueError('unknown placeholder in the entry list: %r' % template)
+            out.append(entry)
+    return out
+
+
+def required_entries(model, entries_path=ENTRIES):
+    with open(entries_path, encoding='utf-8') as f:
+        abis, templates = read_entry_list(f.read())
+    return expand_entries(abis, templates, model)
 
 
 def load_alignments(elf):
@@ -54,7 +90,7 @@ def load_alignments(elf):
     if len(elf) < 64 or elf[:4] != b'\x7fELF':
         raise ValueError('not an ELF file')
     if elf[4] != 2 or elf[5] != 1:
-        raise ValueError('not a 64-bit little-endian ELF file')
+        raise ValueError('not a 64-bit little-endian ELF file (EI_CLASS %d, EI_DATA %d)' % (elf[4], elf[5]))
     phoff, = struct.unpack_from('<Q', elf, 0x20)
     phentsize, phnum = struct.unpack_from('<HH', elf, 0x36)
     if phentsize < 56 or phoff + phentsize * phnum > len(elf):
@@ -69,6 +105,11 @@ def load_alignments(elf):
     if not aligns:
         raise ValueError('no LOAD segment')
     return aligns
+
+
+def bad_alignments(aligns):
+    # p_align 0 and 1 mean "no alignment", and 0 is a multiple of everything.
+    return sorted({a for a in aligns if a < PAGE or a % PAGE != 0})
 
 
 def data_offset(path, info):
@@ -86,15 +127,14 @@ def check_absent(path, z):
     return ['%s: contains %s' % (path, n) for n in forbidden_entries(z.namelist())]
 
 
-def check_present(path, z, model):
+def check_present(path, z, required):
     names = set(z.namelist())
-    problems = ['%s: lacks %s' % (path, n) for n in required_entries(model) if n not in names]
+    problems = ['%s: lacks %s' % (path, n) for n in required if n not in names]
     lib = 'lib/arm64-v8a/' + LIBRARY
     if lib in names:
         info = z.getinfo(lib)
         try:
-            aligns = load_alignments(z.read(lib))
-            bad = sorted({a for a in aligns if a % PAGE != 0})
+            bad = bad_alignments(load_alignments(z.read(lib)))
             if bad:
                 problems.append('%s: %s has LOAD segments aligned to %s, not 0x4000'
                                 % (path, lib, ', '.join(hex(a) for a in bad)))
@@ -102,20 +142,20 @@ def check_present(path, z, model):
                 offset = data_offset(path, info)
                 if offset % PAGE != 0:
                     problems.append('%s: %s is stored at offset %d, not on a 16 KB boundary' % (path, lib, offset))
-        except (ValueError, struct.error, zipfile.BadZipFile, OSError) as e:
-            problems.append('%s: cannot read %s: %s' % (path, lib, e))
+        except Exception as e:  # any error is a failed check with its reason, never a traceback
+            problems.append('%s: cannot read %s: %s: %s' % (path, lib, type(e).__name__, e))
     return problems
 
 
-def check_apk(path, mode, model=None):
+def check_apk(path, mode, required=None):
     """Returns a list of problems for one APK; empty means it is fine."""
     try:
         with zipfile.ZipFile(path) as z:
             if mode == 'absent':
                 return check_absent(path, z)
-            return check_present(path, z, model)
-    except (OSError, zipfile.BadZipFile) as e:
-        return ['%s: not a readable zip (%s)' % (path, e)]
+            return check_present(path, z, required)
+    except Exception as e:
+        return ['%s: not a readable zip (%s: %s)' % (path, type(e).__name__, e)]
 
 
 def main(argv):
@@ -127,24 +167,25 @@ def main(argv):
     if not paths:
         print('apk_check: FAIL: no APK path given', file=sys.stderr)
         return 1
-    model = None
+    model = required = None
     if mode == 'present':
         try:
             model = pinned_model()
+            required = required_entries(model)
         except (OSError, ValueError) as e:
             print('apk_check: FAIL: %s' % e, file=sys.stderr)
             return 1
     problems = []
     for p in paths:
-        problems.extend(check_apk(p, mode, model))
+        problems.extend(check_apk(p, mode, required))
     for line in problems:
         print('apk_check: FAIL: ' + line)
     if not problems:
         if mode == 'absent':
             print('apk_check: %d APK(s) without %s or a %s model' % (len(paths), LIBRARY, MODEL_EXTENSION))
         else:
-            print('apk_check: %d APK(s) with %s for %s, %s, its notice and the third-party notices; '
-                  'arm64-v8a 16 KB aligned' % (len(paths), LIBRARY, ' and '.join(SHIPPED_ABIS), model))
+            print('apk_check: %d APK(s) with the %d entries of app/engine-apk-entries.txt (%s); '
+                  'arm64-v8a 16 KB aligned' % (len(paths), len(required), model))
     return 1 if problems else 0
 
 

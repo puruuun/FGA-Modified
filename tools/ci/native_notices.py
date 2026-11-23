@@ -338,7 +338,9 @@ def build(metadata, tree_lines, model_notice, toolchain_text):
     channel = toolchain_channel(toolchain_text)
     std_used = choose(parse(RUST_STD['expression']))
     crates = [describe(p) for p in linked_packages(metadata, tree_lines)]
-    used = sorted({l for c in crates for l in c['used']}, key=PREFERENCE.index)
+    # The standard library's licence counts too: its text comes from a crate that ships it, and
+    # shared_text fails when none does, so the text is never silently left out.
+    used = sorted(set(std_used) | {l for c in crates for l in c['used']}, key=PREFERENCE.index)
     shared = {lic: shared_text(crates, lic) for lic in SHARED_TEXTS if lic in used}
     if 'Apache-2.0' in shared and shared['Apache-2.0'][0].strip() not in model_notice:
         raise NoticeError('native/ocr-model/NOTICE.txt does not hold the Apache-2.0 text of %s; '

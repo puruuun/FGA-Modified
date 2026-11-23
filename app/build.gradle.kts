@@ -176,9 +176,136 @@ fun cargoExecutable(): String {
     return if (homeCargo.isFile) homeCargo.path else "cargo"
 }
 
-abstract class CargoNdkBuild : Exec() {
+/*
+ * One cargo-ndk run. Everything that decides the libraries is an input: the sources, the ABIs, the
+ * platform level, the cargo arguments and environment, and the NDK, named by its directory and
+ * the revision in its source.properties, so a changed NDK builds again. The NDK is resolved when
+ * the task runs (ANDROID_NDK_HOME, else the newest NDK under the SDK's ndk/ folder, the order of
+ * cargo-ndk itself) and handed to cargo-ndk as ANDROID_NDK_HOME, so the NDK in the inputs is the
+ * one that built the output. The output folder is cleared first and must then hold exactly one
+ * libfga_ffi.so per ABI: a library of an earlier build or of another ABI is never packaged.
+ */
+abstract class CargoNdkBuild : DefaultTask() {
+    @get:Input
+    abstract val cargo: Property<String>
+
+    @get:Input
+    abstract val abis: ListProperty<String>
+
+    @get:Input
+    abstract val platform: Property<Int>
+
+    @get:Input
+    abstract val cargoArguments: ListProperty<String>
+
+    @get:Input
+    abstract val extraEnvironment: MapProperty<String, String>
+
+    @get:Input
+    @get:Optional
+    abstract val ndkHome: Property<String>
+
+    @get:Input
+    abstract val sdkDirectory: Property<String>
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val nativeSources: ConfigurableFileCollection
+
+    @get:Internal
+    abstract val workspace: DirectoryProperty
+
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @get:Input
+    val ndk: String
+        get() {
+            val dir = resolveNdk()
+            val revision = Properties().apply { File(dir, "source.properties").inputStream().use { load(it) } }
+                .getProperty("Pkg.Revision")?.trim()
+                ?: throw GradleException("${dir.path}/source.properties has no Pkg.Revision")
+            return "${dir.path} $revision"
+        }
+
+    private fun resolveNdk(): File {
+        ndkHome.orNull?.let { explicit ->
+            val dir = File(explicit)
+            if (!File(dir, "source.properties").isFile) {
+                throw GradleException("ANDROID_NDK_HOME is $explicit, which holds no NDK (no source.properties)")
+            }
+            return dir
+        }
+        val root = File(sdkDirectory.get(), "ndk")
+        fun version(dir: File) = dir.name.split('.').map { it.toIntOrNull() ?: -1 }
+        val comparator = Comparator<File> { a, b ->
+            val va = version(a)
+            val vb = version(b)
+            (0 until maxOf(va.size, vb.size)).map { (va.getOrNull(it) ?: -1).compareTo(vb.getOrNull(it) ?: -1) }
+                .firstOrNull { it != 0 } ?: 0
+        }
+        return root.listFiles().orEmpty().filter { File(it, "source.properties").isFile }.maxWithOrNull(comparator)
+            ?: throw GradleException("No NDK: ANDROID_NDK_HOME is not set and ${root.path} holds none")
+    }
+
+    init {
+        // Gradle does not count a file added to an output folder as a change, so without this a
+        // stray library left there by hand or by another build would keep the task up to date and
+        // be packaged.
+        outputs.upToDateWhen { (it as CargoNdkBuild).unexpectedOutput() == null }
+    }
+
+    private fun unexpectedOutput(): String? {
+        val out = outputDir.get().asFile
+        val found = out.walkTopDown().filter { it.isFile }.map { it.relativeTo(out).invariantSeparatorsPath }.sorted().toList()
+        val expected = abis.get().map { "$it/libfga_ffi.so" }.sorted()
+        return if (found == expected) null else "cargo-ndk left $found in ${out.path}; expected exactly $expected"
+    }
+
+    @TaskAction
+    fun build() {
+        val ndkDir = resolveNdk()
+        val out = outputDir.get().asFile
+        files.delete { delete(out) }
+        out.mkdirs()
+        val wanted = abis.get()
+        logger.info("cargo-ndk for $wanted with ANDROID_NDK_HOME=${ndkDir.path}")
+        execOperations.exec {
+            workingDir = workspace.get().asFile
+            executable = cargo.get()
+            environment(extraEnvironment.get())
+            environment("ANDROID_NDK_HOME", ndkDir.path)
+            args(
+                listOf("ndk") + wanted.flatMap { listOf("-t", it) } +
+                    listOf("--platform", platform.get().toString(), "-o", out.path) + cargoArguments.get(),
+            )
+        }
+        unexpectedOutput()?.let { throw GradleException(it) }
+    }
+}
+
+/** The settings that every cargo-ndk task shares; the NDK comes from the environment as checkRustTools reads it. */
+fun CargoNdkBuild.configureCargoNdk(abiList: List<String>, features: List<String>) {
+    dependsOn("checkRustTools")
+    val native = rootProject.layout.projectDirectory.dir("native")
+    workspace.set(native)
+    nativeSources.from(fileTree(native) { exclude("target/**") })
+    cargo.set(cargoExecutable())
+    abis.set(abiList)
+    // minSdk, so the library links against no newer libc than the app supports.
+    platform.set(24)
+    cargoArguments.set(listOf("build", "--release", "-p", "fga-ffi") + features)
+    ndkHome.set(providers.environmentVariable("ANDROID_NDK_HOME"))
+    sdkDirectory.set(
+        providers.environmentVariable("ANDROID_HOME")
+            .orElse(androidComponents.sdkComponents.sdkDirectory.map { it.asFile.path }),
+    )
 }
 
 /*
@@ -196,6 +323,9 @@ abstract class CheckRustTools : DefaultTask() {
 
     @get:Input
     abstract val sdkDirectory: Property<String>
+
+    @get:Input
+    abstract val pinnedNdk: Property<String>
 
     init {
         // Tools are installed and removed outside Gradle's view, so the answer is never reused.
@@ -234,7 +364,7 @@ abstract class CheckRustTools : DefaultTask() {
             if (ndkRoot.listFiles()?.none { File(it, "source.properties").isFile } != false) {
                 throw GradleException(
                     "The Android NDK is missing: ANDROID_NDK_HOME is not set and ${ndkRoot.path} holds no NDK " +
-                        "(rust-native.md names 28.2.13676358). $optOut",
+                        "(install NDK ${pinnedNdk.get()}, the version native/ndk-version.txt names). $optOut",
                 )
             }
         }
@@ -250,36 +380,17 @@ if (engineRegistered) {
             providers.environmentVariable("ANDROID_HOME")
                 .orElse(androidComponents.sdkComponents.sdkDirectory.map { it.asFile.path }),
         )
+        pinnedNdk.set(
+            providers.fileContents(rootProject.layout.projectDirectory.file("native/ndk-version.txt")).asText.map { text ->
+                text.lines().map { it.trim() }.single { it.isNotEmpty() && !it.startsWith("#") }
+            },
+        )
     }
 
     val cargoNdkBuild = tasks.register<CargoNdkBuild>("cargoNdkBuild") {
         description = "Builds native/ with cargo-ndk for the shipped ABIs."
-        dependsOn(checkRustTools)
-        val workspace = rootProject.layout.projectDirectory.dir("native")
-        val output = layout.buildDirectory.dir("generated/rustJniLibs")
-        outputDir.set(output)
-        workingDir(workspace)
-        inputs.files(fileTree(workspace) { exclude("target/**") })
-            .withPathSensitivity(PathSensitivity.RELATIVE)
-            .withPropertyName("nativeSources")
-        // A local copy: a lambda that reached a script-level val could not be stored in the configuration cache.
-        val abis = shippedAbis.toList()
-        inputs.property("abis", abis)
-        val features = cargoFeatures()
-        inputs.property("features", features)
-        executable(cargoExecutable())
-
-        // cargo-ndk finds the NDK under ANDROID_HOME when ANDROID_NDK_HOME is not set.
-        if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
-            environment("ANDROID_HOME", androidComponents.sdkComponents.sdkDirectory.get().asFile.path)
-        }
-        argumentProviders.add(
-            CommandLineArgumentProvider {
-                listOf("ndk") + abis.flatMap { listOf("-t", it) } +
-                    // minSdk, so the library links against no newer libc than the app supports.
-                    listOf("--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi") + features
-            },
-        )
+        configureCargoNdk(shippedAbis, cargoFeatures())
+        outputDir.set(layout.buildDirectory.dir("generated/rustJniLibs"))
     }
 
     androidComponents {
@@ -364,6 +475,8 @@ if (nativeOrtEnabled) {
     }
     val extractOnnxRuntime = tasks.register<ExtractOnnxRuntime>("extractOnnxRuntime") {
         description = "Extracts libonnxruntime.so from the onnxruntime-android AAR for fga-ffi."
+        // A build that is going to stop for a missing Rust tool must not download the AAR first.
+        dependsOn("checkRustTools")
         aar.from(onnxRuntimeAar)
         abis.set(shippedAbis)
         // onnxruntime-android 1.31.0; its SHA-1 equals Maven Central's published .sha1. Version
@@ -383,32 +496,14 @@ if (nativeOrtEnabled) {
         val taskSuffix = abi.split('-', '_').joinToString("") { part -> part.replaceFirstChar { it.uppercase() } }
         tasks.register<CargoNdkBuild>("cargoNdkBuildOrt$taskSuffix") {
             description = "Builds native/ with the ort-probe feature for $abi."
-            val workspace = rootProject.layout.projectDirectory.dir("native")
-            val output = layout.buildDirectory.dir("generated/rustJniLibsOrt/$abi")
+            configureCargoNdk(listOf(abi), cargoFeatures("ort-probe"))
+            outputDir.set(layout.buildDirectory.dir("generated/rustJniLibsOrt/$abi"))
             val runtimeDir = extractOnnxRuntime.flatMap { it.outputDir.dir(abi) }
-            outputDir.set(output)
-            workingDir(workspace)
-            inputs.files(fileTree(workspace) { exclude("target/**") })
-                .withPathSensitivity(PathSensitivity.RELATIVE)
-                .withPropertyName("nativeSources")
             inputs.dir(runtimeDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("onnxRuntime")
-
-            dependsOn("checkRustTools")
-            executable(cargoExecutable())
-            if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
-                environment("ANDROID_HOME", androidComponents.sdkComponents.sdkDirectory.get().asFile.path)
-            }
             // ort-sys's documented way to link a supplied runtime: the folder that holds it, and
             // dynamic linking, since the AAR has only the shared library.
-            environment("ORT_PREFER_DYNAMIC_LINK", "1")
-            environment("ORT_LIB_PATH", layout.buildDirectory.dir("onnxruntime/jniLibs/$abi").get().asFile.path)
-            val features = cargoFeatures("ort-probe")
-            inputs.property("features", features)
-            argumentProviders.add(
-                CommandLineArgumentProvider {
-                    listOf("ndk", "-t", abi, "--platform", "24", "-o", output.get().asFile.path, "build", "--release", "-p", "fga-ffi") + features
-                },
-            )
+            extraEnvironment.put("ORT_PREFER_DYNAMIC_LINK", "1")
+            extraEnvironment.put("ORT_LIB_PATH", runtimeDir.map { it.asFile.path })
         }
     }
 
@@ -423,12 +518,12 @@ if (nativeOrtEnabled) {
 
 /*
  * Issue #568: the PP-OCRv6 recogniser model for the Rust support-score engine. It is pinned in
- * native/ocr-model/model.properties (file name, URL, size, SHA-256) and never committed. With
- * `fga.native` on, every variant that packages libfga_ffi.so also packages the model under
- * assets/ocr/, with the pin file and the licence notice beside it. The model comes from
+ * native/ocr-model/model.properties (file name, URL, size, SHA-256) and never committed. Every
+ * variant that carries the engine (carriesEngine) packages the model under assets/ocr/, with the
+ * pin file and the licence notice beside it. The model comes from
  * `-Pfga.ocr.model=<path>` or, without it, from the pinned URL; either way a file whose size or
  * SHA-256 differs stops the build, and nothing that failed the check is left where a later build
- * could pick it up. Off, none of this is registered.
+ * could pick it up. With -Pfga.native=false, none of this is registered.
  */
 abstract class ProvideOcrModel : DefaultTask() {
     @get:InputFile
@@ -636,9 +731,14 @@ abstract class CopyEngineNotices : DefaultTask() {
  * the one of a build before the engine (Main CI's apk_check.py checks the ci APK instead).
  */
 abstract class CheckEngineApk : DefaultTask() {
-    @get:InputDirectory
+    /** The APKs (from the APK artifact folder) or the app bundle to check. */
+    @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
-    abstract val apkDir: DirectoryProperty
+    abstract val archives: ConfigurableFileCollection
+
+    /** "" for an APK; "base/" for an app bundle, which keeps the base module's files under base/. */
+    @get:Input
+    abstract val entryPrefix: Property<String>
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -652,12 +752,12 @@ abstract class CheckEngineApk : DefaultTask() {
 
     @TaskAction
     fun check() {
-        val apks = apkDir.get().asFile.listFiles { f -> f.name.endsWith(".apk") }.orEmpty().sortedBy { it.name }
-        if (apks.isEmpty()) throw GradleException("No APK in ${apkDir.get().asFile}; cannot check that it carries the Rust engine")
+        val found = archives.files.filter { it.isFile && (it.name.endsWith(".apk") || it.name.endsWith(".aab")) }.sortedBy { it.name }
+        if (found.isEmpty()) throw GradleException("No APK or bundle in ${archives.files}; cannot check that it carries the Rust engine")
         val problems = mutableListOf<String>()
-        for (apk in apks) {
-            val names = ZipFile(apk).use { zip -> zip.entries().asSequence().map { it.name }.toSet() }
-            requiredEntries.get().filterNot { it in names }.forEach { problems += "${apk.name} lacks $it" }
+        for (archive in found) {
+            val names = ZipFile(archive).use { zip -> zip.entries().asSequence().map { it.name }.toSet() }
+            requiredEntries.get().map { entryPrefix.get() + it }.filterNot { it in names }.forEach { problems += "${archive.name} lacks $it" }
         }
         val buildConfig = buildConfigSources.asFileTree.matching { include("**/BuildConfig.java") }.files
         if (buildConfig.size != 1) {
@@ -666,7 +766,12 @@ abstract class CheckEngineApk : DefaultTask() {
             problems += "BuildConfig.NATIVE_READER is not true in ${buildConfig.single()}"
         }
         if (problems.isNotEmpty()) {
-            throw GradleException("This variant carries the Rust engine (design 0026), but: " + problems.joinToString("; "))
+            // A failed build leaves nothing that looks shippable.
+            found.forEach { it.delete() }
+            throw GradleException(
+                "This variant carries the Rust engine (design 0026), but: " + problems.joinToString("; ") +
+                    ". Deleted ${found.joinToString { it.path }}.",
+            )
         }
         stamp.get().asFile.writeText("ok\n")
     }
@@ -727,12 +832,35 @@ abstract class CheckRustKeepRules : DefaultTask() {
 val ocrModelFileName: String = Properties().apply {
     rootProject.file("native/ocr-model/model.properties").inputStream().use { load(it) }
 }.getProperty("file")?.trim() ?: throw GradleException("native/ocr-model/model.properties has no file")
-val engineApkEntries = shippedAbis.map { "lib/$it/libfga_ffi.so" } + listOf(
-    "assets/ocr/$ocrModelFileName",
-    "assets/ocr/${ocrModelFileName.removeSuffix(".onnx")}.NOTICE.txt",
-    "assets/ocr/ocr-model.properties",
-    "assets/ocr/THIRD_PARTY_NOTICES.txt",
-)
+// app/engine-apk-entries.txt is the one list of what a carrying APK holds; tools/ci/apk_check.py
+// present reads the same file, so the build's check and the release check cannot disagree.
+val engineApkEntries: List<String> = run {
+    val listFile = layout.projectDirectory.file("engine-apk-entries.txt").asFile
+    val abis = mutableListOf<String>()
+    val templates = mutableListOf<String>()
+    listFile.readLines().forEachIndexed { index, raw ->
+        val line = raw.trim()
+        if (line.isEmpty() || line.startsWith("#")) return@forEachIndexed
+        val kind = line.substringBefore(' ')
+        val value = line.substringAfter(' ', "").trim()
+        if (kind !in setOf("abi", "entry") || value.isEmpty() || ' ' in value) {
+            throw GradleException("${listFile.path}:${index + 1} is not \"abi NAME\" or \"entry PATH\": $raw")
+        }
+        if (kind == "abi") abis += value else templates += value
+    }
+    if (abis != shippedAbis) {
+        throw GradleException("The abi lines of ${listFile.path} ($abis) must equal shippedAbis ($shippedAbis)")
+    }
+    val stem = ocrModelFileName.removeSuffix(".onnx")
+    templates.flatMap { template ->
+        (if ("{abi}" in template) abis.map { it as String? } else listOf(null)).map { abi ->
+            val named = template.replace("{model_stem}", stem).replace("{model}", ocrModelFileName)
+            val entry = if (abi != null) named.replace("{abi}", abi) else named
+            if ('{' in entry || '}' in entry) throw GradleException("Unknown placeholder in ${listFile.path}: $template")
+            entry
+        }
+    }
+}
 
 if (engineRegistered) {
     val provideOcrModel = tasks.register<ProvideOcrModel>("provideOcrModel") {
@@ -762,13 +890,28 @@ if (engineRegistered) {
 
             val checkApk = tasks.register<CheckEngineApk>("checkEngineApk$cap") {
                 description = "Fails the ${variant.name} build when its APK lacks the Rust engine or NATIVE_READER is not true."
-                apkDir.set(variant.artifacts.get(SingleArtifact.APK))
+                archives.from(variant.artifacts.get(SingleArtifact.APK).map { dir -> dir.asFileTree.matching { include("*.apk") } })
+                entryPrefix.set("")
                 buildConfigSources.from(layout.buildDirectory.dir("generated/source/buildConfig/${variant.name}"))
                 dependsOn("generate${cap}BuildConfig")
                 requiredEntries.set(engineApkEntries)
                 stamp.set(layout.buildDirectory.file("intermediates/checkEngineApk/${variant.name}/ok.txt"))
             }
-            tasks.matching { it.name == "assemble$cap" }.configureEach { dependsOn(checkApk) }
+            val checkBundle = tasks.register<CheckEngineApk>("checkEngineBundle$cap") {
+                description = "Fails the ${variant.name} bundle when it lacks the Rust engine or NATIVE_READER is not true."
+                archives.from(variant.artifacts.get(SingleArtifact.BUNDLE))
+                entryPrefix.set("base/")
+                buildConfigSources.from(layout.buildDirectory.dir("generated/source/buildConfig/${variant.name}"))
+                dependsOn("generate${cap}BuildConfig")
+                requiredEntries.set(engineApkEntries)
+                stamp.set(layout.buildDirectory.file("intermediates/checkEngineBundle/${variant.name}/ok.txt"))
+            }
+            // The three ways to get an APK or a bundle out of a variant: assemble<V> and install<V>
+            // both take the APK of package<V> (install<V> does not run assemble<V>), and bundle<V>
+            // writes the bundle. sign<V>Rotated re-signs the assembled APK afterwards and checks
+            // that the entries stayed the same (SignRotatedApk).
+            tasks.matching { it.name == "assemble$cap" || it.name == "install$cap" }.configureEach { dependsOn(checkApk) }
+            tasks.matching { it.name == "bundle$cap" }.configureEach { dependsOn(checkBundle) }
 
             if (variant.isMinifyEnabled) {
                 val mapping = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE)
@@ -942,6 +1085,14 @@ abstract class SignRotatedApk : DefaultTask() {
         }
     }
 
+    /** Entry names without JAR (v1) signature files, which a re-sign may add, drop or replace. */
+    private fun entryNames(file: File): Set<String> = ZipFile(file).use { zip ->
+        zip.entries().asSequence().map { it.name }.filterNot { name ->
+            name == "META-INF/MANIFEST.MF" ||
+                (name.startsWith("META-INF/") && listOf(".SF", ".RSA", ".DSA", ".EC").any { name.endsWith(it) })
+        }.toSet()
+    }
+
     private fun signRotated(apkFile: File) {
         val guide = "docs/agents/releases-and-versioning.md (Release signing)"
 
@@ -997,6 +1148,17 @@ abstract class SignRotatedApk : DefaultTask() {
         if (process.waitFor() != 0) {
             signed.delete()
             throw GradleException("apksigner failed for ${apkFile.name}:\n$output")
+        }
+        // checkEngineApk<V> checked the file before this re-sign. apksigner only adds signature
+        // data, so the entries must stay the same; if they did not, the checked file is not the
+        // one that ships, and nothing is left at the release path.
+        val before = entryNames(apkFile)
+        val after = entryNames(signed)
+        if (before != after) {
+            signed.delete()
+            throw GradleException(
+                "apksigner changed the entries of ${apkFile.name}: added ${(after - before).sorted()}, removed ${(before - after).sorted()}",
+            )
         }
         Files.move(signed.toPath(), apkFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         logger.lifecycle("Signed ${apkFile.name} with the rotated release key (lineage ${lineageFile.name}).")

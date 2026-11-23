@@ -1,0 +1,14 @@
+# What an APK that carries the Rust engine must hold (design 0026, D-8). One list for both checks:
+# checkEngineApk<V> and checkEngineBundle<V> in app/build.gradle.kts, and tools/ci/apk_check.py present.
+# The abi lines must equal shippedAbis in app/build.gradle.kts; the build stops when they differ.
+# In entry lines, {abi} stands for each abi, {model} for the file that
+# native/ocr-model/model.properties names, and {model_stem} for that name without .onnx.
+# RustSupportScoreEngine.kt reads ocr-model.properties to load the model, so an APK without it
+# falls back to "unavailable" at run time.
+abi armeabi-v7a
+abi arm64-v8a
+entry lib/{abi}/libfga_ffi.so
+entry assets/ocr/{model}
+entry assets/ocr/{model_stem}.NOTICE.txt
+entry assets/ocr/ocr-model.properties
+entry assets/ocr/THIRD_PARTY_NOTICES.txt

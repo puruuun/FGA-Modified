@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -130,14 +131,20 @@ fun LicenseScreenContent(licenseText: String, notices: (suspend () -> List<Strin
     }
 }
 
+/** An unreadable asset shows an empty list; leaving the screen cancels the load, which must stay a cancellation. */
+internal suspend fun loadNoticesOrEmpty(load: suspend () -> List<String>): List<String> =
+    try {
+        load()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        emptyList()
+    }
+
 @Composable
 private fun OpenSourceNotices(load: suspend () -> List<String>) {
     val paragraphs by produceState<List<String>?>(initialValue = null, load) {
-        value = try {
-            load()
-        } catch (e: Exception) {
-            emptyList()
-        }
+        value = loadNoticesOrEmpty(load)
     }
 
     CappedWidth {

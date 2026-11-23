@@ -4,8 +4,11 @@
   ci_gate.py classify   reads NUL-separated paths on stdin, prints true or false
                         (true = the change needs the build).
   ci_gate.py classify-native   same input, prints true or false
-                        (true = the change needs Native CI: the Rust checks and the engine APK).
-  ci_gate.py gate CHANGES CODE NATIVE BUILD RUST   exits 0 only for an acceptable combination.
+                        (true = the change needs the Rust checks of native-ci.yml).
+  ci_gate.py gate CHANGES CODE NATIVE BUILD RUST ENGINE   exits 0 only for an acceptable combination.
+
+A change that needs the build (CODE) also needs the engine APK of engine-apk.yml (the owner's rule):
+the same classification decides both.
 
 Every error path must lead to "true" / failure, never to a skipped build.
 """
@@ -49,24 +52,13 @@ def _glob_to_regex(pattern):
 
 
 # Must equal the paths: filter of native-ci.yml (test_ci_workflows.py compares them): the gate runs
-# Native CI (the Rust checks and the beta APK with the engine, design 0026, D-8) for exactly these
-# changes: the Rust core, the build scripts that package it, the engine's Kotlin binding, the CI
-# scripts that check the APK and the notices, and the two workflows. Plain Kotlin changes do not
-# need it: they cannot change what is packaged or which classes R8 keeps for JNI, and the run costs
-# a Rust and an R8 build on top of Main CI's own job.
+# the Rust checks (format, clippy, tests, cargo-deny, the Android lint and build, the third-party
+# notices) for exactly these changes, the inputs of those checks. Everything else that is code
+# needs the build and the engine APK only (design 0025, D-7; design 0026, D-8).
 NATIVE_PATTERNS = [
     'native/**',
     '.github/workflows/native-ci.yml',
     '.github/workflows/main-ci.yml',
-    'app/build.gradle.kts',
-    'app/proguard-*.pro',
-    'app/src/main/java/io/github/fate_grand_automata/sensing/**',
-    'app/src/main/java/io/github/fate_grand_automata/di/script/ScriptsModule.kt',
-    'build.gradle.kts',
-    'settings.gradle.kts',
-    'gradle.properties',
-    'gradle/**',
-    'tools/ci/apk_check.py',
     'tools/ci/native_notices.py',
 ]
 
@@ -108,35 +100,27 @@ def needs_native(paths):
         return True
 
 
-def gate_ok(changes, code, native, build, rust):
-    """Pass table (anything not listed fails):
+def gate_ok(changes, code, native, build, rust, engine):
+    """The rules (a combination that breaks any of them fails):
 
-      changes  code   native  build    rust      result
-      success  true   true    success  success   pass
-      success  true   false   success  success   pass  (rust is not expected, but green is fine)
-      success  true   false   success  skipped   pass
-      success  false  false   success  success   pass  (as before: build ran although not needed)
-      success  false  false   success  skipped   pass
-      success  false  false   skipped  skipped   pass  (documentation only)
-      success  false  false   skipped  success   pass
-      success  false  true    any      any       FAIL  (a Rust path is never documentation)
-      success  true   true    any      !success  FAIL  (failure, cancelled, skipped, empty)
-      !success any    any     any      any       FAIL
-      code or native not exactly true/false     FAIL
+      changes must be success; code and native exactly true or false; native=true needs code=true
+      (a Rust path is never documentation).
+      build (test-and-build) and engine (engine-apk): success when code=true; success or skipped
+      when code=false (a job that ran although it was not needed is fine).
+      rust (native): success when native=true; success or skipped when native=false.
+      Any other result (failure, cancelled, skipped where success is needed, empty) fails.
     """
     if changes != 'success':
         return False
     if code not in ('true', 'false') or native not in ('true', 'false'):
         return False
-    if build == 'success':
-        build_ok = True
-    else:
-        build_ok = code == 'false' and build == 'skipped'
-    if not build_ok:
+    if native == 'true' and code != 'true':
         return False
-    if native == 'true':
-        return code == 'true' and rust == 'success'
-    return rust in ('skipped', 'success')
+
+    def needed(flag, result):
+        return result == 'success' if flag == 'true' else result in ('success', 'skipped')
+
+    return needed(code, build) and needed(code, engine) and needed(native, rust)
 
 
 def main(argv):
@@ -149,14 +133,14 @@ def main(argv):
             result = True
         print('true' if result else 'false')
         return 0
-    if len(argv) == 7 and argv[1] == 'gate':
-        _, _, changes, code, native, build, rust = argv
-        print('changes=%s code=%s native=%s test-and-build=%s native-checks=%s'
-              % (changes, code, native, build, rust))
-        ok = gate_ok(changes, code, native, build, rust)
+    if len(argv) == 8 and argv[1] == 'gate':
+        _, _, changes, code, native, build, rust, engine = argv
+        print('changes=%s code=%s native=%s test-and-build=%s native-checks=%s engine-apk=%s'
+              % (changes, code, native, build, rust, engine))
+        ok = gate_ok(changes, code, native, build, rust, engine)
         print('Main CI gate: ' + ('pass' if ok else 'FAIL'))
         return 0 if ok else 1
-    print('usage: ci_gate.py classify | classify-native | gate CHANGES CODE NATIVE BUILD RUST',
+    print('usage: ci_gate.py classify | classify-native | gate CHANGES CODE NATIVE BUILD RUST ENGINE',
           file=sys.stderr)
     return 2
 

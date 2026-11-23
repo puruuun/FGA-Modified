@@ -15,10 +15,11 @@ import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The Rust support-score engine behind [SupportScoreEngine] (issue #568), for the rust build type
- * only. Building it does nothing: the library, the model copy and the load run on the first
- * [unavailableReason], [available] or [read] of a run, on the calling (script) thread, and [close]
- * unloads at the end of the run. Every failure on the way makes the engine unavailable for the
+ * The Rust support-score engine behind [SupportScoreEngine] (issue #568), for the variants that
+ * carry the engine (BuildConfig.NATIVE_READER, see SupportScoreEngineBinding). Building it does
+ * nothing: the library, the model copy and the load run on the first [unavailableReason],
+ * [available] or [read] of a run, on the calling (script) thread, and [close] unloads at the end
+ * of the run. Every failure on the way makes the engine unavailable for the
  * rest of the run; nothing is retried.
  *
  * State machine. [work] guards `state`; only a thread that holds it loads, reads or unloads.

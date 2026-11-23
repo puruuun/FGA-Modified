@@ -10,12 +10,15 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.screenshotRules
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [32], qualifiers = "w400dp-h800dp")
@@ -48,6 +51,13 @@ class LicenseScreenTest {
     @Test fun `the notices asset is packaged exactly with the engine`() {
         val assets = ApplicationProvider.getApplicationContext<Application>().assets
         assertEquals(BuildConfig.NATIVE_READER, openSourceNoticesPackaged(assets))
+    }
+
+    @Test fun `a failed load shows no paragraphs and a cancelled one stays cancelled`() {
+        runBlocking {
+            assertEquals(emptyList(), loadNoticesOrEmpty { throw java.io.IOException("unreadable") })
+            assertFailsWith<CancellationException> { loadNoticesOrEmpty { throw CancellationException("left the screen") } }
+        }
     }
 
     @Test fun `paragraphs split at blank lines and keep their lines`() {

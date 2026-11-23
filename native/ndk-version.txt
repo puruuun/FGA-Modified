@@ -1,0 +1,3 @@
+# The Android NDK that builds libfga_ffi.so for the APK. The engine-apk CI job installs this one and
+# fails on any other, checkRustTools names it when no NDK is found, and the docs point here.
+28.2.13676358

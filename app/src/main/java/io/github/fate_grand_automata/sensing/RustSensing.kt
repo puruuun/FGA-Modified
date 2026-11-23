@@ -24,7 +24,8 @@ interface ScoreNative {
 /**
  * JNI binding to libfga_ffi.so for product code (issue #568). Rust keeps this engine in its own
  * slot, apart from the device probes (`qa.NativeProbe`): neither can load over, read from or
- * unload the other's model. Only [RustSupportScoreEngine] calls it, and only in the rust build type.
+ * unload the other's model. Only [RustSupportScoreEngine] calls it, and only in a variant that carries
+ * the engine (BuildConfig.NATIVE_READER).
  *
  * The parameters are nullable so that a null reaching Rust is answered there instead of failing here.
  */

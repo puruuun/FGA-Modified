@@ -102,8 +102,9 @@ jobs:
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
       - name: The APK holds no Rust library
-        # Design 0026, D-6: the ci build type does not carry the engine (beta, release and rust do;
-        # native-ci.yml builds and checks a beta APK with it).
+        # Design 0026, D-6: the ci build type without -Pfga.native=true does not carry the engine
+        # (beta and rust do, and so does the stable ci APK built with -Pfga.native=true; engine-apk.yml
+        # builds and checks a beta APK with it).
         run: |
           set -eu
           set -- app/build/outputs/apk/ci/*.apk
@@ -116,17 +117,23 @@ jobs:
           path: '**/build/test-results/**/*.xml'
           retention-days: 14
 
-  # The Rust checks and the engine APK build are defined once, in native-ci.yml. They are part of the
-  # required check because Native CI itself cannot be required: a PR that touches none of its paths
-  # (ci_gate.py, NATIVE_PATTERNS) would never get a run of it.
+  # The Rust checks (native-ci.yml) and the engine APK (engine-apk.yml) are defined once, in their own
+  # workflows. They are part of the required check because neither can be required on its own: a PR
+  # that needs neither would never get a run of it. The engine APK runs for every code change, the
+  # Rust checks only for the Rust paths (ci_gate.py, NATIVE_PATTERNS).
   native:
     needs: changes
     if: needs.changes.outputs.native == 'true'
     uses: ./.github/workflows/native-ci.yml
 
+  engine-apk:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/engine-apk.yml
+
   gate:
     name: Main CI gate
-    needs: [changes, test-and-build, native]
+    needs: [changes, test-and-build, native, engine-apk]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -141,4 +148,5 @@ jobs:
           NATIVE: ${{ needs.changes.outputs.native }}
           BUILD_RESULT: ${{ needs.test-and-build.result }}
           NATIVE_RESULT: ${{ needs.native.result }}
-        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT"
+          ENGINE_RESULT: ${{ needs.engine-apk.result }}
+        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT" "$ENGINE_RESULT"

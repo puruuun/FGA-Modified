@@ -77,7 +77,7 @@
 - **D-7. 베타·정식 빌드는 Rust 도구가 없으면 실패합니다.** 조용히 라이브러리 없이 만들어지면 사용자에게 엔진 없는 판이 나갑니다. 릴리스는 소유자 PC에서 만들고 그 PC에는 도구가 있습니다.
   - 엔진이 들어가는 빌드(베타, `-Pfga.native=true`를 준 정식 `ci`)는 도구가 없으면 처음에 실패합니다(`checkRustTools`). 정식 빌드에서 속성을 빠뜨리면 빌드만으로는 Main CI의 `ci`와 구별할 수 없으므로, 릴리스 절차가 올릴 파일에 `apk_check.py present`를 돌리고 실패하면 멈춥니다(베타도 같음). 엔진 없는 긴급 빌드는 문서화된 예외입니다(베타는 `-Pfga.native=false`, 정식은 속성 없이, 그 뒤 `apk_check.py absent`, 릴리스 노트에 명시).
 - **D-8. Main CI는 라이브러리가 든 APK를 만들어 검사합니다.** `apk_check.py`는 "베타·정식 APK에는 라이브러리 두 개(ABI별)와 모델, 고지 파일이 있어야 하고, `ci` APK에는 없어야 한다"로 바뀝니다. R8 유지 규칙 검사(`checkRustKeepRules`)는 라이브러리가 든 모든 빌드 타입에서 돕니다. 이 검사가 없으면 R8이 JNI 함수를 지워도 빌드는 통과합니다.
-- **D-9. 모델 파일은 이 저장소의 GitHub Release 자산에서 받습니다.** `native/ocr-model/model.properties`의 주소만 바꾸고 크기와 SHA-256 고정은 그대로 둡니다. 지금 주소(ModelScope)는 예비로 남깁니다. 자산 옆에 Apache-2.0 전문과 고지를 둡니다.
+- **D-9. 모델 파일의 호스팅은 미뤘습니다(열린 결정).** 처음 안은 이 저장소의 GitHub Release 자산에서 받고 ModelScope를 예비로 두는 것이었습니다. 그러나 이 저장소에 모델만 든 GitHub Release를 올리면 Obtainium이 그것을 앱 업데이트로 사용자에게 제안합니다. 그래서 어디에 둘지는 아직 정하지 않았습니다. 그때까지 `native/ocr-model/model.properties`는 ModelScope 주소 하나와 크기, SHA-256 고정을 유지합니다.
   - 이유: 저장소에 커밋하면 21 MB가 이력에 영구히 남고 5 MiB 가드와 0025 결정을 바꿔야 합니다. 외부 주소 하나에만 의존하면 그 주소가 사라질 때 릴리스를 못 만듭니다.
 - **D-10. 오픈소스 고지는 정적 파일 `THIRD_PARTY_NOTICES.txt`로 APK에 넣고, 앱의 라이선스 화면에서 볼 수 있게 합니다.** 내용은 모델 고지와 Apache-2.0 전문, Rust 크레이트별 이름·버전·라이선스·저작권 줄, MIT·BSD·ISC 전문, `ring`의 세 고지 파일입니다. `Cargo.lock`이 바뀌었는데 파일이 그대로면 실패하는 검사를 둡니다.
   - 라이선스 화면에 "오픈소스 고지" 항목이 하나 생깁니다. 엔진 교체를 알리는 문구는 아니지만 사용자에게 보이는 유일한 변화입니다(§10의 2).
@@ -105,8 +105,8 @@
 
 - `app/build.gradle.kts`: D-6의 빌드 타입별 포함, `NATIVE_READER`와 `SCORE_SCAN` 분리, `proguard-rust.pro`와 `checkRustKeepRules`를 라이브러리가 든 모든 빌드 타입에 적용, 도구가 없을 때의 실패 메시지(D-7).
 - `SupportScoreEngineBinding.kt`: `NATIVE_READER`로 판단.
-- `tools/ci/apk_check.py`와 그 테스트, `tools/ci/ci_gate.py`, `.github/workflows/main-ci.yml`(Rust 도구 설치와 캐시): D-8.
-- `native/ocr-model/model.properties`, `ProvideOcrModel`: D-9(주 주소와 예비 주소, 로컬 캐시).
+- `tools/ci/apk_check.py`와 그 테스트, `tools/ci/ci_gate.py`, `.github/workflows/native-ci.yml`의 `engine-apk` 작업(Rust 도구 설치와 캐시)과 `main-ci.yml`의 연결: D-8.
+- `ProvideOcrModel`: Gradle 사용자 홈의 로컬 캐시. D-9의 주 주소와 예비 주소는 이 PR에 들지 않습니다(D-9 참고). 모델 주소는 지금의 ModelScope 하나입니다.
 - `THIRD_PARTY_NOTICES.txt`, 그 검사, 라이선스 화면 항목: D-10.
 - 16 KB 페이지 정렬을 Gradle이 만든 APK 안의 `.so`로 검사합니다(지금은 cargo가 직접 만든 파일만 검사).
 - 문서: `docs/agents/rust-native.md`, `docs/agents/releases-and-versioning.md`, 0025의 D-6.

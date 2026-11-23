@@ -104,16 +104,19 @@ class ApkCheckTest(unittest.TestCase):
     def test_engine_apk_fails_absent(self):
         self.assertEqual(self.run_cli('absent', self.engine_apk())[0], 1)
 
-    # --- mode present: beta, release and rust APKs ---
+    # --- mode present: the beta, the rust APK and the stable ci APK built with -Pfga.native=true ---
 
     def test_engine_apk_passes_present(self):
         code, out = self.run_cli('present', self.engine_apk())
         self.assertEqual(code, 0, out)
 
+    def test_required_entries_are_the_shared_list(self):
+        self.assertEqual(sorted(a.required_entries(MODEL)), sorted(ENGINE + [ARM64]))
+
     def test_plain_apk_fails_present_naming_every_missing_file(self):
         code, out = self.run_cli('present', self.apk('p.apk', BASE))
         self.assertEqual(code, 1)
-        for entry in [ARM64] + [e for e in ENGINE if not e.endswith('ocr-model.properties')]:
+        for entry in [ARM64] + ENGINE:
             self.assertIn('lacks ' + entry, out)
 
     def test_only_one_abi_fails(self):
@@ -129,7 +132,8 @@ class ApkCheckTest(unittest.TestCase):
 
     def test_missing_notices_or_model_fails(self):
         for left_out in ('assets/ocr/THIRD_PARTY_NOTICES.txt', 'assets/ocr/' + MODEL,
-                         'assets/ocr/' + MODEL[:-len('.onnx')] + '.NOTICE.txt'):
+                         'assets/ocr/' + MODEL[:-len('.onnx')] + '.NOTICE.txt',
+                         'assets/ocr/ocr-model.properties'):
             apk = self.apk('x.apk', BASE + [e for e in ENGINE if e != left_out], arm64=elf([0x4000]))
             code, out = self.run_cli('present', apk)
             self.assertEqual(code, 1, left_out)
@@ -147,6 +151,70 @@ class ApkCheckTest(unittest.TestCase):
 
     def test_compressed_library_needs_no_zip_alignment(self):
         self.assertEqual(self.run_cli('present', self.engine_apk(compress=True))[0], 0)
+
+    def test_zero_or_small_alignment_fails(self):
+        for aligns in ([0], [1], [0x4000, 0], [0x2000]):
+            code, out = self.run_cli('present', self.engine_apk(arm64=elf(aligns)))
+            self.assertEqual(code, 1, aligns)
+            self.assertIn('not 0x4000', out, aligns)
+
+    def test_larger_page_multiple_passes(self):
+        self.assertEqual(self.run_cli('present', self.engine_apk(arm64=elf([0x10000, 0x4000])))[0], 0)
+
+    def test_32_bit_big_endian_and_truncated_elf_fail_with_a_message(self):
+        good = elf([0x4000])
+        cases = {
+            '32-bit': good[:4] + b'\x01' + good[5:],
+            'big-endian': good[:5] + b'\x02' + good[6:],
+            'truncated header': good[:40],
+            'truncated program headers': good[:64 + 20],
+            'no program headers': elf([]),
+        }
+        for label, data in cases.items():
+            code, out = self.run_cli('present', self.engine_apk(arm64=data))
+            self.assertEqual(code, 1, label)
+            self.assertIn('cannot read ' + ARM64, out, label)
+            self.assertNotIn('Traceback', out, label)
+
+    def test_library_that_zipfile_cannot_read_fails_with_a_message(self):
+        # Compression method 99 (AES): zipfile raises NotImplementedError on read.
+        path = self.engine_apk(compress=True)
+        with open(path, 'rb') as f:
+            data = bytearray(f.read())
+        with zipfile.ZipFile(path) as z:
+            info = z.getinfo(ARM64)
+        struct.pack_into('<H', data, info.header_offset + 8, 99)
+        name = ARM64.encode()
+        pos = 0
+        while True:
+            pos = data.index(b'PK\x01\x02', pos)
+            name_len, = struct.unpack_from('<H', data, pos + 28)
+            if bytes(data[pos + 46:pos + 46 + name_len]) == name:
+                struct.pack_into('<H', data, pos + 10, 99)
+                break
+            pos += 4
+        with open(path, 'wb') as f:
+            f.write(data)
+        code, out = self.run_cli('present', path)
+        self.assertEqual(code, 1)
+        self.assertIn(ARM64, out)
+        self.assertNotIn('Traceback', out)
+
+    def test_entry_list_parser(self):
+        abis, templates = a.read_entry_list('# c\n\nabi x\nentry lib/{abi}/l.so\nentry a/{model}\n')
+        self.assertEqual((abis, templates), (['x'], ['lib/{abi}/l.so', 'a/{model}']))
+        self.assertEqual(a.expand_entries(['x', 'y'], ['lib/{abi}/l.so', 'a/{model_stem}.N'], 'm.onnx'),
+                         ['lib/x/l.so', 'lib/y/l.so', 'a/m.N'])
+        for bad in ('abi\nentry a\n', 'abi x\n', 'entry a\n', 'abi x\nentry a b\n', 'abi x\nfile a\n'):
+            with self.assertRaises(ValueError, msg=bad):
+                a.read_entry_list(bad)
+        with self.assertRaises(ValueError):
+            a.expand_entries(['x'], ['a/{other}'], 'm.onnx')
+
+    def test_unreadable_entry_list_fails_the_cli(self):
+        missing = os.path.join(self.tmp.name, 'no-list.txt')
+        with self.assertRaises(OSError):
+            a.required_entries(MODEL, missing)
 
     def test_library_that_is_not_elf_fails(self):
         code, out = self.run_cli('present', self.engine_apk(arm64=b'not an elf'))

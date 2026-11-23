@@ -44,7 +44,7 @@ published (unless the owner explicitly requests an immediate stable release):
      for both ABIs, the OCR model, the third-party notices), so the build PC needs, besides the
      Android SDK and JDK 21: the Rust toolchain that `native/rust-toolchain.toml` pins (rustup
      installs it on first use, with both Android targets), `cargo-ndk` (CI uses 4.1.2), and the
-     Android NDK (the owner's PC has 28.2.13676358; set `ANDROID_NDK_HOME` to it, or keep it
+     Android NDK that `native/ndk-version.txt` names (set `ANDROID_NDK_HOME` to it, or keep it
      under the SDK's `ndk/`), plus the model: `-Pfga.ocr.model=<path to PP-OCRv6_rec_small.onnx>`,
      or network access once (Gradle downloads the pinned URL, checks size and SHA-256 and keeps a
      copy under `~/.gradle/caches/fga-ocr-model/`). The shell setup is in
