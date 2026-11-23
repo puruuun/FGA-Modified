@@ -40,10 +40,24 @@ published (unless the owner explicitly requests an immediate stable release):
    - Run `./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test`
      locally, open the PR, and fast-forward merge to `main` once `Main CI` passes.
 3. **Build and install the Beta APK for device testing**:
+   - The beta and stable APKs carry the Rust support-score reader (design 0026: `libfga_ffi.so`
+     for both ABIs, the OCR model, the third-party notices), so the build PC needs, besides the
+     Android SDK and JDK 21: the Rust toolchain that `native/rust-toolchain.toml` pins (rustup
+     installs it on first use, with both Android targets), `cargo-ndk` (CI uses 4.1.2), and the
+     Android NDK (the owner's PC has 28.2.13676358; set `ANDROID_NDK_HOME` to it, or keep it
+     under the SDK's `ndk/`), plus the model: `-Pfga.ocr.model=<path to PP-OCRv6_rec_small.onnx>`,
+     or network access once (Gradle downloads the pinned URL, checks size and SHA-256 and keeps a
+     copy under `~/.gradle/caches/fga-ocr-model/`). The shell setup is in
+     [`rust-native.md`](rust-native.md) ("On the owner's PC"). A missing tool stops the build at
+     `checkRustTools` with its name; it never builds an APK without the engine.
+     `-Pfga.native=false` builds the beta or stable APK without the engine, as before design 0026
+     (the emergency switch; only on the planner's decision).
    - From `main`, build the beta APK:
      ```bash
-     ./gradlew :app:assembleBeta
+     ./gradlew :app:assembleBeta -Pfga.ocr.model=build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx
      ```
+     The build checks the APK itself (`checkEngineApkBeta`, `checkRustKeepRulesBeta`); a second
+     look is `py -3 tools/ci/apk_check.py present app/build/outputs/apk/beta/app-beta.apk`.
    - Stage `app/build/outputs/apk/beta/app-beta.apk` (package
      `io.github.fate_grand_automata.beta`, app name `FGA Beta`) as
      `build/release-assets/FGA-beta-<beta.versionName>-arm.apk`. No `.sha256` file is made (owner, 2026-10-30).
@@ -80,6 +94,10 @@ When promoting to stable `X.Y.Z`:
 4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` (no
    `.sha256` file; GitHub shows each asset's SHA-256), verify with `apksigner` / `aapt2`, install onto BlueStacks,
    record `docs/releases/<version>-validation.md`, and publish the GitHub Release `v<version>`.
+   **Open (issue #650):** the stable APK is the `ci` build type, which design 0026, D-6 leaves
+   without the Rust engine (only `release`, upstream's Play build type that the fork does not
+   ship, carries it), so this step builds a stable APK without the reader until the planner
+   decides how the stable build gets it.
 
 ## Release signing
 

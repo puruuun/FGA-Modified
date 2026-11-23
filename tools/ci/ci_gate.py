@@ -4,7 +4,7 @@
   ci_gate.py classify   reads NUL-separated paths on stdin, prints true or false
                         (true = the change needs the build).
   ci_gate.py classify-native   same input, prints true or false
-                        (true = the change needs the Rust checks).
+                        (true = the change needs Native CI: the Rust checks and the engine APK).
   ci_gate.py gate CHANGES CODE NATIVE BUILD RUST   exits 0 only for an acceptable combination.
 
 Every error path must lead to "true" / failure, never to a skipped build.
@@ -48,11 +48,26 @@ def _glob_to_regex(pattern):
     return re.compile('(?s)' + ''.join(out) + r'\Z')
 
 
-# Must equal the paths: filter of native-ci.yml (test_ci_gate.py compares them): the gate runs the
-# Rust checks for exactly the changes that used to trigger Native CI.
+# Must equal the paths: filter of native-ci.yml (test_ci_workflows.py compares them): the gate runs
+# Native CI (the Rust checks and the beta APK with the engine, design 0026, D-8) for exactly these
+# changes: the Rust core, the build scripts that package it, the engine's Kotlin binding, the CI
+# scripts that check the APK and the notices, and the two workflows. Plain Kotlin changes do not
+# need it: they cannot change what is packaged or which classes R8 keeps for JNI, and the run costs
+# a Rust and an R8 build on top of Main CI's own job.
 NATIVE_PATTERNS = [
     'native/**',
     '.github/workflows/native-ci.yml',
+    '.github/workflows/main-ci.yml',
+    'app/build.gradle.kts',
+    'app/proguard-*.pro',
+    'app/src/main/java/io/github/fate_grand_automata/sensing/**',
+    'app/src/main/java/io/github/fate_grand_automata/di/script/ScriptsModule.kt',
+    'build.gradle.kts',
+    'settings.gradle.kts',
+    'gradle.properties',
+    'gradle/**',
+    'tools/ci/apk_check.py',
+    'tools/ci/native_notices.py',
 ]
 
 _DOC_REGEXES = [_glob_to_regex(p) for p in DOC_PATTERNS]

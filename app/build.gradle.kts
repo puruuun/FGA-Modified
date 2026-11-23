@@ -5,6 +5,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.Properties
+import java.util.zip.ZipFile
 import javax.inject.Inject
 
 plugins {
@@ -124,22 +125,41 @@ androidComponents {
 }
 
 /*
- * Rust core (design 0025, docs/agents/rust-native.md). Off unless `-Pfga.native=true`: then
- * cargo-ndk builds native/ and libfga_ffi.so is packaged. Off, nothing here touches native/,
- * so a Kotlin-only build needs no Rust tools and its APKs carry no Rust library.
+ * Rust core (designs 0025 and 0026, docs/agents/rust-native.md). Which variants carry the Rust
+ * engine (libfga_ffi.so for the shipped ABIs, the OCR model and the third-party notices) is decided
+ * once, by carriesEngine; the packaged files, BuildConfig.NATIVE_READER, the keep rules and the
+ * checks below all read it, so they cannot disagree.
+ *
+ * Design 0026, D-6: beta, release and rust carry it; debug, ci and deviceTest do not, so a
+ * Kotlin-only build (Main CI's assembleCi and unit tests) needs no Rust tools and has no Rust task
+ * in its task graph. `-Pfga.native=true` adds the engine to every variant (the device-test and
+ * probe builds of rust-native.md); `-Pfga.native=false` takes it out of every variant, the
+ * emergency switch of the design's risk table, which builds beta and release as the public builds
+ * were before the engine. D-7: a carrying variant fails when a Rust tool is missing; it never
+ * silently packages no engine.
  */
-val nativeEnabled = providers.gradleProperty("fga.native").orNull == "true"
+val nativeSwitch: Boolean? = when (val raw = providers.gradleProperty("fga.native").orNull) {
+    null -> null
+    "true" -> true
+    "false" -> false
+    else -> throw GradleException("-Pfga.native must be true or false, got '$raw'")
+}
+val engineBuildTypes = setOf("beta", "release", "rust")
+fun carriesEngine(buildType: String?): Boolean = nativeSwitch ?: (buildType in engineBuildTypes)
+// Some variant may carry the engine, so the Rust tasks are registered. Registering runs nothing:
+// only a carrying variant's tasks depend on them.
+val engineRegistered = nativeSwitch != false
 val shippedAbis = listOf("armeabi-v7a", "arm64-v8a")
 // Issue #535, see the ONNX Runtime block below.
 val nativeOrtEnabled = providers.gradleProperty("fga.native.ort").orNull == "true"
-if (nativeOrtEnabled && !nativeEnabled) {
+if (nativeOrtEnabled && nativeSwitch != true) {
     throw GradleException("-Pfga.native.ort=true only works together with -Pfga.native=true")
 }
 // Issue #549: tract's multi-threaded kernels for the tract probes (fga-ffi's tract-threads
 // feature), a measurement switch for device-test builds. Off, the cargo-ndk commands are the
 // ones without it, so the library is the one built before the switch existed.
 val nativeThreadsEnabled = providers.gradleProperty("fga.native.threads").orNull == "true"
-if (nativeThreadsEnabled && !nativeEnabled) {
+if (nativeThreadsEnabled && nativeSwitch != true) {
     throw GradleException("-Pfga.native.threads=true only works together with -Pfga.native=true")
 }
 /** `--features` arguments for fga-ffi; empty when no switch is on, so the command stays as it was. */
@@ -148,14 +168,91 @@ fun cargoFeatures(vararg features: String): List<String> {
     return if (wanted.isEmpty()) emptyList() else listOf("--features", wanted.joinToString(","))
 }
 
+/** rustup installs into ~/.cargo/bin, which is often not on the PATH of a Gradle daemon started by Android Studio. */
+fun cargoExecutable(): String {
+    val homeCargo = File(System.getProperty("user.home"), ".cargo/bin/" + if (File.separatorChar == '\\') "cargo.exe" else "cargo")
+    return if (homeCargo.isFile) homeCargo.path else "cargo"
+}
+
 abstract class CargoNdkBuild : Exec() {
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 }
 
-if (nativeEnabled) {
+/*
+ * D-7: every variant that carries the engine runs this before it compiles anything (its
+ * pre<Variant>Build depends on it), so a missing tool stops the build at once, naming the tool and
+ * the opt-out, instead of deep inside the cargo build.
+ */
+abstract class CheckRustTools : DefaultTask() {
+    @get:Input
+    abstract val cargo: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val ndkHome: Property<String>
+
+    @get:Input
+    abstract val sdkDirectory: Property<String>
+
+    init {
+        // Tools are installed and removed outside Gradle's view, so the answer is never reused.
+        outputs.upToDateWhen { false }
+    }
+
+    @TaskAction
+    fun check() {
+        val optOut = "This build type packages the Rust engine (design 0026). Install it, or build without the " +
+            "engine with -Pfga.native=false (docs/agents/rust-native.md, \"Which builds carry the engine\")."
+        val named = File(cargo.get())
+        val cargoExe = if (named.isAbsolute) named.takeIf { it.isFile } else System.getenv("PATH").orEmpty()
+            .split(File.pathSeparatorChar)
+            .filter { it.isNotEmpty() }
+            .flatMap { dir -> listOf(File(dir, "cargo"), File(dir, "cargo.exe")) }
+            .firstOrNull { it.isFile }
+        if (cargoExe == null) throw GradleException("cargo was not found (not in ~/.cargo/bin, not on PATH). $optOut")
+        val (exit, output) = try {
+            val process = ProcessBuilder(cargoExe.path, "ndk", "--version").redirectErrorStream(true).start()
+            val text = process.inputStream.bufferedReader().readText()
+            process.waitFor() to text
+        } catch (e: java.io.IOException) {
+            throw GradleException("cargo-ndk could not be started through ${cargoExe.path}: ${e.message}. $optOut")
+        }
+        if (exit != 0) {
+            throw GradleException("cargo-ndk is not installed (`cargo ndk --version`: ${output.trim().take(300)}). $optOut")
+        }
+        // cargo-ndk takes ANDROID_NDK_HOME, else an NDK under the SDK's ndk/ folder.
+        val explicit = ndkHome.orNull
+        if (explicit != null) {
+            if (!File(explicit, "source.properties").isFile) {
+                throw GradleException("ANDROID_NDK_HOME is $explicit, which holds no NDK (no source.properties). $optOut")
+            }
+        } else {
+            val ndkRoot = File(sdkDirectory.get(), "ndk")
+            if (ndkRoot.listFiles()?.none { File(it, "source.properties").isFile } != false) {
+                throw GradleException(
+                    "The Android NDK is missing: ANDROID_NDK_HOME is not set and ${ndkRoot.path} holds no NDK " +
+                        "(rust-native.md names 28.2.13676358). $optOut",
+                )
+            }
+        }
+    }
+}
+
+if (engineRegistered) {
+    val checkRustTools = tasks.register<CheckRustTools>("checkRustTools") {
+        description = "Fails early when cargo, cargo-ndk or the NDK that the Rust engine needs is missing."
+        cargo.set(cargoExecutable())
+        ndkHome.set(providers.environmentVariable("ANDROID_NDK_HOME"))
+        sdkDirectory.set(
+            providers.environmentVariable("ANDROID_HOME")
+                .orElse(androidComponents.sdkComponents.sdkDirectory.map { it.asFile.path }),
+        )
+    }
+
     val cargoNdkBuild = tasks.register<CargoNdkBuild>("cargoNdkBuild") {
         description = "Builds native/ with cargo-ndk for the shipped ABIs."
+        dependsOn(checkRustTools)
         val workspace = rootProject.layout.projectDirectory.dir("native")
         val output = layout.buildDirectory.dir("generated/rustJniLibs")
         outputDir.set(output)
@@ -168,11 +265,7 @@ if (nativeEnabled) {
         inputs.property("abis", abis)
         val features = cargoFeatures()
         inputs.property("features", features)
-
-        // rustup installs into ~/.cargo/bin, which is often not on the PATH of a Gradle daemon
-        // started by Android Studio.
-        val homeCargo = File(System.getProperty("user.home"), ".cargo/bin/" + if (File.separatorChar == '\\') "cargo.exe" else "cargo")
-        executable(if (homeCargo.isFile) homeCargo.path else "cargo")
+        executable(cargoExecutable())
 
         // cargo-ndk finds the NDK under ANDROID_HOME when ANDROID_NDK_HOME is not set.
         if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
@@ -187,11 +280,15 @@ if (nativeEnabled) {
         )
     }
 
-    // With ONNX Runtime the per-ABI builds below provide libfga_ffi.so instead.
-    if (!nativeOrtEnabled) {
-        androidComponents {
-            onVariants { variant ->
-                variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoNdkBuild, CargoNdkBuild::outputDir)
+    androidComponents {
+        onVariants { variant ->
+            if (carriesEngine(variant.buildType)) {
+                // With ONNX Runtime the per-ABI builds below provide libfga_ffi.so instead.
+                if (!nativeOrtEnabled) {
+                    variant.sources.jniLibs?.addGeneratedSourceDirectory(cargoNdkBuild, CargoNdkBuild::outputDir)
+                }
+                val preBuild = "pre${variant.name.replaceFirstChar { it.uppercase() }}Build"
+                tasks.matching { it.name == preBuild }.configureEach { dependsOn(checkRustTools) }
             }
         }
     }
@@ -294,8 +391,8 @@ if (nativeOrtEnabled) {
                 .withPropertyName("nativeSources")
             inputs.dir(runtimeDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("onnxRuntime")
 
-            val homeCargo = File(System.getProperty("user.home"), ".cargo/bin/" + if (File.separatorChar == '\\') "cargo.exe" else "cargo")
-            executable(if (homeCargo.isFile) homeCargo.path else "cargo")
+            dependsOn("checkRustTools")
+            executable(cargoExecutable())
             if (System.getenv("ANDROID_NDK_HOME") == null && System.getenv("ANDROID_HOME") == null) {
                 environment("ANDROID_HOME", androidComponents.sdkComponents.sdkDirectory.get().asFile.path)
             }
@@ -314,6 +411,7 @@ if (nativeOrtEnabled) {
     }
 
     androidComponents {
+        // fga.ort needs -Pfga.native=true, under which every variant carries the engine.
         onVariants { variant ->
             variant.sources.jniLibs?.addGeneratedSourceDirectory(extractOnnxRuntime, ExtractOnnxRuntime::outputDir)
             ortBuilds.forEach { variant.sources.jniLibs?.addGeneratedSourceDirectory(it, CargoNdkBuild::outputDir) }
@@ -347,6 +445,10 @@ abstract class ProvideOcrModel : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
+    /** Downloads kept by SHA-256; not an input, since the pin decides what the output must be. */
+    @get:Internal
+    abstract val cacheDir: DirectoryProperty
+
     @TaskAction
     fun provide() {
         val pin = Properties().apply { pinFile.get().asFile.inputStream().use { load(it) } }
@@ -369,9 +471,11 @@ abstract class ProvideOcrModel : DefaultTask() {
             if (local != null) {
                 logger.lifecycle("OCR model: checking $local")
                 Files.copy(local.toPath(), part.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            } else {
+            } else if (!fromCache(sha256, name, part, size)) {
                 logger.lifecycle("OCR model: downloading $url")
                 download(url, part, size)
+                check(part, size, sha256)
+                toCache(sha256, name, part)
             }
             check(part, size, sha256)
             Files.move(part.toPath(), File(dir, name).toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -381,6 +485,41 @@ abstract class ProvideOcrModel : DefaultTask() {
         }
         Files.copy(pinFile.get().asFile.toPath(), File(dir, "ocr-model.properties").toPath())
         Files.copy(noticeFile.get().asFile.toPath(), File(dir, name.removeSuffix(".onnx") + ".NOTICE.txt").toPath())
+    }
+
+    /*
+     * A download is kept in the Gradle user home under its SHA-256, so a clean build or another
+     * worktree on the same PC does not download it again. A cached copy is checked like a download
+     * and, if it fails, deleted and downloaded again.
+     */
+    private fun cached(sha256: String, name: String): File? = cacheDir.orNull?.asFile?.let { File(it, "$sha256/$name") }
+
+    private fun fromCache(sha256: String, name: String, target: File, size: Long): Boolean {
+        val file = cached(sha256, name)?.takeIf { it.isFile } ?: return false
+        Files.copy(file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        return try {
+            check(target, size, sha256)
+            logger.lifecycle("OCR model: from the local cache $file")
+            true
+        } catch (e: GradleException) {
+            logger.warn("OCR model: the cached copy $file failed its check (${e.message}); downloading again")
+            file.delete()
+            target.delete()
+            false
+        }
+    }
+
+    private fun toCache(sha256: String, name: String, checked: File) {
+        val file = cached(sha256, name) ?: return
+        try {
+            file.parentFile.mkdirs()
+            val temp = File(file.parentFile, "$name.${ProcessHandle.current().pid()}.part")
+            Files.copy(checked.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        } catch (e: java.io.IOException) {
+            // The build has its checked model; only the next build loses the shortcut.
+            logger.warn("OCR model: could not keep a copy in $file: ${e.message}")
+        }
     }
 
     /** Only HTTPS, redirects included: the hash protects the content, not the request. */
@@ -458,62 +597,86 @@ abstract class ProvideOcrModel : DefaultTask() {
 // A relative path is taken from the repository root, where the commands in rust-native.md run. A
 // missing file is reported by Gradle's check of the task's input file (localModel).
 val ocrModelPath: File? = providers.gradleProperty("fga.ocr.model").orNull?.let { rootProject.file(it) }
-if (ocrModelPath != null && !nativeEnabled) {
-    throw GradleException("-Pfga.ocr.model only works together with -Pfga.native=true")
+if (ocrModelPath != null && !engineRegistered) {
+    throw GradleException("-Pfga.ocr.model has no use with -Pfga.native=false: no variant packages the model")
 }
 
-if (nativeEnabled) {
-    val provideOcrModel = tasks.register<ProvideOcrModel>("provideOcrModel") {
-        description = "Provides the pinned OCR model (checked by size and SHA-256) as an APK asset."
-        pinFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/model.properties"))
-        noticeFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/NOTICE.txt"))
-        if (ocrModelPath != null) localModel.set(ocrModelPath)
-        outputDir.set(layout.buildDirectory.dir("generated/ocrModelAssets"))
-    }
-    androidComponents {
-        onVariants { variant ->
-            variant.sources.assets?.addGeneratedSourceDirectory(provideOcrModel, ProvideOcrModel::outputDir)
+/*
+ * Design 0026, D-10: the notices of the model and of every crate linked into libfga_ffi.so, kept in
+ * native/THIRD_PARTY_NOTICES.txt (written and checked by tools/ci/native_notices.py). Packaged beside
+ * the model's notice, in the variants that carry the engine only; the licence screen shows it when
+ * the asset is there.
+ */
+abstract class CopyEngineNotices : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val noticesFile: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val files: FileSystemOperations
+
+    @TaskAction
+    fun copy() {
+        files.sync {
+            from(noticesFile)
+            into(outputDir.dir("ocr"))
         }
     }
 }
 
 /*
- * Issue #568: the `rust` build type is the owner's Rust test APK, built only from the `rust`
- * branch and never published. Without the library it would be a beta with another name, so
- * without `fga.native` its variant does not exist (beforeVariants below), and aggregate tasks
- * such as `assemble`, `test` and `check` run as before. The tasks listed in rustVariantTasks stop
- * with this message instead of Gradle's "not found"; an abbreviation or any other rust task gets
- * Gradle's own message, because matching task names by pattern also caught unrelated tasks.
+ * Fails a carrying variant's assemble when its APK lacks a file of the engine or its BuildConfig does
+ * not say NATIVE_READER = true, so the packaging and the flag are checked on what was built, not on
+ * the build script's intent. Variants without the engine get no such task: their task graph stays
+ * the one of a build before the engine (Main CI's apk_check.py checks the ci APK instead).
  */
-val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let { raw ->
-    when {
-        raw == null -> 1
-        Regex("[1-9][0-9]?").matches(raw) -> raw.toInt()
-        else -> throw GradleException("-Pfga.rust.build must be a whole number from 1 to 99, got '$raw'")
-    }
-}
-val rustNativeMissing = "The rust build type packages the Rust engine; build it with -Pfga.native=true " +
-    "(see docs/agents/rust-native.md, \"Rust test APK\")."
-val rustVariantTasks = listOf("assembleRust", "installRust", "bundleRust", "packageRust")
-    .flatMap { listOf(it, ":app:$it") }
-    .toSet()
-if (!nativeEnabled && gradle.startParameter.taskNames.any { it in rustVariantTasks }) {
-    throw GradleException(rustNativeMissing)
-}
+abstract class CheckEngineApk : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val apkDir: DirectoryProperty
 
-if (!nativeEnabled) {
-    androidComponents {
-        beforeVariants(selector().withBuildType("rust")) { it.enable = false }
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val buildConfigSources: ConfigurableFileCollection
+
+    @get:Input
+    abstract val requiredEntries: ListProperty<String>
+
+    @get:OutputFile
+    abstract val stamp: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val apks = apkDir.get().asFile.listFiles { f -> f.name.endsWith(".apk") }.orEmpty().sortedBy { it.name }
+        if (apks.isEmpty()) throw GradleException("No APK in ${apkDir.get().asFile}; cannot check that it carries the Rust engine")
+        val problems = mutableListOf<String>()
+        for (apk in apks) {
+            val names = ZipFile(apk).use { zip -> zip.entries().asSequence().map { it.name }.toSet() }
+            requiredEntries.get().filterNot { it in names }.forEach { problems += "${apk.name} lacks $it" }
+        }
+        val buildConfig = buildConfigSources.asFileTree.matching { include("**/BuildConfig.java") }.files
+        if (buildConfig.size != 1) {
+            problems += "expected one generated BuildConfig.java, found ${buildConfig.size}"
+        } else if (!Regex("""\bNATIVE_READER\s*=\s*true\s*;""").containsMatchIn(buildConfig.single().readText())) {
+            problems += "BuildConfig.NATIVE_READER is not true in ${buildConfig.single()}"
+        }
+        if (problems.isNotEmpty()) {
+            throw GradleException("This variant carries the Rust engine (design 0026), but: " + problems.joinToString("; "))
+        }
+        stamp.get().asFile.writeText("ok\n")
     }
 }
 
 /*
  * JNI binds RustSensing's natives by class and method name, and R8 renames or drops whatever
  * proguard-rust.pro does not keep; a missing rule shows only on a device, as an
- * UnsatisfiedLinkError the engine turns into "unavailable". So packaging the rust APK or bundle
- * fails unless R8's seeds file (outputs/mapping/rust/seeds.txt, written next to the mapping file)
- * lists the class, INSTANCE and the four natives, and the mapping file maps the class to its own
- * name.
+ * UnsatisfiedLinkError the engine turns into "unavailable". So packaging the APK or bundle of a
+ * minified variant that carries the engine fails unless R8's seeds file
+ * (outputs/mapping/<variant>/seeds.txt, written next to the mapping file) lists the class, INSTANCE
+ * and the four natives, and the mapping file maps the class to its own name (design 0026, D-8).
  */
 abstract class CheckRustKeepRules : DefaultTask() {
     @get:InputFile
@@ -558,22 +721,119 @@ abstract class CheckRustKeepRules : DefaultTask() {
     }
 }
 
-if (nativeEnabled) {
+// The model's file name, for the content check; ProvideOcrModel checks the pin itself.
+val ocrModelFileName: String = Properties().apply {
+    rootProject.file("native/ocr-model/model.properties").inputStream().use { load(it) }
+}.getProperty("file")?.trim() ?: throw GradleException("native/ocr-model/model.properties has no file")
+val engineApkEntries = shippedAbis.map { "lib/$it/libfga_ffi.so" } + listOf(
+    "assets/ocr/$ocrModelFileName",
+    "assets/ocr/${ocrModelFileName.removeSuffix(".onnx")}.NOTICE.txt",
+    "assets/ocr/ocr-model.properties",
+    "assets/ocr/THIRD_PARTY_NOTICES.txt",
+)
+
+if (engineRegistered) {
+    val provideOcrModel = tasks.register<ProvideOcrModel>("provideOcrModel") {
+        description = "Provides the pinned OCR model (checked by size and SHA-256) as an APK asset."
+        // A build that is going to stop for a missing Rust tool must not download 21 MB first.
+        dependsOn("checkRustTools")
+        pinFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/model.properties"))
+        noticeFile.set(rootProject.layout.projectDirectory.file("native/ocr-model/NOTICE.txt"))
+        if (ocrModelPath != null) localModel.set(ocrModelPath)
+        cacheDir.set(File(gradle.gradleUserHomeDir, "caches/fga-ocr-model"))
+        outputDir.set(layout.buildDirectory.dir("generated/ocrModelAssets"))
+    }
+    val copyEngineNotices = tasks.register<CopyEngineNotices>("copyEngineNotices") {
+        description = "Copies native/THIRD_PARTY_NOTICES.txt into the assets of the variants that carry the engine."
+        noticesFile.set(rootProject.layout.projectDirectory.file("native/THIRD_PARTY_NOTICES.txt"))
+        outputDir.set(layout.buildDirectory.dir("generated/engineNoticeAssets"))
+    }
     androidComponents {
-        onVariants(selector().withBuildType("rust")) { variant ->
-            val mapping = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE)
-            val checkKeep = tasks.register<CheckRustKeepRules>("checkRustKeepRules") {
-                description = "Fails the rust build when R8 did not keep RustSensing and its natives."
-                mappingFile.set(mapping)
-                seedsFile.set(mapping.map { it.asFile.resolveSibling("seeds.txt") }.let { layout.file(it) })
-                stamp.set(layout.buildDirectory.file("intermediates/checkRustKeepRules/ok.txt"))
+        onVariants { variant ->
+            if (!carriesEngine(variant.buildType)) return@onVariants
+            val cap = variant.name.replaceFirstChar { it.uppercase() }
+            variant.sources.assets?.addGeneratedSourceDirectory(provideOcrModel, ProvideOcrModel::outputDir)
+            variant.sources.assets?.addGeneratedSourceDirectory(copyEngineNotices, CopyEngineNotices::outputDir)
+            // JNI finds RustSensing's native methods by name (proguard-rust.pro); a build without the
+            // engine does not need the class at all, and R8 removes it there.
+            variant.proguardFiles.add(layout.projectDirectory.file("proguard-rust.pro"))
+
+            val checkApk = tasks.register<CheckEngineApk>("checkEngineApk$cap") {
+                description = "Fails the ${variant.name} build when its APK lacks the Rust engine or NATIVE_READER is not true."
+                apkDir.set(variant.artifacts.get(SingleArtifact.APK))
+                buildConfigSources.from(layout.buildDirectory.dir("generated/source/buildConfig/${variant.name}"))
+                dependsOn("generate${cap}BuildConfig")
+                requiredEntries.set(engineApkEntries)
+                stamp.set(layout.buildDirectory.file("intermediates/checkEngineApk/${variant.name}/ok.txt"))
             }
-            // Every minified rust artifact goes through one of these packaging tasks (assembleRust and
-            // installRust through packageRust, bundleRust through packageRustBundle), so none is
-            // written without the check. A dependency, not a finalizer, so a failed check leaves no APK.
-            tasks.matching { it.name == "packageRust" || it.name == "packageRustBundle" }
-                .configureEach { dependsOn(checkKeep) }
+            tasks.matching { it.name == "assemble$cap" }.configureEach { dependsOn(checkApk) }
+
+            if (variant.isMinifyEnabled) {
+                val mapping = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE)
+                val checkKeep = tasks.register<CheckRustKeepRules>("checkRustKeepRules$cap") {
+                    description = "Fails the ${variant.name} build when R8 did not keep RustSensing and its natives."
+                    mappingFile.set(mapping)
+                    seedsFile.set(mapping.map { it.asFile.resolveSibling("seeds.txt") }.let { layout.file(it) })
+                    stamp.set(layout.buildDirectory.file("intermediates/checkRustKeepRules/${variant.name}/ok.txt"))
+                }
+                // Every minified artifact goes through one of these packaging tasks (assemble<V> and
+                // install<V> through package<V>, bundle<V> through package<V>Bundle), so none is
+                // written without the check. A dependency, not a finalizer, so a failed check leaves no APK.
+                tasks.matching { it.name == "package$cap" || it.name == "package${cap}Bundle" }
+                    .configureEach { dependsOn(checkKeep) }
+            }
         }
+    }
+}
+
+/*
+ * Design 0026, D-6: two flags with one meaning each, both from carriesEngine. NATIVE_READER: this
+ * variant packages the engine, so the support selection gets the real engine
+ * (SupportScoreEngineBinding.kt). SCORE_SCAN: this variant offers the owner's support score scan;
+ * the rust build type only for now (the beta follows in PR C of the design).
+ */
+androidComponents {
+    onVariants { variant ->
+        val carries = carriesEngine(variant.buildType)
+        variant.buildConfigFields?.put(
+            "NATIVE_READER",
+            com.android.build.api.variant.BuildConfigField("boolean", carries.toString(), "the variant packages the Rust engine"),
+        )
+        variant.buildConfigFields?.put(
+            "SCORE_SCAN",
+            com.android.build.api.variant.BuildConfigField("boolean", (carries && variant.buildType == "rust").toString(), "the owner's support score scan is offered"),
+        )
+    }
+}
+
+/*
+ * Issue #568: the `rust` build type is the owner's Rust test APK, built only from the `rust`
+ * branch and never published. It always carries the engine; without it, it would be a beta with
+ * another name, so with `-Pfga.native=false` its variant does not exist (beforeVariants below), and
+ * aggregate tasks such as `assemble`, `test` and `check` run without it. The tasks listed in
+ * rustVariantTasks stop with this message instead of Gradle's "not found"; an abbreviation or any
+ * other rust task gets Gradle's own message, because matching task names by pattern also caught
+ * unrelated tasks.
+ */
+val rustBuildNumber: Int = providers.gradleProperty("fga.rust.build").orNull.let { raw ->
+    when {
+        raw == null -> 1
+        Regex("[1-9][0-9]?").matches(raw) -> raw.toInt()
+        else -> throw GradleException("-Pfga.rust.build must be a whole number from 1 to 99, got '$raw'")
+    }
+}
+val rustNativeMissing = "The rust build type is the Rust test APK and always packages the Rust engine; " +
+    "it cannot be built with -Pfga.native=false (see docs/agents/rust-native.md, \"Rust test APK\")."
+val rustVariantTasks = listOf("assembleRust", "installRust", "bundleRust", "packageRust")
+    .flatMap { listOf(it, ":app:$it") }
+    .toSet()
+if (!engineRegistered && gradle.startParameter.taskNames.any { it in rustVariantTasks }) {
+    throw GradleException(rustNativeMissing)
+}
+
+if (!engineRegistered) {
+    androidComponents {
+        beforeVariants(selector().withBuildType("rust")) { it.enable = false }
     }
 }
 
@@ -745,7 +1005,7 @@ val debugSigningOnly: Provider<Boolean> = providers.environmentVariable("CI").ma
     .orElse(false)
     .zip(providers.gradleProperty("fgaDebugSigning").map { it == "true" }.orElse(false)) { a, b -> a || b }
 
-(listOf("ci", "beta") + if (nativeEnabled) listOf("rust") else emptyList()).forEach { buildType ->
+(listOf("ci", "beta") + if (engineRegistered) listOf("rust") else emptyList()).forEach { buildType ->
     val signTask = tasks.register<SignRotatedApk>("sign${buildType.replaceFirstChar { it.uppercase() }}Rotated") {
         description = "Re-signs the $buildType APK with the rotated release key (or logs debug-only signing)."
         apk.set(layout.buildDirectory.file("outputs/apk/$buildType/app-$buildType.apk"))
@@ -786,8 +1046,7 @@ android {
         versionCode = envVersionCode ?: stableVersionCode
         versionName = envVersionName ?: stableVersionName
         testInstrumentationRunner = "io.github.fate_grand_automata.qa.SupportDeviceTestRunner"
-        // Issue #568: true only in the rust build type, the one build that may load the Rust engine.
-        buildConfigField("boolean", "RUST_TEST_BUILD", "false")
+        // NATIVE_READER and SCORE_SCAN are set per variant, from carriesEngine (the Rust core block above).
     }
 
     signingConfigs {
@@ -838,10 +1097,6 @@ android {
         create("rust") {
             initWith(getByName("beta"))
             applicationIdSuffix = ".rust"
-            buildConfigField("boolean", "RUST_TEST_BUILD", "true")
-            // Only here: JNI finds RustSensing's native methods by name, and other builds do not
-            // need the class at all.
-            proguardFile("proguard-rust.pro")
             matchingFallbacks += listOf("beta", "ci", "release")
         }
         // Isolated, non-minified target for signed on-device reader tests. No product UI or permissions.

@@ -15,7 +15,8 @@ import javax.inject.Provider
 /**
  * Issue #568: a script only the owner's rust build type offers (the support score scan). Its
  * implementations, strings and Hilt bindings live in the `rust` source set, so no other build
- * compiles them; there the set below is empty and [OwnerTestScripts] never even asks for it.
+ * compiles them; there the set below is empty and [OwnerTestScripts] never even asks for it
+ * ([BuildConfig.SCORE_SCAN] is false).
  */
 interface OwnerTestScript {
     /** Whether the launcher of the detected [mode] offers it. */
@@ -29,12 +30,15 @@ interface OwnerTestScript {
     fun exitMessage(context: Context, e: Exception): String?
 }
 
-/** Owner decision (issue #568): users of the public app see nothing of the Rust engine. */
-fun ownerTestScriptsFor(rustTestBuild: Boolean, provide: () -> Set<OwnerTestScript>): List<OwnerTestScript> =
-    if (rustTestBuild) provide().toList() else emptyList()
+/**
+ * Owner decision (issue #568): users of the public app see nothing of the Rust engine, so only a
+ * build with [BuildConfig.SCORE_SCAN] (the rust build type) offers the owner's scripts.
+ */
+fun ownerTestScriptsFor(scoreScan: Boolean, provide: () -> Set<OwnerTestScript>): List<OwnerTestScript> =
+    if (scoreScan) provide().toList() else emptyList()
 
 class OwnerTestScripts @Inject constructor(private val all: Provider<Set<@JvmSuppressWildcards OwnerTestScript>>) {
-    val scripts: List<OwnerTestScript> by lazy { ownerTestScriptsFor(BuildConfig.RUST_TEST_BUILD) { all.get() } }
+    val scripts: List<OwnerTestScript> by lazy { ownerTestScriptsFor(BuildConfig.SCORE_SCAN) { all.get() } }
 }
 
 @Module

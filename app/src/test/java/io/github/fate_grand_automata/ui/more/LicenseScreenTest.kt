@@ -1,0 +1,56 @@
+package io.github.fate_grand_automata.ui.more
+
+import android.app.Application
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
+import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.ui.FGATheme
+import io.github.fate_grand_automata.ui.screenshotRules
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
+
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class, sdk = [32], qualifiers = "w400dp-h800dp")
+class LicenseScreenTest {
+    private val composeRule = createComposeRule()
+
+    @get:Rule
+    val rules = screenshotRules(composeRule)
+
+    @Test fun `with the notices file the screen offers the entry and shows the notices`() {
+        composeRule.setContent {
+            FGATheme { LicenseScreenContent("MIT License text") { listOf("Notice one", "tract-core 0.23.10") } }
+        }
+        composeRule.onAllNodesWithText("Open-source notices").assertCountEquals(1)
+        composeRule.onNodeWithText("Open-source notices").performClick()
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithText("tract-core 0.23.10").fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onAllNodesWithText("Notice one").assertCountEquals(1)
+        composeRule.onAllNodesWithText("MIT License text").assertCountEquals(0)
+    }
+
+    @Test fun `without the notices file the screen has no entry`() {
+        composeRule.setContent {
+            FGATheme { LicenseScreenContent("MIT License text", null) }
+        }
+        composeRule.onAllNodesWithText("MIT License text").assertCountEquals(1)
+        composeRule.onAllNodesWithText("Open-source notices").assertCountEquals(0)
+    }
+
+    /** The ci build carries no engine, so its licence screen, and the screenshots of it, stay as they were. */
+    @Test fun `the notices asset is packaged exactly with the engine`() {
+        val assets = ApplicationProvider.getApplicationContext<Application>().assets
+        assertEquals(BuildConfig.NATIVE_READER, openSourceNoticesPackaged(assets))
+    }
+
+    @Test fun `paragraphs split at blank lines and keep their lines`() {
+        assertEquals(listOf("a\nb", "c", "d"), noticeParagraphs("a\nb\n\nc\n \n\n\nd\n"))
+    }
+}

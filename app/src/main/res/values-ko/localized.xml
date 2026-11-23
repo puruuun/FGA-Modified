@@ -783,6 +783,8 @@
     <string name="fp_sell_stop_grid">선택 중 판매 화면 또는 격자를 읽지 못해 판매하지 않고 정지했습니다.</string>
     <string name="p_license">라이선스</string>
     <string name="license_header">FGA(mod)는 Fate/Grand Automata를 기반으로 하며 MIT 라이선스로 배포됩니다.</string>
+    <string name="p_open_source_notices">오픈소스 고지</string>
+    <string name="open_source_notices_summary">이 앱에는 오픈소스 구성 요소도 들어 있습니다. 그 라이선스와 저작권 고지:</string>
     <string name="p_script_mode_skill_level">스킬 자동 강화</string>
     <string name="p_script_mode_append_level">어펜드 스킬 자동 강화</string>
     <string name="skill_level_slot_target">%1$d번 칸 목표 레벨</string>

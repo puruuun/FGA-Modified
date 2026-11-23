@@ -833,6 +833,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="fp_sell_stop_grid">The sell screen or grid could not be read while selecting. Stopped without selling.</string>
     <string name="p_license">License</string>
     <string name="license_header">FGA(mod) is based on Fate/Grand Automata and distributed under the MIT License.</string>
+    <string name="p_open_source_notices">Open-source notices</string>
+    <string name="open_source_notices_summary">This app also contains open-source components. Their licences and copyright notices:</string>
     <string name="p_script_mode_skill_level">Auto Skill Level</string>
     <string name="p_script_mode_append_level">Auto Append Skill Level</string>
     <string name="skill_level_slot_target">Slot %1$d target level</string>

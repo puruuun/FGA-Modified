@@ -74,14 +74,30 @@ class ClassifyTest(unittest.TestCase):
 
 class NativeClassifyTest(unittest.TestCase):
     def test_native_paths(self):
-        for p in ('native/Cargo.toml', 'native/fga-ffi/src/lib.rs', '.github/workflows/native-ci.yml'):
+        for p in ('native/Cargo.toml', 'native/fga-ffi/src/lib.rs', 'native/THIRD_PARTY_NOTICES.txt',
+                  '.github/workflows/native-ci.yml', '.github/workflows/main-ci.yml',
+                  'app/build.gradle.kts', 'app/proguard-rust.pro', 'app/proguard-rules.pro',
+                  'app/src/main/java/io/github/fate_grand_automata/sensing/RustSensing.kt',
+                  'app/src/main/java/io/github/fate_grand_automata/sensing/SupportScoreEngineBinding.kt',
+                  'app/src/main/java/io/github/fate_grand_automata/di/script/ScriptsModule.kt',
+                  'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties',
+                  'gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties',
+                  'tools/ci/apk_check.py', 'tools/ci/native_notices.py'):
             self.assertTrue(g.needs_native([p]), p)
         self.assertTrue(g.needs_native(['docs/a.md', 'native/x']))
+        self.assertTrue(g.needs_native(['app/src/A.kt', 'app/build.gradle.kts']))
 
     def test_non_native_paths(self):
+        # Plain Kotlin, other module build scripts and the other CI scripts run Main CI's job only.
         for p in ('app/src/A.kt', 'docs/a.md', 'native', 'nativex/a.rs', 'sub/native/a.rs',
-                  '.github/workflows/main-ci.yml', '.github/workflows/native-advisories.yml',
-                  '.github/workflows/native-ci.yml.bak'):
+                  '.github/workflows/native-advisories.yml', '.github/workflows/pr-build.yml',
+                  '.github/workflows/native-ci.yml.bak',
+                  'app/src/main/java/io/github/fate_grand_automata/ui/more/LicenseScreen.kt',
+                  'app/src/main/java/io/github/fate_grand_automata/sensingx/A.kt',
+                  'app/src/main/java/io/github/fate_grand_automata/di/script/OtherModule.kt',
+                  'app/src/test/java/io/github/fate_grand_automata/sensing/SupportScoreEngineBindingTest.kt',
+                  'app/proguard.txt', 'scripts/build.gradle.kts', 'prefs/build.gradle.kts',
+                  'tools/ci/ci_gate.py', 'tools/ci/test_apk_check.py', 'gradlew', 'version.properties'):
             self.assertFalse(g.needs_native([p]), p)
 
     def test_empty_or_unreadable_means_native(self):

@@ -1,17 +1,30 @@
 name: Native CI
 
-# Rust checks run only when the Rust core or this workflow changes, so Kotlin-only work never
-# waits on them (design 0025, D-7).
+# Rust checks and the engine APK build run only when the Rust core, the build scripts, the engine's
+# Kotlin binding, the CI scripts that check them or these workflows change, so plain Kotlin work
+# never waits on them (design 0025, D-7; design 0026, D-8). The paths below equal NATIVE_PATTERNS in
+# tools/ci/ci_gate.py (test_ci_workflows.py compares them).
 #
-# Pull requests do not trigger this workflow directly: Main CI calls it (workflow_call) when native/ or
-# this file changed, so the Rust checks are part of the required check "Main CI gate". A pull_request
-# trigger here would run them a second time for the same commit.
+# Pull requests do not trigger this workflow directly: Main CI calls it (workflow_call) for those
+# paths, so these checks are part of the required check "Main CI gate". A pull_request trigger here
+# would run them a second time for the same commit.
 on:
   push:
     branches: [main]
     paths:
       - 'native/**'
       - '.github/workflows/native-ci.yml'
+      - '.github/workflows/main-ci.yml'
+      - 'app/build.gradle.kts'
+      - 'app/proguard-*.pro'
+      - 'app/src/main/java/io/github/fate_grand_automata/sensing/**'
+      - 'app/src/main/java/io/github/fate_grand_automata/di/script/ScriptsModule.kt'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'tools/ci/apk_check.py'
+      - 'tools/ci/native_notices.py'
   workflow_call:
   workflow_dispatch:
 
@@ -91,6 +104,14 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 -o "$RUNNER_TEMP/jniLibs" build --release -p fga-ffi
+      - name: Third-party notices match Cargo.lock
+        # Design 0026, D-10: native/THIRD_PARTY_NOTICES.txt is generated from cargo metadata, cargo
+        # tree and the crates' licence files. cargo metadata reads every package of Cargo.lock,
+        # also those of other platforms that no build here fetched, so fetch all first; the check
+        # itself then runs offline.
+        run: |
+          cargo fetch --locked
+          python3 ../tools/ci/native_notices.py check
       - name: arm64 library is 16 KB aligned
         run: |
           readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
@@ -127,3 +148,95 @@ jobs:
             echo "$lib LOAD alignment: $aligns"
             test "$aligns" = "0x4000"
           done
+
+  # Design 0026, D-8: a beta APK built the way a release is, with the engine, and checked as shipped.
+  engine-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Install the pinned toolchain
+        working-directory: native
+        run: rustup toolchain install
+      - name: Cache the cargo registry and the Android build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            native/target
+          key: engine-apk-cargo-${{ runner.os }}-${{ hashFiles('native/rust-toolchain.toml', 'native/Cargo.lock') }}
+          restore-keys: |
+            engine-apk-cargo-${{ runner.os }}-${{ hashFiles('native/rust-toolchain.toml') }}-
+      - name: Cache cargo-ndk
+        id: cargo-ndk
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: cargo-ndk-${{ runner.os }}-${{ env.CARGO_NDK_VERSION }}
+      - name: Install cargo-ndk
+        if: steps.cargo-ndk.outputs.cache-hit != 'true'
+        run: cargo install cargo-ndk --locked --version "$CARGO_NDK_VERSION"
+      - name: Read the OCR model pin
+        id: model
+        run: |
+          set -eu
+          pin=native/ocr-model/model.properties
+          file=$(sed -n 's/^file=//p' "$pin")
+          sha256=$(sed -n 's/^sha256=//p' "$pin")
+          url=$(sed -n 's/^url=//p' "$pin")
+          echo "$sha256" | grep -Eq '^[0-9a-f]{64}$'
+          { echo "file=$file"; echo "sha256=$sha256"; echo "url=$url"; } >> "$GITHUB_OUTPUT"
+      - name: Cache the OCR model by its SHA-256
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/fga-ocr-model
+          key: ocr-model-${{ steps.model.outputs.sha256 }}
+      - name: Download the model on a cache miss and check it either way
+        env:
+          MODEL_FILE: ${{ steps.model.outputs.file }}
+          MODEL_SHA256: ${{ steps.model.outputs.sha256 }}
+          MODEL_URL: ${{ steps.model.outputs.url }}
+        run: |
+          set -eu
+          dir="$HOME/fga-ocr-model"
+          mkdir -p "$dir"
+          if [ ! -f "$dir/$MODEL_FILE" ]; then
+            curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --retry 3 --retry-all-errors \
+              --output "$dir/$MODEL_FILE.part" "$MODEL_URL"
+            mv "$dir/$MODEL_FILE.part" "$dir/$MODEL_FILE"
+          fi
+          echo "$MODEL_SHA256  $dir/$MODEL_FILE" | sha256sum --check
+      - name: Build the beta APK with the engine
+        # checkRustKeepRulesBeta and checkEngineApkBeta are part of assembleBeta.
+        env:
+          MODEL_FILE: ${{ steps.model.outputs.file }}
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          ./gradlew :app:assembleBeta -PfgaDebugSigning=true "-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"
+      - name: The APK carries the engine
+        run: |
+          set -eu
+          set -- app/build/outputs/apk/beta/*.apk
+          [ -e "$1" ] || { echo "No beta APK under app/build/outputs/apk/beta"; exit 1; }
+          python3 tools/ci/apk_check.py present "$@"
+      - name: 16 KB alignment inside the APK, with the SDK's own tools
+        run: |
+          set -eu
+          apk=$(ls app/build/outputs/apk/beta/*.apk)
+          tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          # An assignment, not a pipe, so that a failed verification fails the step.
+          report=$("$tools/zipalign" -c -P 16 -v 4 "$apk")
+          echo "$report" | grep -E 'lib/.*/libfga_ffi\.so|Verification'
+          unzip -o -q "$apk" lib/arm64-v8a/libfga_ffi.so -d "$RUNNER_TEMP/apk"
+          readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          aligns=$("$readelf" -lW "$RUNNER_TEMP/apk/lib/arm64-v8a/libfga_ffi.so" | awk '$1 == "LOAD" { print $NF }' | sort -u)
+          echo "LOAD alignment in the APK: $aligns"
+          test "$aligns" = "0x4000"
+      - name: The keep rules held
+        run: grep -F 'io.github.fate_grand_automata.sensing.RustSensing' app/build/outputs/mapping/beta/seeds.txt

@@ -46,25 +46,25 @@ class OwnerTestScriptsTest {
         override fun exitMessage(context: Context, e: Exception): String? = null
     }
 
-    @Test fun `outside the rust build type the owner test scripts are never built`() {
+    @Test fun `without the score scan flag the owner test scripts are never built`() {
         var asked = 0
-        assertEquals(emptyList(), ownerTestScriptsFor(false) { asked++; error("built outside the rust build type") })
+        assertEquals(emptyList(), ownerTestScriptsFor(false) { asked++; error("built without the score scan flag") })
         assertEquals(0, asked)
     }
 
-    @Test fun `the rust build type offers its owner test scripts`() {
+    @Test fun `with the score scan flag the owner test scripts are offered`() {
         val script = Script("scan")
         assertEquals(listOf<OwnerTestScript>(script), ownerTestScriptsFor(true) { setOf(script) })
     }
 
     @Test fun `the injected holder of this build has no owner test script and never reads the set`() {
-        assertFalse(BuildConfig.RUST_TEST_BUILD)
+        assertFalse(BuildConfig.SCORE_SCAN)
         val holder = OwnerTestScripts(Provider { error("the owner test set was read") })
         assertEquals(emptyList(), holder.scripts)
     }
 
     @Test fun `this build compiles none of the rust build type's scan classes`() {
-        assertFalse(BuildConfig.RUST_TEST_BUILD)
+        assertFalse(BuildConfig.SCORE_SCAN)
         for (name in listOf("SupportScoreScanScript", "HolderScoreScanNativeFrames", "SupportScoreScanModule")) {
             val found = runCatching { Class.forName("io.github.fate_grand_automata.rusttest.$name") }.isSuccess
             assertFalse(found, name)
