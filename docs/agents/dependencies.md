@@ -59,7 +59,9 @@
   `alignedLibCxx`, `ExtractAlignedLibCxx`, the `pickFirsts` entry) is gone. By ABI, the `LOAD`
   alignment of both libraries in the 5.1.0 AAR is `0x4000` on arm64-v8a and x86_64 and `0x1000` on
   armeabi-v7a and x86. The 32-bit ones are 4 KB aligned, as the extracted copy was. The 16 KB
-  requirement applies to 64-bit libraries only. The app ships arm64-v8a and armeabi-v7a. Nothing else in the APK ships a `libc++_shared.so`: Tesseract4Android does not, and
+  requirement applies to 64-bit libraries only. The `ci`, `beta`, `deviceTest` and `rust` builds carry
+  arm64-v8a and armeabi-v7a only (`shippedAbis`); `debug` and `release` have no ABI filter and carry all
+  four ABIs of the AAR. Nothing else in the APK ships a `libc++_shared.so`: Tesseract4Android does not, and
   ONNX Runtime links its C++ runtime in.
 - The JVM unit tests use openpnp OpenCV 4.9.0 (`opencv_jvm_version`), a separate artifact that never
   reaches the APK. It stays at 4.9.0: the `scripts` tests use only `core`, `imgproc` and `imgcodecs`,
