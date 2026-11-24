@@ -156,21 +156,47 @@ class DashboardRingHeaderUiTest {
         assertTrue("current $current bar $bar", bar.top >= current.bottom)
     }
 
-    @Test fun theFullTextIsBesideTheNumberWhenItFits() {
-        show(1280, fullAp(147))
-        val current = box("header-ap-current"); val max = box("header-ap-max"); val detail = box("header-ap-detail"); val bar = box("header-ap-bar")
-        val centre = (detail.top + detail.bottom) / 2
-        assertTrue("current $current detail $detail", centre >= current.top && centre <= current.bottom && detail.left >= max.right)
-        assertEquals(paneContent().second.value, detail.right.value, 0.5f)
-        assertTrue("detail $detail bar $bar", bar.top >= detail.bottom)
+    private fun assertFullTextBelowTheBar() {
+        val current = box("header-ap-current"); val bar = box("header-ap-bar"); val detail = box("header-ap-detail"); val updated = box("dashboard-updated")
+        assertTrue("current $current detail $detail", detail.top >= current.bottom)
+        assertTrue("bar $bar detail $detail", detail.top >= bar.bottom)
+        assertEquals(paneContent().first.value, detail.left.value, 0.5f)
+        assertTrue("detail $detail updated $updated", updated.top >= detail.bottom)
     }
 
-    @Test fun theFullTextDropsBelowTheNumberEndAlignedWhenItDoesNotFit() {
+    @Test fun theFullTextIsItsOwnStartAlignedLineBelowTheBarAboveTheUpdateTime() {
+        show(1280, fullAp(147))
+        assertFullTextBelowTheBar()
+    }
+
+    @Test fun theFullTextStaysBelowTheBarWhenTheNumberIsWide() {
         show(1280, fullAp(99999))
-        val current = box("header-ap-current"); val detail = box("header-ap-detail"); val bar = box("header-ap-bar")
-        assertTrue("current $current detail $detail", detail.top >= current.bottom)
-        assertEquals(paneContent().second.value, detail.right.value, 0.5f)
-        assertTrue("detail $detail bar $bar", bar.top >= detail.bottom)
+        assertFullTextBelowTheBar()
+    }
+
+    @Test fun theFullTextOfARecoveringApIsBelowTheBarToo() {
+        show(1280, recovering())
+        assertFullTextBelowTheBar()
+    }
+
+    @Test fun theNumberRowHoldsOnlyTheNumberAndTheMax() {
+        show(1280, fullAp(147))
+        val current = box("header-ap-current"); val max = box("header-ap-max"); val detail = box("header-ap-detail")
+        assertTrue("current $current max $max detail $detail", detail.left < max.right && detail.top >= max.bottom)
+    }
+
+    @Test fun theWideHeaderHasFourMoreDpAboveTheName() {
+        show(1280, named("샘플 마스터"))
+        val pane = box("dashboard-nav-pane"); val name = box("header-name")
+        assertEquals((name.top - pane.top).value, 16f, 0.5f)
+    }
+
+    @Test fun theLevelAndTheServerStayOnOneLineWhenTheNameIsLong() {
+        show(1280, named("WWWWWWWWWWWW"))
+        val level = box("header-level"); val name = box("header-name")
+        assertTrue("level $level", level.bottom - level.top < 28.dp)
+        assertTrue("name $name level $level", level.top >= name.bottom)
+        assertTrue("level $level", level.right <= paneContent().second)
     }
 
     @Test fun aRecoveringApShowsTheLabelAndTheClockTimeOnOneLineOnWide() {

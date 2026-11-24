@@ -30,13 +30,13 @@ class DashboardRingHeaderScreenshotTest {
         game = Json.parseToJsonElement("""{"actMax":147,"actRecoverAt":$recoverAt,"carryOverActPoint":$carry}""").jsonObject,
     )
 
-    private fun shot(name: String, width: Int, height: Int, data: DashboardData) =
+    private fun shot(name: String, width: Int, height: Int, data: DashboardData, displayName: String? = "샘플 별명") =
         compose.shoot("dashboard-625", name, width, height, false, "ko", beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag("dashboard-icon-ready").fetchSemanticsNodes().isNotEmpty() ||
                 compose.onAllNodesWithTag("dashboard-section:3").fetchSemanticsNodes().isEmpty() }
         }) {
             fixture.case.fixture.Icons { CompositionLocalProvider(LocalNavigateBack provides {}) {
-                AccountDashboardContent(data, fixture.names, "샘플 별명", {}, {}, battle = battleLogFixture("recent"), userId = "synthetic",
+                AccountDashboardContent(data, fixture.names, displayName, {}, {}, battle = battleLogFixture("recent"), userId = "synthetic",
                     friendCount = 24, progress = fixture.progress)
             } }
         }
@@ -45,6 +45,9 @@ class DashboardRingHeaderScreenshotTest {
 
     @Test fun headerWideRecovering() = shot("HeaderWideRecovering", 1280, 800, game(soon, 12))
     @Test fun headerWideFull() = shot("HeaderWideFull", 1280, 800, game(1, 12))
+    @Test fun headerWideShortName() = shot("HeaderWideShortName", 1280, 800, game(soon, 12), "샘플")
+    @Test fun headerWideTwelveCharacterName() = shot("HeaderWideTwelveCharacterName", 1280, 800,
+        game(soon, 12).let { it.copy(profile = it.profile + ("name" to "가나다라마바사아자차카타")) }, null)
     @Test fun headerNarrowRecovering() = shot("HeaderNarrowRecovering", 360, 800, game(soon, 12))
     @Test fun headerNarrowFull() = shot("HeaderNarrowFull", 360, 800, game(1, 12))
     @Test fun overviewWide() = shot("OverviewWide", 1280, 1400, game(soon, 12))
