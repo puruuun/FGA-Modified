@@ -84,8 +84,9 @@ class ManifestTest(unittest.TestCase):
 class _Server:
     """Serves {path: bytes}; the first `fail_first` requests of every path answer 503."""
 
-    def __init__(self, files, fail_first=0):
+    def __init__(self, files, fail_first=0, truncate_first=0):
         self.files = files
+        self.truncate_first = truncate_first
         self.hits = {}
         outer = self
 
@@ -100,6 +101,16 @@ class _Server:
                     self.end_headers()
                     return
                 self.send_response(200)
+                if n <= outer.truncate_first:
+                    # A chunked response that ends before its last chunk: http.client raises IncompleteRead,
+                    # which is an HTTPException and not an OSError.
+                    half = body[:len(body) // 2]
+                    self.send_header('Transfer-Encoding', 'chunked')
+                    self.end_headers()
+                    self.wfile.write(b'%x\r\n' % len(body) + half)
+                    self.wfile.flush()
+                    self.close_connection = True
+                    return
                 self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -127,8 +138,8 @@ class PrefetchTest(unittest.TestCase):
         self.path = '/%s/%s' % (self.version, r.file_name(self.version))
         self.dest = os.path.join(self.tmp, 'dir', r.file_name(self.version))
 
-    def serve(self, files, fail_first=0):
-        s = _Server(files, fail_first)
+    def serve(self, files, fail_first=0, truncate_first=0):
+        s = _Server(files, fail_first, truncate_first)
         self.addCleanup(s.close)
         return s
 
@@ -152,6 +163,13 @@ class PrefetchTest(unittest.TestCase):
         s = self.serve({self.path: self.body}, fail_first=2)
         self.assertEqual(self.run_prefetch(s, attempts=3), 1)
         self.assertEqual(s.hits[self.path], 3)
+
+    def test_retries_after_a_truncated_response(self):
+        s = self.serve({self.path: self.body}, truncate_first=2)
+        self.assertEqual(self.run_prefetch(s, attempts=3), 1)
+        self.assertEqual(s.hits[self.path], 3)
+        with open(self.dest, 'rb') as f:
+            self.assertEqual(f.read(), self.body)
 
     def test_gives_up_after_the_last_attempt(self):
         s = self.serve({self.path: self.body}, fail_first=99)

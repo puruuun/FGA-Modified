@@ -282,30 +282,36 @@ class NativeCiSettingsTest(unittest.TestCase):
         self.assertEqual(jobs, ['rust'])
 
 
+ROBOLECTRIC_CACHE = os.path.join(WORKFLOWS, 'robolectric-cache.yml')
+ROBOLECTRIC_KEY = "key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}"
+
+
 class RobolectricCacheTest(unittest.TestCase):
-    """Issue #658: the tests must not fetch Robolectric's jars themselves."""
+    """Issue #658: the tests must not fetch Robolectric's jars themselves, and a pull request must not save."""
 
     @classmethod
     def setUpClass(cls):
         cls.job = job_block(read(MAIN_CI), 'test-and-build')
+        cls.save_text = strip_comments(read(ROBOLECTRIC_CACHE))
 
     def position(self, needle):
         i = self.job.find(needle)
         self.assertNotEqual(i, -1, '%r missing from test-and-build' % needle)
         return i
 
-    def test_cache_key_is_the_jar_list_and_the_action_is_pinned(self):
+    def test_the_pull_request_job_restores_and_never_saves(self):
         self.assertRegex(
             self.job,
-            r'uses: actions/cache@[0-9a-f]{40}\n\s+with:\n\s+path: \$\{\{ env\.ROBOLECTRIC_OFFLINE_DIR \}\}')
-        self.assertIn(
-            "key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}", self.job)
+            r'uses: actions/cache/restore@[0-9a-f]{40}\n\s+with:\n\s+path: \$\{\{ env\.ROBOLECTRIC_OFFLINE_DIR \}\}')
+        self.assertIn(ROBOLECTRIC_KEY, self.job)
+        self.assertNotRegex(self.job, r'actions/cache@')
+        self.assertNotRegex(self.job, r'actions/cache/save@')
 
-    def test_jars_are_filled_after_the_cache_and_before_the_tests(self):
-        cache = self.position('actions/cache@')
+    def test_jars_are_filled_after_the_restore_and_before_the_tests(self):
+        restore = self.position('actions/cache/restore@')
         fill = self.position('tools/ci/robolectric_offline.py prefetch "$ROBOLECTRIC_OFFLINE_DIR"')
         tests = self.position('./gradlew -I tools/ci/robolectric-offline.init.gradle :app:testCiUnitTest')
-        self.assertLess(cache, fill)
+        self.assertLess(restore, fill)
         self.assertLess(fill, tests)
 
     def test_the_unit_tests_run_offline(self):
@@ -314,6 +320,27 @@ class RobolectricCacheTest(unittest.TestCase):
         self.assertIn("'robolectric.offline', 'true'", init)
         self.assertIn("'robolectric.dependency.dir'", init)
         self.assertIn("System.getenv('ROBOLECTRIC_OFFLINE_DIR')", init)
+
+    def test_main_saves_with_the_same_key_and_the_same_directory(self):
+        text = self.save_text
+        self.assertRegex(text, r'uses: actions/cache@[0-9a-f]{40}\n\s+with:\n\s+path: \$\{\{ env\.ROBOLECTRIC_OFFLINE_DIR \}\}')
+        self.assertIn(ROBOLECTRIC_KEY, text)
+        main_dir = re.search(r'ROBOLECTRIC_OFFLINE_DIR: (\S+)', text).group(1)
+        pr_dir = re.search(r'ROBOLECTRIC_OFFLINE_DIR: (\S+)', self.job).group(1)
+        self.assertEqual(main_dir, pr_dir)
+        self.assertLess(text.index('actions/cache@'), text.index('robolectric_offline.py prefetch'))
+
+    def test_the_main_workflow_runs_on_main_only_with_read_permission(self):
+        text = self.save_text
+        self.assertRegex(text, r"push:\n\s+branches: \[main\]\n\s+paths:\n\s+- 'tools/ci/robolectric_android_all\.json'")
+        self.assertIn('workflow_dispatch:', text)
+        self.assertNotIn('pull_request', text)
+        self.assertEqual(top_level_block(read(ROBOLECTRIC_CACHE), 'permissions'), ['contents: read'])
+
+    def test_the_main_workflow_is_not_part_of_the_gate(self):
+        gate = job_block(read(MAIN_CI), 'gate')
+        self.assertNotIn('robolectric', gate.lower())
+        self.assertNotIn('robolectric-cache', strip_comments(read(MAIN_CI)))
 
 
 class WorkflowWiringTest(unittest.TestCase):

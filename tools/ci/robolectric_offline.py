@@ -11,6 +11,7 @@ Usage: robolectric_offline.py prefetch DIR
 Standard library only.
 """
 import hashlib
+import http.client
 import json
 import os
 import sys
@@ -80,7 +81,7 @@ def prefetch(directory, manifest, base_url=BASE_URL, attempts=ATTEMPTS, backoff=
             try:
                 download(url, dest, art['sha256'])
                 break
-            except (OSError, IOError) as e:
+            except (OSError, http.client.HTTPException) as e:
                 print('attempt %d/%d failed for %s: %s' % (attempt, attempts, name, e), file=sys.stderr)
                 if attempt == attempts:
                     raise

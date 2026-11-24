@@ -101,16 +101,19 @@ jobs:
           java-version: 21
           distribution: temurin
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
-      - name: Cache the Robolectric jars
+      - name: Restore the Robolectric jars
         # setup-gradle caches only the Gradle home; Robolectric fetched its android-all jars itself at test
-        # time, and a failed fetch failed dozens of unrelated tests. The key is the jar list (Robolectric
-        # version and SDK levels, kept equal to the build by test_robolectric_offline.py).
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # time, and a failed fetch failed dozens of unrelated tests. Restore only: a pull request never saves
+        # (each save is about 0.85 GB under its own ref and evicts main's Gradle and NDK caches).
+        # robolectric-cache.yml saves the entry from main. The key is the jar list (Robolectric version and
+        # SDK levels, kept equal to the build by test_robolectric_offline.py).
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.ROBOLECTRIC_OFFLINE_DIR }}
           key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}
       - name: Fill the Robolectric jars
-        # A hit finds every jar present and downloads nothing; a miss downloads with retries and a checksum.
+        # A hit finds every jar present and downloads nothing; a miss (a pull request that changes the manifest,
+        # before main has saved its entry) downloads with retries and a checksum, and saves nothing.
         run: python3 tools/ci/robolectric_offline.py prefetch "$ROBOLECTRIC_OFFLINE_DIR"
       - name: Run unit tests
         # The init script switches Robolectric to offline mode, so a test never downloads a jar itself.
