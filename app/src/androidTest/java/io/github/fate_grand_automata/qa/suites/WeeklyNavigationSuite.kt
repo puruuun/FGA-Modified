@@ -106,6 +106,56 @@ internal fun FixtureApi.verifyWeeklyNavigation(): JSONObject {
             }
             actual.put("readings",rows)
         }
+        "mapMotion" -> useSameSnapIn {
+            // #653: the real SIFT path (DroidCvPattern.featureMatches) and MapLocalizer.fit, used as WeeklyRouteDriver uses them
+            // (measuredMapDrag, frameScale). The repository holds no map pair with a measured motion, so the second frame is
+            // made from the first: the crop of the region moved by -shift (the map moved by +shift), then resized by `scale`.
+            val shiftX = case.optInt("shiftX720", 0)
+            val shiftY = case.optInt("shiftY720", 0)
+            val scale = case.optDouble("scale", 1.0)
+            loc.mapMotion.getPattern("map motion before").use { before ->
+                val moved = (loc.mapMotion - io.github.lib_automata.Location(shiftX * 2, shiftY * 2)).getPattern("map motion moved")
+                val after = if (scale == 1.0) moved else moved.use {
+                    it.resize(io.github.lib_automata.Size(Math.round(it.width * scale).toInt(), Math.round(it.height * scale).toInt()))
+                }
+                after.use {
+                    val matches = before.featureMatches(after, io.github.lib_automata.Region(0, 0, after.width, after.height))
+                    // The pixel-centre convention of resize: after = (before + 0.5) * scale - 0.5, plus the shift at that scale.
+                    val expectedScaleX = after.width.toDouble() / before.width
+                    val expectedScaleY = after.height.toDouble() / before.height
+                    val expectedOriginX = (shiftX + 0.5) * expectedScaleX - 0.5
+                    val expectedOriginY = (shiftY + 0.5) * expectedScaleY - 0.5
+                    actual.put("matches", matches.size).put("width", before.width).put("height", before.height)
+                        .put("expectedScaleX", "%.4f".format(expectedScaleX)).put("expectedScaleY", "%.4f".format(expectedScaleY))
+                        .put("expectedOriginX", "%.2f".format(expectedOriginX)).put("expectedOriginY", "%.2f".format(expectedOriginY))
+                    // measuredMapDrag fits with 0.98..1.02 and uses originY when |originX| <= 2; frameScale fits with the default
+                    // range and uses the mean scale when the two scales agree within 5 %.
+                    val drag = case.optString("use") == "drag"
+                    val fit = if (drag) MapLocalizer.fit(matches, 0.98..1.02) else MapLocalizer.fit(matches)
+                    actual.put("fit", fit != null)
+                    if (fit != null) {
+                        actual.put("inliers", fit.inliers).put("ratio", "%.3f".format(fit.score)).put("rms", "%.3f".format(fit.rms))
+                            .put("scaleX", "%.4f".format(fit.scaleX)).put("scaleY", "%.4f".format(fit.scaleY))
+                            .put("originX", "%.2f".format(fit.originX)).put("originY", "%.2f".format(fit.originY))
+                        // Tolerances: 1 px for an origin is a third of MapLocalizer.INLIER_DISTANCE (3 px), so a fit that passes
+                        // has the motion right to well inside what the driver's inlier rule already accepts; 0.01 for a scale is
+                        // half of MapZoom.TOLERANCE (0.02), so the zoom check cannot flip on the error.
+                        if (drag) {
+                            val dragY = fit.takeIf { kotlin.math.abs(it.originX) <= 2.0 }?.originY
+                            actual.put("dragY", dragY?.let { "%.2f".format(it) } ?: "none")
+                            actual.put("withinTolerance", dragY != null && kotlin.math.abs(dragY - expectedOriginY) <= 1.0 &&
+                                kotlin.math.abs(fit.originX - expectedOriginX) <= 1.0)
+                        } else {
+                            val frameScale = fit.takeIf { kotlin.math.abs(it.scaleX / it.scaleY - 1) <= 0.05 }?.let { (it.scaleX + it.scaleY) / 2 }
+                            val expectedScale = (expectedScaleX + expectedScaleY) / 2
+                            actual.put("frameScale", frameScale?.let { "%.4f".format(it) } ?: "none")
+                                .put("atMinimum", MapZoom.atMinimum(frameScale))
+                                .put("withinTolerance", frameScale != null && kotlin.math.abs(frameScale - expectedScale) <= 0.01)
+                        }
+                    }
+                }
+            }
+        }
         "pinch" -> {
             val plan=io.github.lib_automata.PinchGesture.zoomOut(io.github.lib_automata.Region(200,150,880,400))
             val gesture=io.github.fate_grand_automata.accessibility.PinchGestureBuilder.build(plan)

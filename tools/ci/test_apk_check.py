@@ -11,7 +11,7 @@ import apk_check as a
 
 SCRIPT = os.path.join(os.path.dirname(__file__), 'apk_check.py')
 
-BASE = ['AndroidManifest.xml', 'classes.dex', 'lib/arm64-v8a/libopencv_java4.so', 'resources.arsc']
+BASE = ['AndroidManifest.xml', 'classes.dex', 'lib/arm64-v8a/libopencv_java5.so', 'resources.arsc']
 SCAN_STRINGS_XML = os.path.join(os.path.dirname(__file__), '..', '..', 'app', 'src', 'scoreScan', 'res', 'values', 'strings.xml')
 SCAN_LOG_KT = os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'src', 'main', 'java', 'io', 'github',
                            'fate_grand_automata', 'scripts', 'supportSelection', 'SupportScoreScanLog.kt')

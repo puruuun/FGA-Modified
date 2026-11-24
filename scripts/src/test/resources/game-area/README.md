@@ -7,4 +7,4 @@ Grayscale is quantized to 64 levels, keeping the fixture below 1 MB (819134 byte
 Original captures stay in `build/orchestration/inputs/game-area-calibrate/` and are not committed.
 
 The pure JVM test uses OpenCV 4.9.0 with the product's INTER_AREA resize and TM_CCOEFF_NORMED.
-Android still uses OpenCV 4.11.0. Templates are the existing app assets, including the En MENU fallback.
+Android uses OpenCV 5.1.0. Templates are the existing app assets, including the En MENU fallback.

@@ -419,27 +419,6 @@
     </issue>
 
     <issue
-        id="Aligned16KB"
-        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
-    </issue>
-
-    <issue
-        id="Aligned16KB"
-        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
-    </issue>
-
-    <issue
-        id="Aligned16KB"
-        message="The native library `arm64-v8a/libc++_shared.so` (from `org.opencv:opencv:4.11.0`) is not 16 KB aligned">
-        <location
-            file="$GRADLE_USER_HOME/caches/9.8.2/transforms/3085eea1f3fe61de2f08621f27d00955/transformed/opencv-4.11.0/jni/arm64-v8a/libc++_shared.so"/>
-    </issue>
-
-    <issue
         id="DiscouragedApi"
         message="Fixed screen orientations will be ignored in most cases, starting from Android 16. Android is moving toward a model where apps are expected to adapt to various orientations, display sizes, and aspect ratios."
         errorLine1="            android:screenOrientation=&quot;sensorLandscape&quot; />"

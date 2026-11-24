@@ -22,20 +22,51 @@
   the compile level, but nothing opts into new runtime behavior. Keep the two decoupled;
   bumping `targetSdk` is a separate, user-visible decision. A minor API level needs the
   `compileSdk { version = release(37) { minorApiLevel = 1 } }` block, not `compileSdk = 37`.
-- **OpenCV is pinned to 4.11.0**; do not bump it with the other libraries. Every release bundles
-  ARM's KleidiCV; 4.11.0's (0.3.0) never calls its SVE kernels, 4.12.0's and later do. BlueStacks
-  Air on macOS advertises `HWCAP2_SVE2` without implementing SVE, so those later builds die with
-  `SIGILL` — at first image match on 4.12/4.13, and at `System.loadLibrary` on 4.14, where a
-  static constructor probes the vector length with `rdvl`. Vetting a bump means checking whether
-  an SVE instruction is *reachable*, not whether one is present: 4.11.0 contains `rdvl` too, just
-  with nothing calling it. `strings libopencv_java4.so | grep 'Custom HAL'` only reports the
-  KleidiCV version, of which 0.3.0 is the known-good one — and note that stock `objdump` cannot
-  disassemble these files (`architecture UNKNOWN`), so a grep over its output silently finds
-  nothing for every version.
-- The 4.11.0 AAR's `libc++_shared.so` is 4 KB aligned while Play requires 16 KB, so
-  `app/build.gradle.kts` extracts the 16 KB aligned copy from a separately pinned
-  `opencv_aligned_libcxx_version` and packages that instead. Both catalog entries are the same
-  Maven coordinate; bump them by hand and only together with a vetted OpenCV bump.
+- **OpenCV is 5.1.0** (issue #653; owner decision, 2026-11-24: upgrade with device QA, the macOS
+  BlueStacks Air risk below accepted). Its arm64 `libopencv_java5.so` bundles ARM's KleidiCV 26.09
+  (`Custom HAL: YES (carotene (ver 0.0.1) KleidiCV (ver 26.09))`), and that KleidiCV has reachable
+  SVE2 kernels: 83 functions with SVE/SVE2 instructions (for example `smlalb`, `sqrshrnb`). What was
+  measured on the AAR (NDK r28 `llvm-objdump --mattr=+sve,+sve2,+sme,+sme2`, functions from
+  `.eh_frame`):
+  - **Selection.** Static initializers in `.init_array` pick each kernel once, at load: the SVE2
+    variant when `getauxval(AT_HWCAP)` has `HWCAP_SVE` (bit 22) **and** `getauxval(AT_HWCAP2)` has
+    `HWCAP2_SVE2` (bit 1), the Neon one otherwise (39 sites, all of this form). 4.14.0 (KleidiCV
+    26.03) checked `HWCAP2_SVE2` alone. Traced backwards, every SVE function is reached only through
+    those initializers' pointers.
+  - **Load.** No SVE instruction is reachable from `.init_array` by direct branches (186 functions),
+    so 4.14's death at `System.loadLibrary` (a static constructor ran `rdvl`) is gone.
+  - **No switch.** Nothing turns the SVE2 kernels off: the only KleidiCV environment variable in the
+    binary is `KLEIDICV_PREFER_SME_BACKEND` (it prefers SME), there is no OpenCV HAL or KleidiCV
+    switch string, and the pointers are fixed before the app's first call.
+  - **BlueStacks Air on macOS** advertised SVE2 without implementing it, which is why the fork kept
+    4.11.0 (KleidiCV 0.3.0, which never calls its SVE kernels): 4.12/4.13 died with `SIGILL` at the
+    first image match, 4.14 at `System.loadLibrary`. Upstream's KleidiCV report (work item 16) asked
+    for the `HWCAP_SVE` and `HWCAP2_SVE2` check that 5.1.0 has, but neither KleidiCV's nor OpenCV's
+    release notes record a fix, and nobody measured BlueStacks Air's HWCAP bits. If it sets
+    `HWCAP_SVE` too, 5.1.0 still dies there at the first match. **The macOS case is not verified.**
+    No such device is available, and the owner accepted that.
+  - **Checking a device:** `/proc/cpuinfo` `Features` listing both `sve` and `sve2` means the SVE2
+    kernels run; `sve2` without `sve` means Neon. A device that lists both and has no SVE unit crashes.
+  - **Vetting a later bump:** read the KleidiCV version from the build string (`Custom HAL`), then
+    whether the selection rule and the load path above still hold. An SVE instruction that is
+    *present* says nothing: what matters is what can reach it. Stock `objdump` cannot disassemble
+    these files (`architecture UNKNOWN`), so a grep over its output silently finds nothing for every
+    version; use the NDK's `llvm-objdump` with the SVE attributes.
+- **`libc++_shared.so` comes from the OpenCV AAR itself.** In 5.1.0 every `LOAD` segment of the arm64
+  `libc++_shared.so` and `libopencv_java5.so` is 16 KB aligned (`0x4000`), and both `libc++_shared.so`
+  copies are byte-identical to those of the 4.14.0 AAR that the fork used to extract and package in
+  place of 4.11.0's 4 KB aligned one, so that workaround (`opencv_aligned_libcxx_version`,
+  `alignedLibCxx`, `ExtractAlignedLibCxx`, the `pickFirsts` entry) is gone. By ABI, the `LOAD`
+  alignment of both libraries in the 5.1.0 AAR is `0x4000` on arm64-v8a and x86_64 and `0x1000` on
+  armeabi-v7a and x86. The 32-bit ones are 4 KB aligned, as the extracted copy was. The 16 KB
+  requirement applies to 64-bit libraries only. The `ci`, `beta`, `deviceTest` and `rust` builds carry
+  arm64-v8a and armeabi-v7a only (`shippedAbis`); `debug` and `release` have no ABI filter and carry all
+  four ABIs of the AAR. Nothing else in the APK ships a `libc++_shared.so`: Tesseract4Android does not, and
+  ONNX Runtime links its C++ runtime in.
+- The JVM unit tests use openpnp OpenCV 4.9.0 (`opencv_jvm_version`), a separate artifact that never
+  reaches the APK. It stays at 4.9.0: the `scripts` tests use only `core`, `imgproc` and `imgcodecs`,
+  and they compile and pass on it unchanged. What 5.1.0 does on Android is checked by device QA, not by them.
+  OpenCV 5 renamed the Java package `org.opencv.features2d` to `org.opencv.features`.
 - Build types: `debug`, `release`, `ci` (`initWith(release)`, debug-signed, ARM-only
   ABIs), `beta`, `deviceTest` and `rust` (the owner's Rust test APK; which of them package the
   Rust engine is in [`rust-native.md`](rust-native.md)). The `ci` type must exist in every
@@ -73,28 +104,34 @@ never from memory. `tools/ci/android_notices.py check` runs in Main CI through
 
 What the check cannot see, so a reviewer must:
 
-- **What is statically inside a native library.** The third-party list of `libopencv_java4.so` and of
+- **What is statically inside a native library.** The third-party list of `libopencv_java5.so` and of
   Tesseract4Android's libraries changes with their versions; the check compares versions only where the
   catalog has a key.
 - **Transitive dependencies.** A new transitive dependency of a covered library raises no alarm; add its
   component by hand when a bump brings one (read `:app:dependencies --configuration ciRuntimeClasspath`).
 - **The `androidx.*` pattern is broad by design.** A new AndroidX artifact that bundles third-party code
   (as glance does with protobuf) raises no alarm.
-- **Custom configurations** (`alignedLibCxx`, `onnxRuntimeAar`) feed packaged native libraries and are not
-  read; their components (libc++, and `libonnxruntime.so` in engine builds) are kept by hand.
+- **Custom configurations** (`onnxRuntimeAar`) feed packaged native libraries and are not read; their
+  components (`libonnxruntime.so` in engine builds) are kept by hand. libc++ comes with the OpenCV AAR and
+  its component carries `opencv_version`.
 - Whether a copied text still equals its upstream file: the manifest has the SHA-256 for a reviewer.
 
 - **A bump of OpenCV or Tesseract4Android: redo the bundled list from the library's build string and
   `3rdparty/` at that tag.** For OpenCV, read the **whole** `cv::getBuildInformation()` text of the new
-  `libopencv_java4.so` (for example `strings` on it): the "3rdparty dependencies" line, the "Extra
+  `libopencv_java5.so` (for example `strings` on it): the "3rdparty dependencies" line, the "Extra
   dependencies" line (a library the binary links from the device, such as `z`, is not redistributed and
   gets no entry), the per-library version lines ("ZLib", "JPEG", "WEBP", "PNG", "TIFF", "OpenEXR",
-  "Parallel framework") and the "Other third-party libraries" block (Custom HAL, Protobuf, Flatbuffers).
-  For each library that is built in, take its licence file and version from `3rdparty/<dir>` at the tag,
-  plus the oneTBB, ADE and KleidiCV versions the build downloads. For Tesseract4Android, read its README
+  "JPEG 2000", "Parallel framework", "Trace"), "Built-in fonts", and the "Other third-party libraries"
+  block (HarfBuzz, DNN MLAS, Custom HAL, Protobuf, Flatbuffers). The build information does not list
+  everything: also check `modules/*/3rdparty/` and third-party code compiled into OpenCV's own sources
+  (5.1.0: SoftFloat and FDLIBM in `modules/core/src/softfloat.cpp`, Annoy and MSCR's `chi_table.h` in
+  `modules/features`), and confirm in the binary that each one is linked in. For each library that is built in, take
+  its licence file and version from `3rdparty/<dir>` (5.x: also `hal/carotene`, `hal/kleidicv`,
+  `modules/imgproc/fonts`) at the tag, plus the oneTBB and KleidiCV versions the build downloads
+  (`3rdparty/tbb/CMakeLists.txt`, `hal/kleidicv/kleidicv.cmake`). For Tesseract4Android, read its README
   (Tesseract, Leptonica, libjpeg, libpng versions) and the vendored `cpp/*/src` licence files at the tag.
-  Update the notices file and the manifest (components, source URLs, SHA-256) together. The
-  `opencv_aligned_libcxx_version` component (libc++) moves with its own pin. A new runtime dependency or a
+  Update the notices file and the manifest (components, source URLs, SHA-256) together. The libc++
+  component moves with `opencv_version`. A new runtime dependency or a
   new `*.traineddata` file needs its entry in the same PR. Copy a header comment or a section whole: check
   the end of the excerpt in the source, not only the start.
 
