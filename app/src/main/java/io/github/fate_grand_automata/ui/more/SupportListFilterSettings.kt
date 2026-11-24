@@ -116,6 +116,7 @@ internal fun ImportFromBattleConfig(prefs: PrefsCore) {
                 if (configs.isEmpty()) Text(stringResource(R.string.support_list_filter_no_configs))
                 for (config in configs) {
                     val name = config.name.get()
+                    val imported = stringResource(R.string.support_list_filter_imported, name)
                     Text(
                         name,
                         style = MaterialTheme.typography.bodyLarge,
@@ -126,7 +127,7 @@ internal fun ImportFromBattleConfig(prefs: PrefsCore) {
                                 open = false
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.support_list_filter_imported, name),
+                                    imported,
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             }
