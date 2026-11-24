@@ -30,15 +30,37 @@ object SupportListFilterState {
     @Volatile
     private var active: SupportListCriteria? = null
 
+    /**
+     * Raised by every [request] and every [clear]. A build carries the value of its request and is applied only while
+     * that is still the latest, so a build that finishes after the switch went off, after a newer build was asked
+     * for, or after the watcher was replaced, changes nothing.
+     */
+    private var generation = 0L
+
     /** Null relays every byte as received. */
     fun criteria(): SupportListCriteria? = active
 
+    /** Stops the filter at once. A build still running is dropped when it finishes. */
+    fun clear() = synchronized(lock) {
+        generation++
+        set(null)
+    }
+
+    /** The token of one build; a later [request] or [clear] makes it stale. */
+    fun request(): Long = synchronized(lock) { ++generation }
+
     /**
-     * [build] is the build of the active conditions, or [SupportFilterBuild.Off] when they were not built. The proxy
-     * gets criteria only when the feature switch and the toggle are both on and the build is ready.
+     * Applies [build] only when [token] is still the latest and [switchesOn] (the feature switch and the toggle, read
+     * now, under the lock) holds. The proxy gets criteria only from a ready build with a condition set.
+     * @return whether [build] was applied.
      */
-    fun update(featureOn: Boolean, toggleOn: Boolean, build: SupportFilterBuild) = synchronized(lock) {
-        val next = if (featureOn && toggleOn) build.applied else null
+    fun offer(token: Long, build: SupportFilterBuild, switchesOn: () -> Boolean): Boolean = synchronized(lock) {
+        if (token != generation || !switchesOn()) return@synchronized false
+        set(build.applied)
+        true
+    }
+
+    private fun set(next: SupportListCriteria?) {
         if (next != active) {
             active = next
             // A result of other criteria, or of a filter that stopped, must not stay on screen.
@@ -46,7 +68,7 @@ object SupportListFilterState {
         }
     }
 
-    internal fun resetForTesting() = synchronized(lock) { active = null }
+    internal fun resetForTesting() = clear()
 }
 
 /**
@@ -60,12 +82,20 @@ object SupportListFilterController {
     private var watcher: Job? = null
 
     internal val watcherForTesting: Job? get() = watcher
-    internal val buildsForTesting = java.util.concurrent.atomic.AtomicInteger()
+
+    /** One per pass of the watcher, built or not. */
+    internal val passesForTesting = java.util.concurrent.atomic.AtomicInteger()
+
+    /** A test's slow or fixed build in place of the one that reads the files on disk. */
+    @Volatile
+    internal var buildForTesting: ((SupportPrefsCore) -> SupportFilterBuild)? = null
 
     @OptIn(FlowPreview::class)
     @Synchronized
     fun init(context: Context, prefs: PrefsCore) {
         val app = context.applicationContext
+        // A cancelled watcher can still be inside a build, which does not stop at a cancel; the new watcher's first
+        // request makes that build's result stale.
         watcher?.cancel()
         watcher = scope.launch {
             runCatching { SupportFilterMigration.run(prefs, SupportIdLookup.load(app)) }
@@ -73,20 +103,24 @@ object SupportListFilterController {
             runCatching { SupportFilterToggleMigration.run(prefs, app.getString(R.string.support_filter_profile_migrated)) }
                 .onFailure { Timber.w(it, "Support list filter: toggle migration failed") }
             val active = prefs.activeSupportFilter
-            // Not debounced, so switching off stops the filter at once.
-            val switches = combine(prefs.supportFilterFeature.asFlow(), prefs.supportFilterOn.asFlow()) { f, t -> f to t }
+            val switchesOn = { prefs.supportFilterFeature.get() && prefs.supportFilterOn.get() }
+            val switches = combine(prefs.supportFilterFeature.asFlow(), prefs.supportFilterOn.asFlow()) { f, t -> f && t }
                 .distinctUntilChanged()
-            combine(switches, SupportFilterSettings.changes(active).debounce(200)) { s, _ -> s }
-                .collectLatest { (featureOn, toggleOn) ->
-                    val build = if (featureOn && toggleOn) build(app, active) else SupportFilterBuild.Off
-                    SupportListFilterState.update(featureOn, toggleOn, build)
-                    buildsForTesting.incrementAndGet()
+            // Apart from the builds and not debounced: switching off clears at once, even while a build is running.
+            launch { switches.collect { on -> if (!on) SupportListFilterState.clear() } }
+            combine(switches, SupportFilterSettings.changes(active).debounce(200)) { on, _ -> on }
+                .collectLatest { on ->
+                    if (on) {
+                        val token = SupportListFilterState.request()
+                        SupportListFilterState.offer(token, build(app, active), switchesOn)
+                    }
+                    passesForTesting.incrementAndGet()
                 }
         }
     }
 
     private fun build(context: Context, config: SupportPrefsCore): SupportFilterBuild = try {
-        buildSupportFilter(SupportFilterSettings.of(config), SupportIdLookup.load(context))
+        buildForTesting?.invoke(config) ?: buildSupportFilter(SupportFilterSettings.of(config), SupportIdLookup.load(context))
     } catch (e: Exception) {
         Timber.w(e, "Support list filter: criteria not built")
         SupportFilterBuild.Off
@@ -132,31 +166,50 @@ object SupportFilterMigration {
 object SupportFilterToggleMigration {
     const val PROFILE_ID = "migrated"
 
-    /** @return true when this call ran the migration. */
+    /** A test stops the run after this step, as a process that dies there would. */
+    internal var stopAfterStepForTesting = Int.MAX_VALUE
+
+    private class Stopped : RuntimeException()
+
+    /**
+     * The new values go to disk first, then the retired keys are removed, then the run is marked done; each step is
+     * committed before the next. A run that stopped half way therefore runs again from the start and ends as an
+     * uninterrupted run does: what is gone with the retired keys was already written in its new place.
+     * @return true when this call ran the migration.
+     */
     fun run(prefs: PrefsCore, profileName: String): Boolean {
         if (prefs.supportFilterToggleMigrated.get()) return false
         val key = PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY
         val activeFile = prefs.activeSupportFilterFile
+        val manualKnown = activeFile.contains(key)
         val manualOn = activeFile.getBoolean(key, false)
         // A filter that was never edited holds no condition key; it is not worth a profile.
         val hasConditions = activeFile.all.keys.any { it != key }
         val configs = prefs.battleConfigList.get().map { prefs.forBattleConfig(it).sharedPrefs }
         val anyConfigOn = configs.any { it.getBoolean(key, false) }
+        fun step(n: Int) { if (n >= stopAfterStepForTesting) throw Stopped() }
 
         if (hasConditions) {
-            // A fixed id, so a run that stopped half way and runs again replaces this profile instead of adding one.
+            // A fixed id, so a run that runs again replaces this profile instead of adding one.
             val profile = prefs.addSupportFilterProfile(profileName, PROFILE_ID)
             profile.support.copyConditionsFrom(prefs.activeSupportFilter)
+            profile.commit()
             prefs.supportFilterSourceName.set(profileName)
             prefs.supportFilterSource.set(SupportFilterSource.Profile)
         }
-        prefs.supportFilterOn.set(manualOn)
+        // Only from the retired key: a run after it was removed must not turn the toggle off again.
+        if (manualKnown) prefs.supportFilterOn.set(manualOn)
         if (manualOn || anyConfigOn) prefs.supportFilterFeature.set(true)
+        prefs.commitMainFile()
+        step(1)
         for (config in configs) {
             if (config.contains(key)) config.edit(commit = true) { remove(key) }
         }
+        step(2)
         if (activeFile.contains(key)) activeFile.edit(commit = true) { remove(key) }
+        step(3)
         prefs.supportFilterToggleMigrated.set(true)
+        prefs.commitMainFile()
         return true
     }
 }

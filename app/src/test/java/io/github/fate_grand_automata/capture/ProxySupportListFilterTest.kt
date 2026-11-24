@@ -206,10 +206,11 @@ class ProxySupportListFilterTest {
             for (chunked in listOf(false, true)) {
                 val upstream = response(listJson.toByteArray(), chunked = chunked)
                 for ((feature, toggle) in listOf(false to true, true to false, false to false)) {
-                    SupportListFilterState.update(feature, toggle, ready)
+                    SupportListFilterState.clear()
+                    SupportListFilterState.offer(SupportListFilterState.request(), ready) { feature && toggle }
                     assertContentEquals(upstream, exchangeWithState(upstream).clientWire, "feature=$feature toggle=$toggle")
                 }
-                SupportListFilterState.update(true, true, ready)
+                SupportListFilterState.offer(SupportListFilterState.request(), ready) { true }
                 val e = exchangeWithState(upstream)
                 assertEquals(1, kept(e.body).size)
                 assertContentEquals(request, e.upstreamReceived)

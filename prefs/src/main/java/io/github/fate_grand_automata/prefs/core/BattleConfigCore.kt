@@ -36,10 +36,9 @@ class BattleConfigCore private constructor(
     val context: Context get() = requireNotNull(_context)
     val sharedPrefs: SharedPreferences get() = requireNotNull(_sharedPrefs)
 
-    // A `.fga` exported before #695 can still carry the per-config filter switch; nothing reads it any more.
     fun import(map: Map<String, *>) =
         sharedPrefs.edit {
-            import(map - PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY)
+            import(map)
         }
 
     fun export(): Map<String, *> = sharedPrefs.all

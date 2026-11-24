@@ -88,6 +88,7 @@ fun battleLauncher(
     prefs: IPreferences,
     modifier: Modifier = Modifier,
     prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore,
+    showLimits: Boolean = true,
     /** Told the selected config's id, for the support list filter's "take from the selected config" (#695). */
     onSelectedConfig: (String?) -> Unit = {},
     /** A third column after the options, as wide as the config list; it gets its width modifier. */
@@ -494,82 +495,84 @@ fun battleLauncher(
                 }
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.p_limit).uppercase(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    )
+            if (showLimits) {
+                item {
                     Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        horizontalArrangement = Arrangement.End
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        FilledTonalButton(
-                            enabled = resetAllButton,
-                            onClick = {
-                                shouldLimitRuns = false
-                                limitRuns = 1
-                                shouldLimitCEs = false
-                                limitCEs = 1
-                                shouldLimitMats = false
-                                limitMats = 1
-                            },
-                            // The text stays labelSmall; only the button shrinks. The 48dp touch target is kept, as the
-                            // button keeps its minimum interactive size.
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        Text(
+                            text = stringResource(R.string.p_limit).uppercase(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier
-                                .height(32.dp)
-                                .testTag(LauncherResetAllTag)
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                        )
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            Text(
-                                text = stringResource(R.string.reset_all).uppercase(),
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center
-                            )
+                            FilledTonalButton(
+                                enabled = resetAllButton,
+                                onClick = {
+                                    shouldLimitRuns = false
+                                    limitRuns = 1
+                                    shouldLimitCEs = false
+                                    limitCEs = 1
+                                    shouldLimitMats = false
+                                    limitMats = 1
+                                },
+                                // The text stays labelSmall; only the button shrinks. The 48dp touch target is kept, as the
+                                // button keeps its minimum interactive size.
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .height(32.dp)
+                                    .testTag(LauncherResetAllTag)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.reset_all).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
+
                     }
 
                 }
 
-            }
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitRuns,
+                        onShouldLimitChange = { shouldLimitRuns = it },
+                        text = stringResource(R.string.p_runs),
+                        count = limitRuns,
+                        onCountChange = { limitRuns = it }
+                    )
+                }
 
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitRuns,
-                    onShouldLimitChange = { shouldLimitRuns = it },
-                    text = stringResource(R.string.p_runs),
-                    count = limitRuns,
-                    onCountChange = { limitRuns = it }
-                )
-            }
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitMats,
+                        onShouldLimitChange = { shouldLimitMats = it },
+                        text = stringResource(R.string.p_mats),
+                        count = limitMats,
+                        onCountChange = { limitMats = it }
+                    )
+                }
 
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitMats,
-                    onShouldLimitChange = { shouldLimitMats = it },
-                    text = stringResource(R.string.p_mats),
-                    count = limitMats,
-                    onCountChange = { limitMats = it }
-                )
-            }
-
-            item {
-                LimitItem(
-                    shouldLimit = shouldLimitCEs,
-                    onShouldLimitChange = { shouldLimitCEs = it },
-                    text = stringResource(R.string.p_ces),
-                    count = limitCEs,
-                    onCountChange = { limitCEs = it }
-                )
+                item {
+                    LimitItem(
+                        shouldLimit = shouldLimitCEs,
+                        onShouldLimitChange = { shouldLimitCEs = it },
+                        text = stringResource(R.string.p_ces),
+                        count = limitCEs,
+                        onCountChange = { limitCEs = it }
+                    )
+                }
             }
         }
 

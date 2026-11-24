@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isToggleable
@@ -24,6 +27,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
@@ -349,7 +353,54 @@ class SupportListFilterUiTest {
         compose.onNodeWithText("조건 출처: 프로필 고난도").assertExists()
     }
 
-    // The add and rename dialogs are not driven here: Robolectric never gets idle once a dialog's text field takes focus.
+    @Test fun aProfileNameIsTrimmedAndCannotBeBlank() {
+        assertNull(io.github.fate_grand_automata.ui.more.profileName(""))
+        assertNull(io.github.fate_grand_automata.ui.more.profileName("  \t "))
+        assertEquals("새 프로필", io.github.fate_grand_automata.ui.more.profileName("  새 프로필 "))
+    }
+
+    /**
+     * The name dialog stands in as a button that confirms [name]: Robolectric never gets idle once a dialog's text
+     * field has focus, also with the clock driven by hand. It confirms only what [profileName] can give.
+     */
+    private fun fakeNameDialog(name: String): io.github.fate_grand_automata.ui.more.ProfileNameDialogContent = { title, _, _, onConfirm ->
+        androidx.compose.material3.TextButton(
+            onClick = { onConfirm(io.github.fate_grand_automata.ui.more.profileName(name)!!) },
+            modifier = androidx.compose.ui.Modifier.testTag("fake-name:$title"),
+        ) { androidx.compose.material3.Text("ok") }
+    }
+
+    @Test fun addingAProfileOpensItsEditorAndRenamingUpdatesTheListButNotTheSourceLine() {
+        val prefs = prefs()
+        var edited: String? = null
+        var typed by androidx.compose.runtime.mutableStateOf(" 주회용 ")
+        compose.setContent { FGATheme { SupportListFilterScreen(prefs, editProfile = { edited = it }, nameDialog = { a, b, c, d -> fakeNameDialog(typed)(a, b, c, d) }) } }
+        val add = context.getString(R.string.support_filter_profile_add)
+        val rename = context.getString(R.string.support_filter_profile_rename)
+
+        compose.onNodeWithTag(SupportFilterAddProfileTag).performClick()
+        compose.onNodeWithTag("fake-name:$add").performClick()
+        compose.waitForIdle()
+        val id = prefs.supportFilterProfiles.get().single()
+        assertEquals(id, edited)
+        assertEquals("주회용", prefs.forSupportFilterProfile(id).name.get())
+
+        compose.onNodeWithTag("$SupportFilterUseProfileTag$id").performClick()
+        compose.waitForIdle()
+        assertEquals("주회용", prefs.supportFilterSourceName.get())
+
+        typed = "고난도"
+        compose.onNodeWithTag("$SupportFilterProfileMenuTag$id").performClick()
+        compose.onNodeWithTag(SupportFilterRenameTag).performClick()
+        compose.onNodeWithTag("fake-name:$rename").performClick()
+        compose.waitForIdle()
+        assertEquals("고난도", prefs.forSupportFilterProfile(id).name.get())
+        compose.onNodeWithText("고난도").assertExists()
+        compose.onNodeWithText("주회용").assertDoesNotExist()
+        // The active filter was copied under the old name; the source line keeps it.
+        assertEquals("주회용", prefs.supportFilterSourceName.get())
+    }
+
     @Test fun theMoreScreenSwitchesTheFeatureAndManagesProfiles() {
         val prefs = prefs()
         val id = prefs.addSupportFilterProfile("새 프로필", "m1").id
@@ -441,6 +492,22 @@ class SupportListFilterUiTest {
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theFilterPanelIsAsWideAsTheConfigListAt840() = assertPanelAsWideAsTheConfigList()
+
+    // The weekly route ignores the run limits, so they are hidden next to its panel; the filter panel keeps them.
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theLimitsHideOnlyNextToTheWeeklyPanel() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        launcher(fixture, initial = LauncherPanel.Weekly)
+        val settings = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherSettingsListTag)
+        repeat(5) { settings.performTouchInput { swipeUp() } }
+        compose.waitForIdle()
+        compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).assertDoesNotExist()
+        compose.onNodeWithTag(SupportFilterChipTag).performClick()
+        compose.waitForIdle()
+        settings.performScrollToNode(hasTestTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag))
+        compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).assertExists()
+    }
 
     @Test @Config(qualifiers = "ja-w1280dp-h720dp-hdpi")
     fun theFilterPanelIsAsWideAsTheConfigListAt1280() = assertPanelAsWideAsTheConfigList()

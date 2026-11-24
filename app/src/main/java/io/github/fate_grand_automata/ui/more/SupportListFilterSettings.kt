@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -90,13 +91,18 @@ internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
  * the play button menu.
  */
 @Composable
-fun SupportListFilterScreen(prefs: PrefsCore, editProfile: (String) -> Unit) {
+fun SupportListFilterScreen(
+    prefs: PrefsCore,
+    editProfile: (String) -> Unit,
+    /** The name dialog; a test passes its own, as Robolectric never gets idle with a focused text field in a dialog. */
+    nameDialog: ProfileNameDialogContent = { title, initial, onDismiss, onConfirm -> ProfileNameDialog(title, initial, onDismiss, onConfirm) },
+) {
     var feature by prefs.supportFilterFeature.remember()
     val ids by prefs.supportFilterProfiles.remember()
     var adding by remember { mutableStateOf(false) }
     // Read again when the list changes, so a rename made on this screen shows.
     var names by remember { mutableIntStateOf(0) }
-    val profiles = remember(ids, names) { ids.map(prefs::forSupportFilterProfile).sortedBy { it.name.get().lowercase() } }
+    val profiles = remember(ids, names) { prefs.supportFilterProfilesToShow(ids) }
     CappedWidth {
         LazyColumn {
             item { Heading(stringResource(R.string.support_list_filter)) }
@@ -135,15 +141,15 @@ fun SupportListFilterScreen(prefs: PrefsCore, editProfile: (String) -> Unit) {
                 )
             }
             items(profiles, key = { it.id }) { profile ->
-                ProfileRow(prefs, profile, edit = { editProfile(profile.id) }, renamed = { names++ })
+                ProfileRow(prefs, profile, nameDialog, edit = { editProfile(profile.id) }, renamed = { names++ })
             }
         }
     }
-    if (adding) ProfileNameDialog(
-        title = stringResource(R.string.support_filter_profile_add),
-        initial = "",
-        onDismiss = { adding = false },
-        onConfirm = { name ->
+    if (adding) nameDialog(
+        stringResource(R.string.support_filter_profile_add),
+        "",
+        { adding = false },
+        { name ->
             adding = false
             editProfile(prefs.addSupportFilterProfile(name).id)
         },
@@ -151,7 +157,13 @@ fun SupportListFilterScreen(prefs: PrefsCore, editProfile: (String) -> Unit) {
 }
 
 @Composable
-private fun ProfileRow(prefs: PrefsCore, profile: SupportFilterProfileCore, edit: () -> Unit, renamed: () -> Unit) {
+private fun ProfileRow(
+    prefs: PrefsCore,
+    profile: SupportFilterProfileCore,
+    nameDialog: ProfileNameDialogContent,
+    edit: () -> Unit,
+    renamed: () -> Unit,
+) {
     val context = LocalContext.current
     val name by profile.name.remember()
     val changes = remember(profile) { SupportFilterSettings.changes(profile.support).map { SupportFilterSettings.of(profile.support) } }
@@ -176,7 +188,7 @@ private fun ProfileRow(prefs: PrefsCore, profile: SupportFilterProfileCore, edit
                     .weight(1f)
                     .padding(start = 16.dp, top = 12.dp, bottom = 12.dp)
             ) {
-                Text(name, style = MaterialTheme.typography.titleSmall)
+                Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(supportFilterSummary(settings), style = MaterialTheme.typography.bodySmall)
             }
             TextButton(
@@ -205,11 +217,11 @@ private fun ProfileRow(prefs: PrefsCore, profile: SupportFilterProfileCore, edit
             }
         }
     }
-    if (renaming) ProfileNameDialog(
-        title = stringResource(R.string.support_filter_profile_rename),
-        initial = name,
-        onDismiss = { renaming = false },
-        onConfirm = {
+    if (renaming) nameDialog(
+        stringResource(R.string.support_filter_profile_rename),
+        name,
+        { renaming = false },
+        {
             renaming = false
             profile.name.set(it)
             renamed()
@@ -229,6 +241,12 @@ private fun ProfileRow(prefs: PrefsCore, profile: SupportFilterProfileCore, edit
     )
 }
 
+/** Title, initial name, dismiss, and confirm with the name as [profileName] gives it. */
+internal typealias ProfileNameDialogContent = @Composable (String, String, () -> Unit, (String) -> Unit) -> Unit
+
+/** The name a profile gets from what was typed: trimmed, and null (confirm disabled) when nothing is left. */
+internal fun profileName(typed: String): String? = typed.trim().ifEmpty { null }
+
 @Composable
 internal fun ProfileNameDialog(title: String, initial: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var text by remember { mutableStateOf(initial) }
@@ -241,14 +259,12 @@ internal fun ProfileNameDialog(title: String, initial: String, onDismiss: () -> 
                 onValueChange = { text = it },
                 singleLine = true,
                 label = { Text(stringResource(R.string.support_filter_profile_name)) },
-                modifier = Modifier.testTag(SupportFilterNameFieldTag),
             )
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(text.trim()) },
-                enabled = text.isNotBlank(),
-                modifier = Modifier.testTag(SupportFilterNameConfirmTag),
+                onClick = { profileName(text)?.let(onConfirm) },
+                enabled = profileName(text) != null,
             ) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) } },
@@ -346,5 +362,3 @@ internal const val SupportFilterProfileMenuTag = "supportListFilter:menu:"
 internal const val SupportFilterRenameTag = "supportListFilter:rename"
 internal const val SupportFilterDeleteTag = "supportListFilter:delete"
 internal const val SupportFilterDeleteConfirmTag = "supportListFilter:deleteConfirm"
-internal const val SupportFilterNameFieldTag = "supportListFilter:name"
-internal const val SupportFilterNameConfirmTag = "supportListFilter:nameConfirm"

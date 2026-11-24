@@ -41,7 +41,7 @@ class PrefsCore @Inject constructor(
 
         /**
          * The #685 switch, in a battle config's file and in [MANUAL_SUPPORT_FILTER_FILE]. Retired by #695; only the
-         * app's migration reads it, and a battle config import drops it.
+         * app's migration reads it, and `BattleConfigFile.decode` drops it from every `.fga` import.
          */
         const val LEGACY_SUPPORT_LIST_FILTER_KEY = "support_list_filter"
     }
@@ -102,7 +102,7 @@ class PrefsCore @Inject constructor(
 
     /**
      * Retired experiment (#636): svtIds stored as strings. Only read once by the app's support filter migration (#685),
-     * which moves the ids into [manualSupportFilter] and sets [supportFilterMigrated].
+     * which moves the ids into [activeSupportFilter] and sets [supportFilterMigrated].
      */
     val legacySupportFilterEnabled = maker.bool("capture_support_filter_enabled", false)
     val legacySupportFilterServants = maker.stringSet("capture_support_filter_servants")
@@ -274,22 +274,42 @@ class PrefsCore @Inject constructor(
         SupportFilterProfileCore(id, context.getSharedPreferences(SUPPORT_FILTER_PROFILE_FILE_PREFIX + id, Context.MODE_PRIVATE))
     }
 
-    /** A new, empty profile named [name], added to [supportFilterProfiles]. */
+    /**
+     * The profiles to list, by name. An id whose file is gone (no name) is left out rather than shown as an unnamed
+     * row; it stays in [supportFilterProfiles] and does no harm there.
+     */
+    fun supportFilterProfilesToShow(ids: Set<String> = supportFilterProfiles.get()): List<SupportFilterProfileCore> =
+        ids.map(::forSupportFilterProfile).filter { it.name.get().isNotBlank() }.sortedBy { it.name.get().lowercase() }
+
+    /** A new, empty profile named [name], added to [supportFilterProfiles]. Both files are written before it returns. */
     @Synchronized
     fun addSupportFilterProfile(name: String, id: String = java.util.UUID.randomUUID().toString()): SupportFilterProfileCore {
         val profile = forSupportFilterProfile(id)
         profile.sharedPrefs.edit(commit = true) { clear() }
         profile.name.set(name)
+        profile.commit()
         supportFilterProfiles.set(supportFilterProfiles.get() + id)
+        commitMainFile()
         return profile
     }
 
+    /** Removes the profile from the list and deletes its file, as a battle config's file is deleted. */
     @Synchronized
     fun removeSupportFilterProfile(id: String) {
         supportFilterProfiles.set(supportFilterProfiles.get() - id)
+        // The context keeps the loaded file in memory after the delete, so it is emptied first.
         forSupportFilterProfile(id).sharedPrefs.edit(commit = true) { clear() }
         supportFilterProfileMap.remove(id)
+        context.deleteSharedPreferences(SUPPORT_FILTER_PROFILE_FILE_PREFIX + id)
     }
+
+    private val mainFile = maker.prefs
+
+    /**
+     * Writes what [Pref.set] has only applied to memory so far, synchronously; for a migration whose steps must be on
+     * disk in order.
+     */
+    fun commitMainFile() = mainFile.edit(commit = true) { }
 
     init {
         RetreatMergeMigration.run(

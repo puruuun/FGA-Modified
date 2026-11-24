@@ -188,8 +188,9 @@ private fun expandedBattleLauncher(
     val context = LocalContext.current
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
     Row(modifier) {
-        // The run limits stay visible next to the weekly panel too (#695): the window widens by the panel's share.
-        left = battleLauncher(prefs, Modifier.weight(1f), core, onSelectedConfig = onSelectedConfig, sidePanel = filterPanel)
+        left = battleLauncher(
+            prefs, Modifier.weight(1f), core, showLimits = !open, onSelectedConfig = onSelectedConfig, sidePanel = filterPanel
+        )
         if (open) WeeklyLauncherPanel(if (prefs.gameServer is GameServer.Kr) "KR" else "JP",
             core, weekly, Modifier.weight(0.7f))
     }

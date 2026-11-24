@@ -68,11 +68,14 @@ class SupportIdLookup(
 
         /**
          * Atlas `className` (spelled as Atlas spells it, which is how the servant lists store it) to the game's class id,
-         * the one `releasedClassIds` of a class board holds. The ids are Atlas's `SvtClass` enum, and each one was seen
-         * in `releasedClassIds` of a real follower/list: on KR (2026-11-23) boards 1 to 7 hold [1]..[7], board 8
-         * [11, 23] and board 9 [10, 25, 28]; on JP (2026-11-25) board 8 holds [8, 9, 11, 23] and board 9
-         * [10, 25, 28, 33, 38, 40]. Every other class name stays unknown: a chosen servant of one with +62 stops the
-         * filter, and any other servant of one does not match the class score condition.
+         * the one `releasedClassIds` of a class board holds. Id and name pairs are from the `SvtClass` table of Atlas
+         * Academy's `https://api.atlasacademy.io/export/JP/nice_enums.json`, read by the planner on 2026-11-25; the ids
+         * do not follow the table's order (39 is `uOlgaMarieGrand`, 41 `uOlgaMarieStellar`, 43 `beastVII`), so each
+         * is looked up, not counted. Each id here was also seen in `releasedClassIds` of a real follower/list: on KR
+         * (2026-11-23) boards 1 to 7 hold [1]..[7], board 8 [11, 23] and board 9 [10, 25, 28]; on JP (2026-11-25)
+         * board 8 holds [8, 9, 11, 23] and board 9 [10, 25, 28, 33, 38, 40]. Every other class name stays unknown: a
+         * chosen servant of one with +62 stops the filter, and any other servant of one does not match the class
+         * score condition.
          */
         private val CLASS_IDS = mapOf(
             "saber" to 1, "archer" to 2, "lancer" to 3, "rider" to 4, "caster" to 5, "assassin" to 6, "berserker" to 7,

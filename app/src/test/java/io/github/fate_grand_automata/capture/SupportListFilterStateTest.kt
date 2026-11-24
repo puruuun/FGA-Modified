@@ -35,38 +35,56 @@ class SupportListFilterStateTest {
         SupportListLastResult.resetForTesting()
     }
 
-    @Test fun onlyTheFeatureSwitchAndTheToggleTogetherWithAReadyBuildGiveTheProxyCriteria() {
+    private fun apply(build: SupportFilterBuild, switchesOn: Boolean = true) =
+        SupportListFilterState.offer(SupportListFilterState.request(), build, { switchesOn })
+
+    @Test fun onlyABuildOfferedWhileBothSwitchesAreOnGivesTheProxyCriteria() {
         val ready = SupportFilterBuild.Ready(criteria)
-        for (feature in listOf(false, true)) for (toggle in listOf(false, true)) {
-            SupportListFilterState.update(feature, toggle, ready)
-            assertEquals(if (feature && toggle) criteria else null, SupportListFilterState.criteria(), "feature=$feature toggle=$toggle")
-        }
+        assertFalse(apply(ready, switchesOn = false))
+        assertNull(SupportListFilterState.criteria())
+        assertTrue(apply(ready))
+        assertEquals(criteria, SupportListFilterState.criteria())
         for (stopped in listOf(SupportFilterBuild.Off, SupportFilterBuild.NoClassList, SupportFilterBuild.Unmapped(listOf("x"), emptyList()),
             SupportFilterBuild.UnknownClass(listOf("y")), SupportFilterBuild.Ready(SupportListCriteria()))) {
-            SupportListFilterState.update(true, true, ready)
-            SupportListFilterState.update(true, true, stopped)
+            apply(ready)
+            apply(stopped)
             assertNull(SupportListFilterState.criteria(), stopped.toString())
         }
     }
 
+    @Test fun aNewerBuildWinsOverAnOlderOneThatFinishesLater() {
+        val older = SupportListFilterState.request()
+        val newer = SupportListFilterState.request()
+        assertTrue(SupportListFilterState.offer(newer, SupportFilterBuild.Ready(criteria)) { true })
+        assertFalse(SupportListFilterState.offer(older, SupportFilterBuild.Ready(SupportListCriteria(setOf(2L)))) { true })
+        assertEquals(criteria, SupportListFilterState.criteria())
+    }
+
+    @Test fun aBuildThatFinishesAfterAClearIsDropped() {
+        val token = SupportListFilterState.request()
+        SupportListFilterState.clear()
+        assertFalse(SupportListFilterState.offer(token, SupportFilterBuild.Ready(criteria)) { true })
+        assertNull(SupportListFilterState.criteria())
+    }
+
     @Test fun changingWhatAppliesClearsTheLastResult() {
-        SupportListFilterState.update(true, true, SupportFilterBuild.Ready(criteria))
+        apply(SupportFilterBuild.Ready(criteria))
         SupportListLastResult.filtered(SupportListCounts(20, 3))
-        SupportListFilterState.update(true, true, SupportFilterBuild.Ready(criteria))
+        apply(SupportFilterBuild.Ready(criteria))
         assertNotNull(SupportListLastResult.last.value)
-        SupportListFilterState.update(true, false, SupportFilterBuild.Ready(criteria))
+        SupportListFilterState.clear()
         assertNull(SupportListLastResult.last.value)
     }
 
     @Test fun scriptStartAndScriptEndChangeNothing() {
         val prefs = prefs()
-        SupportListFilterState.update(true, true, SupportFilterBuild.Ready(criteria))
+        apply(SupportFilterBuild.Ready(criteria))
         CaptureAutoStart.onScriptStart(context, prefs, GameServer.Kr, battle = true)
         assertEquals(criteria, SupportListFilterState.criteria())
         performScriptExitCaptureAndCleanup(e = AutoLottery.ExitException(AutoLottery.ExitReason.RanOutOfCurrency), cleanup = {})
         assertEquals(criteria, SupportListFilterState.criteria())
 
-        SupportListFilterState.update(true, false, SupportFilterBuild.Ready(criteria))
+        SupportListFilterState.clear()
         CaptureAutoStart.onScriptStart(context, prefs, GameServer.Kr, battle = true)
         performScriptExitCaptureAndCleanup(e = AutoLottery.ExitException(AutoLottery.ExitReason.RanOutOfCurrency), cleanup = {})
         assertNull(SupportListFilterState.criteria())
@@ -207,9 +225,20 @@ class SupportListFilterStateTest {
         assertEquals(emptySet(), config.support.preferredServants.get())
         assertEquals(emptySet(), config.support.preferredCEs.get())
         assertFalse(config.export().keys.any { it.startsWith("support_filter") })
+        val file = java.io.File(context.dataDir, "shared_prefs/${PrefsCore.SUPPORT_FILTER_PROFILE_FILE_PREFIX}apart.xml")
+        assertTrue(file.exists())
         prefs.removeSupportFilterProfile("apart")
         assertEquals(emptySet(), prefs.supportFilterProfiles.get())
+        assertFalse(file.exists())
         assertEquals(emptySet(), prefs.forSupportFilterProfile("apart").support.preferredCEs.get())
+    }
+
+    @Test fun aProfileWhoseFileIsGoneIsNotListed() {
+        val prefs = prefs()
+        prefs.addSupportFilterProfile("kept", "kept")
+        prefs.supportFilterProfiles.set(prefs.supportFilterProfiles.get() + "ghost")
+        assertEquals(listOf("kept"), prefs.supportFilterProfilesToShow().map { it.id })
+        prefs.removeSupportFilterProfile("kept")
     }
 
     @Test fun loadingCopiesASnapshotAndNamesTheSource() {
@@ -246,12 +275,12 @@ class SupportListFilterStateTest {
 
     private fun settle(): Int {
         var last = -1
-        var count = SupportListFilterController.buildsForTesting.get()
+        var count = SupportListFilterController.passesForTesting.get()
         val until = System.currentTimeMillis() + 10_000
         while ((count < 1 || count != last) && System.currentTimeMillis() < until) {
             last = count
             Thread.sleep(700)
-            count = SupportListFilterController.buildsForTesting.get()
+            count = SupportListFilterController.passesForTesting.get()
         }
         return count
     }
@@ -300,6 +329,119 @@ class SupportListFilterStateTest {
             assertNull(SupportListFilterState.criteria())
         } finally {
             SupportListFilterController.watcherForTesting?.cancel()
+        }
+    }
+
+    @org.junit.After fun resetHooks() {
+        SupportListFilterController.watcherForTesting?.cancel()
+        SupportListFilterController.buildForTesting = null
+        SupportFilterToggleMigration.stopAfterStepForTesting = Int.MAX_VALUE
+    }
+
+    private fun waitFor(timeoutMs: Long, condition: () -> Boolean): Boolean {
+        val until = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < until) {
+            if (condition()) return true
+            Thread.sleep(20)
+        }
+        return condition()
+    }
+
+    private fun prefsSwitchedOn(): PrefsCore = prefs().apply {
+        supportFilterToggleMigrated.set(true)
+        activeSupportFilter.friendsOnly.set(true)
+        supportFilterFeature.set(true)
+        supportFilterOn.set(true)
+    }
+
+    @Test fun switchingOffDuringABuildClearsAtOnceAndTheLateResultIsDropped() {
+        val prefs = prefsSwitchedOn()
+        val slow = java.util.concurrent.atomic.AtomicBoolean(false)
+        val started = java.util.concurrent.Semaphore(0)
+        val release = java.util.concurrent.CountDownLatch(1)
+        SupportListFilterController.buildForTesting = { core ->
+            if (slow.get()) {
+                started.release()
+                release.await(20, java.util.concurrent.TimeUnit.SECONDS)
+            }
+            buildSupportFilter(SupportFilterSettings.of(core), lookup)
+        }
+        SupportListFilterController.init(context, prefs)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == SupportListCriteria(friendsOnly = true) })
+        slow.set(true)
+        prefs.activeSupportFilter.minimumNpLevel.set(4)
+        prefs.activeSupportFilter.npLevelCheck.set(true)
+        assertTrue(started.tryAcquire(10, java.util.concurrent.TimeUnit.SECONDS))
+        prefs.supportFilterOn.set(false)
+        // The build is still blocked here, so this is not waiting for it.
+        assertTrue(waitFor(3_000) { SupportListFilterState.criteria() == null })
+        release.countDown()
+        Thread.sleep(1_500)
+        assertNull(SupportListFilterState.criteria())
+    }
+
+    @Test fun aSecondInitDropsTheLateBuildOfTheFirstWatcher() {
+        val prefs = prefsSwitchedOn()
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val started = java.util.concurrent.Semaphore(0)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val old = SupportListCriteria(setOf(7L))
+        val fresh = SupportListCriteria(setOf(8L))
+        SupportListFilterController.buildForTesting = {
+            if (calls.getAndIncrement() == 0) {
+                started.release()
+                release.await(20, java.util.concurrent.TimeUnit.SECONDS)
+                SupportFilterBuild.Ready(old)
+            } else SupportFilterBuild.Ready(fresh)
+        }
+        SupportListFilterController.init(context, prefs)
+        assertTrue(started.tryAcquire(10, java.util.concurrent.TimeUnit.SECONDS))
+        SupportListFilterController.init(context, prefs)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == fresh })
+        release.countDown()
+        Thread.sleep(1_500)
+        assertEquals(fresh, SupportListFilterState.criteria())
+    }
+
+    private fun legacySetup(prefs: PrefsCore) {
+        val (on, off) = configs(prefs, "cfg", "other")
+        on.sharedPrefs.edit().putBoolean(key, true).commit()
+        on.support.preferredServants.set(setOf("Merlin"))
+        off.sharedPrefs.edit().putBoolean(key, false).commit()
+        prefs.activeSupportFilterFile.edit().putBoolean(key, true).commit()
+        prefs.activeSupportFilter.preferredServants.set(setOf("Arcueid"))
+        prefs.activeSupportFilter.friendsOnly.set(true)
+    }
+
+    private fun endState(prefs: PrefsCore): List<Any?> {
+        val profile = prefs.forSupportFilterProfile(SupportFilterToggleMigration.PROFILE_ID)
+        return listOf(
+            prefs.supportFilterOn.get(), prefs.supportFilterFeature.get(), prefs.supportFilterSource.get(),
+            prefs.supportFilterSourceName.get(), prefs.supportFilterProfiles.get(), profile.name.get(),
+            profile.support.preferredServants.get(), profile.support.friendsOnly.get(),
+            prefs.activeSupportFilter.preferredServants.get(), prefs.activeSupportFilterFile.contains(key),
+            prefs.forBattleConfig("cfg").sharedPrefs.contains(key), prefs.forBattleConfig("other").sharedPrefs.contains(key),
+            prefs.forBattleConfig("cfg").support.preferredServants.get(), prefs.supportFilterToggleMigrated.get(),
+        )
+    }
+
+    @Test fun aMigrationThatStoppedAtAnyStepEndsAsAnUninterruptedOne() {
+        val expected = prefs().let { prefs ->
+            legacySetup(prefs)
+            SupportFilterToggleMigration.run(prefs, "My filter")
+            endState(prefs)
+        }
+        assertEquals(true, expected[0])
+        for (step in 1..3) {
+            val prefs = prefs()
+            legacySetup(prefs)
+            SupportFilterToggleMigration.stopAfterStepForTesting = step
+            assertTrue(runCatching { SupportFilterToggleMigration.run(prefs, "My filter") }.isFailure)
+            assertFalse(prefs.supportFilterToggleMigrated.get())
+            SupportFilterToggleMigration.stopAfterStepForTesting = Int.MAX_VALUE
+            val reloaded = PrefsCore(PrefMaker(context.getSharedPreferences("support-filter-state", Context.MODE_PRIVATE)), context)
+            assertTrue(SupportFilterToggleMigration.run(reloaded, "My filter"))
+            assertEquals(expected, endState(reloaded), "stopped after step $step")
         }
     }
 

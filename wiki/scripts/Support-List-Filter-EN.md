@@ -13,7 +13,7 @@ Use **Use this feature** at the top of **More options â†’ Additional features â†
 
 ## Using it from the play button menu
 
-**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The run limits (runs, materials, CEs) stay visible in the middle with either panel. The button is in every script menu, and the panel shows:
+**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The filter panel is as wide as the battle config list on the left, and the run limits (runs, materials, CEs) stay visible in the middle while it is open. With the weekly mission panel open the limits are hidden as before, because the weekly route does not use them. The button is in every script menu, and the panel shows:
 
 - **The toggle**: on, the filter applies from that moment; off, it stops at once. The toggle survives an app restart.
 - **Conditions from**: where the current conditions came from (a battle config name or a profile name).

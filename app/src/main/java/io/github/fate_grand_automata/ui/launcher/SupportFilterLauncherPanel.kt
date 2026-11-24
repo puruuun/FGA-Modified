@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
@@ -110,6 +111,9 @@ internal fun SupportFilterLauncherPanel(
             stringResource(R.string.support_filter_from, sourceLabel(source, sourceName)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.secondary,
+            // A very long config or profile name must not push the conditions away.
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.testTag(SupportFilterSourceTag),
         )
         Column(
@@ -183,9 +187,7 @@ private fun SideBySideOrStacked(modifier: Modifier = Modifier, content: @Composa
 @Composable
 private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>) {
     var open by remember { mutableStateOf(false) }
-    val profiles = remember(profileIds) {
-        profileIds.map { prefs.forSupportFilterProfile(it) }.sortedBy { it.name.get().lowercase() }
-    }
+    val profiles = remember(profileIds) { prefs.supportFilterProfilesToShow(profileIds) }
     Box {
         OutlinedButton(
             onClick = { open = true },
@@ -198,7 +200,7 @@ private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>) {
             for (profile in profiles) {
                 val name = profile.name.get()
                 DropdownMenuItem(
-                    text = { Text(name) },
+                    text = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     onClick = {
                         prefs.loadSupportFilter(profile.support, SupportFilterSource.Profile, name)
                         open = false
