@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 
 class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
     val skillCommand = maker.string(prefix + "autoskill_cmd")
@@ -108,6 +109,28 @@ class ExecutionProfileCore(maker: PrefMaker, prefix: String = "") {
             override fun serialize(value: List<Boolean>) = PerEntrySettings.serializeFlags(value)
         },
         default = emptyList()
+    )
+
+    /** Chain Priority switch per entry, e.g. `true,false`, like [useServantPriorities]. Empty: off for every entry. */
+    val useChainPriorities = maker.serialized(
+        prefix + "use_chain_priorities",
+        serializer = object : Serializer<List<Boolean>> {
+            override fun deserialize(serialized: String) = PerEntrySettings.parseFlags(serialized)
+
+            override fun serialize(value: List<Boolean>) = PerEntrySettings.serializeFlags(value)
+        },
+        default = emptyList()
+    )
+
+    /** Upstream's key and format (#2087): one line per entry, e.g. `Mighty,!Buster,Arts,Quick,!Avoid`. */
+    val chainPriority = maker.serialized(
+        prefix + "chain_priority",
+        serializer = object : Serializer<ChainPriorityPerWave> {
+            override fun deserialize(serialized: String): ChainPriorityPerWave = ChainPriorityPerWave.of(serialized)
+
+            override fun serialize(value: ChainPriorityPerWave) = value.toString()
+        },
+        default = ChainPriorityPerWave.default
     )
 
     val servantPriority = maker.serialized(

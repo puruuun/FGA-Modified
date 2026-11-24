@@ -16,6 +16,7 @@ enum class FaceCardReasonKind {
     ServantStyle,
     ServantPriority,
     BraveChains,
+    ChainPriority,
     NpMatchingShuffle,
     HakunoShuffle,
     CardCountStart
@@ -40,6 +41,7 @@ data class FaceCardCheckDecision(val enabled: Boolean, val reason: FaceCardReaso
             FaceCardReasonKind.ServantStyle -> "servant style"
             FaceCardReasonKind.ServantPriority -> "servant priority"
             FaceCardReasonKind.BraveChains -> "brave chains"
+            FaceCardReasonKind.ChainPriority -> "chain priority"
             FaceCardReasonKind.NpMatchingShuffle -> "NP-matching shuffle"
             FaceCardReasonKind.HakunoShuffle -> "Hakuno shuffle"
             FaceCardReasonKind.CardCountStart -> "card-count start"
@@ -59,6 +61,14 @@ data class FaceCardCheckDecision(val enabled: Boolean, val reason: FaceCardReaso
  * battle config, shared by the battle ([ServantTracker]) and the battle config screen.
  */
 object FaceCardCheckPolicy {
+    /**
+     * A stored Always counts as None while Chain Priority is hidden, as it did before the feature (#654). Shown, it
+     * acts as With NP or Always, and both need the check.
+     */
+    fun braveChainsForCheck(stored: List<BraveChainEnum>, chainShown: Boolean) =
+        if (chainShown) stored
+        else stored.map { ChainPriorityAvailability.effectiveBraveChain(it, chainShown = false, chainPriorityOn = false) }
+
     /** The settings of one execution profile that matter to the decision, as stored (legacy values included). */
     data class ProfileInput(
         val skillCommand: String,
@@ -69,10 +79,12 @@ object FaceCardCheckPolicy {
         val styles: List<CardPriorityStyle>,
         val legacyServantPriority: Boolean,
         val servantPriorities: List<Boolean>,
-        val braveChains: List<BraveChainEnum>
+        val braveChains: List<BraveChainEnum>,
+        /** Chain Priority switch per entry; left empty while the feature is hidden. */
+        val chainPriorities: List<Boolean> = emptyList()
     ) {
         companion object {
-            fun of(source: IExecutionProfile) = ProfileInput(
+            fun of(source: IExecutionProfile, chainShown: Boolean = ChainPriorityAvailability.SHOWN) = ProfileInput(
                 skillCommand = source.skillCommand,
                 entryCount = source.cardPriority.size,
                 prioritySplit = source.cardPrioritySplit,
@@ -80,7 +92,8 @@ object FaceCardCheckPolicy {
                 styles = source.cardPriorityStyles,
                 legacyServantPriority = source.useServantPriority,
                 servantPriorities = source.useServantPriorities,
-                braveChains = source.braveChains
+                braveChains = braveChainsForCheck(source.braveChains, chainShown),
+                chainPriorities = if (chainShown) source.useChainPriorities else emptyList()
             )
         }
     }
@@ -97,31 +110,48 @@ object FaceCardCheckPolicy {
         val tertiary: ProfileInput = secondary
     ) {
         companion object {
-            fun of(config: IBattleConfig) = Input(
+            fun of(config: IBattleConfig, chainShown: Boolean = ChainPriorityAvailability.SHOWN) = Input(
                 commandStartMode = config.commandStartMode,
                 secondaryStartEnabled = config.secondaryStartEnabled,
                 shuffleCards = config.shuffleCards,
-                primary = ProfileInput.of(config),
-                secondary = ProfileInput.of(config.secondaryExecution),
+                primary = ProfileInput.of(config, chainShown),
+                secondary = ProfileInput.of(config.secondaryExecution, chainShown),
                 // Read only when the secondary start is on, like BattleExecution does.
                 tertiaryStartEnabled = config.secondaryStartEnabled && config.tertiaryStartEnabled,
                 tertiary = if (config.secondaryStartEnabled && config.tertiaryStartEnabled)
-                    ProfileInput.of(config.tertiaryExecution) else ProfileInput.of(config.secondaryExecution)
+                    ProfileInput.of(config.tertiaryExecution, chainShown) else ProfileInput.of(config.secondaryExecution, chainShown)
             )
         }
     }
 
     fun decide(config: IBattleConfig) = decide(Input.of(config))
 
-    fun decide(input: Input): FaceCardCheckDecision {
+    // Mirrors BattleExecution: the secondary profile only exists in card-count mode with the secondary start on,
+    // and the tertiary one additionally needs its own start on.
+    private fun profilesOf(input: Input): List<ProfileInput> {
         val cardCount = input.commandStartMode == CommandStartMode.CardCount
-        // Mirrors BattleExecution: the secondary profile only exists in card-count mode with the secondary start on,
-        // and the tertiary one additionally needs its own start on.
-        val profiles = listOfNotNull(
+        return listOfNotNull(
             input.primary,
             input.secondary.takeIf { cardCount && input.secondaryStartEnabled },
             input.tertiary.takeIf { cardCount && input.secondaryStartEnabled && input.tertiaryStartEnabled }
         )
+    }
+
+    /**
+     * Whether some entry of a profile this run can use has Chain Priority on. Only then are NP card types read,
+     * which keeps every other run free of the extra reads and taps (#654).
+     */
+    fun usesChainPriority(input: Input): Boolean = profilesOf(input).any { profile ->
+        val styles = PerEntrySettings.withLegacy(profile.styles, profile.legacyStyle)
+        (0 until entryCount(profile)).any { entry ->
+            PerEntrySettings.at(styles, entry, CardPriorityStyle.Affinity) != CardPriorityStyle.Servant &&
+                PerEntrySettings.at(profile.chainPriorities, entry, false)
+        }
+    }
+
+    fun decide(input: Input): FaceCardCheckDecision {
+        val cardCount = input.commandStartMode == CommandStartMode.CardCount
+        val profiles = profilesOf(input)
 
         fun on(reason: FaceCardReason) = FaceCardCheckDecision(true, reason)
 
@@ -143,10 +173,7 @@ object FaceCardCheckPolicy {
     private fun entryReason(profile: ProfileInput, index: Int): FaceCardReason? {
         val styles = PerEntrySettings.withLegacy(profile.styles, profile.legacyStyle)
         val flags = PerEntrySettings.withLegacy(profile.servantPriorities, profile.legacyServantPriority)
-        // The last value of every per-entry list repeats, so visiting each position covers every entry.
-        val entries = maxOf(
-            1, profile.entryCount, profile.styles.size, profile.servantPriorities.size, profile.braveChains.size
-        )
+        val entries = entryCount(profile)
         val turnSplit = profile.prioritySplit == CardPrioritySplit.Turn
 
         fun reason(kind: FaceCardReasonKind, entry: Int) = FaceCardReason(kind, entry, index, turnSplit)
@@ -162,9 +189,18 @@ object FaceCardCheckPolicy {
             if (PerEntrySettings.at(profile.braveChains, entry, BraveChainEnum.None) != BraveChainEnum.None) {
                 return reason(FaceCardReasonKind.BraveChains, entry)
             }
+            if (PerEntrySettings.at(profile.chainPriorities, entry, false)) {
+                return reason(FaceCardReasonKind.ChainPriority, entry)
+            }
         }
         return null
     }
+
+    // The last value of every per-entry list repeats, so visiting each position covers every entry.
+    private fun entryCount(profile: ProfileInput) = maxOf(
+        1, profile.entryCount, profile.styles.size, profile.servantPriorities.size, profile.braveChains.size,
+        profile.chainPriorities.size
+    )
 
     private fun hasHakunoShuffle(command: String): Boolean =
         runCatching {

@@ -64,6 +64,50 @@ class SupportPrefsCore(
         BondCEEffectEnum.Ignore
     )
     val requireBothNormalAndRewardMatch = maker.bool("support_require_both_normal_and_reward_match")
+
+    /** The capture proxy filters the support list by these conditions while this config runs (#685). Off by default. */
+    val supportListFilter = maker.bool("support_list_filter")
+
+    /**
+     * Displayed ascension per preferred servant, for the support list filter only; the script does not read it. Each
+     * entry is a token and a servant entry joined by `|` (see `DisplayedAscension` in scripts). No entry for a
+     * servant means any look.
+     */
+    val displayedAscensions = maker.stringSet("support_pref_disp_ascension")
+
+    /**
+     * Copies every support condition of [other] into this one, for "import from a battle config" of the manual
+     * filter. [supportListFilter] is the switch of this filter and stays as it is.
+     */
+    fun copyConditionsFrom(other: SupportPrefsCore) {
+        // Changing the servants clears the NP images, so the servants go first.
+        preferredServants.set(other.preferredServants.get())
+        preferredNoblePhantasms.set(other.preferredNoblePhantasms.get())
+        displayedAscensions.set(other.displayedAscensions.get())
+        friendNames.set(other.friendNames.get())
+        preferredCEs.set(other.preferredCEs.get())
+        mlb.set(other.mlb.get())
+        friendsOnly.set(other.friendsOnly.get())
+        autoFriendRequest.set(other.autoFriendRequest.get())
+        selectionMode.set(other.selectionMode.get())
+        fallbackTo.set(other.fallbackTo.get())
+        supportClass.set(other.supportClass.get())
+        alsoCheckAll.set(other.alsoCheckAll.get())
+        maxAscended.set(other.maxAscended.get())
+        skill1Max.set(other.skill1Max.get())
+        skill2Max.set(other.skill2Max.get())
+        skill3Max.set(other.skill3Max.get())
+        appendSkillCheck.set(other.appendSkillCheck.get())
+        appendSkillsMax.zip(other.appendSkillsMax).forEach { (mine, theirs) -> mine.set(theirs.get()) }
+        score62Check.set(other.score62Check.get())
+        grandScore16Check.set(other.grandScore16Check.get())
+        // The level first: the effective switch is off while the level is 1.
+        minimumNpLevel.set(other.minimumNpLevel.get())
+        storedNpCheck.set(other.storedNpCheck.get())
+        grandServant.set(other.grandServant.get())
+        bondCEEffect.set(other.bondCEEffect.get())
+        requireBothNormalAndRewardMatch.set(other.requireBothNormalAndRewardMatch.get())
+    }
 }
 
 /** One write boundary shared by pickers, importers, collectors and delegated properties. */

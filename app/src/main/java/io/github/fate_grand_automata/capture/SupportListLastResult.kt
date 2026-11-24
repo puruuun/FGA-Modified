@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Experiment (#636): what the support list filter did to the last follower/list, counts only. It lives in memory
+ * The support list filter (#636, #685): what it did to the last follower/list, counts only. It lives in memory
  * for the life of the app process and is set from the proxy thread; nothing is written to a file or to prefs.
  */
 object SupportListLastResult {

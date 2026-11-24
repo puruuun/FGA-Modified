@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.ui.drag_sort
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -49,13 +50,16 @@ data class DragSortItemStyle(
  * Dragging starts on a long press. A plain swipe has to stay free for the row's own scrolling,
  * or items that start off-screen can never be brought into view to be dragged at all. The tile
  * being dragged shrinks and vibrates, since the long press is otherwise invisible.
+ *
+ * @param onClick Called with the index of a tapped tile. Tapping does nothing when it is null.
  */
 @Composable
 fun <T> DragSort(
     items: SnapshotStateList<T>,
     key: (T) -> Any,
     style: @Composable (T) -> DragSortItemStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: ((index: Int) -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
@@ -88,6 +92,7 @@ fun <T> DragSort(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(tileWidth, DragSortTileHeight)
+                            .then(if (onClick != null) Modifier.clickable { onClick(index) } else Modifier)
                             .longPressDraggableHandle(
                                 onDragStarted = {
                                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)

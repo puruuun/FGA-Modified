@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.MASTER_SKILL_MENU_DELAY_MAX_MS
 import io.github.fate_grand_automata.prefs.core.MASTER_SKILL_MENU_DELAY_MIN_MS
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.ui.icon
 import javax.inject.Inject
 
@@ -61,6 +62,23 @@ class FineTuneSettingsViewModel @Inject constructor(
                     valueRange = 50..100,
                     valueRepresentation = { "$it%" },
                     hint = R.string.p_fine_tune_stage_counter_similarity_hint
+                )
+            ) + chainPriorityItems(
+                FineTuneItem(
+                    pref = prefs.npCardTypeSimilarity,
+                    name = R.string.p_fine_tune_np_card_type_similarity,
+                    icon = icon(Icons.Default.Star),
+                    valueRange = 30..100,
+                    valueRepresentation = { "$it%" },
+                    hint = R.string.p_fine_tune_np_card_type_similarity_hint
+                ),
+                FineTuneItem(
+                    pref = prefs.npCardDetectionSimilarity,
+                    name = R.string.p_fine_tune_np_card_detection_similarity,
+                    icon = icon(Icons.Default.Star),
+                    valueRange = 30..100,
+                    valueRepresentation = { "$it%" },
+                    hint = R.string.p_fine_tune_np_card_detection_similarity_hint
                 )
             )
         ),
@@ -158,6 +176,17 @@ class FineTuneSettingsViewModel @Inject constructor(
                     valueRepresentation = { "${it}ms" },
                     hint = R.string.p_fine_tune_wait_before_turn_hint
                 ),
+            ) + chainPriorityItems(
+                FineTuneItem(
+                    pref = prefs.waitAfterOrderChange,
+                    name = R.string.p_fine_tune_wait_after_order_change,
+                    icon = icon(R.drawable.ic_time),
+                    valueRange = 0..5000,
+                    step = 50,
+                    valueRepresentation = { "${it}ms" },
+                    hint = R.string.p_fine_tune_wait_after_order_change_hint
+                )
+            ) + listOf(
                 FineTuneItem(
                     pref = prefs.waitBeforeCards,
                     name = R.string.p_fine_tune_wait_before_cards,
@@ -167,6 +196,17 @@ class FineTuneSettingsViewModel @Inject constructor(
                     valueRepresentation = { "${it}ms" },
                     hint = R.string.p_fine_tune_wait_before_cards_hint
                 ),
+            ) + chainPriorityItems(
+                FineTuneItem(
+                    pref = prefs.servantDetailsWait,
+                    name = R.string.p_fine_tune_servant_details_wait,
+                    icon = icon(R.drawable.ic_time),
+                    valueRange = 0..2000,
+                    step = 50,
+                    valueRepresentation = { "${it}ms" },
+                    hint = R.string.p_fine_tune_servant_details_wait_hint
+                )
+            ) + listOf(
                 FineTuneItem(
                     pref = prefs.waitMultiplier,
                     name = R.string.p_fine_tune_wait_multiplier,
@@ -191,3 +231,9 @@ class FineTuneSettingsViewModel @Inject constructor(
             group.items.forEach { it.reset() }
         }
 }
+/**
+ * Upstream's four Chain Priority settings (#654) stay hidden with the feature. The two waits still apply while
+ * hidden, at their defaults, which are the fixed values they replace.
+ */
+private fun chainPriorityItems(vararg items: FineTuneItem): List<FineTuneItem> =
+    if (ChainPriorityAvailability.SHOWN) items.toList() else emptyList()

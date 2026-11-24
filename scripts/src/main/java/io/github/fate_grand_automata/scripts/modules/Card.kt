@@ -3,12 +3,16 @@ package io.github.fate_grand_automata.scripts.modules
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.ScriptLog
 import io.github.fate_grand_automata.scripts.entrypoints.AutoBattle
+import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
+import io.github.fate_grand_automata.scripts.enums.ChainTypeEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.NPUsage
 import io.github.fate_grand_automata.scripts.models.ParsedCard
+import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.models.toFieldSlot
+import io.github.fate_grand_automata.scripts.modules.attack.AttackPriorityHandler
 import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
@@ -46,10 +50,16 @@ class Card @Inject constructor(
 
     private fun pickCards(
         cards: List<ParsedCard>,
-        npUsage: NPUsage
+        npUsage: NPUsage,
+        allowNpSpam: Boolean
     ): List<CommandCard.Face> {
         val index = priorityIndex()
         val cardsOrderedByPriority = execution.active.priority.sort(cards, index)
+
+        // Off (the only state while the feature is hidden) takes the unchanged path below.
+        execution.active.chainPriorityAt(index)?.let { chainPriority ->
+            return pickWithChainPriority(cards, cardsOrderedByPriority, npUsage, allowNpSpam, index, chainPriority)
+        }
 
         return braveChains.pick(
             cards = cardsOrderedByPriority,
@@ -60,12 +70,90 @@ class Card @Inject constructor(
             .also { logDecision(cards, index, cardsOrderedByPriority.map { it.card }, it.take(3), direct = null) }
     }
 
+    /** Upstream's Chain Priority (#2087) on the fork's per-entry settings. */
+    private fun pickWithChainPriority(
+        cards: List<ParsedCard>,
+        cardsOrderedByPriority: List<ParsedCard>,
+        npUsage: NPUsage,
+        allowNpSpam: Boolean,
+        index: Int,
+        chainPriority: List<ChainTypeEnum>
+    ): List<CommandCard.Face> {
+        // Only the NPs that fit after the cards clicked before them are part of the attack.
+        // Spam NPs count only when their portrait is on an NP card; scripted NPs are assumed ready, as upstream.
+        val spam = if (allowNpSpam) spamNps.detected() else emptySet()
+        val npUsageToUse = NPUsage(
+            (npUsage.nps + spam)
+                .take((3 - npUsage.cardsBeforeNP).coerceAtLeast(0))
+                .toSet(),
+            npUsage.cardsBeforeNP
+        )
+        val npTypes = npUsageToUse.nps.associate { it.toFieldSlot() to it.type() }
+
+        val picked = AttackPriorityHandler.pick(
+            cards = cards,
+            priorityOrder = cardsOrderedByPriority,
+            npUsage = npUsageToUse,
+            braveChainEnum = execution.active.braveChainAt(index),
+            chainPriority = chainPriority,
+            rearrange = execution.active.rearrangeAt(index),
+            npTypes = npTypes,
+            defaultPicker = braveChains
+        ).map { it.card }
+
+        val chain = ScriptLog.ChainDecision(
+            formed = formedChain(cards, picked, npUsageToUse, npTypes),
+            order = chainPriority,
+            npTypes = npTypes
+        )
+        logDecision(cards, index, cardsOrderedByPriority.map { it.card }, picked.take(3), direct = null, chain = chain)
+        return picked
+    }
+
+    /** The chain made by the three cards that are selected in click order, as far as their types are known. */
+    private fun formedChain(
+        cards: List<ParsedCard>,
+        picked: List<CommandCard.Face>,
+        npUsage: NPUsage,
+        npTypes: Map<FieldSlot, CardTypeEnum>
+    ): ChainTypeEnum? {
+        val faceTypes = picked.map { face -> cards.firstOrNull { it.card == face }?.type ?: CardTypeEnum.Unknown }
+        val types = (faceTypes.take(npUsage.cardsBeforeNP) +
+            npUsage.nps.map { npTypes[it.toFieldSlot()] ?: CardTypeEnum.Unknown } +
+            faceTypes.drop(npUsage.cardsBeforeNP)).take(3)
+        if (types.size < 3 || CardTypeEnum.Unknown in types) return null
+        return when (types.toSet().size) {
+            3 -> ChainTypeEnum.Mighty
+            1 -> when (types.first()) {
+                CardTypeEnum.Buster -> ChainTypeEnum.Buster
+                CardTypeEnum.Arts -> ChainTypeEnum.Arts
+                CardTypeEnum.Quick -> ChainTypeEnum.Quick
+                CardTypeEnum.Unknown -> null
+            }
+            else -> null
+        }
+    }
+
+    private fun CommandCard.NP.type(): CardTypeEnum {
+        val teamSlot = servantTracker.deployed[toFieldSlot()] ?: return CardTypeEnum.Unknown
+        if (teamSlot is TeamSlot.Unknown) return CardTypeEnum.Unknown
+        return servantTracker.getNpCardType(teamSlot)
+    }
+
+    private fun Set<CommandCard.NP>.detected(): Set<CommandCard.NP> {
+        // Matching the NP portraits is slow, so it is skipped when there are no NPs to check
+        if (isEmpty()) return emptySet()
+        val npCardsDetected = servantTracker.npCardsDetectedUsingServantFaces()
+        return filter { it in npCardsDetected }.toSet()
+    }
+
     private fun logDecision(
         cards: List<ParsedCard>,
         index: Int,
         sorted: List<CommandCard.Face>,
         picked: List<CommandCard>,
-        direct: String?
+        direct: String?,
+        chain: ScriptLog.ChainDecision? = null
     ) {
         messages.log(
             ScriptLog.CardDecision(
@@ -80,7 +168,8 @@ class Card @Inject constructor(
                 cards = cards,
                 sorted = sorted,
                 picked = picked,
-                direct = direct
+                direct = direct,
+                chain = chain
             )
         )
     }
@@ -110,7 +199,7 @@ class Card @Inject constructor(
             }
             return
         }
-        val pickedCards = pickCards(cards, npUsage)
+        val pickedCards = pickCards(cards, npUsage, allowNpSpam)
             .take(3)
 
         if (npUsage.cardsBeforeNP > 0) {

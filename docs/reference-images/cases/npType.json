@@ -1,0 +1,191 @@
+{
+  "schema": 1,
+  "suite": "npType",
+  "imports": {
+    "face-kr-melusine-third-form": [
+      "docs/reference-images/Kr/battle/np-type-details-melusine-third-form-buster.png"
+    ],
+    "face-kr-melusine-first-form": [
+      "docs/reference-images/Kr/battle/np-type-details-melusine-first-form-arts.png"
+    ],
+    "face-kr-emiya": [
+      "docs/reference-images/Kr/battle/np-type-details-emiya-buster.png"
+    ],
+    "face-kr-golden-bb": [
+      "docs/reference-images/Kr/battle/np-type-details-golden-bb-banner-3-turns.png"
+    ],
+    "face-kr-alice": [
+      "docs/reference-images/Kr/battle/np-type-details-alice-quick.png"
+    ],
+    "face-jp-aoko": [
+      "docs/reference-images/Jp/battle/np-type-details-aoko-arts.png"
+    ],
+    "face-jp-lilith": [
+      "docs/reference-images/Jp/battle/np-type-details-lilith-quick.png"
+    ]
+  },
+  "cases": [
+    {
+      "name": "kr-emiya-buster",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-emiya-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-melusine-third-form-buster",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-melusine-third-form-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-melusine-first-form-arts",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-melusine-first-form-arts.png",
+      "type": "Arts",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-alice-quick",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-alice-quick.png",
+      "type": "Quick",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-golden-bb-banner-3-turns",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-golden-bb-banner-3-turns.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 3
+    },
+    {
+      "name": "kr-emiya-banner-1-turn",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-emiya-banner-1-turn.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 1
+    },
+    {
+      "name": "jp-buster",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/battle-servant-details-np-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-aoko-arts",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/np-type-details-aoko-arts.png",
+      "type": "Arts",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-lilith-quick",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/np-type-details-lilith-quick.png",
+      "type": "Quick",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-banner-1-turn",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/battle-servant-details-np-arts-changed.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 1
+    },
+    {
+      "name": "kr-portraits-melusine-third-form-emiya-golden-bb",
+      "suite": "npType",
+      "kind": "portrait",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-cards-melusine-third-form-emiya-golden-bb.png",
+      "faces": [
+        {
+          "np": "A",
+          "face": "face-kr-melusine-third-form"
+        },
+        {
+          "np": "B",
+          "face": "face-kr-emiya"
+        },
+        {
+          "np": "C",
+          "face": "face-kr-golden-bb"
+        }
+      ],
+      "similarity": 0.8
+    },
+    {
+      "name": "kr-portraits-melusine-first-form-emiya-alice",
+      "suite": "npType",
+      "kind": "portrait",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-cards-melusine-first-form-emiya-alice.png",
+      "faces": [
+        {
+          "np": "A",
+          "face": "face-kr-melusine-first-form"
+        },
+        {
+          "np": "B",
+          "face": "face-kr-emiya"
+        },
+        {
+          "np": "C",
+          "face": "face-kr-alice"
+        }
+      ],
+      "similarity": 0.8
+    },
+    {
+      "name": "jp-portraits-aoko-lilith",
+      "suite": "npType",
+      "kind": "portrait",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/np-cards-aoko-lilith-ereshkigal.png",
+      "faces": [
+        {
+          "np": "A",
+          "face": "face-jp-aoko"
+        },
+        {
+          "np": "B",
+          "face": "face-jp-lilith"
+        }
+      ],
+      "similarity": 0.8
+    }
+  ]
+}

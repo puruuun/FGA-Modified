@@ -31,7 +31,7 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
     @get:Rule
     val rules = screenshotRules(composeRule)
 
-    private fun shot(waves: Int, width: Int) {
+    private fun shot(waves: Int, width: Int, chainShown: Boolean = false, name: String = "Waves$waves") {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val config = BattleConfigCore("cp611_$waves", context)
         val items = List(waves) { config.cardPriority.get().first() }.map { scores ->
@@ -42,15 +42,16 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
                 rearrangeCards = mutableStateOf(false),
                 braveChains = mutableStateOf(BraveChainEnum.None),
                 style = mutableStateOf(CardPriorityStyle.Affinity),
-                useServantPriority = mutableStateOf(true)
+                useServantPriority = mutableStateOf(true),
+                useChainPriority = mutableStateOf(chainShown)
             )
         }.toMutableStateList()
 
         composeRule.shoot(
-            "cardpriority611", "Waves$waves", width, 800,
+            "cardpriority611", name, width, 800,
             dark = dark, locale = "ko"
         ) {
-            CardPriorityView(items, config.cardPrioritySplit, config.cardSwapDetection)
+            CardPriorityView(items, config.cardPrioritySplit, config.cardSwapDetection, chainShown = chainShown)
         }
     }
 
@@ -59,6 +60,9 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
     @Test fun threeWaves360() = shot(3, 360)
     @Test fun threeWaves1280() = shot(3, 1280)
     @Test fun fiveWaves360() = shot(5, 360)
+    // #654: Chain Priority shown and on; the switch, the order panel and the Always option are hidden while not shown.
+    @Test fun chainPriority360() = shot(2, 360, chainShown = true, name = "ChainPriority")
+    @Test fun chainPriority1280() = shot(2, 1280, chainShown = true, name = "ChainPriority")
 
     companion object {
         @JvmStatic

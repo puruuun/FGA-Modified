@@ -169,10 +169,24 @@ class ScriptMessages @Inject constructor(
                 }
                 val mode = item.style + if (item.servantPriority) "+servantPriority" else ""
                 val direct = item.direct?.let { " direct=$it" } ?: ""
+                // Only entries with Chain Priority on get this field; the line stays as before otherwise (#654).
+                val chain = item.chain?.let { c ->
+                    val nps = c.npTypes.entries.joinToString(",") { (slot, type) -> "${slot.position}:$type" }
+                    " chain=${c.formed ?: "none"} order=${c.order.joinToString(">")} npTypes=[$nps]"
+                } ?: ""
                 Timber.tag(FACE_CARDS_TAG).i(
                     "wave ${item.stage + 1} turn ${item.turn} (command ${item.commandStage + 1}/${item.commandTurn}) " +
-                        "profile ${item.profile + 1} entry ${item.entry + 1} $mode | cards $read | sorted ${item.sorted.joinToString(",")} | picked ${item.picked.joinToString(",")}$direct"
+                        "profile ${item.profile + 1} entry ${item.entry + 1} $mode | cards $read | sorted ${item.sorted.joinToString(",")} | picked ${item.picked.joinToString(",")}$direct$chain"
                 )
+            }
+
+            is ScriptLog.NpCardTypeReading -> {
+                val scores = item.scores.entries.joinToString(" ") { (type, score) -> "$type=%.2f".format(score) }
+                val turns = if (item.turnsText != null) " turnsText='${item.turnsText}' turns=${item.turns ?: "none"}" else ""
+                // Warning level when nothing matched, so it also shows up in release builds, as upstream.
+                val needs = "%.2f".format(item.minSimilarity)
+                val line = "NP type ${item.servant} (${item.reason}): ${item.type ?: "none"} | $scores | needs $needs$turns"
+                if (item.type == null) Timber.tag(FACE_CARDS_TAG).w(line) else Timber.tag(FACE_CARDS_TAG).i(line)
             }
 
             is ScriptLog.FaceCardReadings -> {

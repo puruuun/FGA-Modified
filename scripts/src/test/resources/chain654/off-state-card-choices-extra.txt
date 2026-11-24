@@ -1,0 +1,616 @@
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=/0 hand=1:2QW 2:3AW 3:3AN 4:2BR 5:1AN -> F2,F1,F3
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=/0 hand=1:3AN 2:1AN 3:1QN 4:3QW 5:2QR -> F4,F1,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=/0 hand=1:1BN 2:3QW 3:2BW 4:2AW 5:3AN -> F4,F1,F3
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=/0 hand=1:1QN 2:1QR 3:2AN 4:1BR 5:3AW -> F3,F2,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=4/0 hand=1:1QN 2:1QW 3:1AN 4:1BW 5:1AW -> NP4,F4,F5,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=4/0 hand=1:3BR 2:2AW 3:3BN 4:2UW 5:3UW -> NP4,F2,F3,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=4/0 hand=1:1BNs 2:3AW 3:2QW 4:3BR 5:3AR -> NP4,F1,F3,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=4/0 hand=1:2QNs 2:2BR 3:2AR 4:2AN 5:3BR -> NP4,F3,F4,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=5/1 hand=1:3AR 2:1AW 3:1QR 4:2AR 5:3BN -> F2,NP5,F5,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=5/1 hand=1:3QR 2:2AR 3:3BR 4:3AR 5:1AN -> F5,NP5,F3,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=5/1 hand=1:2AW 2:2BR 3:3AR 4:2AN 5:2QN -> F1,NP5,F4,F5
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=5/1 hand=1:1QR 2:1ARs 3:3QR 4:3BR 5:2QR -> F5,NP5,F2,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=6/2 hand=1:1BW 2:2QR 3:3UN 4:1AN 5:1BR -> F1,F4,NP6,F5
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=6/2 hand=1:1QR 2:1QW 3:3QW 4:3AN 5:2QN -> F2,F3,NP6,F4
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=6/2 hand=1:3AR 2:3QR 3:1BW 4:1QN 5:3QR -> F4,F3,NP6,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=6/2 hand=1:1AWs 2:2QW 3:2BN 4:2AW 5:1AW -> F4,F2,NP6,F3
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:1BRs 2:1QR 3:1AR 4:1BR 5:2AW -> NP4,NP5,F5,F1,F4
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:2BW 2:1BN 3:1BR 4:1AN 5:3BR -> NP4,NP5,F1,F2,F4
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=45/0 hand=1:1BW 2:1BW 3:1ANs 4:3BR 5:1QN -> NP4,NP5,F3,F5,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:1BW 2:1QR 3:2AR 4:2BR 5:3QR -> NP4,NP5,F3,F4,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=56/1 hand=1:3BW 2:1BNs 3:1AW 4:3BR 5:3AN -> F1,NP5,NP6,F3,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=56/1 hand=1:3QW 2:3QW 3:3AWs 4:1AW 5:1BR -> F3,NP5,NP6,F4,F1
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:1ARs 2:1BR 3:3BR 4:1BRs 5:3QW -> F1,NP5,NP6,F2,F4
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:1AR 2:3QW 3:1BN 4:3UR 5:1BR -> F1,NP5,NP6,F3,F5
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=0 np=456/0 hand=1:3BW 2:3ARs 3:3AN 4:3BN 5:1AR -> NP4,NP5,NP6,F1,F4,F3
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:3BW 2:2BW 3:3BW 4:1AWs 5:3AWs -> NP4,NP5,NP6,F1,F2,F3
+always styles=Affinity sp=false rearrange=false spam=false allow=true stage=1 np=456/0 hand=1:3UR 2:1QRs 3:2BR 4:1BN 5:1AN -> NP4,NP5,NP6,F3,F5,F2
+always styles=Affinity sp=false rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:2BN 2:2BN 3:1QW 4:1AW 5:2QW -> NP4,NP5,NP6,F5,F1,F2
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=/0 hand=1:3QWs 2:2BN 3:1BN 4:3AN 5:3QN -> F1,F2,F3
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=/0 hand=1:2QR 2:2AN 3:2BW 4:3QN 5:1UW -> NP6,F3,F2,F4
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=1 np=/0 hand=1:3AW 2:2QN 3:3AN 4:2UR 5:2UWs -> F2,F3,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=/0 hand=1:2AN 2:1QN 3:2AW 4:3BN 5:3QW -> NP6,F3,F2,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=4/0 hand=1:3QR 2:1AN 3:1BW 4:3BN 5:2AW -> NP4,NP6,F3,F5,F4
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=4/0 hand=1:2QW 2:1BN 3:1BN 4:2QR 5:1AN -> NP4,F1,F2,F3
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:3QR 2:2QW 3:2QN 4:3BN 5:3UR -> NP4,NP6,F3,F2,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:2BR 2:1AR 3:1QW 4:1AN 5:3BR -> NP4,NP6,F4,F1,F2
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:1BNs 2:1AN 3:2BN 4:1BW 5:1BW -> F4,NP5,NP6,F5,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:2BR 2:1UN 3:1QNs 4:3BW 5:2QR -> F4,NP5,NP6,F3,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=5/1 hand=1:1AR 2:2BN 3:2QR 4:1BR 5:1QNs -> F3,NP5,NP6,F2,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=1 np=5/1 hand=1:1BW 2:3QW 3:3AN 4:2UR 5:2AN -> F5,NP5,F1,F3
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=6/2 hand=1:2QW 2:2BR 3:3AW 4:2QR 5:1BN -> F3,F1,NP6,F5
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=6/2 hand=1:1AW 2:1QW 3:1AW 4:1QN 5:1ARs -> F1,F3,NP6,F2
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=6/2 hand=1:2QN 2:3BN 3:2QN 4:1QW 5:3BN -> F1,F3,NP6,F4
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=1 np=6/2 hand=1:2QW 2:2AW 3:2BW 4:1QN 5:2AN -> F2,F5,NP6,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=0 np=45/0 hand=1:1UW 2:2BW 3:2UN 4:2AW 5:1QN -> NP4,NP5,NP6,F2,F4,F5
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=45/0 hand=1:1BW 2:1QN 3:3AN 4:3QW 5:1BN -> NP4,NP5,F1,F4,F5
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:3AW 2:2AR 3:3AN 4:2BW 5:2QW -> NP4,NP5,NP6,F2,F5,F4
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:2AR 2:3AR 3:3QW 4:3BR 5:2BN -> NP4,NP5,NP6,F1,F5,F2
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:1AN 2:3QR 3:1BW 4:1AW 5:2AWs -> F3,NP5,NP6,F4,F5
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:3BNs 2:2AR 3:3AN 4:3UN 5:3BN -> F1,NP5,NP6,F5,F3
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=56/1 hand=1:3UW 2:1QW 3:3QR 4:1UW 5:1QR -> F2,NP5,NP6,F5,F3
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=1 np=56/1 hand=1:3QR 2:2QW 3:3AN 4:2AN 5:1BN -> F4,NP5,NP6,F2,F5
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:1AN 2:1AR 3:1QR 4:1BN 5:2QW -> NP4,NP5,NP6,F5,F4,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:3BN 2:2AR 3:3QN 4:3UW 5:1UR -> NP4,NP5,NP6,F1,F3,F2
+always styles=Affinity sp=false rearrange=false spam=true allow=false stage=1 np=456/0 hand=1:1AW 2:2QW 3:2QR 4:1BW 5:1UN -> NP4,NP5,NP6,F2,F3,F1
+always styles=Affinity sp=false rearrange=false spam=true allow=true stage=1 np=456/0 hand=1:3QW 2:2QW 3:2UN 4:1BW 5:1AR -> NP4,NP5,NP6,F2,F5,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=/0 hand=1:2BW 2:3QW 3:2AR 4:1BW 5:3BN -> F1,F2,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=/0 hand=1:3AN 2:1UR 3:3QR 4:1BR 5:2AN -> F1,F4,F5
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=1 np=/0 hand=1:2UN 2:2QR 3:3BW 4:2QW 5:2AN -> F5,F4,F2
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=/0 hand=1:2AR 2:3QN 3:3BN 4:1BR 5:2BN -> F1,F5,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=4/0 hand=1:1BW 2:3AW 3:1BR 4:2UR 5:2BR -> NP4,F2,F1,F3
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=4/0 hand=1:2AW 2:2AR 3:3BR 4:3BR 5:1BW -> NP4,F1,F5,F3
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=4/0 hand=1:3QNs 2:1AW 3:2QN 4:3BN 5:3BR -> NP4,F3,F2,F1
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=4/0 hand=1:1QN 2:3UN 3:1AN 4:1BR 5:2BWs -> NP4,F5,F3,F1
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:2UN 2:2AR 3:1AR 4:2BN 5:3ARs -> F4,NP5,F2,F3
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:2AW 2:2QN 3:3BR 4:1QN 5:1BR -> F1,NP5,F2,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=5/1 hand=1:1BR 2:3BW 3:1UR 4:1BR 5:2AW -> F5,NP5,F1,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=5/1 hand=1:3QR 2:2BW 3:3AW 4:1AW 5:1QW -> F2,NP5,F4,F5
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=6/2 hand=1:3BW 2:3BN 3:3QN 4:2QN 5:2QR -> F1,F2,NP6,F3
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=6/2 hand=1:2BW 2:1QW 3:3AR 4:3AR 5:1QW -> F1,F2,NP6,F5
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=1 np=6/2 hand=1:3AW 2:3UW 3:3AW 4:2BN 5:1BR -> F4,F5,NP6,F1
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=6/2 hand=1:1AW 2:3QN 3:1BW 4:1BN 5:3BR -> F1,F3,NP6,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=45/0 hand=1:3QW 2:3URs 3:2BN 4:3BN 5:1BN -> NP4,NP5,F1,F3,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=45/0 hand=1:2BN 2:3BN 3:2QW 4:2QR 5:1QRs -> NP4,NP5,F3,F1,F2
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=45/0 hand=1:3QR 2:1BN 3:2QN 4:2BW 5:3UR -> NP4,NP5,F3,F4,F2
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=45/0 hand=1:2UW 2:1AW 3:2QW 4:2UW 5:1UW -> NP4,NP5,F3,F2,F1
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=56/1 hand=1:2AN 2:2AW 3:1AW 4:3UN 5:1AR -> F2,NP5,NP6,F3,F1
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=56/1 hand=1:2AN 2:1UR 3:2QW 4:3AR 5:2AR -> F3,NP5,NP6,F1,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=56/1 hand=1:3QW 2:2BN 3:1QN 4:1AN 5:2AWs -> F5,NP5,NP6,F2,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=56/1 hand=1:2UW 2:1UN 3:3BN 4:1AR 5:2BN -> F5,NP5,NP6,F4,F3
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:2QN 2:2QN 3:2QR 4:2QN 5:2QN -> NP4,NP5,NP6,F1,F2,F4
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=0 np=456/0 hand=1:1BR 2:3BN 3:2QW 4:1BN 5:2QW -> NP4,NP5,NP6,F3,F5,F2
+always styles=Affinity sp=false rearrange=true spam=false allow=true stage=1 np=456/0 hand=1:3AN 2:1QWs 3:2QN 4:2QW 5:1AW -> NP4,NP5,NP6,F4,F3,F5
+always styles=Affinity sp=false rearrange=true spam=false allow=false stage=1 np=456/0 hand=1:1AR 2:1BN 3:1AW 4:2QRs 5:1QN -> NP4,NP5,NP6,F4,F3,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=/0 hand=1:2BW 2:2BW 3:2QW 4:2BN 5:3BR -> NP6,F1,F3,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=/0 hand=1:1BW 2:2QN 3:1AR 4:1BR 5:1QN -> NP6,F1,F5,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=/0 hand=1:3BW 2:3AW 3:3QWs 4:2QW 5:1UW -> NP6,F4,F2,F3
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=/0 hand=1:3BN 2:3QW 3:3BN 4:3BW 5:1UR -> NP6,F2,F4,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=4/0 hand=1:3QR 2:3BR 3:2QW 4:2AN 5:1QN -> NP4,NP6,F4,F3,F5
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=4/0 hand=1:2BW 2:2QR 3:1AN 4:2QR 5:3QW -> NP4,NP6,F5,F1,F3
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=4/0 hand=1:2UN 2:1AR 3:1QW 4:1QW 5:1UN -> NP4,F2,F3,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=4/0 hand=1:1AR 2:1UNs 3:1BW 4:1QN 5:1QN -> NP4,NP6,F1,F4,F5
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=5/1 hand=1:2AR 2:2AW 3:1QW 4:3AW 5:2AR -> F2,NP5,NP6,F4,F3
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=5/1 hand=1:2UN 2:1QR 3:2BW 4:3QN 5:2BR -> F3,NP5,NP6,F4,F5
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=5/1 hand=1:2BN 2:2BN 3:3QR 4:2QW 5:1BR -> F4,NP5,F1,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=5/1 hand=1:3QR 2:1QW 3:1AN 4:3QW 5:3QW -> F3,NP5,NP6,F2,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:2BR 2:3QR 3:2BN 4:1UW 5:1BW -> F5,F3,NP6,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:1AR 2:2AN 3:1AR 4:3BR 5:1AW -> F5,F2,NP6,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:1QW 2:3QN 3:2BN 4:2BW 5:3BW -> F4,F3,NP6,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=6/2 hand=1:2AR 2:3AW 3:3BW 4:3QN 5:2AWs -> F5,F1,NP6,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:1AW 2:2BW 3:1QW 4:3AWs 5:1UR -> NP4,NP5,NP6,F2,F1,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:2QW 2:2AN 3:1UR 4:1BNs 5:3UR -> NP4,NP5,NP6,F1,F4,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=45/0 hand=1:3QNs 2:1URs 3:2BW 4:2BR 5:3BWs -> NP4,NP5,NP6,F3,F4,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=1 np=45/0 hand=1:2QW 2:1QW 3:1QR 4:1AN 5:1UR -> NP4,NP5,NP6,F1,F4,F2
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=56/1 hand=1:2BW 2:1BR 3:2QR 4:2AR 5:3BRs -> F1,NP5,NP6,F2,F5
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=56/1 hand=1:2BR 2:2BR 3:2QN 4:1AN 5:2QW -> F5,NP5,NP6,F4,F3
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=56/1 hand=1:3BW 2:2BR 3:2UW 4:2AW 5:1BW -> F4,NP5,NP6,F2,F5
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=56/1 hand=1:1BR 2:3QR 3:1QN 4:1QW 5:2QN -> F5,NP5,NP6,F4,F3
+always styles=Affinity sp=false rearrange=true spam=true allow=true stage=0 np=456/0 hand=1:3AR 2:2QR 3:3QWs 4:2AR 5:3BN -> NP4,NP5,NP6,F3,F5,F1
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=0 np=456/0 hand=1:3UR 2:1BN 3:2BN 4:3QR 5:1UW -> NP4,NP5,NP6,F2,F3,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=456/0 hand=1:3AW 2:2AR 3:2QRs 4:1AW 5:1BR -> NP4,NP5,NP6,F2,F3,F4
+always styles=Affinity sp=false rearrange=true spam=true allow=false stage=1 np=456/0 hand=1:2QWs 2:1AN 3:3BR 4:1AR 5:1QR -> NP4,NP5,NP6,F1,F2,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=/0 hand=1:3AW 2:2UW 3:1AR 4:1BR 5:2QN -> F1,F5,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=/0 hand=1:2AW 2:3BN 3:3AW 4:3QW 5:2BW -> F3,F4,F2
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=/0 hand=1:3QW 2:3AR 3:2UW 4:2AR 5:3BW -> F2,F1,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=/0 hand=1:2QN 2:3UR 3:1UW 4:1QW 5:3AR -> F5,F1,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=4/0 hand=1:2BW 2:1ARs 3:2QW 4:1BR 5:1AW -> NP4,F1,F3,F5
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=4/0 hand=1:1AW 2:1AN 3:1QN 4:1QR 5:2AW -> NP4,F5,F1,F2
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=4/0 hand=1:2AR 2:2BN 3:1QW 4:3QN 5:2BR -> NP4,F3,F1,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=4/0 hand=1:1AR 2:2QW 3:2UN 4:1AN 5:2AW -> NP4,F4,F5,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=5/1 hand=1:1BR 2:1QW 3:3UW 4:3BN 5:1BN -> F4,NP5,F2,F5
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=5/1 hand=1:3BW 2:2BW 3:2AW 4:2QW 5:3BR -> F1,NP5,F5,F2
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=5/1 hand=1:1QNs 2:2UR 3:3AW 4:2AR 5:3UN -> F3,NP5,F4,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=5/1 hand=1:3AW 2:2BR 3:1QRs 4:1BN 5:1QR -> F1,NP5,F3,F5
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=6/2 hand=1:1QN 2:3QR 3:1QN 4:2UR 5:3BW -> F5,F2,NP6,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=0 np=6/2 hand=1:1AN 2:3BN 3:2QN 4:1AR 5:2BN -> F2,F5,NP6,F3
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=6/2 hand=1:1AN 2:3QW 3:1UR 4:3BW 5:2QN -> F1,F2,NP6,F5
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=6/2 hand=1:1AR 2:1UR 3:3BR 4:3QW 5:2AR -> F1,F5,NP6,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=0 np=45/0 hand=1:3BR 2:3AR 3:2AR 4:2BW 5:2QW -> NP4,NP5,F1,F2,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:3BNs 2:1BW 3:1QR 4:1QR 5:1AR -> NP4,NP5,F1,F2,F5
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:3QW 2:2AR 3:3BW 4:3AN 5:3UW -> NP4,NP5,F4,F2,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:1BW 2:3QW 3:1BW 4:2BW 5:3QW -> NP4,NP5,F2,F5,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=56/1 hand=1:2UW 2:1QN 3:2BW 4:1BW 5:1AR -> F3,NP5,NP6,F4,F2
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=56/1 hand=1:2BNs 2:3BNs 3:2AWs 4:2QN 5:2UR -> F2,NP5,NP6,F3,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=1 np=56/1 hand=1:2BR 2:3QN 3:3AN 4:3BWs 5:1BR -> F3,NP5,NP6,F2,F4
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:1QW 2:3AW 3:2QN 4:1BW 5:3BW -> F2,NP5,NP6,F1,F3
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:2UW 2:2UN 3:2UR 4:3BN 5:1QW -> NP4,NP5,NP6,F4,F5,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:1BW 2:3QN 3:1BR 4:3QR 5:1BN -> NP4,NP5,NP6,F2,F4,F1
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:1BW 2:1QN 3:1QR 4:3BR 5:2AW -> NP4,NP5,NP6,F5,F2,F3
+always styles=Affinity sp=true rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:3AN 2:2UR 3:2AR 4:2BN 5:1QR -> NP4,NP5,NP6,F1,F3,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=/0 hand=1:2BR 2:3QR 3:1QW 4:1QN 5:3BW -> F5,F2,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=/0 hand=1:3UN 2:2QW 3:3BW 4:2QNs 5:3ARs -> NP6,F3,F5,F2
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=/0 hand=1:3UR 2:3QR 3:2AR 4:3QR 5:3AW -> F5,F2,F3
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=/0 hand=1:2QW 2:2BW 3:2AN 4:1BN 5:2BN -> NP6,F3,F2,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=4/0 hand=1:1UNs 2:1QW 3:2AWs 4:3UW 5:1BR -> NP4,NP6,F3,F2,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=4/0 hand=1:1BWs 2:1AR 3:2BN 4:3BR 5:3AR -> NP4,F4,F5,F3
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:1QN 2:1BW 3:1AN 4:1QW 5:2AW -> NP4,NP6,F3,F5,F4
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:1QN 2:3QW 3:3BW 4:1BN 5:3AR -> NP4,NP6,F2,F5,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:2QN 2:3AW 3:1AN 4:3UN 5:2QW -> F2,NP5,NP6,F5,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:1BN 2:2AR 3:1UR 4:1BW 5:3QR -> F5,NP5,NP6,F2,F4
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=5/1 hand=1:2QWs 2:3AN 3:3QN 4:3BN 5:2BR -> F2,NP5,NP6,F1,F3
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=5/1 hand=1:3QR 2:3AN 3:3BRs 4:3BNs 5:3BW -> F2,NP5,F1,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=6/2 hand=1:2QR 2:2AR 3:1QR 4:2QNs 5:1QN -> F4,F2,NP6,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=6/2 hand=1:2AN 2:2BN 3:1BN 4:1QW 5:1QR -> F2,F1,NP6,F4
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=6/2 hand=1:3QN 2:3QN 3:1QW 4:1BR 5:1BN -> F3,F1,NP6,F2
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=6/2 hand=1:3AR 2:2BR 3:2AR 4:2BW 5:2BN -> F1,F3,NP6,F4
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=0 np=45/0 hand=1:3BW 2:1QN 3:1QN 4:2URs 5:1BN -> NP4,NP5,NP6,F1,F5,F2
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=45/0 hand=1:3UR 2:1QN 3:3BW 4:1BW 5:1BW -> NP4,NP5,F3,F4,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:1BR 2:2BR 3:1UW 4:1QW 5:1BW -> NP4,NP5,NP6,F4,F5,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:2UR 2:2BW 3:2UW 4:2AW 5:2BW -> NP4,NP5,NP6,F4,F2,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:3BR 2:3BW 3:3QNs 4:2BN 5:1AW -> F2,NP5,NP6,F3,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:3AR 2:1UW 3:2BRs 4:3QW 5:1AN -> F4,NP5,NP6,F1,F3
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=56/1 hand=1:2QW 2:2BW 3:3AW 4:1AW 5:3BW -> F3,NP5,NP6,F4,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=56/1 hand=1:2QW 2:1BN 3:2QRs 4:2BR 5:1UW -> F1,NP5,NP6,F3,F2
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:1UW 2:2BN 3:3BR 4:1AR 5:2QR -> NP4,NP5,NP6,F3,F2,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:2BRs 2:1QN 3:2AN 4:2QW 5:1AN -> NP4,NP5,NP6,F4,F3,F1
+always styles=Affinity sp=true rearrange=false spam=true allow=true stage=1 np=456/0 hand=1:3AW 2:1AN 3:3UW 4:2UN 5:2AN -> NP4,NP5,NP6,F1,F2,F5
+always styles=Affinity sp=true rearrange=false spam=true allow=false stage=1 np=456/0 hand=1:3QWs 2:3BR 3:2BN 4:1QR 5:1BR -> NP4,NP5,NP6,F1,F4,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=/0 hand=1:2BW 2:1AN 3:2QN 4:1QN 5:1QW -> F1,F5,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=/0 hand=1:3AR 2:1QW 3:2AR 4:1QW 5:2BW -> F1,F3,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=/0 hand=1:2QN 2:2BW 3:3QR 4:2BN 5:3QWs -> F5,F1,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=/0 hand=1:1QW 2:1BN 3:3BN 4:1BN 5:1BN -> F1,F2,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=4/0 hand=1:2QW 2:3BR 3:2UR 4:2UW 5:1AW -> NP4,F1,F2,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=4/0 hand=1:1AW 2:2UN 3:1QW 4:3AN 5:2QR -> NP4,F5,F4,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=1 np=4/0 hand=1:3BW 2:3AW 3:3BW 4:3BR 5:1BN -> NP4,F2,F1,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=4/0 hand=1:3UN 2:3AR 3:1QW 4:3QN 5:3AW -> NP4,F5,F2,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:3BN 2:1AN 3:1QN 4:1BW 5:1UW -> F1,NP5,F4,F2
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=5/1 hand=1:2UR 2:3ARs 3:3UR 4:1AW 5:1QW -> F2,NP5,F4,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=5/1 hand=1:1AR 2:3QW 3:3BR 4:3BR 5:3QW -> F1,NP5,F2,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=5/1 hand=1:1QW 2:1QR 3:1QN 4:2QN 5:1AW -> F5,NP5,F1,F3
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=6/2 hand=1:3QN 2:1BW 3:3BW 4:2URs 5:3BN -> F3,F5,NP6,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=6/2 hand=1:2URs 2:1BW 3:3QR 4:1UR 5:1QR -> F3,F2,NP6,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=1 np=6/2 hand=1:2BN 2:3AR 3:2QW 4:3BR 5:3QWs -> F2,F3,NP6,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=6/2 hand=1:2QW 2:1QR 3:1AW 4:3QR 5:1QN -> F3,F1,NP6,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=45/0 hand=1:2QW 2:3BR 3:2BW 4:3AR 5:3QW -> NP4,NP5,F5,F2,F4
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=45/0 hand=1:2UW 2:3QW 3:3AW 4:3AN 5:3QN -> NP4,NP5,F3,F2,F4
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=45/0 hand=1:2QN 2:2AR 3:3BW 4:3QN 5:1QW -> NP4,NP5,F2,F5,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=1 np=45/0 hand=1:2BR 2:1AN 3:1QR 4:3AW 5:1AR -> NP4,NP5,F4,F2,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=56/1 hand=1:3AN 2:2AN 3:1BN 4:2BR 5:1BW -> F1,NP5,NP6,F2,F4
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=0 np=56/1 hand=1:1BN 2:3BR 3:1AN 4:3BN 5:2BN -> F4,NP5,NP6,F2,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=56/1 hand=1:2QW 2:1AN 3:1AN 4:3BR 5:2QR -> F2,NP5,NP6,F3,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=false stage=1 np=56/1 hand=1:3AN 2:1QR 3:3AW 4:2QW 5:2AR -> F3,NP5,NP6,F1,F5
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:3BN 2:3AN 3:2UN 4:1AWs 5:1QW -> NP4,NP5,NP6,F1,F2,F4
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:1QN 2:3QW 3:1QR 4:1QN 5:2BN -> NP4,NP5,NP6,F2,F5,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=456/0 hand=1:2QW 2:3AR 3:1BN 4:3AN 5:2QW -> NP4,NP5,NP6,F4,F2,F1
+always styles=Affinity sp=true rearrange=true spam=false allow=true stage=1 np=456/0 hand=1:3QW 2:1AW 3:2QR 4:1QN 5:2BN -> NP4,NP5,NP6,F2,F1,F4
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=0 np=/0 hand=1:1URs 2:1BW 3:2BN 4:3AW 5:3QR -> NP6,F4,F3,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=/0 hand=1:3UN 2:3BW 3:2AW 4:1QN 5:2QR -> F2,F5,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=/0 hand=1:1AR 2:2QW 3:2BR 4:3BN 5:1BN -> F1,F2,F4
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=/0 hand=1:3AR 2:3BN 3:3UW 4:3AN 5:2UR -> NP6,F4,F1,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=0 np=4/0 hand=1:2BW 2:3QN 3:3AW 4:1BN 5:3QW -> NP4,NP6,F5,F3,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=4/0 hand=1:2UR 2:1QR 3:2UR 4:1AW 5:1AR -> NP4,F5,F4,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=4/0 hand=1:2AN 2:2AN 3:3BR 4:2UW 5:1BN -> NP4,NP6,F1,F2,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=4/0 hand=1:3BR 2:2QN 3:1QR 4:1AR 5:1ARs -> NP4,NP6,F4,F5,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=5/1 hand=1:3AW 2:3AN 3:1AN 4:1AN 5:1AN -> F1,NP5,F2,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=5/1 hand=1:3UW 2:2AN 3:1BN 4:3AN 5:3UW -> F4,NP5,F2,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=5/1 hand=1:2AN 2:3BN 3:3BW 4:2QWs 5:3UN -> F1,NP5,NP6,F4,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=5/1 hand=1:3QN 2:2BWs 3:1QN 4:2UR 5:3BN -> F1,NP5,NP6,F3,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=6/2 hand=1:3AW 2:3BW 3:1BW 4:1BW 5:3QW -> F2,F1,NP6,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:2QR 2:1AR 3:3QNs 4:1BW 5:2AW -> F3,F5,NP6,F1
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:3ANs 2:1QR 3:3AW 4:2BW 5:2BW -> F3,F1,NP6,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:2AW 2:3BR 3:2BW 4:2BW 5:2QW -> F1,F5,NP6,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:1QN 2:2AW 3:1AN 4:2QR 5:2QW -> NP4,NP5,NP6,F2,F5,F4
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=45/0 hand=1:1QR 2:1BW 3:3QN 4:1AN 5:3BN -> NP4,NP5,F5,F3,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=45/0 hand=1:1BN 2:1BNs 3:1AWs 4:1QW 5:3QR -> NP4,NP5,NP6,F3,F4,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=45/0 hand=1:3AR 2:3AR 3:3AN 4:2UR 5:1UW -> NP4,NP5,F3,F1,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=56/1 hand=1:2UW 2:3AW 3:1BN 4:3BW 5:1QW -> F4,NP5,NP6,F2,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=56/1 hand=1:3AR 2:1QR 3:3BRs 4:2BW 5:1QR -> F3,NP5,NP6,F1,F4
+always styles=Affinity sp=true rearrange=true spam=true allow=true stage=1 np=56/1 hand=1:1BR 2:2QR 3:1QN 4:2AW 5:2QR -> F4,NP5,NP6,F3,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=56/1 hand=1:1QN 2:1BW 3:1UN 4:2BR 5:2QWs -> F5,NP5,NP6,F1,F2
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=456/0 hand=1:1AW 2:3BN 3:2QW 4:3QN 5:1QW -> NP4,NP5,NP6,F2,F4,F3
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=0 np=456/0 hand=1:2QW 2:2BN 3:3BR 4:1AN 5:3BN -> NP4,NP5,NP6,F5,F3,F1
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=456/0 hand=1:3AW 2:1QR 3:3BR 4:3UN 5:1BW -> NP4,NP5,NP6,F1,F2,F5
+always styles=Affinity sp=true rearrange=true spam=true allow=false stage=1 np=456/0 hand=1:2QR 2:2BW 3:2QN 4:3BR 5:1QN -> NP4,NP5,NP6,F3,F5,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=/0 hand=1:2QN 2:1BR 3:2BR 4:2QR 5:2QN -> F1,F5,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=/0 hand=1:2AW 2:1QW 3:2AR 4:2AN 5:1AW -> F1,F5,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=1 np=/0 hand=1:2BW 2:1UW 3:2ARs 4:3AN 5:1UW -> F4,F1,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=/0 hand=1:2BRs 2:1QNs 3:1QW 4:3QR 5:1QWs -> F3,F4,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=4/0 hand=1:1UN 2:3AW 3:1QR 4:3BWs 5:3QW -> NP4,F4,F2,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=4/0 hand=1:2AN 2:2AN 3:3BR 4:3QR 5:1AR -> NP4,F1,F2,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=4/0 hand=1:3AN 2:1QR 3:2AN 4:1QW 5:3UR -> NP4,F2,F4,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=4/0 hand=1:2UR 2:1QR 3:2QW 4:1QR 5:3QN -> NP4,F2,F4,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=5/1 hand=1:3ARs 2:1QW 3:2AN 4:3QWs 5:2UN -> F2,NP5,F4,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=5/1 hand=1:3BRs 2:3AN 3:3AN 4:1BRs 5:1QR -> F2,NP5,F3,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=1 np=5/1 hand=1:3QNs 2:3AR 3:1AR 4:2QW 5:1AN -> F4,NP5,F3,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=5/1 hand=1:2AR 2:1UW 3:2UN 4:3QWs 5:2QR -> F5,NP5,F1,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=6/2 hand=1:3QN 2:3BW 3:1AR 4:1QW 5:2BW -> F2,F5,NP6,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=6/2 hand=1:3AN 2:3QW 3:3AN 4:2AN 5:1AN -> F2,F1,NP6,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=6/2 hand=1:2QN 2:1UN 3:1UN 4:1AW 5:2BW -> F1,F4,NP6,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=1 np=6/2 hand=1:2AW 2:2AN 3:3UN 4:2QW 5:2AR -> F4,F1,NP6,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:2BN 2:2BR 3:1QN 4:2AW 5:2QR -> NP4,NP5,F4,F1,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:1AW 2:3AN 3:2BN 4:2AR 5:2BW -> NP4,NP5,F5,F1,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=45/0 hand=1:3BR 2:3QN 3:1QWs 4:2BW 5:2UR -> NP4,NP5,F2,F1,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:2ARs 2:3BW 3:2QR 4:1BN 5:3QWs -> NP4,NP5,F3,F4,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=56/1 hand=1:3BWs 2:3QW 3:1AW 4:1QW 5:1BN -> F1,NP5,NP6,F3,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=56/1 hand=1:3AW 2:3AN 3:1AN 4:2AN 5:1AWs -> F1,NP5,NP6,F5,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:2QR 2:1QN 3:1UN 4:2QN 5:2QW -> F2,NP5,NP6,F1,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:3AR 2:2BW 3:1AR 4:3ANs 5:2BW -> F3,NP5,NP6,F1,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=0 np=456/0 hand=1:1UNs 2:1UW 3:3QW 4:2AR 5:3BN -> NP4,NP5,NP6,F3,F5,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:1AR 2:3UW 3:3QW 4:3AN 5:3UR -> NP4,NP5,NP6,F3,F4,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:3QW 2:2QR 3:1BN 4:1AN 5:2AW -> NP4,NP5,NP6,F1,F2,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=false allow=true stage=1 np=456/0 hand=1:2BN 2:2UN 3:1QR 4:3AR 5:1QW -> NP4,NP5,NP6,F3,F5,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=/0 hand=1:3AW 2:2AR 3:2AW 4:3AN 5:3QN -> F1,F3,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=/0 hand=1:1QW 2:3AN 3:1BR 4:1QW 5:3AN -> F1,F4,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=/0 hand=1:1AN 2:1QN 3:3BN 4:1AN 5:3QR -> F2,F5,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=/0 hand=1:2QN 2:2AR 3:2AW 4:2AR 5:3QR -> NP6,F5,F1,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=0 np=4/0 hand=1:2AN 2:2AW 3:3UW 4:3QR 5:1AW -> NP4,NP6,F2,F5,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=4/0 hand=1:1QR 2:2AN 3:1QW 4:3UR 5:1BR -> NP4,F3,F2,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:3QR 2:1BN 3:3AW 4:3AW 5:1QR -> NP4,NP6,F5,F1,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:2AW 2:3BN 3:1QN 4:3AW 5:2QW -> NP4,NP6,F3,F5,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:3BR 2:1AN 3:3AW 4:3UN 5:1UW -> F3,NP5,NP6,F2,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=5/1 hand=1:2QN 2:1BN 3:2ARs 4:3AW 5:3AN -> F4,NP5,F2,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=5/1 hand=1:2AR 2:3BN 3:1QR 4:1QW 5:2QW -> F3,NP5,F4,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=5/1 hand=1:2BR 2:3BR 3:3ARs 4:1AWs 5:3UR -> F2,NP5,NP6,F1,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=6/2 hand=1:2BR 2:1AR 3:1BR 4:2AN 5:3AR -> F4,F1,NP6,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=0 np=6/2 hand=1:1AR 2:2BR 3:2QW 4:3BNs 5:3QW -> F3,F5,NP6,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=6/2 hand=1:2AW 2:1AW 3:2QR 4:3QN 5:3AN -> F4,F3,NP6,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=6/2 hand=1:2AR 2:1QR 3:2AN 4:3QN 5:1AR -> F2,F4,NP6,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=45/0 hand=1:2AR 2:1UN 3:1AR 4:2QRs 5:3UW -> NP4,NP5,F1,F3,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=45/0 hand=1:3QR 2:1BN 3:3BR 4:3AN 5:1QN -> NP4,NP5,F2,F4,F5
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:3QW 2:2AN 3:2AR 4:2AN 5:2QN -> NP4,NP5,NP6,F1,F5,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:1UN 2:2BR 3:3BR 4:1QRs 5:2QN -> NP4,NP5,NP6,F5,F3,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:2QR 2:2QN 3:2QR 4:1BR 5:3QN -> F2,NP5,NP6,F5,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:3AW 2:1BW 3:3AN 4:2AN 5:2QN -> F2,NP5,NP6,F1,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=56/1 hand=1:2BR 2:3AW 3:1BR 4:3QR 5:2QN -> F4,NP5,NP6,F5,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=56/1 hand=1:3QR 2:1QN 3:2BW 4:3QN 5:2QR -> F2,NP5,NP6,F1,F4
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:3BN 2:3UW 3:2BNs 4:1QWs 5:2QW -> NP4,NP5,NP6,F4,F5,F1
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:3QR 2:3AN 3:1AN 4:1QW 5:2QN -> NP4,NP5,NP6,F4,F2,F3
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=false stage=1 np=456/0 hand=1:3QW 2:2BN 3:1QW 4:3UN 5:1URs -> NP4,NP5,NP6,F3,F1,F2
+always styles=Affinity+Servant sp=false rearrange=false spam=true allow=true stage=1 np=456/0 hand=1:1QR 2:1UW 3:3BN 4:3BW 5:3UW -> NP4,NP5,NP6,F1,F3,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=/0 hand=1:1QR 2:3BN 3:2UN 4:2BN 5:1QW -> F5,F4,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=/0 hand=1:1QN 2:2BR 3:1BR 4:3AN 5:2AR -> F4,F2,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=1 np=/0 hand=1:3UR 2:2QR 3:3QW 4:1QW 5:3BWs -> F4,F3,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=1 np=/0 hand=1:2QN 2:1AWs 3:2AN 4:2QRs 5:2BNs -> F1,F3,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=4/0 hand=1:3AR 2:1QN 3:1BW 4:1QN 5:1BR -> NP4,F2,F3,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=4/0 hand=1:3QRs 2:1QN 3:2BWs 4:1AWs 5:1AW -> NP4,F4,F3,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=4/0 hand=1:3BW 2:2AN 3:1BR 4:2AN 5:3AN -> NP4,F5,F2,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=4/0 hand=1:2BW 2:2BR 3:3AN 4:2UR 5:3BN -> NP4,F3,F5,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:2AW 2:2AR 3:2QR 4:1AN 5:2BN -> F1,NP5,F5,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:2QN 2:1QN 3:3QN 4:2AW 5:2AN -> F4,NP5,F5,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=1 np=5/1 hand=1:2AN 2:3BW 3:2BN 4:1UR 5:3AW -> F5,NP5,F1,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=1 np=5/1 hand=1:2BR 2:1QR 3:1BR 4:3BN 5:1QW -> F2,NP5,F5,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=6/2 hand=1:3AN 2:1QR 3:2QN 4:2BW 5:3QW -> F4,F5,NP6,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=6/2 hand=1:3QN 2:3BR 3:3AN 4:3QN 5:1AR -> F3,F1,NP6,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=6/2 hand=1:3AR 2:3UR 3:1AW 4:2QW 5:2QRs -> F4,F3,NP6,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=6/2 hand=1:2BN 2:2AW 3:2BN 4:3ANs 5:2BN -> F2,F1,NP6,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=45/0 hand=1:2AW 2:1UWs 3:2AN 4:1AN 5:1BW -> NP4,NP5,F5,F1,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=45/0 hand=1:3UR 2:3BN 3:2BR 4:2BR 5:1QWs -> NP4,NP5,F5,F2,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=45/0 hand=1:1ARs 2:3BN 3:3QW 4:2BN 5:3AN -> NP4,NP5,F3,F5,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=45/0 hand=1:3QN 2:1BN 3:3BRs 4:2AW 5:2QW -> NP4,NP5,F1,F5,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=0 np=56/1 hand=1:1QR 2:3UR 3:2BW 4:3QN 5:1QN -> F3,NP5,NP6,F4,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=56/1 hand=1:1AR 2:1BRs 3:2UW 4:2BN 5:1QW -> F5,NP5,NP6,F4,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=56/1 hand=1:2BN 2:1UW 3:2QR 4:1BR 5:1QN -> F5,NP5,NP6,F3,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=56/1 hand=1:3QNs 2:3ANs 3:2QN 4:2BR 5:1BN -> F3,NP5,NP6,F5,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:2BN 2:1AWs 3:3BN 4:3AR 5:3AN -> NP4,NP5,NP6,F2,F1,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:1AR 2:1QW 3:3ANs 4:1BRs 5:1BW -> NP4,NP5,NP6,F5,F2,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=false stage=1 np=456/0 hand=1:1AW 2:3AR 3:2QW 4:3UR 5:3UR -> NP4,NP5,NP6,F3,F1,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=false allow=true stage=1 np=456/0 hand=1:3AN 2:2BW 3:2AW 4:2BR 5:1AR -> NP4,NP5,NP6,F5,F1,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=/0 hand=1:2QW 2:1UW 3:1QRs 4:1BR 5:2AN -> F1,F4,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=/0 hand=1:1QR 2:1AN 3:2QN 4:3BW 5:3AN -> F4,F5,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=/0 hand=1:3BN 2:3AR 3:2BR 4:1QW 5:3AR -> NP6,F4,F2,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=/0 hand=1:1AN 2:1QW 3:3BW 4:3UN 5:1BN -> F2,F1,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=4/0 hand=1:3QR 2:3QW 3:2UR 4:2AR 5:2QW -> NP4,F5,F2,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=4/0 hand=1:3AW 2:3UN 3:2AN 4:3BR 5:3QW -> NP4,NP6,F5,F1,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=4/0 hand=1:2BW 2:1BN 3:1BR 4:1BR 5:3QW -> NP4,F5,F2,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=4/0 hand=1:1BR 2:3AW 3:3QW 4:2BR 5:1AN -> NP4,NP6,F3,F5,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=5/1 hand=1:2QN 2:2BN 3:3AW 4:1AW 5:1QR -> F3,NP5,NP6,F4,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=5/1 hand=1:1BW 2:3UNs 3:1BR 4:1QN 5:2BR -> F1,NP5,F4,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=5/1 hand=1:2AN 2:1BW 3:2QN 4:1BR 5:2AN -> F3,NP5,F1,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=5/1 hand=1:3BN 2:1QN 3:3AR 4:1AN 5:1QR -> F2,NP5,NP6,F5,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:2UR 2:2QN 3:2QN 4:3QW 5:3QR -> F4,F2,NP6,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:3AN 2:2BW 3:2UR 4:3QR 5:2AN -> F2,F1,NP6,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:2AW 2:2BN 3:1UW 4:3BR 5:1QR -> F5,F1,NP6,F4
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:1QR 2:2AR 3:3QN 4:1BW 5:3UR -> F1,F3,NP6,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:1AN 2:1QR 3:1QWs 4:2QN 5:3BN -> NP4,NP5,NP6,F3,F5,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:3UW 2:1BW 3:2QW 4:3QN 5:2AW -> NP4,NP5,NP6,F2,F5,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=45/0 hand=1:1QR 2:2UW 3:2QN 4:1QN 5:3BW -> NP4,NP5,F1,F4,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=45/0 hand=1:1AR 2:2QW 3:3QN 4:3QN 5:3BR -> NP4,NP5,F3,F4,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=56/1 hand=1:2UR 2:3AW 3:3QN 4:1BW 5:1BN -> F4,NP5,NP6,F2,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=56/1 hand=1:1BW 2:1BW 3:3AR 4:3BR 5:3QW -> F1,NP5,NP6,F2,F5
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=56/1 hand=1:3AR 2:1BR 3:1BW 4:2BWs 5:2AN -> F1,NP5,NP6,F5,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=56/1 hand=1:3AW 2:3AW 3:1QR 4:3AN 5:3BW -> F3,NP5,NP6,F1,F2
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=0 np=456/0 hand=1:1AR 2:2BW 3:3UW 4:2AR 5:3BR -> NP4,NP5,NP6,F2,F5,F1
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=0 np=456/0 hand=1:1AN 2:2AW 3:2BN 4:3AW 5:3BR -> NP4,NP5,NP6,F2,F4,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=false stage=1 np=456/0 hand=1:2BW 2:2BW 3:1AW 4:3QR 5:2QN -> NP4,NP5,NP6,F4,F5,F3
+always styles=Affinity+Servant sp=false rearrange=true spam=true allow=true stage=1 np=456/0 hand=1:1QR 2:2BN 3:2QW 4:1BW 5:1BRs -> NP4,NP5,NP6,F1,F3,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=/0 hand=1:2BW 2:2QN 3:3AN 4:1AN 5:2BN -> F3,F1,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=/0 hand=1:1AWs 2:3UN 3:1BN 4:2BN 5:2QR -> F4,F5,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=/0 hand=1:3BN 2:1AWs 3:1AN 4:2AR 5:2BN -> F3,F4,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=/0 hand=1:1AR 2:3AW 3:1BN 4:2QR 5:3QR -> F5,F4,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=4/0 hand=1:3AN 2:1QN 3:1BR 4:3AN 5:3AR -> NP4,F1,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=4/0 hand=1:3AN 2:1QN 3:3BWs 4:1QN 5:2QN -> NP4,F3,F1,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=4/0 hand=1:2QW 2:1AWs 3:1BR 4:1BR 5:3QW -> NP4,F5,F1,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=4/0 hand=1:1QN 2:1QNs 3:3AN 4:1BN 5:1BR -> NP4,F1,F3,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=5/1 hand=1:1QW 2:1AR 3:1QR 4:3AW 5:1UW -> F4,NP5,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=5/1 hand=1:2BN 2:3AW 3:1AW 4:1QR 5:1QN -> F2,NP5,F1,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=5/1 hand=1:1AR 2:1BR 3:2UW 4:1AR 5:2AR -> F1,NP5,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=5/1 hand=1:2AW 2:2BN 3:3QNs 4:1UN 5:1AR -> F5,NP5,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=6/2 hand=1:2AW 2:2QR 3:2BWs 4:3BR 5:2AW -> F4,F3,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=6/2 hand=1:2AW 2:3AR 3:2BW 4:1QR 5:1AW -> F2,F3,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=6/2 hand=1:2AW 2:2QN 3:3BNs 4:1AWs 5:1UW -> F2,F1,NP6,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=6/2 hand=1:2AN 2:2BW 3:3AR 4:1AW 5:1UN -> F4,F3,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:2AR 2:3BW 3:2BN 4:3BW 5:3ANs -> NP4,NP5,F2,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=45/0 hand=1:1AR 2:3BR 3:1UN 4:1AW 5:1BN -> NP4,NP5,F2,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:3AW 2:3QW 3:1UN 4:2AN 5:3QN -> NP4,NP5,F2,F5,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=45/0 hand=1:2BWs 2:2BN 3:2QW 4:3AN 5:3AW -> NP4,NP5,F3,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=0 np=56/1 hand=1:2AR 2:1AR 3:1AW 4:1BW 5:2AW -> F5,NP5,NP6,F1,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=56/1 hand=1:1BW 2:2QN 3:1AR 4:1QW 5:2BN -> F5,NP5,NP6,F2,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=56/1 hand=1:3QR 2:1BN 3:1BR 4:3BN 5:1BW -> F1,NP5,NP6,F2,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=1 np=56/1 hand=1:1AN 2:2AW 3:2BW 4:2QW 5:3BR -> F4,NP5,NP6,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:2BN 2:3QW 3:1AW 4:2UR 5:2QR -> NP4,NP5,NP6,F2,F1,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=true stage=0 np=456/0 hand=1:1BW 2:3AR 3:1AW 4:2BRs 5:1QR -> NP4,NP5,NP6,F2,F4,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:1AR 2:2AR 3:3AN 4:2UW 5:1AW -> NP4,NP5,NP6,F1,F5,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=false allow=false stage=1 np=456/0 hand=1:3BN 2:3AR 3:3QW 4:2BN 5:3QRs -> NP4,NP5,NP6,F3,F2,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=/0 hand=1:3BN 2:1QW 3:3AR 4:3BN 5:2AW -> NP6,F1,F4,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=/0 hand=1:1AW 2:1ARs 3:1BW 4:1BN 5:3AR -> NP6,F5,F3,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=/0 hand=1:3QR 2:1AW 3:2AN 4:3UNs 5:3BW -> F1,F2,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=/0 hand=1:3UN 2:1QN 3:1QW 4:1BR 5:1BW -> F2,F3,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=4/0 hand=1:1UR 2:2QN 3:3AR 4:3BN 5:2UN -> NP4,F4,F3,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=4/0 hand=1:2BW 2:3QR 3:2QR 4:1AN 5:1QR -> NP4,F2,F1,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=4/0 hand=1:3BR 2:3AW 3:2AW 4:2AW 5:3AN -> NP4,F2,F5,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=4/0 hand=1:3BR 2:3BN 3:3BWs 4:1BR 5:1BRs -> NP4,NP6,F4,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=5/1 hand=1:3BR 2:2QW 3:2QW 4:3AN 5:3UR -> F4,NP5,NP6,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=5/1 hand=1:1AN 2:2AN 3:1AN 4:2QRs 5:3AW -> F5,NP5,F2,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=5/1 hand=1:3BW 2:3BR 3:3BN 4:1BR 5:2AN -> F5,NP5,F4,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=5/1 hand=1:2AN 2:2AN 3:2QR 4:1AN 5:3QN -> F5,NP5,NP6,F3,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=6/2 hand=1:1QW 2:1AN 3:2AW 4:2BW 5:1URs -> F4,F3,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=6/2 hand=1:2AN 2:1AWs 3:1QN 4:1AW 5:3AN -> F5,F1,NP6,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=6/2 hand=1:1QW 2:3QN 3:2BN 4:3QN 5:3AW -> F1,F2,NP6,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=6/2 hand=1:2BR 2:3BRs 3:2UNs 4:3QWs 5:2AN -> F5,F1,NP6,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=45/0 hand=1:1QR 2:1UN 3:2BN 4:2BN 5:2AN -> NP4,NP5,F3,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=45/0 hand=1:3UW 2:2AR 3:1BN 4:3AW 5:3QW -> NP4,NP5,NP6,F4,F5,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=45/0 hand=1:3QW 2:3QR 3:2AWs 4:1BW 5:1AR -> NP4,NP5,NP6,F1,F2,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=45/0 hand=1:2QR 2:1QN 3:1BW 4:2AR 5:1QW -> NP4,NP5,F2,F5,F1
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=56/1 hand=1:3BR 2:2UW 3:1BN 4:3UW 5:2QN -> F1,NP5,NP6,F5,F3
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=56/1 hand=1:2UW 2:1BN 3:2AR 4:1BR 5:2BN -> F5,NP5,NP6,F3,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=56/1 hand=1:3QN 2:2QN 3:2AN 4:3QN 5:3QN -> F1,NP5,NP6,F4,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=56/1 hand=1:3AN 2:3AR 3:3BN 4:2UN 5:1AN -> F5,NP5,NP6,F1,F2
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=0 np=456/0 hand=1:3QN 2:2AW 3:3BN 4:2QN 5:3AR -> NP4,NP5,NP6,F3,F1,F5
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=0 np=456/0 hand=1:2UR 2:2QN 3:3QN 4:2BW 5:3AW -> NP4,NP5,NP6,F5,F3,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=true stage=1 np=456/0 hand=1:2UW 2:3UW 3:1QN 4:2BR 5:2QR -> NP4,NP5,NP6,F3,F5,F4
+always styles=Affinity+Servant sp=true rearrange=false spam=true allow=false stage=1 np=456/0 hand=1:1AR 2:2QR 3:3AR 4:1BW 5:3BW -> NP4,NP5,NP6,F2,F1,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=0 np=/0 hand=1:2BW 2:3QW 3:3AR 4:1AN 5:1AN -> F2,F1,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=/0 hand=1:2BWs 2:1BRs 3:1BR 4:3AN 5:2UR -> F4,F2,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=/0 hand=1:2QW 2:3AR 3:1QR 4:1QW 5:2UR -> F3,F4,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=/0 hand=1:2QW 2:1BN 3:3QN 4:1BN 5:2BW -> F3,F1,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=4/0 hand=1:3UWs 2:1QN 3:1QN 4:2AN 5:2UR -> NP4,F2,F4,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=4/0 hand=1:3QN 2:2BW 3:1BR 4:1AWs 5:2BN -> NP4,F2,F1,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=4/0 hand=1:2BR 2:1BRs 3:1QR 4:3AW 5:2AR -> NP4,F3,F4,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=4/0 hand=1:3BW 2:1QR 3:1QR 4:2BWs 5:2QW -> NP4,F2,F3,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=0 np=5/1 hand=1:1AW 2:2AW 3:1AN 4:2AR 5:2BN -> F2,NP5,F5,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=5/1 hand=1:2QNs 2:3AW 3:1QN 4:2BN 5:3QN -> F2,NP5,F5,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=5/1 hand=1:3ARs 2:3QW 3:3QR 4:1QN 5:3BW -> F4,NP5,F2,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=5/1 hand=1:2QR 2:3AN 3:2BR 4:2QW 5:1BR -> F1,NP5,F4,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=6/2 hand=1:2AW 2:2AR 3:2QW 4:3QW 5:3QR -> F4,F5,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=6/2 hand=1:3UN 2:3QW 3:2AN 4:2AN 5:2AR -> F2,F3,NP6,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=6/2 hand=1:1AW 2:2QW 3:2QR 4:3AW 5:3BR -> F2,F3,NP6,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=6/2 hand=1:1UW 2:2QN 3:1BR 4:3BN 5:2AR -> F2,F5,NP6,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=45/0 hand=1:1BN 2:2QR 3:1BN 4:2QN 5:2AN -> NP4,NP5,F5,F4,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=0 np=45/0 hand=1:3BN 2:1QWs 3:3BN 4:2AW 5:1BR -> NP4,NP5,F1,F3,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=45/0 hand=1:1BW 2:2BR 3:2BR 4:3BR 5:2UW -> NP4,NP5,F1,F4,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=45/0 hand=1:3BN 2:3QN 3:3QN 4:3AW 5:1BR -> NP4,NP5,F2,F3,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=56/1 hand=1:1AW 2:3BR 3:1QW 4:2BW 5:1QN -> F2,NP5,NP6,F4,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=0 np=56/1 hand=1:2QR 2:2BW 3:2BW 4:1BR 5:1BRs -> F2,NP5,NP6,F3,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=56/1 hand=1:1AN 2:1BW 3:2AN 4:3AN 5:1UW -> F1,NP5,NP6,F4,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=56/1 hand=1:3QW 2:3QN 3:2QW 4:1BW 5:1BW -> F1,NP5,NP6,F2,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=0 np=456/0 hand=1:2BN 2:3UN 3:2AR 4:2BR 5:2BW -> NP4,NP5,NP6,F5,F1,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=0 np=456/0 hand=1:3AR 2:1QN 3:2QN 4:2UR 5:1UN -> NP4,NP5,NP6,F1,F3,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=true stage=1 np=456/0 hand=1:1QW 2:2QR 3:2AW 4:1UR 5:1AR -> NP4,NP5,NP6,F1,F2,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=false allow=false stage=1 np=456/0 hand=1:1BN 2:3BR 3:2AR 4:2QW 5:3AR -> NP4,NP5,NP6,F4,F5,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=/0 hand=1:1AN 2:2AW 3:3AW 4:2BN 5:1QNs -> F3,F4,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=/0 hand=1:1QR 2:2QR 3:3AN 4:2BR 5:3AN -> F3,F4,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=/0 hand=1:1QN 2:1AN 3:2QR 4:3UW 5:1BR -> F1,F3,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=/0 hand=1:2QW 2:2BW 3:3QR 4:1QN 5:3UR -> F4,F3,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=0 np=4/0 hand=1:3QR 2:1BR 3:1UR 4:3UW 5:2UWs -> NP4,NP6,F2,F1,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=4/0 hand=1:3BR 2:3QN 3:1AW 4:3BR 5:1BR -> NP4,F1,F2,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=4/0 hand=1:1QN 2:1BR 3:1QNs 4:1UR 5:2QR -> NP4,F1,F5,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=4/0 hand=1:2QW 2:1QWs 3:1AR 4:1QR 5:2AW -> NP4,NP6,F4,F1,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=5/1 hand=1:2BW 2:2QW 3:3UN 4:2BW 5:3BR -> F5,NP5,F1,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=5/1 hand=1:3BW 2:3UN 3:1QN 4:1AW 5:1AW -> F1,NP5,F4,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=5/1 hand=1:2QR 2:3BR 3:1BR 4:2AR 5:1QW -> F5,NP5,F1,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=5/1 hand=1:2BW 2:2BR 3:1QR 4:3BR 5:2BN -> F3,NP5,NP6,F4,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=6/2 hand=1:2BWs 2:2AW 3:2AN 4:2BN 5:3BR -> F5,F1,NP6,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=0 np=6/2 hand=1:1BW 2:3AW 3:2AWs 4:3BN 5:1AR -> F2,F4,NP6,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=6/2 hand=1:3QR 2:2QN 3:2QW 4:3AN 5:3AN -> F1,F2,NP6,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=6/2 hand=1:1UN 2:1BR 3:3BN 4:2AN 5:3QR -> F5,F4,NP6,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=45/0 hand=1:1AW 2:2BNs 3:3AN 4:2UN 5:3QW -> NP4,NP5,F5,F3,F2
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=0 np=45/0 hand=1:1QN 2:3AR 3:1QW 4:1QW 5:1BR -> NP4,NP5,NP6,F2,F3,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=45/0 hand=1:1BW 2:3QW 3:2AN 4:1BW 5:1QR -> NP4,NP5,NP6,F5,F2,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=45/0 hand=1:1BN 2:2UW 3:1AR 4:2ANs 5:3AW -> NP4,NP5,NP6,F3,F5,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=56/1 hand=1:1AW 2:3AR 3:3AR 4:3QR 5:1BR -> F2,NP5,NP6,F3,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=0 np=56/1 hand=1:3BR 2:3AR 3:2QR 4:3UR 5:2BW -> F1,NP5,NP6,F2,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=56/1 hand=1:3AW 2:2AW 3:1QWs 4:2QWs 5:2AN -> F1,NP5,NP6,F2,F5
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=1 np=56/1 hand=1:2QR 2:3UNs 3:1AN 4:1QN 5:2ARs -> F4,NP5,NP6,F1,F3
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=false stage=0 np=456/0 hand=1:1BN 2:3AN 3:2QN 4:1QN 5:3UN -> NP4,NP5,NP6,F2,F3,F1
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=0 np=456/0 hand=1:3BN 2:1AW 3:1BR 4:3AN 5:3QW -> NP4,NP5,NP6,F5,F1,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=456/0 hand=1:2QR 2:2BW 3:1UR 4:1AW 5:2QW -> NP4,NP5,NP6,F1,F5,F4
+always styles=Affinity+Servant sp=true rearrange=true spam=true allow=true stage=1 np=456/0 hand=1:1AN 2:2QR 3:2QR 4:3BN 5:3QR -> NP4,NP5,NP6,F5,F2,F3
+direct-p styles=Affinity sp=false brave=None stage=1 np=/0/&?bpp hand=1:2BN 2:1BWs 3:3QR 4:2AW 5:3AN -> F1,F4,F5
+direct-p styles=Affinity sp=false brave=None stage=0 np=/0/&?bpp hand=1:2AN 2:3BR 3:3QN 4:1BW 5:3BN -> F4,F5,F1
+direct-p styles=Affinity sp=false brave=None stage=2 np=/0/&?bpp hand=1:1QW 2:3AN 3:1BW 4:2AR 5:1BN -> F3,F5,F1
+direct-p styles=Affinity sp=false brave=None stage=1 np=4/1/&?p4p hand=1:3AN 2:2AW 3:3BN 4:2AR 5:3AR -> F2,NP4,F4
+direct-p styles=Affinity sp=false brave=None stage=2 np=4/1/&?p4p hand=1:1AR 2:2AR 3:3UR 4:2BN 5:3QW -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=2 np=4/1/&?p4p hand=1:2AR 2:3BN 3:3BN 4:3BW 5:2AW -> F2,NP4,F3
+direct-p styles=Affinity sp=false brave=None stage=0 np=/0/&?ppp hand=1:1QN 2:1BN 3:3AW 4:1AN 5:2QN -> F3,F2,F4
+direct-p styles=Affinity sp=false brave=None stage=2 np=/0/&?ppp hand=1:3AW 2:3AR 3:2BN 4:1BW 5:3QW -> F4,F5,F1
+direct-p styles=Affinity sp=false brave=None stage=0 np=/0/&?ppp hand=1:2QW 2:1QR 3:1AR 4:2UR 5:1QN -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=2 np=6/2/&?pp6 hand=1:1BR 2:3AWs 3:3UR 4:3BN 5:1BR -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=2 np=6/2/&?pp6 hand=1:3AN 2:2AN 3:3AR 4:2ANs 5:3UW -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=0 np=6/2/&?pp6 hand=1:3QR 2:3BN 3:2BR 4:3AW 5:3BR -> F4,F2,NP6
+direct-p styles=Affinity sp=false brave=None stage=2 np=/0/&?aqp hand=1:2BR 2:2AR 3:2BR 4:1QR 5:3BR -> F2,F4,F5
+direct-p styles=Affinity sp=false brave=None stage=0 np=/0/&?aqp hand=1:2QR 2:3BW 3:1AW 4:1QW 5:3QR -> F3,F4,F2
+direct-p styles=Affinity sp=false brave=None stage=0 np=/0/&?aqp hand=1:3BN 2:1UW 3:3QW 4:3BN 5:1QN -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=0 np=5/0/&?5pp hand=1:2UR 2:1BR 3:2BN 4:3QW 5:3UW -> EXIT()
+direct-p styles=Affinity sp=false brave=None stage=2 np=5/0/&?5pp hand=1:2BW 2:3BR 3:1BN 4:1QW 5:1AR -> NP5,F3,F4
+direct-p styles=Affinity sp=false brave=None stage=2 np=5/0/&?5pp hand=1:3QR 2:2BN 3:3BW 4:1QW 5:2BR -> NP5,F4,F3
+direct-p styles=Affinity sp=false brave=None stage=2 np=45/1/&?p45 hand=1:1BWs 2:2AWs 3:1BR 4:1AW 5:3AR -> F4,NP4,NP5
+direct-p styles=Affinity sp=false brave=None stage=2 np=45/1/&?p45 hand=1:3BR 2:2AR 3:1UNs 4:3AR 5:2QN -> F4,NP4,NP5
+direct-p styles=Affinity sp=false brave=None stage=1 np=45/1/&?p45 hand=1:1AN 2:3QNs 3:3BN 4:2QW 5:2BWs -> F4,NP4,NP5
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=/0/&?bpp hand=1:2BR 2:2QW 3:3AR 4:2QW 5:1BW -> F5,F2,F4
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=/0/&?bpp hand=1:2QN 2:3AW 3:1AW 4:1QW 5:3AWs -> F4,F3,F2
+direct-p styles=Affinity sp=false brave=WithNP stage=0 np=/0/&?bpp hand=1:2AW 2:3AR 3:2QR 4:2BR 5:2QR -> F4,F1,F2
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=4/1/&?p4p hand=1:1AR 2:2AN 3:1BW 4:3BW 5:2BN -> F3,NP4,F1
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=4/1/&?p4p hand=1:2QWs 2:2UN 3:1BWs 4:3UN 5:2BR -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=4/1/&?p4p hand=1:2QN 2:2UW 3:3QW 4:1BR 5:1BN -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:3QW 2:1BN 3:1UR 4:1QW 5:1UN -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:2QR 2:3ARs 3:3AR 4:1AR 5:1AWs -> F1,F4,F3
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:3QW 2:2BW 3:2QN 4:3QW 5:1AR -> F3,F2,F5
+direct-p styles=Affinity sp=false brave=WithNP stage=0 np=6/2/&?pp6 hand=1:1BW 2:3AN 3:2AW 4:2AR 5:3QN -> F1,F3,NP6
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=6/2/&?pp6 hand=1:1BR 2:3BR 3:3BW 4:1AW 5:1AR -> F4,F5,NP6
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=6/2/&?pp6 hand=1:3BN 2:2BW 3:1BN 4:2AN 5:1AR -> F4,F2,NP6
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=/0/&?aqp hand=1:1UR 2:1AR 3:1BR 4:3AR 5:1BW -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=0 np=/0/&?aqp hand=1:3QR 2:3AW 3:3BW 4:1BR 5:2QR -> F2,F1,F3
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=/0/&?aqp hand=1:3UR 2:1AW 3:3AR 4:3AR 5:1AN -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=2 np=5/0/&?5pp hand=1:2QR 2:2QN 3:3QW 4:1AN 5:2BW -> NP5,F4,F3
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=5/0/&?5pp hand=1:2QW 2:2BW 3:2AW 4:2AR 5:1UR -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=0 np=5/0/&?5pp hand=1:3AN 2:3QR 3:3BW 4:2QW 5:3UN -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=45/1/&?p45 hand=1:1BR 2:3ANs 3:3BW 4:3UN 5:1AN -> EXIT()
+direct-p styles=Affinity sp=false brave=WithNP stage=1 np=45/1/&?p45 hand=1:1QWs 2:2BR 3:1BR 4:1UNs 5:3QR -> F2,NP4,NP5
+direct-p styles=Affinity sp=false brave=WithNP stage=0 np=45/1/&?p45 hand=1:3UN 2:1AN 3:2AR 4:3QW 5:2QW -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=2 np=/0/&?bpp hand=1:1AN 2:3BRs 3:2UWs 4:2QR 5:1AW -> F1,F5,F4
+direct-p styles=Affinity sp=true brave=None stage=1 np=/0/&?bpp hand=1:2BW 2:2AN 3:2QWs 4:3AN 5:1AN -> F1,F2,F4
+direct-p styles=Affinity sp=true brave=None stage=2 np=/0/&?bpp hand=1:3BR 2:3BR 3:1BW 4:2BR 5:2QR -> F3,F5,F1
+direct-p styles=Affinity sp=true brave=None stage=1 np=4/1/&?p4p hand=1:3QR 2:2AN 3:2BN 4:2BW 5:3BWs -> F2,NP4,F1
+direct-p styles=Affinity sp=true brave=None stage=2 np=4/1/&?p4p hand=1:2QW 2:2QR 3:2AR 4:3QR 5:2BR -> F1,NP4,F2
+direct-p styles=Affinity sp=true brave=None stage=1 np=4/1/&?p4p hand=1:3BN 2:2AN 3:3AWs 4:3QR 5:3BN -> F2,NP4,F4
+direct-p styles=Affinity sp=true brave=None stage=2 np=/0/&?ppp hand=1:2BR 2:3UW 3:1QR 4:1AW 5:2AR -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=2 np=/0/&?ppp hand=1:1BR 2:1BN 3:2AW 4:1BWs 5:2UW -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=0 np=/0/&?ppp hand=1:2AR 2:3AWs 3:1BR 4:3BW 5:1BR -> F4,F1,F3
+direct-p styles=Affinity sp=true brave=None stage=1 np=6/2/&?pp6 hand=1:1AR 2:3BW 3:3BN 4:3ARs 5:1UWs -> F1,F2,NP6
+direct-p styles=Affinity sp=true brave=None stage=2 np=6/2/&?pp6 hand=1:1AW 2:3BR 3:1BN 4:3UW 5:2QW -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=2 np=6/2/&?pp6 hand=1:3AR 2:2BW 3:1BW 4:3QR 5:3AN -> F5,F2,NP6
+direct-p styles=Affinity sp=true brave=None stage=2 np=/0/&?aqp hand=1:2BR 2:2BR 3:3AR 4:2UR 5:1QW -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=1 np=/0/&?aqp hand=1:2BW 2:3AW 3:3AN 4:1UWs 5:1AR -> F2,F3,F5
+direct-p styles=Affinity sp=true brave=None stage=0 np=/0/&?aqp hand=1:3BN 2:3AWs 3:3BR 4:3UR 5:2QN -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=2 np=5/0/&?5pp hand=1:1ANs 2:1BW 3:3QW 4:1AWs 5:2QW -> NP5,F3,F5
+direct-p styles=Affinity sp=true brave=None stage=0 np=5/0/&?5pp hand=1:1QN 2:1QNs 3:2BW 4:1QRs 5:2AW -> NP5,F3,F5
+direct-p styles=Affinity sp=true brave=None stage=2 np=5/0/&?5pp hand=1:3QW 2:3BN 3:2UR 4:3AR 5:2BR -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=2 np=45/1/&?p45 hand=1:2QN 2:1BN 3:3BW 4:1QN 5:1QW -> F1,NP4,NP5
+direct-p styles=Affinity sp=true brave=None stage=1 np=45/1/&?p45 hand=1:3QR 2:1AN 3:2BW 4:3AR 5:1UN -> EXIT()
+direct-p styles=Affinity sp=true brave=None stage=0 np=45/1/&?p45 hand=1:3ANs 2:2BN 3:1AN 4:2UR 5:1AN -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=/0/&?bpp hand=1:1AW 2:3QR 3:1QW 4:3QN 5:3UW -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=/0/&?bpp hand=1:1AN 2:2QW 3:1BW 4:2QR 5:1BW -> F3,F2,F4
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=/0/&?bpp hand=1:1UR 2:1UNs 3:2BW 4:3UW 5:2AR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=4/1/&?p4p hand=1:1BWs 2:1QW 3:1BW 4:1QR 5:1BN -> F3,NP4,F2
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=4/1/&?p4p hand=1:2BR 2:1QN 3:2AR 4:3BR 5:1BW -> F2,NP4,F5
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=4/1/&?p4p hand=1:1AWs 2:2AN 3:3QW 4:2QN 5:1BN -> F4,NP4,F2
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=/0/&?ppp hand=1:1BR 2:1QN 3:3QW 4:2AR 5:3AW -> F5,F3,F4
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=/0/&?ppp hand=1:1QR 2:1AW 3:2QW 4:2QW 5:1UR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=/0/&?ppp hand=1:2BW 2:2QW 3:3ARs 4:3BR 5:2UR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=6/2/&?pp6 hand=1:3AR 2:3AR 3:1AN 4:2BW 5:3BN -> F3,F1,NP6
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=6/2/&?pp6 hand=1:1AR 2:1QR 3:1AW 4:3BR 5:1QW -> F3,F1,NP6
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=6/2/&?pp6 hand=1:1BW 2:3UN 3:1QN 4:2AN 5:2QR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=/0/&?aqp hand=1:1QW 2:1BR 3:3QR 4:2BN 5:2AN -> F5,F1,F3
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=/0/&?aqp hand=1:3QR 2:3BR 3:1QRs 4:3AN 5:3AN -> F4,F1,F5
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=/0/&?aqp hand=1:1QR 2:2BR 3:2UWs 4:1QR 5:1BW -> F2,F1,F5
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=5/0/&?5pp hand=1:3QN 2:2QW 3:2AW 4:2QR 5:1BN -> NP5,F1,F3
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=5/0/&?5pp hand=1:2AN 2:2QWs 3:1ANs 4:1QN 5:2BR -> NP5,F1,F4
+direct-p styles=Affinity sp=true brave=WithNP stage=0 np=5/0/&?5pp hand=1:2AR 2:3QR 3:3AR 4:3QN 5:2UR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=45/1/&?p45 hand=1:2AW 2:1AN 3:3ARs 4:3BN 5:3QN -> F1,NP4,NP5
+direct-p styles=Affinity sp=true brave=WithNP stage=2 np=45/1/&?p45 hand=1:3AN 2:1AW 3:1UN 4:2QN 5:1UR -> EXIT()
+direct-p styles=Affinity sp=true brave=WithNP stage=1 np=45/1/&?p45 hand=1:1BR 2:2BN 3:1UR 4:3BN 5:1BR -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=/0/&?bpp hand=1:3UR 2:1AW 3:1QN 4:3AW 5:1AW -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=/0/&?bpp hand=1:2BN 2:1BR 3:2BR 4:1QW 5:2AW -> F1,F4,F5
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=/0/&?bpp hand=1:2BN 2:1QR 3:3BN 4:2QN 5:1QR -> F1,F3,F2
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=4/1/&?p4p hand=1:2BR 2:3UN 3:3AN 4:3QW 5:2AR -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=4/1/&?p4p hand=1:3AN 2:1AN 3:1BW 4:1QW 5:3QR -> F3,NP4,F4
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=4/1/&?p4p hand=1:1QR 2:1BW 3:1AWs 4:2QN 5:3AW -> F1,NP4,F4
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=/0/&?ppp hand=1:1BW 2:2AR 3:1QW 4:1QN 5:3AR -> F1,F3,F4
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=/0/&?ppp hand=1:3BR 2:1BN 3:1BN 4:1BN 5:3BN -> F2,F3,F4
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=/0/&?ppp hand=1:1BN 2:2AWs 3:3AW 4:3BN 5:3QW -> F5,F3,F1
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=6/2/&?pp6 hand=1:1BW 2:3AN 3:2AR 4:3AW 5:2QR -> F5,F4,NP6
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=6/2/&?pp6 hand=1:3QW 2:2BR 3:1QW 4:1QW 5:1QN -> F1,F3,NP6
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=6/2/&?pp6 hand=1:2BW 2:2QN 3:1AN 4:3QR 5:2AR -> F1,F3,NP6
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=/0/&?aqp hand=1:3AN 2:1QN 3:3BRs 4:2BR 5:3AN -> F1,F2,F5
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=/0/&?aqp hand=1:3UN 2:2BW 3:3AN 4:3QW 5:2QR -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=/0/&?aqp hand=1:2QN 2:2BW 3:1BR 4:1BR 5:2BR -> F2,F1,F3
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=5/0/&?5pp hand=1:2AN 2:2UW 3:3QW 4:3AW 5:1UW -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=1 np=5/0/&?5pp hand=1:1QW 2:2AN 3:1QR 4:2QN 5:2QN -> NP5,F1,F3
+direct-p styles=Affinity+Servant sp=false brave=None stage=0 np=5/0/&?5pp hand=1:2BW 2:2UN 3:2QN 4:3AN 5:2AW -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=45/1/&?p45 hand=1:3BW 2:2AR 3:1BW 4:1AW 5:1QN -> F1,NP4,NP5
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=45/1/&?p45 hand=1:3QW 2:3QW 3:1BR 4:3BR 5:2BW -> F4,NP4,NP5
+direct-p styles=Affinity+Servant sp=false brave=None stage=2 np=45/1/&?p45 hand=1:1BNs 2:1AW 3:1QN 4:3BN 5:3AWs -> F4,NP4,NP5
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=2 np=/0/&?bpp hand=1:3BR 2:1BR 3:2AN 4:1BRs 5:2BW -> F5,F1,F2
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?bpp hand=1:3BW 2:2AR 3:3BN 4:1QW 5:3QW -> F1,F4,F5
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?bpp hand=1:1QN 2:2QR 3:3AN 4:3BW 5:2QR -> F4,F1,F2
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=2 np=4/1/&?p4p hand=1:1BN 2:2QW 3:2BW 4:2QR 5:1AW -> F1,NP4,F3
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=2 np=4/1/&?p4p hand=1:3QW 2:3UR 3:2AR 4:2AR 5:1AN -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=4/1/&?p4p hand=1:3QR 2:2BW 3:1UW 4:2QN 5:2AW -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:3AW 2:2AR 3:3QN 4:1AW 5:3BW -> F3,F4,F1
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:3BW 2:3BN 3:3QN 4:3QNs 5:1QN -> F5,F3,F1
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?ppp hand=1:2QW 2:2AR 3:1UR 4:1QN 5:3AN -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=6/2/&?pp6 hand=1:1QN 2:2AR 3:2BR 4:1UN 5:1AN -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=6/2/&?pp6 hand=1:2QN 2:3BN 3:1QR 4:2QW 5:3BR -> F4,F2,NP6
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=6/2/&?pp6 hand=1:2QN 2:2AN 3:1ANs 4:3QW 5:3AR -> F4,F2,NP6
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=2 np=/0/&?aqp hand=1:3UN 2:3AW 3:1UN 4:2QR 5:2QN -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=/0/&?aqp hand=1:3BR 2:3BR 3:2QN 4:2AN 5:3QR -> F4,F3,F5
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=/0/&?aqp hand=1:3QN 2:3QN 3:2BRs 4:1BR 5:1AN -> F5,F1,F2
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=5/0/&?5pp hand=1:2QN 2:3BNs 3:3AR 4:2BR 5:2QN -> NP5,F1,F5
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=5/0/&?5pp hand=1:1UW 2:2BN 3:3URs 4:2QR 5:1AW -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=5/0/&?5pp hand=1:1BWs 2:2BW 3:1AW 4:1QN 5:3BN -> NP5,F4,F3
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=45/1/&?p45 hand=1:2BW 2:3QW 3:3QW 4:1AN 5:1UN -> EXIT()
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=1 np=45/1/&?p45 hand=1:2AR 2:3BW 3:3BR 4:2BW 5:2QN -> F5,NP4,NP5
+direct-p styles=Affinity+Servant sp=false brave=WithNP stage=0 np=45/1/&?p45 hand=1:1BN 2:1BR 3:1BW 4:3QR 5:3AN -> F3,NP4,NP5
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=/0/&?bpp hand=1:2QN 2:3QN 3:1UW 4:2AW 5:1QN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=/0/&?bpp hand=1:2AN 2:2AW 3:1BNs 4:2UR 5:2QR -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=/0/&?bpp hand=1:2QN 2:3UW 3:2QW 4:2QW 5:1BW -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=4/1/&?p4p hand=1:2QW 2:2QR 3:1BN 4:1UW 5:3AN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=4/1/&?p4p hand=1:2UN 2:1QR 3:3BW 4:3QN 5:1UW -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=4/1/&?p4p hand=1:2AN 2:1QN 3:2QW 4:3AN 5:1BR -> F4,NP4,F3
+direct-p styles=Affinity+Servant sp=true brave=None stage=2 np=/0/&?ppp hand=1:2BW 2:3QN 3:3AN 4:2BR 5:3AN -> F1,F4,F3
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=/0/&?ppp hand=1:3BR 2:3QW 3:2QN 4:2AN 5:1BN -> F2,F1,F4
+direct-p styles=Affinity+Servant sp=true brave=None stage=2 np=/0/&?ppp hand=1:2AR 2:1QN 3:2QN 4:3BW 5:3BW -> F4,F5,F1
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=6/2/&?pp6 hand=1:3AWs 2:3BR 3:3BN 4:3UR 5:3AN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=6/2/&?pp6 hand=1:1AW 2:3BNs 3:3BR 4:3AW 5:2AR -> F1,F4,NP6
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=6/2/&?pp6 hand=1:2QW 2:1AWs 3:2QW 4:2BR 5:3UR -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=/0/&?aqp hand=1:1BN 2:2BW 3:2AN 4:2AW 5:1QR -> F4,F5,F2
+direct-p styles=Affinity+Servant sp=true brave=None stage=2 np=/0/&?aqp hand=1:3QW 2:3QRs 3:1BR 4:3QN 5:2QW -> F3,F1,F4
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=/0/&?aqp hand=1:2BN 2:3AW 3:1AW 4:1BW 5:3BR -> F2,F5,F1
+direct-p styles=Affinity+Servant sp=true brave=None stage=2 np=5/0/&?5pp hand=1:1QW 2:2BW 3:1QRs 4:3QN 5:3AW -> NP5,F2,F5
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=5/0/&?5pp hand=1:3UR 2:1BN 3:3UN 4:1QN 5:2QN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=5/0/&?5pp hand=1:1BN 2:1AW 3:1BN 4:2QNs 5:2QR -> NP5,F5,F2
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=45/1/&?p45 hand=1:1AN 2:2AR 3:1AW 4:2BR 5:2AN -> F3,NP4,NP5
+direct-p styles=Affinity+Servant sp=true brave=None stage=0 np=45/1/&?p45 hand=1:2UR 2:3QWs 3:2AN 4:2AN 5:2QW -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=None stage=1 np=45/1/&?p45 hand=1:2BN 2:2AR 3:3QW 4:2QRs 5:3AN -> F3,NP4,NP5
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=/0/&?bpp hand=1:3BN 2:3AR 3:1QR 4:2AW 5:1QN -> F1,F2,F4
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=/0/&?bpp hand=1:2AR 2:3AN 3:3AR 4:1BW 5:1BR -> F4,F5,F2
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=/0/&?bpp hand=1:1AN 2:1AW 3:3QN 4:1AW 5:3BN -> F5,F3,F2
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=4/1/&?p4p hand=1:1BN 2:2QN 3:2QR 4:1ANs 5:3BN -> F5,NP4,F1
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=4/1/&?p4p hand=1:2QR 2:1QR 3:1AWs 4:2QRs 5:1QR -> F2,NP4,F5
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=4/1/&?p4p hand=1:1BR 2:2QN 3:2BW 4:2BW 5:1QR -> F5,NP4,F2
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=/0/&?ppp hand=1:1AW 2:2BW 3:2QR 4:1QR 5:3QR -> F2,F1,F5
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=/0/&?ppp hand=1:2BN 2:3UN 3:2AW 4:2QR 5:2AN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=/0/&?ppp hand=1:2QW 2:2QR 3:2BR 4:3QW 5:1UR -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=6/2/&?pp6 hand=1:1AW 2:1QN 3:1BN 4:1AR 5:1BW -> F2,F1,NP6
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=6/2/&?pp6 hand=1:1AN 2:2UW 3:2UN 4:1QR 5:1BWs -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=6/2/&?pp6 hand=1:1AR 2:2UW 3:3QW 4:1AW 5:1QR -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=/0/&?aqp hand=1:3QW 2:1AR 3:1QR 4:2BN 5:1UR -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=/0/&?aqp hand=1:2QW 2:3AW 3:3AN 4:1QNs 5:2BW -> F2,F1,F3
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=/0/&?aqp hand=1:3QR 2:3AR 3:1AW 4:2UN 5:2AN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=5/0/&?5pp hand=1:3AR 2:3UNs 3:2QN 4:2BN 5:1AN -> NP5,F1,F4
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=5/0/&?5pp hand=1:2AW 2:3BR 3:2BR 4:2QR 5:1AR -> NP5,F2,F3
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=5/0/&?5pp hand=1:1QR 2:2BR 3:2BW 4:2QN 5:2QN -> NP5,F1,F4
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=2 np=45/1/&?p45 hand=1:1UW 2:1BW 3:2AR 4:1QW 5:3QN -> EXIT()
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=0 np=45/1/&?p45 hand=1:2QW 2:1BR 3:3BW 4:2BW 5:3QW -> F3,NP4,NP5
+direct-p styles=Affinity+Servant sp=true brave=WithNP stage=1 np=45/1/&?p45 hand=1:1AN 2:3AR 3:2BW 4:2UN 5:2BN -> EXIT()
