@@ -346,6 +346,31 @@ private fun timing(micros: List<Long>): JSONObject {
     return JSONObject().put("calls", sorted.size).put("medianUs", rank(0.5)).put("p90Us", rank(0.9)).put("maxUs", sorted.last())
 }
 
+/**
+ * CPU time of the calling thread, in microseconds, from Debug.threadCpuTimeNanos (the thread's
+ * CLOCK_THREAD_CPUTIME_ID clock, read in nanoseconds; -1 where the platform does not support it).
+ * Beside the wall time it lets two builds be compared on a device whose host is busy (design 0026
+ * PR D): other processes take wall time from a read but not the reading thread's CPU time.
+ */
+private class ThreadCpu {
+    private val micros = mutableListOf<Long>()
+    private var unsupported = false
+
+    fun <T> measure(block: () -> T): T {
+        val start = Debug.threadCpuTimeNanos()
+        val result = block()
+        val end = Debug.threadCpuTimeNanos()
+        if (start < 0 || end < 0) unsupported = true else micros += (end - start) / 1000
+        return result
+    }
+
+    fun report(): JSONObject = if (unsupported) {
+        JSONObject().put("unsupported", "Debug.threadCpuTimeNanos returned -1")
+    } else {
+        timing(micros).put("clock", "Debug.threadCpuTimeNanos, calling thread only, nanosecond reads")
+    }
+}
+
 private fun tesseractBaseline(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
     val samples = samples(runner, case.getString("samples"))
     val readings = mutableListOf<JSONObject>()
@@ -425,6 +450,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
     val engineMicros = mutableListOf<Long>()
     val texts = mutableListOf<String?>()
     val callMicros = mutableListOf<Long>()
+    val callCpu = ThreadCpu()
     val differing = JSONArray()
     val errors = JSONArray()
     var differingCount = 0
@@ -436,7 +462,7 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
             threadsAround += processThreads()
             for (sample in samples) {
                 val started = System.nanoTime()
-                val result = engine.read(sample.gray, sample.width, sample.height, allowed)
+                val result = callCpu.measure { engine.read(sample.gray, sample.width, sample.height, allowed) }
                 callMicros += (System.nanoTime() - started) / 1000
                 if (!result.startsWith("OK: ")) {
                     texts += null
@@ -476,6 +502,8 @@ private fun engineRecognise(runner: SupportDeviceTestRunner, case: JSONObject, e
         // Inside Rust around recognize only; the JNI figure adds the array copy and the string round trip.
         .put("perCrop", timing(engineMicros))
         .put("perJniCall", timing(callMicros))
+        // Pool threads (ONNX Runtime's default intra-op threads, tract-threads) are not counted.
+        .put("perJniCallThreadCpu", callCpu.report())
     for ((key, value) in engine.extra(load, threadsAround)) report.put(key, value)
     // summary-ocrProbe.md lists only failed cases, so the count is logged for passing ones too.
     // Issue #549: an observation case confirms a PC count on the device. Its minEqual is that PC
@@ -775,12 +803,13 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
     var bothNothing = 0
     rustReaderReads.clear()
     rustReaderPassed = false
+    val fieldCpu = ThreadCpu()
     val load = try {
         okJson("ocrLoad", NativeProbe.ocrLoad(model.path)).also {
             for ((row, sample) in rows.zip(samples)) {
                 val file = row.getString("file")
                 val started = System.nanoTime()
-                val result = NativeProbe.supportScoreRead(sample.gray, sample.width, sample.height)
+                val result = fieldCpu.measure { NativeProbe.supportScoreRead(sample.gray, sample.width, sample.height) }
                 val callUs = (System.nanoTime() - started) / 1000
                 if (!result.startsWith("OK: ")) {
                     errorCount++
@@ -857,6 +886,7 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         "false accepts +62 ${tallied("falseAccepts62")} +16 ${tallied("falseAccepts16")}, " +
         "class value equal ${tallied("classValueEqual")} of ${tallied("classLabels")} wrong ${tallied("classWrong")}, " +
         "time per field median ${perField.opt("medianUs")} us p90 ${perField.opt("p90Us")} us max ${perField.opt("maxUs")} us, " +
+        "thread CPU per field ${fieldCpu.report().let { "median ${it.opt("medianUs")} us p90 ${it.opt("p90Us")} us" }}, " +
         "Kotlin stage 0 same value $sameValue, both nothing $bothNothing, differ $differenceCount, ERR $errorCount")
     val report = JSONObject()
         .put("note", "supportScoreRead on the recogniser ocrLoad loaded (the reader width minWidth, one thread, as the product engine) with the default ScoreConfig; perField is the whole JNI call from Kotlin, perFieldRust is inside Rust around recognise, pixel checks and rules")
@@ -864,6 +894,7 @@ private fun rustReader(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         .put("loadMs", load.getLong("loadMs"))
         .put("minWidth", load.getInt("minWidth"))
         .put("perField", perField)
+        .put("perFieldThreadCpu", fieldCpu.report())
         .put("perFieldRust", timing(engineMicros))
         .put("perFieldByServer", JSONObject().apply { for ((server, list) in byServer) put(server, timing(list)) })
         .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62"))
@@ -1034,6 +1065,7 @@ private fun rustEngine(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         .put("memory", JSONArray(readings))
     reads.putInto(report, minRead62, minRead16)
     Log.i(TAG, "rust-engine: ${reads.summary()}, load ${engine.loadMillis} ms, per field median ${timingReport.opt("medianUs")} us p90 ${timingReport.opt("p90Us")} us max ${timingReport.opt("maxUs")} us, " +
+        "thread CPU per field ${reads.perFieldCpu.report().let { "median ${it.opt("medianUs")} us p90 ${it.opt("p90Us")} us" }}, " +
         "memory ${readings.joinToString { "${it.getString("point")} rss ${it.opt("vmRssKb")} hwm ${it.opt("vmHwmKb")} heap ${it.opt("javaHeapKb")} native ${it.opt("nativeHeapKb")}" }}, " +
         "peaks during load $loadPeaks, hwmReset $hwmReset, model copy before $copyBefore after $copyAfter")
     reads.failure(rows.size, minRead62, minRead16)?.let { throw AssertionError("rust-engine: $it. $report") }
@@ -1051,6 +1083,7 @@ private class EngineReads {
     val pixelMismatch = mutableListOf<String>()
     val fieldMismatch = mutableListOf<String>()
     val perField = mutableListOf<Long>()
+    val perFieldCpu = ThreadCpu()
     val perFieldRust = mutableListOf<Long>()
     val reasons = mutableMapOf<String, Int>()
     var compared = 0
@@ -1058,6 +1091,7 @@ private class EngineReads {
     fun putInto(report: JSONObject, minRead62: Int, minRead16: Int) {
         report.put("compared", compared)
             .put("perField", timing(perField))
+            .put("perFieldThreadCpu", perFieldCpu.report())
             .put("rustReaderPerFieldRust", timing(perFieldRust))
             .put("plus62", JSONObject().put("positives", tallied("positives62")).put("read", tallied("read62")).put("minRead62", minRead62))
             .put("plus16", JSONObject().put("positives", tallied("positives16")).put("read", tallied("read16")).put("minRead16", minRead16))
@@ -1105,7 +1139,7 @@ private fun EngineReads.readSamples(runner: SupportDeviceTestRunner, dir: String
                             val first = gray?.indices?.firstOrNull { it >= reference.gray.size || gray[it] != reference.gray[it] }
                             pixelMismatch += "$file ${pattern.width}x${pattern.height}" + if (gray == null) " not gray" else " first differing byte $first"
                         }
-                        engine.read(pattern)
+                        perFieldCpu.measure { engine.read(pattern) }
                     }
                 }
             }.also { api.checkCoverage() }
