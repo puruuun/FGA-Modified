@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
-"""Checks whether an APK carries the Rust engine, in the mode the caller names (design 0026, D-8).
+"""Checks what an APK carries, in the mode the caller names (design 0026, D-8 and PR C).
 
-  apk_check.py absent APK...    every APK is a readable zip without a libfga_ffi.so entry and
-                                without an .onnx entry (a build without the engine: Main CI's ci APK).
-  apk_check.py present APK...   every APK holds each entry of app/engine-apk-entries.txt, the list
-                                that the build's checkEngineApk<V> reads too (libfga_ffi.so for both
-                                shipped ABIs, the pinned OCR model, its pin file, its notice and the
-                                third-party notices), and its arm64-v8a library is 16 KB page
-                                aligned: a 64-bit little-endian ELF file whose every LOAD segment is
-                                aligned to a non-zero multiple of 0x4000 and, when the library is
-                                stored uncompressed, whose data starts at a 16 KB boundary of the APK
-                                (the beta, the rust APK and the stable ci APK built with
-                                -Pfga.native=true).
+  apk_check.py absent APK...    every APK is a readable zip without the Rust engine (no libfga_ffi.so
+                                entry, no .onnx entry) and without the support score scan (below):
+                                Main CI's ci APK, and the emergency builds without the engine.
+  apk_check.py stable APK...    every APK carries the engine (below) and not the score scan: the
+                                stable ci APK built with -Pfga.native=true.
+  apk_check.py beta APK...      every APK carries the engine and the score scan: the beta and the
+                                rust APK.
+
+Carrying the engine: the APK holds each entry of app/engine-apk-entries.txt, the list that the
+build's checkEngineApk<V> reads too (libfga_ffi.so for both shipped ABIs, the pinned OCR model, its
+pin file, its notice and the third-party notices), and its arm64-v8a library is 16 KB page aligned:
+a 64-bit little-endian ELF file whose every LOAD segment is aligned to a non-zero multiple of 0x4000
+and, when the library is stored uncompressed, whose data starts at a 16 KB boundary of the APK.
+
+The score scan (app/src/scoreScan) is found by two markers that survive R8, each in its own place:
+its string resources by name in the key pool of resources.arsc (the builds do not shrink or rename
+resources), and its code by the folder name it writes to (ScoreScanLog.ROOT, a constant inlined
+into the scan's classes) in the string pool of a classes*.dex file; R8 renames the classes, so a
+class name is no marker. An APK carries the scan when both markers are there and does not carry it
+when neither is; one without the other is a failure in every mode.
 
 There is no default mode: an APK checked for the wrong kind of build must fail, not pass. A missing
-argument, an unknown mode or an unreadable file fails: an error never counts as a pass. A 32-bit,
-big-endian or truncated arm64-v8a library fails with a message that names it, not with a traceback.
+argument, an unknown mode or an unreadable file fails: an error never counts as a pass, so a
+resources.arsc or a dex file that cannot be read fails too. A 32-bit, big-endian or truncated
+arm64-v8a library fails with a message that names it, not with a traceback.
 """
 import os
 import struct
@@ -28,6 +38,16 @@ PAGE = 0x4000
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 PIN = os.path.join(ROOT, 'native', 'ocr-model', 'model.properties')
 ENTRIES = os.path.join(ROOT, 'app', 'engine-apk-entries.txt')
+# app/src/scoreScan/res/values/strings.xml: the launcher entry's label and the scan's result text.
+SCAN_RESOURCES = ('support_score_scan', 'support_score_scan_result')
+# ScoreScanLog.ROOT in scripts/.../supportSelection/SupportScoreScanLog.kt.
+SCAN_DEX_STRING = b'support-score-scan'
+MODES = ('absent', 'stable', 'beta')
+
+RES_STRING_POOL = 0x0001
+RES_TABLE = 0x0002
+RES_TABLE_PACKAGE = 0x0200
+UTF8_FLAG = 0x100
 
 
 def forbidden_entries(names):
@@ -123,6 +143,145 @@ def data_offset(path, info):
     return info.header_offset + 30 + name_len + extra_len
 
 
+def chunk_header(data, offset, end):
+    """(type, header size, size) of the resource chunk at offset, checked to lie within end."""
+    if offset + 8 > end:
+        raise ValueError('chunk header at %d out of range' % offset)
+    kind, header_size, size = struct.unpack_from('<HHI', data, offset)
+    if header_size < 8 or size < header_size or offset + size > end:
+        raise ValueError('chunk at %d has a bad size' % offset)
+    return kind, header_size, size
+
+
+def string_pool(data, offset):
+    """The strings of the ResStringPool chunk at offset (UTF-8 or UTF-16)."""
+    kind, header_size, size = chunk_header(data, offset, len(data))
+    if kind != RES_STRING_POOL or header_size < 28:
+        raise ValueError('no string pool at %d' % offset)
+    count, _, flags, strings_start, _ = struct.unpack_from('<IIIII', data, offset + 8)
+    end = offset + size
+    index = offset + header_size
+    if index + 4 * count > end:
+        raise ValueError('string pool offsets out of range')
+    base = offset + strings_start
+    out = []
+    for i in range(count):
+        at = base + struct.unpack_from('<I', data, index + 4 * i)[0]
+        if flags & UTF8_FLAG:
+            # Two lengths, each one byte, or two with the high bit set: UTF-16 units, then bytes.
+            for _ in range(2):
+                if at >= end:
+                    raise ValueError('string %d out of range' % i)
+                n = data[at]
+                at += 1
+                if n & 0x80:
+                    if at >= end:
+                        raise ValueError('string %d out of range' % i)
+                    n = ((n & 0x7f) << 8) | data[at]
+                    at += 1
+            raw = data[at:at + n]
+            if at + n > end:
+                raise ValueError('string %d out of range' % i)
+            out.append(raw.decode('utf-8', 'replace'))
+        else:
+            if at + 2 > end:
+                raise ValueError('string %d out of range' % i)
+            n, = struct.unpack_from('<H', data, at)
+            at += 2
+            if n & 0x8000:
+                if at + 2 > end:
+                    raise ValueError('string %d out of range' % i)
+                n = ((n & 0x7fff) << 16) | struct.unpack_from('<H', data, at)[0]
+                at += 2
+            if at + 2 * n > end:
+                raise ValueError('string %d out of range' % i)
+            out.append(data[at:at + 2 * n].decode('utf-16-le', 'replace'))
+    return out
+
+
+def resource_names(arsc):
+    """Every resource entry name (the key pools of every package) of a resources.arsc file."""
+    kind, header_size, size = chunk_header(arsc, 0, len(arsc))
+    if kind != RES_TABLE:
+        raise ValueError('not a resource table')
+    names = set()
+    packages = 0
+    offset = header_size
+    while offset < size:
+        kind, _, chunk_size = chunk_header(arsc, offset, size)
+        if kind == RES_TABLE_PACKAGE:
+            # ResTable_package: header (8), id (4), name (256), typeStrings, lastPublicType, keyStrings.
+            if offset + 280 > size:
+                raise ValueError('package header out of range')
+            key_strings, = struct.unpack_from('<I', arsc, offset + 8 + 4 + 256 + 8)
+            names.update(string_pool(arsc[:offset + chunk_size], offset + key_strings))
+            packages += 1
+        offset += chunk_size
+    if not packages:
+        raise ValueError('no package in the resource table')
+    return names
+
+
+def uleb128(data, at):
+    value = shift = 0
+    while True:
+        if at >= len(data) or shift > 28:
+            raise ValueError('bad uleb128 at %d' % at)
+        b = data[at]
+        at += 1
+        value |= (b & 0x7f) << shift
+        if not b & 0x80:
+            return value, at
+        shift += 7
+
+
+def dex_strings(dex):
+    """The raw (MUTF-8) bytes of every string_ids entry of a dex file."""
+    if len(dex) < 0x70 or dex[:4] != b'dex\n':
+        raise ValueError('not a dex file')
+    count, ids = struct.unpack_from('<II', dex, 0x38)
+    if ids + 4 * count > len(dex):
+        raise ValueError('string ids out of range')
+    out = []
+    for i in range(count):
+        at, = struct.unpack_from('<I', dex, ids + 4 * i)
+        _, at = uleb128(dex, at)
+        end = dex.find(b'\0', at)
+        if end < 0:
+            raise ValueError('string %d is not terminated' % i)
+        out.append(dex[at:end])
+    return out
+
+
+def scan_markers(z):
+    """(string resources found, whether the dex marker was found) of an open APK."""
+    names = set(z.namelist())
+    if 'resources.arsc' not in names:
+        raise ValueError('no resources.arsc')
+    keys = resource_names(z.read('resources.arsc'))
+    dexes = sorted(n for n in names if '/' not in n and n.startswith('classes') and n.endswith('.dex'))
+    if not dexes:
+        raise ValueError('no classes*.dex')
+    in_dex = any(SCAN_DEX_STRING in dex_strings(z.read(n)) for n in dexes)
+    return [r for r in SCAN_RESOURCES if r in keys], in_dex
+
+
+def check_scan(path, z, wanted):
+    try:
+        resources, in_dex = scan_markers(z)
+    except Exception as e:  # an unreadable marker place proves neither presence nor absence
+        return ['%s: cannot look for the support score scan: %s: %s' % (path, type(e).__name__, e)]
+    found = ['string resource %s' % r for r in resources]
+    if in_dex:
+        found.append('dex string %s' % SCAN_DEX_STRING.decode())
+    if wanted:
+        missing = ['string resource %s' % r for r in SCAN_RESOURCES if r not in resources]
+        if not in_dex:
+            missing.append('dex string %s' % SCAN_DEX_STRING.decode())
+        return ['%s: lacks the support score scan\'s %s' % (path, m) for m in missing]
+    return ['%s: contains the support score scan\'s %s' % (path, f) for f in found]
+
+
 def check_absent(path, z):
     return ['%s: contains %s' % (path, n) for n in forbidden_entries(z.namelist())]
 
@@ -152,15 +311,15 @@ def check_apk(path, mode, required=None):
     try:
         with zipfile.ZipFile(path) as z:
             if mode == 'absent':
-                return check_absent(path, z)
-            return check_present(path, z, required)
+                return check_absent(path, z) + check_scan(path, z, False)
+            return check_present(path, z, required) + check_scan(path, z, mode == 'beta')
     except Exception as e:
         return ['%s: not a readable zip (%s: %s)' % (path, type(e).__name__, e)]
 
 
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ('absent', 'present'):
-        print('apk_check: FAIL: the first argument must be the mode, absent or present', file=sys.stderr)
+    if len(argv) < 2 or argv[1] not in MODES:
+        print('apk_check: FAIL: the first argument must be the mode, one of %s' % ', '.join(MODES), file=sys.stderr)
         return 1
     mode = argv[1]
     paths = argv[2:]
@@ -168,7 +327,7 @@ def main(argv):
         print('apk_check: FAIL: no APK path given', file=sys.stderr)
         return 1
     model = required = None
-    if mode == 'present':
+    if mode != 'absent':
         try:
             model = pinned_model()
             required = required_entries(model)
@@ -181,11 +340,14 @@ def main(argv):
     for line in problems:
         print('apk_check: FAIL: ' + line)
     if not problems:
+        scan = ('with the support score scan (string resources %s, dex string %s)'
+                % (', '.join(SCAN_RESOURCES), SCAN_DEX_STRING.decode())) if mode == 'beta' \
+            else 'without the support score scan'
         if mode == 'absent':
-            print('apk_check: %d APK(s) without %s or a %s model' % (len(paths), LIBRARY, MODEL_EXTENSION))
+            print('apk_check: %d APK(s) without %s or a %s model, %s' % (len(paths), LIBRARY, MODEL_EXTENSION, scan))
         else:
             print('apk_check: %d APK(s) with the %d entries of app/engine-apk-entries.txt (%s); '
-                  'arm64-v8a 16 KB aligned' % (len(paths), len(required), model))
+                  'arm64-v8a 16 KB aligned; %s' % (len(paths), len(required), model, scan))
     return 1 if problems else 0
 
 

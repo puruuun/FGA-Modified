@@ -1,4 +1,4 @@
-package io.github.fate_grand_automata.rusttest
+package io.github.fate_grand_automata.scorescan
 
 import android.content.Context
 import android.os.Build
@@ -27,8 +27,9 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * Issue #568, rust build type only (this source set): the owner's support score scan, offered
- * on the support selection screen next to the support image maker.
+ * Issue #568 and design 0026 PR C: the owner's support score scan, offered on the support selection
+ * screen next to the support image maker. Only the beta and rust build types compile this source set
+ * (scoreScan in app/build.gradle.kts), and only while they carry the engine.
  */
 class SupportScoreScanScript @Inject constructor() : OwnerTestScript {
     override fun offeredFor(mode: ScriptModeEnum) = mode == ScriptModeEnum.SupportImageMaker

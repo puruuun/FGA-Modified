@@ -252,6 +252,53 @@ class EngineFirstSupportScoreReaderTest {
         assertThat(record.json).contains("\"engine\":null")
     }
 
+    private fun fieldAt(y: Int, height: Int = 30): Pair<SupportBounds, Pattern> {
+        val at = SupportBounds(Region(76, y, 2356, 428))
+        val cut = mockk<Pattern>(relaxed = true)
+        every { cut.width } returns 60
+        every { cut.height } returns height
+        every { with(api) { SupportScoreLayout.numberRegion(at.region).getPattern(EngineFirstSupportScoreReader.FIELD_TAG) } } returns cut
+        return at to cut
+    }
+
+    @Test
+    fun `a row at bounds y 1056 is read by the engine`() {
+        val (at, cut) = fieldAt(1056)
+        val engine = FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }
+        val existing = Existing()
+        assertThat(reader(engine, existing).read(at, true, true, 1, 2)).isEqualTo(SupportScores(62, 16, SupportScoreDisplay.Compound))
+        assertThat(engine.reads).containsExactly(cut)
+        assertThat(existing.calls).isEmpty()
+    }
+
+    @Test
+    fun `a row under the bottom band never reaches the engine and the existing reader answers once`() {
+        for (y in listOf(1058, 1064, 1070)) {
+            val (at, cut) = fieldAt(y)
+            val engine = FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }
+            val existing = Existing(SupportScores(62, 16, SupportScoreDisplay.Compound))
+            assertThat(reader(engine, existing).read(at, true, true, 1, 2), "$y").isSameInstanceAs(existing.answer)
+            assertThat(engine.reads, "$y").isEmpty()
+            assertThat(existing.calls, "$y").containsExactly(listOf(at, true, true, 1, 2))
+            verify(exactly = 1) { cut.close() }
+        }
+    }
+
+    @Test
+    fun `the bottom-band fallback is recorded with its own reason, apart from the field size`() {
+        val diagnostics = Recording(true)
+        val reader = reader(FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }, Existing(), diagnostics)
+        reader.read(fieldAt(1058).first, true, true, 1, 2)
+        reader.read(fieldAt(1100, height = 20).first, true, true, 1, 3)
+        val (band, size) = diagnostics.records
+        assertThat(band.images).isEqualTo(emptyMap())
+        assertThat(band.json).contains("\"answeredBy\":\"kotlin\"")
+        assertThat(band.json).contains("\"rowY1440\":1058")
+        assertThat(band.json).contains("\"fallback\":{\"why\":\"bottomBand\",\"recognisedEndY1440\":1420,\"bandTopY1440\":1418}")
+        assertThat(band.json).contains("\"engine\":null")
+        assertThat(size.json).contains("\"fallback\":{\"why\":\"fieldSize\",\"size\":[60,20]}")
+    }
+
     @Test
     fun `diagnostics stop at the existing reader's cap`() {
         val diagnostics = Recording(true)

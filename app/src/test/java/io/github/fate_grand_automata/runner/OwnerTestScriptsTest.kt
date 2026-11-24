@@ -63,11 +63,20 @@ class OwnerTestScriptsTest {
         assertEquals(emptyList(), holder.scripts)
     }
 
-    @Test fun `this build compiles none of the rust build type's scan classes`() {
+    @Test fun `this build compiles none of the scan classes of the beta and rust build types`() {
         assertFalse(BuildConfig.SCORE_SCAN)
         for (name in listOf("SupportScoreScanScript", "HolderScoreScanNativeFrames", "SupportScoreScanModule")) {
-            val found = runCatching { Class.forName("io.github.fate_grand_automata.rusttest.$name") }.isSuccess
+            val found = runCatching { Class.forName("io.github.fate_grand_automata.scorescan.$name") }.isSuccess
             assertFalse(found, name)
+        }
+    }
+
+    @Test fun `this build has none of the scan's strings`() {
+        val strings = Class.forName("io.github.fate_grand_automata.R\$string")
+        fun has(name: String) = runCatching { strings.getField(name) }.isSuccess
+        assertTrue(has("p_script_mode_support_image_maker"))
+        for (name in listOf("support_score_scan", "support_score_scan_result", "support_score_scan_reason_engine_unavailable")) {
+            assertFalse(has(name), name)
         }
     }
 

@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 
 /**
  * Issue #600: the support score scan maps its 720p fields into a full-display frame with the geometry
- * ScreenshotServiceHolder captures with (the rust build's HolderScoreScanNativeFrames calls the same
+ * ScreenshotServiceHolder captures with (the beta and rust builds' HolderScoreScanNativeFrames calls the same
  * [ScoreScanNativeMap.of]). Checked against the script's own transform to screen pixels, which is a
  * separate path through the game area.
  */

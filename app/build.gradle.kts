@@ -790,7 +790,7 @@ val ocrModelFileName: String = Properties().apply {
     rootProject.file("native/ocr-model/model.properties").inputStream().use { load(it) }
 }.getProperty("file")?.trim() ?: throw GradleException("native/ocr-model/model.properties has no file")
 // app/engine-apk-entries.txt is the one list of what a carrying APK holds; tools/ci/apk_check.py
-// present reads the same file, so the build's check and the release check cannot disagree.
+// stable and beta read the same file, so the build's check and the release check cannot disagree.
 val engineApkEntries: List<String> = run {
     val listFile = layout.projectDirectory.file("engine-apk-entries.txt").asFile
     val abis = mutableListOf<String>()
@@ -889,22 +889,34 @@ if (engineRegistered) {
 }
 
 /*
- * Design 0026, D-6: two flags with one meaning each, both from carriesEngine. NATIVE_READER: this
- * variant packages the engine, so the support selection gets the real engine
- * (SupportScoreEngineBinding.kt). SCORE_SCAN: this variant offers the owner's support score scan;
- * the rust build type only for now (the beta follows in PR C of the design).
+ * Design 0026, D-6 and PR C: two flags with one meaning each. NATIVE_READER: this variant packages
+ * the engine, so the support selection gets the real engine (SupportScoreEngineBinding.kt).
+ * SCORE_SCAN: this variant offers the owner's support score scan, and only such a variant compiles
+ * the scan's code, strings and Hilt bindings (src/scoreScan, added to the variant here, so the flag
+ * and the code cannot disagree). The beta and rust build types only (owner, 2026-11-21: KR samples
+ * from the beta, nothing of it in the stable ci APK, also with -Pfga.native=true), and only while
+ * they carry the engine: the scan stops at once without it (SupportScoreScanner, EngineUnavailable),
+ * so the emergency beta built with -Pfga.native=false has no entry rather than one that cannot run.
+ * tools/ci/apk_check.py checks the built APKs for the scan's markers.
  */
+val scoreScanBuildTypes = setOf("beta", "rust")
+fun offersScoreScan(buildType: String?): Boolean = carriesEngine(buildType) && buildType in scoreScanBuildTypes
 androidComponents {
     onVariants { variant ->
         val carries = carriesEngine(variant.buildType)
+        val scoreScan = offersScoreScan(variant.buildType)
         variant.buildConfigFields?.put(
             "NATIVE_READER",
             com.android.build.api.variant.BuildConfigField("boolean", carries.toString(), "the variant packages the Rust engine"),
         )
         variant.buildConfigFields?.put(
             "SCORE_SCAN",
-            com.android.build.api.variant.BuildConfigField("boolean", (carries && variant.buildType == "rust").toString(), "the owner's support score scan is offered"),
+            com.android.build.api.variant.BuildConfigField("boolean", scoreScan.toString(), "the owner's support score scan is offered"),
         )
+        if (scoreScan) {
+            variant.sources.java?.addStaticSourceDirectory("src/scoreScan/java")
+            variant.sources.res?.addStaticSourceDirectory("src/scoreScan/res")
+        }
     }
 }
 

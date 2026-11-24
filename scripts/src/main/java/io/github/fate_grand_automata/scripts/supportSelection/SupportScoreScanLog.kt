@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.util.Locale
 
 /**
- * Where the support score scan (issue #568, the rust build type only) keeps its folders. One folder
+ * Where the support score scan (issue #568, the beta and rust build types only) keeps its folders. One folder
  * per scan; the format is in docs/agents/rust-native.md, "Rust test APK".
  */
 interface ScoreScanStorage {
@@ -119,7 +119,10 @@ private fun File.usableSpaceOfExistingParent(): Long {
     return dir?.usableSpace ?: 0L
 }
 
-/** One row as both readers saw it. */
+/**
+ * One row as both readers saw it. [rust] is null exactly when the scan did not give the field to the
+ * engine, and [notAsked] then says why.
+ */
 data class ScoreScanRecord(
     val time: Long,
     val server: String,
@@ -131,9 +134,15 @@ data class ScoreScanRecord(
     val kotlin: SupportScores,
     val kotlinCheckGrand: Boolean,
     val kotlinMicros: Long,
-    val rust: EngineScore,
+    val rust: EngineScore?,
+    val notAsked: EngineFieldRefusal? = null,
 ) {
-    val agree: Boolean get() = ScoreScanLog.agree(kotlin, rust)
+    init {
+        require((rust == null) == (notAsked != null)) { "a row has an engine answer or a reason it has none" }
+    }
+
+    /** Null when the engine was not asked: there is nothing to compare. */
+    val agree: Boolean? get() = rust?.let { ScoreScanLog.agree(kotlin, it) }
 }
 
 /**
@@ -189,6 +198,9 @@ class ScoreScanTally {
     var kotlinOnly = 0; private set
     var rustOnly = 0; private set
     var bothUnknown = 0; private set
+
+    /** Rows the engine was not given (issue #657); they are in neither [agree] nor [differ]. */
+    var notAsked = 0; private set
     var kotlinClass62 = 0; private set
     var rustClass62 = 0; private set
     var kotlinGrand16 = 0; private set
@@ -198,20 +210,25 @@ class ScoreScanTally {
 
     fun add(record: ScoreScanRecord) {
         rows++
-        if (record.agree) agree++ else differ++
+        if (record.kotlin.classScore == 62) kotlinClass62++
+        if (record.kotlin.grandScore == 16) kotlinGrand16++
+        kotlinMicros += record.kotlinMicros
+        val rust = record.rust
+        if (rust == null) {
+            notAsked++
+            return
+        }
+        if (record.agree == true) agree++ else differ++
         val kotlinRead = record.kotlin.classScore != null || record.kotlin.grandScore != null
-        val rustRead = record.rust.classScore.valueOrNull != null || record.rust.grandScore.valueOrNull != null
+        val rustRead = rust.classScore.valueOrNull != null || rust.grandScore.valueOrNull != null
         when {
             kotlinRead && !rustRead -> kotlinOnly++
             rustRead && !kotlinRead -> rustOnly++
             !kotlinRead && !rustRead -> bothUnknown++
         }
-        if (record.kotlin.classScore == 62) kotlinClass62++
-        if (record.rust.classScore.valueOrNull == 62) rustClass62++
-        if (record.kotlin.grandScore == 16) kotlinGrand16++
-        if (record.rust.grandScore.valueOrNull == 16) rustGrand16++
-        kotlinMicros += record.kotlinMicros
-        record.rust.engineTime?.let { rustMicros += it.inWholeMicroseconds }
+        if (rust.classScore.valueOrNull == 62) rustClass62++
+        if (rust.grandScore.valueOrNull == 16) rustGrand16++
+        rust.engineTime?.let { rustMicros += it.inWholeMicroseconds }
     }
 }
 
@@ -232,8 +249,14 @@ data class ScoreScanSummary(
 )
 
 object ScoreScanLog {
-    /** Every schema 2 line has a `kind`; schema 1 lines have none and are all rows. */
-    const val SCHEMA = 2
+    /**
+     * Every line from schema 2 on has a `kind`; schema 1 lines have none and are all rows. Schema 3
+     * (issue #657) adds the row whose field the engine was not given: `rust.status` `not_asked`,
+     * `agree` null, and the summary's `counts.notAsked`. A new version because a schema 2 reader
+     * may take every row's `rust` part for an engine answer and count every row as agree or differ.
+     */
+    const val SCHEMA = 3
+    const val NOT_ASKED = "not_asked"
     const val KIND_ROW = "row"
     const val KIND_NATIVE = "native"
     const val ROOT = "support-score-scan"
@@ -296,6 +319,11 @@ object ScoreScanLog {
         EngineUnknownReason.Unavailable -> "unavailable"
     }
 
+    fun EngineFieldRefusal.wireName(): String = when (this) {
+        EngineFieldRefusal.CropSize -> "crop_size"
+        EngineFieldRefusal.BottomBand -> "bottom_band"
+    }
+
     private fun EngineField.reason(): EngineUnknownReason? = (this as? EngineField.Unknown)?.reason
 
     /** "read" when the engine read the field, else why it could not: "engine_error" or "unavailable". */
@@ -337,6 +365,7 @@ object ScoreScanLog {
             "micros" to record.kotlinMicros,
         ),
         "rust" to record.rust.let { rust ->
+            if (rust == null) return@let notAsked(record.notAsked)
             linkedMapOf(
                 "status" to status(rust),
                 "classScore" to rust.classScore.valueOrNull,
@@ -354,6 +383,22 @@ object ScoreScanLog {
         },
         "agree" to record.agree,
     ))
+
+    /** The same keys as an engine answer, so a reader of the row finds every field it expects. */
+    private fun notAsked(why: EngineFieldRefusal?) = linkedMapOf(
+        "status" to NOT_ASKED,
+        "classScore" to null,
+        "grandScore" to null,
+        "display" to EngineDisplay.Unknown.wireName(),
+        "classReason" to why?.wireName(),
+        "grandReason" to why?.wireName(),
+        "confidence" to null,
+        "minCharConfidence" to null,
+        "text" to "",
+        "detail" to null,
+        "micros" to null,
+        "callMicros" to null,
+    )
 
     private fun Region.json() = linkedMapOf("x" to x, "y" to y, "w" to width, "h" to height)
 
@@ -454,6 +499,7 @@ object ScoreScanLog {
             "kotlinOnly" to s.tally.kotlinOnly,
             "rustOnly" to s.tally.rustOnly,
             "bothUnknown" to s.tally.bothUnknown,
+            "notAsked" to s.tally.notAsked,
             "kotlinClass62" to s.tally.kotlinClass62,
             "rustClass62" to s.tally.rustClass62,
             "kotlinGrand16" to s.tally.kotlinGrand16,
