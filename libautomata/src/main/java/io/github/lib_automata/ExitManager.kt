@@ -55,6 +55,9 @@ class ExitManager {
         }
     }
 
+    /** Whether [exit] was called, for a caller that must not wait on the pause mutex as [checkExitRequested] does. */
+    val isExitRequested: Boolean get() = !scope.isActive
+
     fun pause() = runBlocking { pauseMutex.lock() }
 
     fun resume() = runBlocking { pauseMutex.unlock() }

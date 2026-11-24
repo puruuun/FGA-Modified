@@ -18,6 +18,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 WORKFLOWS = os.path.join(HERE, '..', '..', '.github', 'workflows')
 MAIN_CI = os.path.join(WORKFLOWS, 'main-ci.yml')
 NATIVE_CI = os.path.join(WORKFLOWS, 'native-ci.yml')
+ENGINE_CI = os.path.join(WORKFLOWS, 'engine-apk.yml')
+REPO = os.path.join(HERE, '..', '..')
 GATE_SCRIPT = os.path.join(HERE, 'ci_gate.py')
 
 
@@ -175,29 +177,109 @@ class NativePathsTest(unittest.TestCase):
         self.assertNotRegex(on_block, r'\n  pull_request')
 
 
+def github_paths_match(patterns, path):
+    """GitHub's paths filter: the last pattern that matches decides, and a pattern with ! excludes."""
+    matched = False
+    for pattern in patterns:
+        negated = pattern.startswith('!')
+        if g._glob_to_regex(pattern[1:] if negated else pattern).match(path):
+            matched = not negated
+    return matched
+
+
+class EnginePathsTest(unittest.TestCase):
+    """engine-apk.yml must run on push for exactly the changes that Main CI classifies as code."""
+
+    def filters(self):
+        filters = parse_paths_filters(read(ENGINE_CI))
+        self.assertEqual(len(filters), 1, 'expected one paths: filter in engine-apk.yml')
+        return filters[0]
+
+    def test_filter_is_code_classification(self):
+        self.assertEqual(self.filters(),
+                         ['**'] + ['!' + p for p in g.DOC_PATTERNS] + list(g.NATIVE_PATTERNS))
+
+    def test_filter_agrees_with_classify_on_every_tracked_file_and_samples(self):
+        r = subprocess.run(['git', 'ls-files', '-z'], cwd=REPO, capture_output=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        paths = [p for p in r.stdout.decode('utf-8', 'surrogateescape').split('\0') if p]
+        self.assertGreater(len(paths), 100)
+        paths += ['README.md', 'docs/a.md', 'native/AGENTS.md', 'native/README.md', 'sub/AGENTS.md',
+                  'app/src/A.kt', '.github/workflows/engine-apk.yml', '.gitattributes', 'wiki/x/y.png',
+                  'app/README.md', 'LICENSE', 'LICENSE.txt']
+        patterns = self.filters()
+        for path in paths:
+            self.assertEqual(github_paths_match(patterns, path), g.needs_build([path]), path)
+
+    def test_the_only_paths_filter_belongs_to_push(self):
+        text = strip_comments(read(ENGINE_CI))
+        on_block = text[text.index('\non:\n'):text.index('\npermissions:\n')]
+        self.assertEqual(on_block.count('paths:'), 1)
+        self.assertRegex(on_block, r'(?s)\n  push:\n    branches: \[main\]\n    paths:\n')
+        self.assertRegex(on_block, r'\n  workflow_call:\n')
+        self.assertNotRegex(on_block, r'\n  pull_request')
+
+    def test_github_paths_match(self):
+        self.assertTrue(github_paths_match(['**', '!docs/**', 'docs/x/**'], 'docs/x/a'))
+        self.assertFalse(github_paths_match(['**', '!docs/**'], 'docs/a'))
+        self.assertTrue(github_paths_match(['**', '!docs/**'], 'app/a'))
+
+
+class EngineApkJobTest(unittest.TestCase):
+    def setUp(self):
+        self.job = job_block(read(ENGINE_CI), 'engine-apk')
+
+    def test_uses_the_pinned_ndk_only(self):
+        self.assertNotIn('ANDROID_NDK_LATEST_HOME', self.job)
+        self.assertIn('native/ndk-version.txt', self.job)
+        self.assertIn('test "$revision" = "$NDK_VERSION"', self.job)
+        self.assertIn('echo "ANDROID_NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"', self.job)
+
+    def test_builds_and_checks_the_beta(self):
+        self.assertIn('./gradlew :app:assembleBeta -PfgaDebugSigning=true', self.job)
+        self.assertIn('python3 tools/ci/apk_check.py present "$@"', self.job)
+
+    def test_ndk_pin_file_names_one_version(self):
+        with open(os.path.join(REPO, 'native', 'ndk-version.txt'), encoding='utf-8') as f:
+            lines = [l.strip() for l in f if l.strip() and not l.startswith('#')]
+        self.assertEqual(len(lines), 1, lines)
+        self.assertRegex(lines[0], r'^[0-9]+\.[0-9]+\.[0-9]+$')
+
+    def test_cargo_ndk_version_equal_in_both_workflows(self):
+        def version(path):
+            found = re.findall(r'(?m)^  CARGO_NDK_VERSION: (\S+)$', strip_comments(read(path)))
+            self.assertEqual(len(found), 1, path)
+            return found[0]
+        self.assertEqual(version(NATIVE_CI), version(ENGINE_CI))
+
+
 class NativeCiSettingsTest(unittest.TestCase):
     def test_concurrency_group_and_cancel(self):
-        block = top_level_block(read(NATIVE_CI), 'concurrency')
-        groups = [l for l in block if l.startswith('group:')]
-        self.assertEqual(len(groups), 1, block)
-        value = groups[0][len('group:'):].strip()
-        self.assertTrue(value.startswith('native-ci-'), value)
-        for part in ('github.workflow', 'github.event_name', 'github.ref'):
-            self.assertIn(part, value)
-        self.assertIn('cancel-in-progress: true', block)
+        for path, prefix in ((NATIVE_CI, 'native-ci-'), (ENGINE_CI, 'engine-apk-')):
+            block = top_level_block(read(path), 'concurrency')
+            groups = [l for l in block if l.startswith('group:')]
+            self.assertEqual(len(groups), 1, block)
+            value = groups[0][len('group:'):].strip()
+            self.assertTrue(value.startswith(prefix), value)
+            for part in ('github.workflow', 'github.event_name', 'github.ref'):
+                self.assertIn(part, value)
+            self.assertIn('cancel-in-progress: true', block)
 
-    def test_permissions_equal_in_both_workflows(self):
+    def test_permissions_equal_in_all_three_workflows(self):
         main = top_level_block(read(MAIN_CI), 'permissions')
-        native = top_level_block(read(NATIVE_CI), 'permissions')
-        self.assertEqual(main, native)
         self.assertEqual(main, ['contents: read'])
-        for path in (MAIN_CI, NATIVE_CI):
-            for name in ('rust', 'native', 'gate', 'changes', 'test-and-build'):
-                try:
-                    block = job_block(read(path), name)
-                except AssertionError:
-                    continue
-                self.assertNotIn('permissions:', block, (path, name))
+        for path in (NATIVE_CI, ENGINE_CI):
+            self.assertEqual(top_level_block(read(path), 'permissions'), main, path)
+        jobs = {MAIN_CI: ('native', 'engine-apk', 'gate', 'changes', 'test-and-build'),
+                NATIVE_CI: ('rust',), ENGINE_CI: ('engine-apk',)}
+        for path, names in jobs.items():
+            for name in names:
+                self.assertNotIn('permissions:', job_block(read(path), name), (path, name))
+
+    def test_native_ci_holds_only_the_rust_job(self):
+        text = strip_comments(read(NATIVE_CI))
+        jobs = re.findall(r'(?m)^  ([A-Za-z0-9_-]+):$', text[text.index('\njobs:\n'):])
+        self.assertEqual(jobs, ['rust'])
 
 
 class WorkflowWiringTest(unittest.TestCase):
@@ -213,18 +295,28 @@ class WorkflowWiringTest(unittest.TestCase):
             '    uses: ./.github/workflows/native-ci.yml',
         ])
 
+    def test_engine_apk_job_runs_for_every_code_change(self):
+        block = job_block(self.text, 'engine-apk').split('\n')
+        self.assertEqual(block, [
+            '  engine-apk:',
+            '    needs: changes',
+            "    if: needs.changes.outputs.code == 'true'",
+            '    uses: ./.github/workflows/engine-apk.yml',
+        ])
+
     def test_gate_job(self):
         lines = [l.strip() for l in job_block(self.text, 'gate').split('\n')]
         for want in ('name: Main CI gate',
-                     'needs: [changes, test-and-build, native]',
+                     'needs: [changes, test-and-build, native, engine-apk]',
                      'if: always()',
                      'CHANGES_RESULT: ${{ needs.changes.result }}',
                      'CODE: ${{ needs.changes.outputs.code }}',
                      'NATIVE: ${{ needs.changes.outputs.native }}',
                      'BUILD_RESULT: ${{ needs.test-and-build.result }}',
                      'NATIVE_RESULT: ${{ needs.native.result }}',
+                     'ENGINE_RESULT: ${{ needs.engine-apk.result }}',
                      'run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" '
-                     '"$BUILD_RESULT" "$NATIVE_RESULT"'):
+                     '"$BUILD_RESULT" "$NATIVE_RESULT" "$ENGINE_RESULT"'):
             self.assertEqual(lines.count(want), 1, want)
 
     def test_changes_job_outputs(self):
@@ -233,8 +325,9 @@ class WorkflowWiringTest(unittest.TestCase):
         self.assertIn('native: ${{ steps.classify.outputs.native }}', lines)
 
     def test_native_ci_is_defined_once(self):
-        # The Rust steps must not be copied into the caller.
+        # The Rust steps and the engine build must not be copied into the caller.
         self.assertNotIn('cargo ', strip_comments(self.text))
+        self.assertNotIn('assembleBeta', strip_comments(self.text))
 
     def test_job_block_ignores_comments(self):
         text = "jobs:\n  a:\n    # if: x == 'true'\n    needs: b  # if: y\n  c:\n    d: 1\n"

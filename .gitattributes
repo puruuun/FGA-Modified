@@ -1,2 +1,9 @@
 # Set default behavior to automatically normalize line endings.
 * text=auto
+
+# Files that a check compares byte for byte or that ship in the APK as committed: the same bytes
+# on every checkout, also with core.autocrlf=true on Windows.
+/native/THIRD_PARTY_NOTICES.txt text eol=lf
+/native/ocr-model/NOTICE.txt text eol=lf
+/native/ocr-model/model.properties text eol=lf
+/LICENSE text eol=lf

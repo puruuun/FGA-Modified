@@ -1,17 +1,22 @@
 name: Native CI
 
-# Rust checks run only when the Rust core or this workflow changes, so Kotlin-only work never
-# waits on them (design 0025, D-7).
+# The Rust checks (format, clippy, tests, cargo-deny, the Android lint and build, the third-party
+# notices) run only when the Rust core, the notices generator or these workflows change, so plain
+# Kotlin work never waits on them (design 0025, D-7). The paths below equal NATIVE_PATTERNS in
+# tools/ci/ci_gate.py (test_ci_workflows.py compares them). The engine APK, which every code change
+# needs, is built by engine-apk.yml.
 #
-# Pull requests do not trigger this workflow directly: Main CI calls it (workflow_call) when native/ or
-# this file changed, so the Rust checks are part of the required check "Main CI gate". A pull_request
-# trigger here would run them a second time for the same commit.
+# Pull requests do not trigger this workflow directly: Main CI calls it (workflow_call) for those
+# paths, so these checks are part of the required check "Main CI gate". A pull_request trigger here
+# would run them a second time for the same commit.
 on:
   push:
     branches: [main]
     paths:
       - 'native/**'
       - '.github/workflows/native-ci.yml'
+      - '.github/workflows/main-ci.yml'
+      - 'tools/ci/native_notices.py'
   workflow_call:
   workflow_dispatch:
 
@@ -30,6 +35,7 @@ env:
   CARGO_TERM_COLOR: always
   # native-advisories.yml pins the same version; change both together.
   CARGO_DENY_VERSION: 0.21.0
+  # engine-apk.yml pins the same version; change both together.
   CARGO_NDK_VERSION: 4.1.2
 
 jobs:
@@ -50,6 +56,30 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+      - name: Clippy and test, fga-sensing with tract
+        # fga-ffi turns on the tract feature (issue #530), so the two workspace steps above already
+        # lint and test fga-sensing with tract and this step repeats them.
+        # The model tests skip themselves here: the model and the samples are local only.
+        run: |
+          cargo clippy -p fga-sensing --all-targets --features tract -- -D warnings
+          cargo test -p fga-sensing --features tract
+      - name: Clippy and test, fga-sensing with ort
+        # ort-sys downloads a prebuilt ONNX Runtime from cdn.pyke.io at build time and checks its
+        # hash; on Linux its HTTPS client links the runner's OpenSSL.
+        run: |
+          cargo clippy -p fga-sensing --all-targets --features ort -- -D warnings
+          cargo test -p fga-sensing --features ort
+      - name: Clippy and test, fga-ffi with ort-probe
+        # Issue #535: the ONNX Runtime probes of fga-ffi. On the host they link the same prebuilt
+        # runtime as the step above.
+        run: |
+          cargo clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
+          cargo test --workspace --features fga-ffi/ort-probe
+      - name: Clippy, fga-ffi with tract-threads
+        # Issue #549: the measurement switch for tract's multi-threaded kernels. Lint only: on the
+        # owner's PC with four jobs the lint added 17 s and the tests 93 s, and an Android lint and
+        # build would add more again, past the few minutes this workflow may grow per switch.
+        run: cargo clippy --workspace --all-targets --features fga-ffi/tract-threads -- -D warnings
       - name: Install cargo-deny and cargo-ndk
         run: |
           cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
@@ -67,9 +97,47 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 -o "$RUNNER_TEMP/jniLibs" build --release -p fga-ffi
+      - name: Third-party notices match Cargo.lock
+        # Design 0026, D-10: native/THIRD_PARTY_NOTICES.txt is generated from cargo metadata, cargo
+        # tree and the crates' licence files. cargo metadata reads every package of Cargo.lock,
+        # also those of other platforms that no build here fetched, so fetch all first; the check
+        # itself then runs offline.
+        run: |
+          cargo fetch --locked
+          python3 ../tools/ci/native_notices.py check
       - name: arm64 library is 16 KB aligned
         run: |
           readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           aligns=$("$readelf" -lW "$RUNNER_TEMP/jniLibs/arm64-v8a/libfga_ffi.so" | awk '$1 == "LOAD" { print $NF }' | sort -u)
           echo "LOAD alignment: $aligns"
           test "$aligns" = "0x4000"
+      - name: Android clippy, ort-probe
+        # Lint needs no runtime: ORT_SKIP_DOWNLOAD defers ort-sys's missing-library error to the
+        # link step, which a lint run never reaches.
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          ORT_SKIP_DOWNLOAD=1 cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
+      - name: Android build, ort-probe
+        # The same Microsoft AAR that Gradle's -Pfga.native.ort=true uses. Version and SHA-256 are
+        # pinned in three places that change together: gradle/libs.versions.toml,
+        # app/build.gradle.kts (extractOnnxRuntime) and here. ort-sys takes
+        # one runtime folder per build, so each ABI is built on its own.
+        env:
+          ORT_AAR_URL: https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.31.0/onnxruntime-android-1.31.0.aar
+          ORT_AAR_SHA256: "72683787a80d0608a3121b967d8e1239aef48286826661c953211626690540a7"
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          aar="$RUNNER_TEMP/onnxruntime-android.aar"
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors --output "$aar" "$ORT_AAR_URL"
+          echo "$ORT_AAR_SHA256  $aar" | sha256sum --check
+          readelf="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          for abi in armeabi-v7a arm64-v8a; do
+            unzip -o -q "$aar" "jni/$abi/libonnxruntime.so" -d "$RUNNER_TEMP/onnxruntime"
+            ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_PATH="$RUNNER_TEMP/onnxruntime/jni/$abi" \
+              cargo ndk -t "$abi" --platform 24 -o "$RUNNER_TEMP/jniLibsOrt" build --release -p fga-ffi --features ort-probe
+          done
+          for lib in "$RUNNER_TEMP/jniLibsOrt/arm64-v8a/libfga_ffi.so" "$RUNNER_TEMP/onnxruntime/jni/arm64-v8a/libonnxruntime.so"; do
+            aligns=$("$readelf" -lW "$lib" | awk '$1 == "LOAD" { print $NF }' | sort -u)
+            echo "$lib LOAD alignment: $aligns"
+            test "$aligns" = "0x4000"
+          done

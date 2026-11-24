@@ -149,31 +149,69 @@ class MediaProjectionScreenshotService(
         }
     }
 
-    /** Settings calibration only: reuse the projection, take an owned native-display grayscale frame, then restore.
-     * The same lock as ordinary captures keeps the temporary size invisible to script screenshots. */
-    fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern = synchronized(lock) {
+    /**
+     * Reuses the projection to take an owned native-display grayscale frame, then restores the previous
+     * size. The same lock as ordinary captures keeps the temporary size invisible to script screenshots.
+     * When the capture already has [size] and [density] (a 1280x720 display), both resizes return early:
+     * no new reader, and the frame is the newest image or, if nothing changed, the last frame captured.
+     */
+    fun takeFullDisplayScreenshot(size: Size, density: Int): Pattern =
+        withFullDisplayFrames(size, density) { first, _ -> first }
+
+    /**
+     * [takeFullDisplayScreenshot] for a caller that may need a newer frame before the restore (the rust
+     * build's support score scan): [block] gets the first owned frame and a function for a newer one,
+     * which answers null when the reader received nothing since the last. The lock and the full size
+     * are held until [block] returns, and the previous size is restored once, after it, however it ends.
+     */
+    fun <T> withFullDisplayFrames(size: Size, density: Int, block: (first: Pattern, next: () -> Pattern?) -> T): T = synchronized(lock) {
         val previousSize = imageSize
         val previousDensity = screenDensity
         try {
             resize(size, density)
             if (closed.get()) throw KnownException(KnownException.Reason.ScreenCaptureStopped)
             screenshotIntoBuffer()
-            val gray = Mat()
-            try {
-                Imgproc.cvtColor(bufferMat, gray, Imgproc.COLOR_RGBA2GRAY)
-                DroidCvPattern(gray)
-            } catch (e: Exception) { gray.release(); throw e }
+            block(grayCopy()) {
+                if (closed.get()) throw KnownException(KnownException.Reason.ScreenCaptureStopped)
+                if (screenshotIntoBuffer()) grayCopy() else null
+            }
         } finally { resize(previousSize, previousDensity) }
     }
 
-    private fun screenshotIntoBuffer() {
+    private fun grayCopy(): Pattern {
+        val gray = Mat()
+        try {
+            Imgproc.cvtColor(bufferMat, gray, Imgproc.COLOR_RGBA2GRAY)
+            return DroidCvPattern(gray)
+        } catch (e: Exception) { gray.release(); throw e }
+    }
+
+    /** What the virtual display renders into; [rendersIntoReader] is false when a resize left it without the current reader's surface. */
+    data class CaptureState(val size: Size, val density: Int, val rendersIntoReader: Boolean)
+
+    /**
+     * Reads the capture's state under the capture lock and changes nothing. For a caller of
+     * [withFullDisplayFrames] during a run (the rust build's support score scan), which compares
+     * it before and after: a first resize that throws after detaching the surface leaves the display
+     * without the reader, and later screenshots serve the old frame from [bufferMat] as "nothing new";
+     * a restore that throws leaves the full-size reader in place, so later screenshots are of the full
+     * size. Null once closed.
+     */
+    fun captureState(): CaptureState? = synchronized(lock) {
+        if (closed.get()) return@synchronized null
+        val display = virtualDisplay
+        CaptureState(imageSize, screenDensity, display != null && display.surface === imageReader.surface)
+    }
+
+    /** True when a new image was copied into [bufferMat]. */
+    private fun screenshotIntoBuffer(): Boolean {
         val image = imageReader.acquireLatestImage()
             ?: awaitFirstImage()
             /*
              * Nothing new since the last call, which just means the screen didn't change.
              * [bufferMat] still holds the previous frame.
              */
-            ?: return
+            ?: return false
 
         image.use {
             val plane = it.planes[0]
@@ -189,6 +227,7 @@ class MediaProjectionScreenshotService(
         }
 
         hasFrame = true
+        return true
     }
 
     /**

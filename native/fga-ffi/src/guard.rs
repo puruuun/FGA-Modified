@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Runs `body` and renders its outcome as the `OK: ` / `ERR: ` text Kotlin receives.
 ///
@@ -9,13 +10,53 @@ pub fn run_guarded<F>(body: F) -> String
 where
     F: FnOnce() -> Result<String, String>,
 {
+    match catch_panic(body) {
+        Ok(detail) => format!("OK: {detail}"),
+        Err(detail) => format!("ERR: {detail}"),
+    }
+}
+
+/// The guard for functions that do not answer in text: a panic becomes `Err("panic: ...")`.
+pub fn catch_panic<T, F>(body: F) -> Result<T, String>
+where
+    F: FnOnce() -> Result<T, String>,
+{
     // The closure's state is dropped right after a panic and never observed again, so a broken
     // invariant inside it cannot leak out.
     match catch_unwind(AssertUnwindSafe(body)) {
-        Ok(Ok(detail)) => format!("OK: {detail}"),
-        Ok(Err(detail)) => format!("ERR: {detail}"),
-        Err(payload) => format!("ERR: panic: {}", panic_message(payload.as_ref())),
+        Ok(result) => result,
+        Err(payload) => Err(format!("panic: {}", panic_message(payload.as_ref()))),
     }
+}
+
+/// Locks a slot that holds a loaded model.
+///
+/// A panic while the lock was held poisons it. The panic guard has already turned that panic into
+/// the failed call's error, so the poison only says that the model in the slot may have stopped in
+/// the middle of a call. Such a model is not trusted again: it is taken out of the slot, the poison
+/// is cleared, the model is dropped, and the caller gets the slot empty, as after an unload. The
+/// slot itself is consistent at that point because every write to it is one whole assignment
+/// (`Some(model)` after the model was built, `None` before a probe loads, or `take()`), so a panic
+/// leaves either the old value or the new one, never a half-written `Option`; whatever partial
+/// state a panic left lives inside the model that is dropped here. The model is dropped while the
+/// lock is still held and after the slot was emptied, so a panic in the model's own drop poisons
+/// the lock again with the slot already empty (that call answers the panic as its error), and the
+/// next call recovers the same way and finds nothing to drop (tests/score_engine_poisoned.rs).
+pub(crate) fn lock_slot<T>(slot: &'static Mutex<Option<T>>) -> MutexGuard<'static, Option<T>> {
+    slot.lock()
+        .unwrap_or_else(|poisoned| recover_slot(slot, poisoned))
+}
+
+/// [`lock_slot`]'s recovery, for a caller that met the poison through `try_lock`.
+pub(crate) fn recover_slot<T>(
+    slot: &'static Mutex<Option<T>>,
+    poisoned: PoisonError<MutexGuard<'static, Option<T>>>,
+) -> MutexGuard<'static, Option<T>> {
+    let mut guard = poisoned.into_inner();
+    let untrusted = guard.take();
+    slot.clear_poison();
+    drop(untrusted);
+    guard
 }
 
 fn panic_message(payload: &(dyn Any + Send)) -> &str {
@@ -30,7 +71,20 @@ fn panic_message(payload: &(dyn Any + Send)) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::run_guarded;
+    use super::{catch_panic, run_guarded};
+
+    #[test]
+    fn catch_panic_passes_results_and_catches_panics() {
+        assert_eq!(catch_panic(|| Ok::<i32, String>(3)), Ok(3));
+        assert_eq!(
+            catch_panic(|| Err::<i32, String>("no".to_owned())),
+            Err("no".to_owned())
+        );
+        assert_eq!(
+            catch_panic::<i32, _>(|| panic!("boom")),
+            Err("panic: boom".to_owned())
+        );
+    }
 
     #[test]
     fn ok_result_is_prefixed() {

@@ -3,7 +3,7 @@
 Development aid. The authoritative check is `tools/device-qa/run.py`.
 
 Usage:
-    py -3 tools/device-qa/run.py [--build] [--native] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
+    py -3 tools/device-qa/run.py [--build] [--native] [--native-ort] [--native-threads] [--ocr-model PATH] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
 
 Python only moves files and calls adb/gradle. Reader logic stays in the app's androidTest code.
 """
@@ -26,7 +26,7 @@ MAX_REPORT_BYTES = 256 * 1024
 DEFAULT_SERIAL = "127.0.0.1:5555"
 # Legacy device-side case file used until docs/reference-images/cases/<suite>.json exists (0002 stage 2).
 LEGACY_DEVICE_CASES = {"support": f"{DEVICE_ROOT}/cases-final.json"}
-KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "ceEnhance", "hakunoShuffle", "cardSwap", "nativeProbe"}
+KNOWN_SUITES = {"support", "bond", "questItems", "noblePhantasm", "fpSell", "skillLevel", "weeklyRoute", "rankUp", "skillLevelPanel", "ceEnhance", "hakunoShuffle", "cardSwap", "nativeProbe", "ocrProbe"}
 APK_GLOBS = {
     "app": "app/build/outputs/apk/deviceTest/*.apk",
     "test": "app/build/outputs/apk/androidTest/deviceTest/*.apk",
@@ -59,13 +59,29 @@ def adb(adb_path: str, serial: str, *args: str) -> str:
     return result.stdout
 
 
-def gradle_build(native: bool) -> None:
+def gradle_command(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> list[str]:
     gradlew = REPO / ("gradlew.bat" if os.name == "nt" else "gradlew")
     cmd = [str(gradlew), "-PfgaDeviceTests=true", ":app:assembleDeviceTest", ":app:assembleDeviceTestAndroidTest", "--console=plain"]
     if native:
         # Without it the APK has no libfga_ffi.so and every nativeProbe case reports itself skipped.
         cmd.insert(1, "-Pfga.native=true")
-    if subprocess.run(cmd, cwd=REPO).returncode != 0:
+    if native_ort:
+        # Issue #535: without it the ONNX Runtime cases of ocrProbe report themselves skipped.
+        cmd.insert(2, "-Pfga.native.ort=true")
+    if native_threads:
+        # Issue #549: without it the tract-threads cases of ocrProbe report themselves skipped.
+        cmd.insert(2, "-Pfga.native.threads=true")
+    if ocr_model is not None:
+        if not native:
+            sys.exit("--ocr-model needs --native: only a native build packages the model")
+        # Issue #568: a native build packages the pinned OCR model; without a local copy Gradle
+        # downloads it. Gradle checks either against the pinned size and SHA-256.
+        cmd.insert(2, f"-Pfga.ocr.model={Path(ocr_model).resolve()}")
+    return cmd
+
+
+def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> None:
+    if subprocess.run(gradle_command(native, native_ort, native_threads, ocr_model), cwd=REPO).returncode != 0:
         sys.exit("gradle build failed")
 
 
@@ -179,12 +195,28 @@ def instrument(adb_path: str, serial: str, package: str, device_case: str) -> di
     return json.loads(raw)
 
 
-def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str], require_native: bool = False) -> bool:
+def required_skip(result: dict, require_native: bool, require_ort: bool, require_threads: bool = False) -> bool:
+    """A skipped native case that the flags asked to run. An ONNX Runtime case says so with
+    "requires": "ort"; it may be skipped under --native alone, never under --native-ort. A tract
+    thread case says "requires": "tract-threads" and may not be skipped under --native-threads."""
+    actual = result.get("actual") or {}
+    if "skipped" not in actual:
+        return False
+    if actual.get("requires") == "ort":
+        return require_ort
+    if actual.get("requires") == "tract-threads":
+        return require_threads
+    return require_native
+
+
+def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str], require_native: bool = False, require_ort: bool = False, require_threads: bool = False) -> bool:
     results = report.get("results", [])
     failed = [r for r in results if not r.get("passed")]
     native_skipped = [r for r in results if r.get("passed") and "skipped" in (r.get("actual") or {})]
-    # With --native a skipped probe means the library was not packaged, so the run proved nothing.
-    native_missing = require_native and bool(native_skipped)
+    # With --native a skipped probe means the library was not packaged, so the run proved nothing;
+    # with --native-ort the same holds for the ONNX Runtime cases, with --native-threads for the
+    # tract thread cases.
+    native_missing = any(required_skip(r, require_native, require_ort, require_threads) for r in native_skipped)
     lines = [
         f"# 기기 판독 검증 결과 ({suite})",
         "",
@@ -197,7 +229,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
     if report.get("error"):
         lines += ["## 실행 오류", "", "```", report["error"], "```", ""]
     if native_missing:
-        lines += ["## 실행 오류", "", "--native로 실행했지만 APK에 libfga_ffi.so가 없어 네이티브 프로브가 skip됐습니다.", ""]
+        lines += ["## 실행 오류", "", "--native, --native-ort 또는 --native-threads로 실행했지만 필요한 네이티브 라이브러리나 기능이 APK에 없어 네이티브 프로브가 skip됐습니다.", ""]
     if failed:
         lines += ["## 실패 케이스", ""]
         for r in failed:
@@ -218,7 +250,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
             lines.append(f"| {name} / {y} | {check['effect']} | {np_score} | {default_score} | {check['matched']} |")
         lines.append("")
     if native_skipped:
-        lines += ["## Skip 케이스 (네이티브 라이브러리 없음)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
+        lines += ["## Skip 케이스 (네이티브 라이브러리를 못 불러왔거나 ONNX Runtime 또는 tract 스레드 기능이 없음, 항목마다 이유)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:
@@ -232,13 +264,18 @@ def main() -> int:
     parser.add_argument("--serial", default=DEFAULT_SERIAL)
     parser.add_argument("--build", action="store_true", help="build the deviceTest APKs first")
     parser.add_argument("--native", action="store_true", help="build and package the Rust library with --build (needs cargo-ndk); a skipped native probe then fails the run")
+    parser.add_argument("--native-ort", action="store_true", help="as --native, with the ONNX Runtime probes (-Pfga.native.ort=true); a skipped ONNX Runtime case then fails the run too")
+    parser.add_argument("--native-threads", action="store_true", help="as --native, with tract's multi-threaded kernels (-Pfga.native.threads=true); a skipped tract-threads case then fails the run too")
+    parser.add_argument("--ocr-model", type=Path, help="with --build and --native: a local copy of the pinned OCR model, so Gradle does not download it (-Pfga.ocr.model)")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
     args = parser.parse_args()
+    if args.native_ort or args.native_threads:
+        args.native = True
 
     if args.build:
-        gradle_build(args.native)
+        gradle_build(args.native, args.native_ort, args.native_threads, args.ocr_model)
     adb_path = find_adb()
     adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
@@ -266,9 +303,9 @@ def main() -> int:
             sys.exit(f"no case file for suite {suite}: {case_file.relative_to(REPO)}")
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped, require_native=args.native)
-        if args.native and any("skipped" in (r.get("actual") or {}) for r in report.get("results", [])):
-            print(f"{suite}: --native was given but the APK has no libfga_ffi.so; the native probes were skipped")
+        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped, require_native=args.native, require_ort=args.native_ort, require_threads=args.native_threads)
+        if any(required_skip(r, args.native, args.native_ort, args.native_threads) for r in report.get("results", [])):
+            print(f"{suite}: --native, --native-ort or --native-threads was given but the APK lacks what it asked for; the native probes were skipped")
         print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / f'summary-{suite}.md'}")
         overall = overall and ok
     # summary.md joins every suite summary so one file shows the whole run.

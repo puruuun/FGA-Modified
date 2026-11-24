@@ -1344,6 +1344,8 @@
     <string name="capture_support_filter_summary">"ログ収集中、条件に合うサポートがいない人をゲームが受け取る一覧から除き、残る人のそれ以外のサーヴァント枠は空き枠として表示させます。ゲームがサーバーへ送る内容は変更しません。"</string>
     <string name="capture_support_filter_servants">"サーヴァント: %1$d件選択"</string>
     <string name="capture_support_filter_ces">"礼装: %1$d件選択 (任意)"</string>
+    <string name="p_open_source_notices">オープンソースライセンス</string>
+    <string name="open_source_notices_summary">このアプリにはオープンソースのコンポーネントも含まれています。そのライセンスと著作権表示:</string>
     <string name="capture_support_filter_last">"前回の一覧: %1$d人中%2$d人、サーヴァント枠%3$d件中%4$d件"</string>
     <string name="capture_support_filter_last_unchanged">"前回の一覧: 変更なし"</string>
 </resources>

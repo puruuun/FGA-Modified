@@ -1,10 +1,14 @@
 name: Main CI
 
 on:
-  # No push run on main: main only ever receives, by fast-forward, a commit on which the required
-  # check "Main CI gate" already passed in its pull request, so a push run would test the same tree again.
+  push:
+    # Main dropped its push run (a fast-forward of an already checked commit tests the same tree again).
+    # rust keeps one until the owner decides otherwise: rust is the long-lived branch of design 0025
+    # (docs/agents/agent-team.md, "Branches and releases").
+    branches: [rust]
   pull_request:
-    branches: [main]
+    # rust is the long-lived branch of design 0025; a PR into it gets the same gate as one into main.
+    branches: [main, rust]
   workflow_dispatch:
 
 permissions:
@@ -98,12 +102,14 @@ jobs:
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
       - name: The APK holds no Rust library
-        # Design 0025, D-6 and D-7: only a build with the fga.native switch carries libfga_ffi.so.
+        # Design 0026, D-6: the ci build type without -Pfga.native=true does not carry the engine
+        # (beta and rust do, and so does the stable ci APK built with -Pfga.native=true; engine-apk.yml
+        # builds and checks a beta APK with it).
         run: |
           set -eu
           set -- app/build/outputs/apk/ci/*.apk
           [ -e "$1" ] || { echo "No CI APK under app/build/outputs/apk/ci"; exit 1; }
-          python3 tools/ci/apk_check.py "$@"
+          python3 tools/ci/apk_check.py absent "$@"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -111,16 +117,23 @@ jobs:
           path: '**/build/test-results/**/*.xml'
           retention-days: 14
 
-  # The Rust checks are defined once, in native-ci.yml. They are part of the required check because
-  # Native CI itself cannot be required: a PR that does not touch native/ would never get a run of it.
+  # The Rust checks (native-ci.yml) and the engine APK (engine-apk.yml) are defined once, in their own
+  # workflows. They are part of the required check because neither can be required on its own: a PR
+  # that needs neither would never get a run of it. The engine APK runs for every code change, the
+  # Rust checks only for the Rust paths (ci_gate.py, NATIVE_PATTERNS).
   native:
     needs: changes
     if: needs.changes.outputs.native == 'true'
     uses: ./.github/workflows/native-ci.yml
 
+  engine-apk:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/engine-apk.yml
+
   gate:
     name: Main CI gate
-    needs: [changes, test-and-build, native]
+    needs: [changes, test-and-build, native, engine-apk]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -135,4 +148,5 @@ jobs:
           NATIVE: ${{ needs.changes.outputs.native }}
           BUILD_RESULT: ${{ needs.test-and-build.result }}
           NATIVE_RESULT: ${{ needs.native.result }}
-        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT"
+          ENGINE_RESULT: ${{ needs.engine-apk.result }}
+        run: python3 tools/ci/ci_gate.py gate "$CHANGES_RESULT" "$CODE" "$NATIVE" "$BUILD_RESULT" "$NATIVE_RESULT" "$ENGINE_RESULT"

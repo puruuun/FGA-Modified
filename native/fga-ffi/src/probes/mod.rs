@@ -6,9 +6,24 @@ mod cpu;
 mod crypto;
 mod hex;
 mod inference;
+mod ocr;
+#[cfg(feature = "ort-probe")]
+mod ocr_ort;
+mod support_score;
 mod tls;
 
 pub use cpu::cpu_probe;
+#[cfg(feature = "test-hooks")]
+pub use ocr::poison_lock_for_tests;
+pub use ocr::{
+    NOT_LOADED, THREADS_NOT_BUILT, TRACT_THREADS_BUILT, memory_status, ocr_load, ocr_load_tract,
+    ocr_read, ocr_tract_features, ocr_unload, tract_settings,
+};
+#[cfg(all(feature = "ort-probe", feature = "test-hooks"))]
+pub use ocr_ort::poison_ort_lock_for_tests;
+#[cfg(feature = "ort-probe")]
+pub use ocr_ort::{ORT_NOT_LOADED, ocr_load_ort, ocr_read_ort, ocr_unload_ort};
+pub use support_score::support_score_read;
 
 pub fn ping() -> Result<String, String> {
     Ok(format!(

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.Widgets
 import io.github.fate_grand_automata.BuildConfig
+import io.github.fate_grand_automata.util.readerDiagnosticsOffered
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Switch
@@ -50,7 +51,7 @@ fun LazyListScope.advancedGroup(
             icon = icon(Icons.Default.SystemUpdate)
         )
     }
-    if (BuildConfig.BUILD_TYPE == "beta") {
+    if (readerDiagnosticsOffered()) {
         item {
             prefs.supportReaderDiagnostics.SwitchPreference(
                 title = stringResource(R.string.p_support_reader_diagnostics),

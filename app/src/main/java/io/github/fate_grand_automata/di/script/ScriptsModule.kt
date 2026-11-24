@@ -4,7 +4,11 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.fate_grand_automata.accessibility.AccessibilityGestures
+import io.github.fate_grand_automata.sensing.supportScoreEngine
+import io.github.fate_grand_automata.scripts.supportSelection.SupportScoreEngine
 import io.github.fate_grand_automata.imaging.TesseractOcrService
 import io.github.fate_grand_automata.util.StorageReaderDiagnostics
 import io.github.fate_grand_automata.scripts.FgoAutomataApi
@@ -15,6 +19,9 @@ import io.github.fate_grand_automata.scripts.locations.IScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.locations.ScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.modules.RealSupportScreen
 import io.github.fate_grand_automata.scripts.modules.SupportScreen
+import io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader
+import io.github.fate_grand_automata.scripts.supportSelection.EngineFirstSupportScoreReader
+import io.github.lib_automata.ExitManager
 import io.github.lib_automata.GameAreaManager
 import io.github.lib_automata.GestureService
 import io.github.lib_automata.OcrService
@@ -35,6 +42,14 @@ abstract class ScriptsModule {
                 gameSizeWithBorders = platformImpl.windowRegion.size,
                 offset = { platformImpl.windowRegion.location }
             )
+
+        // Issue #568: one engine per run, unloaded by ScriptManager when the run's component ends.
+        // exitManager is this component's scoped instance, the one the run's EntryPoint.stop() exits;
+        // isExitRequested, unlike checkExitRequested, does not wait while the run is paused.
+        @ScriptScope
+        @Provides
+        fun provideSupportScoreEngine(@ApplicationContext context: Context, exitManager: ExitManager): SupportScoreEngine =
+            supportScoreEngine(context) { exitManager.isExitRequested }
     }
 
     @ScriptScope
@@ -68,6 +83,13 @@ abstract class ScriptsModule {
     @ScriptScope
     @Binds
     abstract fun bindReaderDiagnostics(diagnostics: StorageReaderDiagnostics): IReaderDiagnostics
+
+    // Design 0026, D-3: the selection reads with the engine first and falls back to the run's one
+    // scoped SupportScoreReader, which stays injectable as itself (the support score scan compares
+    // that reader, not this one, with the engine).
+    @ScriptScope
+    @Binds
+    abstract fun bindSupportScoreReader(reader: EngineFirstSupportScoreReader): ISupportScoreReader
 
     @ScriptScope
     @Binds

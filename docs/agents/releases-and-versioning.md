@@ -40,19 +40,49 @@ published (unless the owner explicitly requests an immediate stable release):
    - Run `./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test`
      locally, open the PR, and fast-forward merge to `main` once `Main CI` passes.
 3. **Build and install the Beta APK for device testing**:
-   - From `main`, build the beta APK:
+   - The beta and stable APKs carry the Rust support-score reader (design 0026: `libfga_ffi.so`
+     for both ABIs, the OCR model, the third-party notices), so the build PC needs, besides the
+     Android SDK and JDK 21: the Rust toolchain that `native/rust-toolchain.toml` pins (rustup
+     installs it on first use, with both Android targets), `cargo-ndk` (CI uses 4.1.2), and the
+     Android NDK that `native/ndk-version.txt` names (set `ANDROID_NDK_HOME` to it, or keep it
+     under the SDK's `ndk/`), plus the model: `-Pfga.ocr.model=<path to PP-OCRv6_rec_small.onnx>`,
+     or network access once (Gradle downloads the pinned URL, checks size and SHA-256 and keeps a
+     copy under `~/.gradle/caches/fga-ocr-model/`). The shell setup is in
+     [`rust-native.md`](rust-native.md) ("On the owner's PC"). A missing tool stops the build at
+     `checkRustTools` with its name; it never builds an APK without the engine.
+   - From `main`, build the beta APK (the beta build type carries the engine by default):
      ```bash
-     ./gradlew :app:assembleBeta
+     ./gradlew :app:assembleBeta -Pfga.ocr.model=build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx
      ```
+     The build checks its own APK before the signing step re-signs it (`checkEngineApkBeta`,
+     `checkRustKeepRulesBeta`).
    - Stage `app/build/outputs/apk/beta/app-beta.apk` (package
      `io.github.fate_grand_automata.beta`, app name `FGA Beta`) as
      `build/release-assets/FGA-beta-<beta.versionName>-arm.apk`. No `.sha256` file is made (owner, 2026-10-30).
+     Staging is manual: no script in the repository copies or names the release APKs.
+   - **Mandatory: check the staged file** before it is installed, handed to the owner or uploaded:
+     ```bash
+     py -3 -I tools/ci/apk_check.py present build/release-assets/FGA-beta-<beta.versionName>-arm.apk
+     ```
+     If it fails, **stop**: delete the staged file, do not install or hand it out, and report the
+     output. The signing happens inside the Gradle build (the `signBetaRotated` finalizer), so the
+     check runs on the signed file, the exact one that is shipped.
+   - **Emergency build without the engine** (the risk table of design 0026; only on the planner's
+     decision): build with `-Pfga.native=false`, check the staged file with `apk_check.py absent`
+     instead, and say in the release note or the hand-over that this build has no Rust reader.
    - Install onto BlueStacks (`adb -s 127.0.0.1:5555 install -r ...`) and/or provide the APK path
      to the owner for tablet testing.
    - Do **not** publish beta APKs to GitHub Releases unless the owner explicitly asks.
 4. **Wait for owner verification before promoting to Stable**:
    - Only after the owner confirms the beta build (or explicitly asks to cut the stable release)
      should you promote `stable.versionName` and `stable.versionCode`.
+
+**The Rust test APK is not a release.** The `rust` build type (package
+`io.github.fate_grand_automata.rust`, app name `FGA Rust`, version name
+`<beta.versionName>-rust.<N>` with the beta's version code) is an owner-only test build of the
+Rust engine (issue #568). It is built with the command in
+[`rust-native.md`](rust-native.md) ("Rust test APK"); it is never published, never attached to a
+GitHub Release, and never changes `version.properties`.
 
 ## Promoting to a Stable Release
 
@@ -67,12 +97,34 @@ When promoting to stable `X.Y.Z`:
    - **Japanese latest-release line:** `**正式版 <version>** — ... [変更内容（韓国語）](wiki/releases/<version>-KR.md).`
    - **Upstream base line** ("수정 기준: 공식 FGA v<code>" and its English and Japanese forms, with the commit link): set it to the newest upstream version in the sync log of [`upstream-sync.md`](upstream-sync.md) that this stable tag contains.
 
-   Publishing the non-prerelease GitHub Release in step 4 rebuilds the user manual from that tag automatically. Check that the `Publish manual site` run succeeded.
+   Publishing the non-prerelease GitHub Release in step 6 rebuilds the user manual from that tag automatically. Check that the `Publish manual site` run succeeded.
 3. Deliver via PR (`release/<version>`), wait for `Main CI` to pass, and fast-forward merge into
    `main`.
-4. Build `./gradlew :app:assembleCi`, stage `FGA-mod-<version>-arm.apk` (no
-   `.sha256` file; GitHub shows each asset's SHA-256), verify with `apksigner` / `aapt2`, install onto BlueStacks,
-   record `docs/releases/<version>-validation.md`, and publish the GitHub Release `v<version>`.
+4. Build the stable APK. It is the `ci` build type, which carries the Rust engine only with
+   `-Pfga.native=true` (without it, `ci` is what Main CI builds and has no engine; design 0026,
+   D-6). The build PC needs what the beta needs (step 3 of the beta workflow above):
+   ```bash
+   ./gradlew :app:assembleCi -Pfga.native=true -Pfga.ocr.model=build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx
+   ```
+   The build checks its own APK before `signCiRotated` re-signs it (`checkEngineApkCi`,
+   `checkRustKeepRulesCi`). Forgetting `-Pfga.native=true` builds a stable APK without the
+   engine and nothing in the build stops it, so the next step is the guard.
+5. Stage `app/build/outputs/apk/ci/app-ci.apk` as `build/release-assets/FGA-mod-<version>-arm.apk`
+   (by hand: no script in the repository stages or names it; no `.sha256` file, GitHub shows each
+   asset's SHA-256), then, **mandatory, before anything else is done with it**:
+   ```bash
+   py -3 -I tools/ci/apk_check.py present build/release-assets/FGA-mod-<version>-arm.apk
+   ```
+   If it fails, **stop**: delete the staged file, do not install, attach or publish it, rebuild
+   with `-Pfga.native=true` and report. The check runs on the signed file, the exact one that is
+   uploaded.
+   - **Emergency stable without the engine** (only on the planner's decision): build
+     `./gradlew :app:assembleCi` without the property, check the staged file with
+     `apk_check.py absent`, and say in the release note (`wiki/releases/<version>-KR.md` and the
+     GitHub Release text) that this release has no Rust reader.
+6. Verify with `apksigner` / `aapt2`, install onto BlueStacks, record
+   `docs/releases/<version>-validation.md` (with the `apk_check.py` output), and publish the
+   GitHub Release `v<version>`.
 
 ## Release signing
 
@@ -87,7 +139,7 @@ Actions never sees the key.
 - **Lineage:** `app/signing/fga-lineage.bin` (public certificates only, committed) links the public
   debug key `fgadebug` to the owner key; see `app/signing/README.md`. The APK is signed with
   `--rotation-min-sdk-version 28`, so v3 carries the rotated key from Android 9 on.
-- **Build:** `./gradlew :app:assembleBeta` / `:app:assembleCi` build the APK (debug-signed by AGP),
+- **Build:** `./gradlew :app:assembleBeta` / `:app:assembleCi -Pfga.native=true` build the APK (debug-signed by AGP),
   then the finalizer task `signBetaRotated` / `signCiRotated` re-signs it in place at
   `app/build/outputs/apk/<type>/app-<type>.apk`. A missing properties file, keystore or lineage
   fails the build with the missing path; it never falls back to the debug key silently.

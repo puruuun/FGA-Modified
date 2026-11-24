@@ -14,7 +14,8 @@ import org.junit.Test
 class NativeProbeTest {
     @Before
     fun libraryPackaged() {
-        assumeTrue("libfga_ffi.so is not packaged; build with -Pfga.native=true", NativeProbe.loaded)
+        if (!NativeProbe.loaded) Log.w(TAG, NativeProbe.skipReason())
+        assumeTrue(NativeProbe.skipReason(), NativeProbe.loaded)
     }
 
     private fun probe(name: String, call: () -> String): String =
@@ -48,6 +49,13 @@ class NativeProbeTest {
     fun tractProbe() {
         val result = probe("tractProbe", NativeProbe::tractProbe)
         assertTrue(result, result.startsWith("OK:"))
+    }
+
+    /** A failed argument read must come back as text with no Java exception left pending (#533). */
+    @Test
+    fun ocrLoadNullPath() {
+        val result = probe("ocrLoadNullPath") { NativeProbe.ocrLoad(null) }
+        assertTrue(result, result.startsWith("ERR: modelPath: "))
     }
 
     /** Evidence for diagnosing a crash elsewhere, not a pass/fail check. */

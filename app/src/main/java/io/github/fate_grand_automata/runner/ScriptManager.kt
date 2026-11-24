@@ -57,7 +57,6 @@ import io.github.fate_grand_automata.util.skillLevelStepMessage
 import io.github.fate_grand_automata.util.skillLevelSummary
 import io.github.fate_grand_automata.util.showOverlayDialog
 import io.github.lib_automata.EntryPoint
-import io.github.lib_automata.OcrService
 import io.github.lib_automata.ScreenshotService
 import io.github.lib_automata.ScriptAbortException
 import kotlinx.coroutines.CoroutineScope
@@ -90,24 +89,16 @@ class ScriptManager @Inject constructor(
     private val launcherResponseHandler: ScriptLauncherResponseHandler,
     private val weeklyRoute: WeeklyRouteFlow,
     private val gameAreaPreview: GameAreaPreviewManager,
-    private val battleLog: BattleLogRepository
+    private val battleLog: BattleLogRepository,
+    private val ownerTestScripts: OwnerTestScripts
 ) {
     var scriptState: ScriptState = ScriptState.Stopped
         private set
 
-    /**
-     * The OCR engine belonging to the current [ScriptComponent]. Held so its native Tesseract
-     * context can be freed as soon as the run ends instead of waiting on the finalizer.
-     */
-    private var ocrService: OcrService? = null
+    /** The OCR and support-score engines of the current [ScriptComponent]. */
+    private val runEngines = RunEngines()
 
-    fun releaseOcrService() {
-        ocrService?.let {
-            ocrService = null
-            runCatching { it.close() }
-                .onFailure { e -> Timber.w(e, "Failed to release the OCR service") }
-        }
-    }
+    fun releaseOcrService() = runEngines.release()
 
     /** D-25: saves the probe's CSV below the FGA storage root, remembers the successes and builds the summary text. */
     private fun probeSummary(context: Context, reason: AutoWeeklyRoute.ExitReason.Probed): String {
@@ -245,7 +236,12 @@ class ScriptManager @Inject constructor(
 
         val scriptExitedString by lazy { context.getString(R.string.script_exited) }
 
-        when (e) {
+        // Issue #568: the list is empty outside the rust build type.
+        val ownerTestMessage = ownerTestScripts.scripts.firstNotNullOfOrNull { it.exitMessage(context, e) }
+        if (ownerTestMessage != null) {
+            messages.notify(ownerTestMessage)
+            messageBox.show(scriptExitedString, ownerTestMessage)
+        } else when (e) {
             is SupportImageMaker.ExitException -> {
                 when (e.reason) {
                     SupportImageMaker.ExitReason.NotFound -> {
@@ -572,7 +568,7 @@ class ScriptManager @Inject constructor(
 
         // A fresh ScriptComponent means a fresh OCR engine; drop the previous one first
         releaseOcrService()
-        ocrService = hiltEntryPoint.ocrService()
+        runEngines.attach(hiltEntryPoint.ocrService(), hiltEntryPoint.supportScoreEngine())
 
         scope.launch {
             val previewWasVisible = withContext(Dispatchers.Main) { gameAreaPreview.beginScript() }
@@ -630,7 +626,10 @@ class ScriptManager @Inject constructor(
                     delay(500.milliseconds)
                     runEntryPoint(
                         screenshotService = screenshotService,
-                        entryPointProvider = { getEntryPoint(hiltEntryPoint) }
+                        entryPointProvider = {
+                            (effectiveResp as? ScriptLauncherResponse.OwnerTest)?.script?.entryPoint(scriptComponent)
+                                ?: getEntryPoint(hiltEntryPoint)
+                        }
                     )
                 } else {
                     // onScriptExit never runs on this path
@@ -709,6 +708,7 @@ class ScriptManager @Inject constructor(
                     prefsCore = prefsCore,
                     prepareWeekly = weeklyRoute::prepare,
                     prepareProbe = weeklyRoute::prepareProbe,
+                    ownerTests = ownerTestScripts.scripts,
                     onWeeklyExpanded = { expanded ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
                         val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }

@@ -22,6 +22,8 @@ import io.github.fate_grand_automata.qa.suites.verifyHakunoShuffle
 import io.github.fate_grand_automata.qa.suites.verifyCEEnhance
 import io.github.fate_grand_automata.qa.suites.verifyCardSwap
 import io.github.fate_grand_automata.qa.suites.runNativeProbeCase
+import io.github.fate_grand_automata.qa.suites.removeOcrProbeCopies
+import io.github.fate_grand_automata.qa.suites.runOcrProbeCase
 import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.android.OpenCVLoader
@@ -34,12 +36,16 @@ import org.opencv.android.OpenCVLoader
 class SupportDeviceTestRunner : Instrumentation() {
     private lateinit var arguments: Bundle
     override fun onCreate(arguments: Bundle) { super.onCreate(arguments); this.arguments = arguments; start() }
-    internal fun fixture(path: String): ByteArray {
+    internal fun fixture(path: String): ByteArray = fixtureStream(path).use { it.readBytes() }
+    /** Streams a fixture into [target] without holding it in the heap; returns the bytes copied (0 when it is missing). */
+    internal fun copyFixture(path: String, target: java.io.File): Long =
+        fixtureStream(path).use { input -> target.outputStream().use { input.copyTo(it) } }
+    private fun fixtureStream(path: String): java.io.InputStream {
         require(Regex("/sdcard/Download/fga-device-qa/[A-Za-z0-9._/-]+").matches(path) && ".." !in path)
         return ParcelFileDescriptor.AutoCloseInputStream(
             // UiAutomation tokenizes a command directly; shell quotes would become part of the path.
             uiAutomation.executeShellCommand("cat $path")
-        ).use { it.readBytes() }
+        )
     }
     override fun onStart() {
         val report = JSONObject()
@@ -69,6 +75,8 @@ class SupportDeviceTestRunner : Instrumentation() {
                     // Native probes read no screenshot, so they bypass the fixture API.
                     if (case.optString("suite") == "nativeProbe") {
                         result.put("actual", runNativeProbeCase(case)).put("passed", true)
+                    } else if (case.optString("suite") == "ocrProbe") {
+                        result.put("actual", runOcrProbeCase(this, case)).put("passed", true)
                     } else {
                         api = FixtureApi(this, case, input.optJSONObject("imports") ?: JSONObject())
                         result.put("actual", when (case.optString("suite", "support")) {
@@ -98,6 +106,10 @@ class SupportDeviceTestRunner : Instrumentation() {
             }
             report.put("results", results).put("passed", (0 until results.length()).all { results.getJSONObject(it).getBoolean("passed") })
         } catch (error: Throwable) { report.put("passed", false).put("error", error.stackTraceToString()) }
+        finally {
+            // ocrProbe's model copy is shared by its cases, so it is removed only when the whole run ends.
+            try { removeOcrProbeCopies(this) } catch (error: Throwable) { report.put("cleanupError", error.toString()) }
+        }
         finish(Activity.RESULT_OK, Bundle().apply { putString("report", report.toString()) })
     }
 }

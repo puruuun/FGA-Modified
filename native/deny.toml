@@ -24,6 +24,9 @@ allow = [
     "ISC",
     "Unicode-3.0",
     "Zlib",
+    # The Mozilla CA bundle (webpki-root-certs) that the `ort` feature's build script uses to
+    # check the TLS certificate of the ONNX Runtime download. Data only, nothing of it ships.
+    "CDLA-Permissive-2.0",
 ]
 confidence-threshold = 0.9
 
