@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -72,7 +71,7 @@ internal fun DashboardNavigation(
         if (wide) Row(Modifier.fillMaxSize()) {
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.width(240.dp).fillMaxHeight().testTag("dashboard-nav-pane")) {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AccountHeader(data, displayName, server, now, wide = true, Modifier.padding(horizontal = HEADER_PADDING))
+                    AccountHeader(data, displayName, server, now, wide = true, Modifier.padding(start = HEADER_PADDING, end = HEADER_PADDING, top = 4.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Column {
                         sections.forEach { section ->
@@ -155,8 +154,8 @@ private val NAME_MIN = 12.sp
 
 /**
  * The name and the AP number are what the owner reads first, so they get the large type and everything else is small
- * secondary text. Wide: the name, the level and server, the AP number with its full time and a bar, then the update
- * time. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
+ * secondary text. Wide: the name, the level and server, the AP number with its max, a bar and the full time below it,
+ * then the update time. Narrow: a row of a small ring and four lines, to keep the header short above the tab row.
  */
 @Composable
 private fun AccountHeader(data: DashboardData, displayName: String?, server: String, now: Long, wide: Boolean, modifier: Modifier = Modifier) {
@@ -178,7 +177,7 @@ private fun AccountHeader(data: DashboardData, displayName: String?, server: Str
     }
     val nameLine = @Composable { nameModifier: Modifier ->
         name?.let {
-            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail.
+            // One line that shrinks before it cuts: a game name is up to 12 characters, which must fit the 192dp of the rail; the level and the server chip never shrink, so the name gives way first.
             Text(
                 it, nameModifier.testTag("header-name"), style = MaterialTheme.typography.titleLarge, maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -232,49 +231,22 @@ private fun apFullText(ap: DashboardAp, now: Long): String =
 internal fun apFraction(current: Long, max: Long): Float = if (max > 0) (current.toFloat() / max).coerceIn(0f, 1f) else 0f
 
 /**
- * The AP number with its max, the full time and a bar. The full time sits at the end of the number's row when both fit the
- * 192dp of the rail and drops to its own end-aligned line below when they do not, which only the measured widths can tell.
+ * The AP number with its max, the bar and, below the bar, the full time. The full time has its own start-aligned line so that
+ * the number row never has to choose between sharing a row and wrapping (owner, 2026-11-24).
  */
 @Composable
 private fun HeaderAp(ap: DashboardAp, now: Long) {
     val onVariant = MaterialTheme.colorScheme.onSurfaceVariant
     Column(Modifier.fillMaxWidth().testTag("header-ap"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Layout(
-            content = {
-                Row(verticalAlignment = Alignment.Top) {
-                    Text(
-                        ap.current.grouped(), Modifier.alignByBaseline().testTag("header-ap-current"), maxLines = 1, softWrap = false,
-                        style = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"),
-                    )
-                    Text(
-                        "/ ${ap.max.grouped()} AP", Modifier.alignByBaseline().padding(start = 4.dp).testTag("header-ap-max"), maxLines = 1, softWrap = false,
-                        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"), color = onVariant,
-                    )
-                }
-                Row(Modifier.testTag("header-ap-detail"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (ap.recoverAt <= now) {
-                        Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall)
-                    } else {
-                        Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.bodySmall, color = onVariant)
-                        Text(clock(ap.recoverAt), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
-                    }
-                }
-            },
-        ) { measurables, constraints ->
-            val loose = constraints.copy(minWidth = 0)
-            val number = measurables[0].measure(loose)
-            val detail = measurables[1].measure(loose)
-            val gap = 8.dp.roundToPx()
-            val beside = number.width + gap + detail.width <= constraints.maxWidth
-            val width = constraints.maxWidth
-            val rowHeight = maxOf(number.height, detail.height)
-            if (beside) layout(width, rowHeight) {
-                number.placeRelative(0, (rowHeight - number.height) / 2)
-                detail.placeRelative(width - detail.width, (rowHeight - detail.height) / 2)
-            } else layout(width, number.height + detail.height) {
-                number.placeRelative(0, 0)
-                detail.placeRelative(width - detail.width, number.height)
-            }
+        Row(verticalAlignment = Alignment.Top) {
+            Text(
+                ap.current.grouped(), Modifier.alignByBaseline().testTag("header-ap-current"), maxLines = 1, softWrap = false,
+                style = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"),
+            )
+            Text(
+                "/ ${ap.max.grouped()} AP", Modifier.alignByBaseline().padding(start = 4.dp).testTag("header-ap-max"), maxLines = 1, softWrap = false,
+                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"), color = onVariant,
+            )
         }
         val fraction = apFraction(ap.current, ap.max)
         val description = "AP ${ap.current.grouped()} / ${ap.max.grouped()}"
@@ -285,6 +257,14 @@ private fun HeaderAp(ap: DashboardAp, now: Long) {
                 progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
             },
         )
+        Row(Modifier.testTag("header-ap-detail"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (ap.recoverAt <= now) {
+                Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall)
+            } else {
+                Text(stringResource(R.string.capture_ap_full), maxLines = 1, softWrap = false, style = MaterialTheme.typography.bodySmall, color = onVariant)
+                Text(clock(ap.recoverAt), maxLines = 1, softWrap = false, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"))
+            }
+        }
     }
 }
 
