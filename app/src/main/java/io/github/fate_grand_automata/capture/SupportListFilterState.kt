@@ -12,9 +12,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -89,13 +92,22 @@ object SupportListFilterController {
     @Volatile
     internal var buildForTesting: ((SupportPrefsCore) -> SupportFilterBuild)? = null
 
+    /** Unregisters the switch listener of the current watcher; held here, as SharedPreferences holds listeners weakly. */
+    private var stopWatchingSwitches: (() -> Unit)? = null
+
     @OptIn(FlowPreview::class)
     @Synchronized
     fun init(context: Context, prefs: PrefsCore) {
         val app = context.applicationContext
-        // A cancelled watcher can still be inside a build, which does not stop at a cancel; the new watcher's first
-        // request makes that build's result stale.
         watcher?.cancel()
+        stopWatchingSwitches?.invoke()
+        // A cancelled watcher can still be inside a build, which does not stop at a cancel: its result is stale from
+        // here on, before the new watcher's first pass.
+        SupportListFilterState.clear()
+        // Every change of either switch is one signal. Not the prefs' flows: flow-preferences conflates `asFlow()`, so
+        // an off and an on in quick succession could reach a collector as nothing at all.
+        val signals = Channel<Unit>(Channel.UNLIMITED)
+        stopWatchingSwitches = prefs.watchSupportFilterSwitches { signals.trySend(Unit) }
         watcher = scope.launch {
             runCatching { SupportFilterMigration.run(prefs, SupportIdLookup.load(app)) }
                 .onFailure { Timber.w(it, "Support list filter: migration failed") }
@@ -103,19 +115,19 @@ object SupportListFilterController {
                 .onFailure { Timber.w(it, "Support list filter: toggle migration failed") }
             val active = prefs.activeSupportFilter
             val switchesOn = { prefs.supportFilterFeature.get() && prefs.supportFilterOn.get() }
-            val switches = combine(prefs.supportFilterFeature.asFlow(), prefs.supportFilterOn.asFlow()) { f, t -> f && t }
-                .distinctUntilChanged()
-            // One subscription, and a collector that never waits for a build: each change is handled in the order it
-            // came, so the clear of an "off" always happens before the request of the next "on", and at once even
-            // while an earlier build is still running. A build runs in its own job; a later request or clear makes
-            // its token stale, so only the latest build of a filter that is still on is applied.
+            // One collector that never waits for a build, and decides from the switches as they are now, not from a
+            // value carried by the signal: no notification is lost, and the clear of an "off" always comes before the
+            // request of a later "on". A build runs in its own job; a later request or clear makes its token stale.
             var running: Job? = null
-            combine(switches, SupportFilterSettings.changes(active).debounce(200)) { on, _ -> on }
-                .collect { on ->
+            merge(signals.receiveAsFlow(), SupportFilterSettings.changes(active).debounce(200).map { })
+                .collect {
                     running?.cancel()
-                    if (on) {
+                    if (switchesOn()) {
                         val token = SupportListFilterState.request()
-                        running = launch { SupportListFilterState.offer(token, build(app, active), switchesOn) }
+                        running = launch {
+                            val build = build(app, active)
+                            if (isActive) SupportListFilterState.offer(token, build, switchesOn)
+                        }
                     } else {
                         SupportListFilterState.clear()
                     }

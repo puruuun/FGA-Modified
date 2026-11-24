@@ -438,6 +438,60 @@ class SupportListFilterStateTest {
         assertEquals(current, SupportListFilterState.criteria())
     }
 
+    @Test fun anOffWhileABuildRunsThenAnOnAgainAlwaysRebuilds() {
+        val prefs = prefsSwitchedOn()
+        val slow = java.util.concurrent.atomic.AtomicBoolean(false)
+        val started = java.util.concurrent.Semaphore(0)
+        val release = java.util.concurrent.CountDownLatch(1)
+        SupportListFilterController.buildForTesting = { core ->
+            if (slow.getAndSet(false)) {
+                started.release()
+                release.await(20, java.util.concurrent.TimeUnit.SECONDS)
+            }
+            buildSupportFilter(SupportFilterSettings.of(core), lookup)
+        }
+        SupportListFilterController.init(context, prefs)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == SupportListCriteria(friendsOnly = true) })
+        slow.set(true)
+        prefs.activeSupportFilter.minimumNpLevel.set(4)
+        prefs.activeSupportFilter.npLevelCheck.set(true)
+        assertTrue(started.tryAcquire(10, java.util.concurrent.TimeUnit.SECONDS))
+        prefs.supportFilterOn.set(false)
+        // The running build finishes while the toggle is off, so its result is dropped.
+        release.countDown()
+        prefs.supportFilterOn.set(true)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == SupportListCriteria(minimumNpLevel = 4, friendsOnly = true) })
+    }
+
+    @Test fun aSecondInitNeverAppliesTheOldWatchersBuildEvenBeforeItsOwnFirstPass() {
+        val prefs = prefsSwitchedOn()
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val started = java.util.concurrent.Semaphore(0)
+        val releaseOld = java.util.concurrent.CountDownLatch(1)
+        val releaseNew = java.util.concurrent.CountDownLatch(1)
+        val old = SupportListCriteria(setOf(7L))
+        val fresh = SupportListCriteria(setOf(8L))
+        SupportListFilterController.buildForTesting = {
+            started.release()
+            if (calls.getAndIncrement() == 0) {
+                releaseOld.await(20, java.util.concurrent.TimeUnit.SECONDS)
+                SupportFilterBuild.Ready(old)
+            } else {
+                releaseNew.await(20, java.util.concurrent.TimeUnit.SECONDS)
+                SupportFilterBuild.Ready(fresh)
+            }
+        }
+        SupportListFilterController.init(context, prefs)
+        assertTrue(started.tryAcquire(10, java.util.concurrent.TimeUnit.SECONDS))
+        SupportListFilterController.init(context, prefs)
+        // The old build ends while the new watcher's own build is still blocked.
+        releaseOld.countDown()
+        Thread.sleep(1_500)
+        assertNull(SupportListFilterState.criteria())
+        releaseNew.countDown()
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == fresh })
+    }
+
     @Test fun aSecondInitDropsTheLateBuildOfTheFirstWatcher() {
         val prefs = prefsSwitchedOn()
         val calls = java.util.concurrent.atomic.AtomicInteger()

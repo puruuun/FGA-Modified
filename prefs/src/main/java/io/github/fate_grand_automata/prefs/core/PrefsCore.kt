@@ -309,6 +309,19 @@ class PrefsCore @Inject constructor(
     private val mainFile = maker.prefs
 
     /**
+     * Calls [onChange] on every change of [supportFilterFeature] or [supportFilterOn], one call per change, also when
+     * the file is cleared. The returned function unregisters it; keep it, as the file holds its listeners weakly.
+     */
+    fun watchSupportFilterSwitches(onChange: () -> Unit): () -> Unit {
+        val keys = setOf(supportFilterFeature.key, supportFilterOn.key)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key in keys) onChange()
+        }
+        mainFile.registerOnSharedPreferenceChangeListener(listener)
+        return { mainFile.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    /**
      * Writes what [Pref.set] has only applied to memory so far, synchronously; for a migration whose steps must be on
      * disk in order.
      */
