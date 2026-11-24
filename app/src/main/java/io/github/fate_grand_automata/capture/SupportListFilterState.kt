@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -106,13 +105,19 @@ object SupportListFilterController {
             val switchesOn = { prefs.supportFilterFeature.get() && prefs.supportFilterOn.get() }
             val switches = combine(prefs.supportFilterFeature.asFlow(), prefs.supportFilterOn.asFlow()) { f, t -> f && t }
                 .distinctUntilChanged()
-            // Apart from the builds and not debounced: switching off clears at once, even while a build is running.
-            launch { switches.collect { on -> if (!on) SupportListFilterState.clear() } }
+            // One subscription, and a collector that never waits for a build: each change is handled in the order it
+            // came, so the clear of an "off" always happens before the request of the next "on", and at once even
+            // while an earlier build is still running. A build runs in its own job; a later request or clear makes
+            // its token stale, so only the latest build of a filter that is still on is applied.
+            var running: Job? = null
             combine(switches, SupportFilterSettings.changes(active).debounce(200)) { on, _ -> on }
-                .collectLatest { on ->
+                .collect { on ->
+                    running?.cancel()
                     if (on) {
                         val token = SupportListFilterState.request()
-                        SupportListFilterState.offer(token, build(app, active), switchesOn)
+                        running = launch { SupportListFilterState.offer(token, build(app, active), switchesOn) }
+                    } else {
+                        SupportListFilterState.clear()
                     }
                     passesForTesting.incrementAndGet()
                 }

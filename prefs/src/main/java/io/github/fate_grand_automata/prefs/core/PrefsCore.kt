@@ -41,7 +41,8 @@ class PrefsCore @Inject constructor(
 
         /**
          * The #685 switch, in a battle config's file and in [MANUAL_SUPPORT_FILTER_FILE]. Retired by #695; only the
-         * app's migration reads it, and `BattleConfigFile.decode` drops it from every `.fga` import.
+         * app's migration reads it; `BattleConfigFile.decode` drops it from every `.fga` import and
+         * [BattleConfigCore.import] from a copy made inside the app.
          */
         const val LEGACY_SUPPORT_LIST_FILTER_KEY = "support_list_filter"
     }
@@ -297,6 +298,8 @@ class PrefsCore @Inject constructor(
     @Synchronized
     fun removeSupportFilterProfile(id: String) {
         supportFilterProfiles.set(supportFilterProfiles.get() - id)
+        // On disk before the file goes, so a stop in between cannot leave an id without a file.
+        commitMainFile()
         // The context keeps the loaded file in memory after the delete, so it is emptied first.
         forSupportFilterProfile(id).sharedPrefs.edit(commit = true) { clear() }
         supportFilterProfileMap.remove(id)

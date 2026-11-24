@@ -205,6 +205,16 @@ class SupportListFilterStateTest {
         }
     }
 
+    @Test fun aCopyInsideTheAppDropsTheRetiredSwitch() {
+        val prefs = prefs()
+        val source = prefs.forBattleConfig("cfg")
+        source.sharedPrefs.edit().putBoolean(key, true).putBoolean("support_friends_only", true).commit()
+        val copy = prefs.forBattleConfig("other")
+        copy.import(source.export())
+        assertFalse(copy.sharedPrefs.contains(key))
+        assertTrue(copy.support.friendsOnly.get())
+    }
+
     @Test fun anOldExportThatCarriesTheRetiredSwitchImportsWithoutIt() {
         val prefs = prefs()
         val config = prefs.forBattleConfig("cfg")
@@ -378,6 +388,54 @@ class SupportListFilterStateTest {
         release.countDown()
         Thread.sleep(1_500)
         assertNull(SupportListFilterState.criteria())
+    }
+
+    @Test fun offThenOnInQuickSuccessionEndsWithTheFilterOn() {
+        val prefs = prefsSwitchedOn()
+        SupportListFilterController.buildForTesting = { core -> buildSupportFilter(SupportFilterSettings.of(core), lookup) }
+        SupportListFilterController.init(context, prefs)
+        val current = SupportListCriteria(friendsOnly = true)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == current })
+        repeat(200) { round ->
+            prefs.supportFilterOn.set(false)
+            prefs.supportFilterOn.set(true)
+            if (round % 2 == 1) {
+                prefs.supportFilterFeature.set(false)
+                prefs.supportFilterFeature.set(true)
+            }
+        }
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == current })
+        Thread.sleep(500)
+        assertEquals(current, SupportListFilterState.criteria())
+    }
+
+    @Test fun offThenOnWhileABuildIsBlockedClearsAtOnceAndEndsOn() {
+        val prefs = prefsSwitchedOn()
+        val slow = java.util.concurrent.atomic.AtomicBoolean(false)
+        val started = java.util.concurrent.Semaphore(0)
+        val release = java.util.concurrent.CountDownLatch(1)
+        SupportListFilterController.buildForTesting = { core ->
+            if (slow.getAndSet(false)) {
+                started.release()
+                release.await(20, java.util.concurrent.TimeUnit.SECONDS)
+            }
+            buildSupportFilter(SupportFilterSettings.of(core), lookup)
+        }
+        SupportListFilterController.init(context, prefs)
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == SupportListCriteria(friendsOnly = true) })
+        slow.set(true)
+        prefs.activeSupportFilter.minimumNpLevel.set(4)
+        prefs.activeSupportFilter.npLevelCheck.set(true)
+        assertTrue(started.tryAcquire(10, java.util.concurrent.TimeUnit.SECONDS))
+        prefs.supportFilterOn.set(false)
+        assertTrue(waitFor(3_000) { SupportListFilterState.criteria() == null })
+        prefs.supportFilterOn.set(true)
+        val current = SupportListCriteria(minimumNpLevel = 4, friendsOnly = true)
+        // The build after "on" does not wait for the blocked one.
+        assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == current })
+        release.countDown()
+        Thread.sleep(1_500)
+        assertEquals(current, SupportListFilterState.criteria())
     }
 
     @Test fun aSecondInitDropsTheLateBuildOfTheFirstWatcher() {
