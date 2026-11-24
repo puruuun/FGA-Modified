@@ -35,4 +35,4 @@ If you also want to use Log Collection, continue with [Log Collection Setup](Log
 
 ## License
 
-The license notice can be viewed inside the app under **More options → Advanced → License**. Like the upstream FGA, this project is distributed under the MIT License.
+The license notice can be viewed inside the app under **More options → Advanced → License**. Like the upstream FGA, this project is distributed under the MIT License. The notices of the libraries the app contains are in **Open-source notices** on the same screen.

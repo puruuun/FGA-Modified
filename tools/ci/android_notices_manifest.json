@@ -1,0 +1,675 @@
+{
+  "about": "Provenance of app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt. Checked by tools/ci/android_notices.py. Not packaged in the APK.",
+  "notices_file": "app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt",
+  "sources": [
+    {
+      "id": "opencv-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "whole file; the Apache-2.0 text of part 3"
+    },
+    {
+      "id": "opencv-copyright",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/COPYRIGHT",
+      "sha256": "bba849c98da85a2b27b86113284a90812c959b1c1fc4ed67de9355475d1e6831",
+      "bytes": 733,
+      "use": "whole file; copyright lines of OpenCV"
+    },
+    {
+      "id": "libjpeg-turbo-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/libjpeg-turbo/LICENSE.md",
+      "sha256": "e548c96c0c09397c94b5c5531836c02ff2c403f1f2b130cad8e3ec9439b5a7cc",
+      "bytes": 5620,
+      "use": "whole file"
+    },
+    {
+      "id": "libjpeg-turbo-ijg",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/libjpeg-turbo/README.ijg",
+      "sha256": "5c1f9094835d21f66ee0e9ce81c57264d2dd50801b19832d6723dc8cdbda080e",
+      "bytes": 12739,
+      "use": "excerpt: section LEGAL ISSUES up to REFERENCES"
+    },
+    {
+      "id": "libwebp-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/libwebp/COPYING",
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+      "bytes": 1496,
+      "use": "whole file"
+    },
+    {
+      "id": "libtiff-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/libtiff/COPYRIGHT",
+      "sha256": "fbd6fed7938541d2c809c0826225fc85e551fdbfa8732b10f0c87e0847acafd7",
+      "bytes": 1146,
+      "use": "whole file"
+    },
+    {
+      "id": "openexr-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/openexr/LICENSE",
+      "sha256": "14eba5f05238f57c77e94f0ebd29a0b3736ba0456ff990cda16e21b6903ac453",
+      "bytes": 1697,
+      "use": "whole file"
+    },
+    {
+      "id": "openjpeg-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/openjpeg/LICENSE",
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6",
+      "bytes": 2112,
+      "use": "whole file"
+    },
+    {
+      "id": "protobuf-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/protobuf/LICENSE",
+      "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+      "bytes": 1732,
+      "use": "whole file"
+    },
+    {
+      "id": "cpufeatures-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/cpufeatures/LICENSE",
+      "sha256": "c870d52f42a8f93023b99a85fe68d02637d6b04e5f35bbcd7f98759adb4e4d49",
+      "bytes": 577,
+      "use": "whole file"
+    },
+    {
+      "id": "libpng-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/libpng/LICENSE",
+      "sha256": "7317e078e2d3b5d7ba5a6159e650945153262b44b76f6700f8e9edb261c5143e",
+      "bytes": 5345,
+      "use": "whole file"
+    },
+    {
+      "id": "zlib-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/zlib/LICENSE",
+      "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243",
+      "bytes": 1002,
+      "use": "whole file"
+    },
+    {
+      "id": "carotene-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/carotene/src/absdiff.cpp",
+      "sha256": "ca2a588dae6315200c13c05db17c3fc50f7cf8a264f8b3f48ca8e0659102fbf1",
+      "bytes": 7832,
+      "use": "excerpt: the licence comment at the top of the file, lines 1-30"
+    },
+    {
+      "id": "ittnotify-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/ittnotify/src/ittnotify/ittnotify_config.h",
+      "sha256": "e46af80b3ea1392f87ae83d3a8a208f06dda14735a9423f2b6ddd681d93280d6",
+      "bytes": 21937,
+      "use": "excerpt: the BSD LICENSE part of the header comment"
+    },
+    {
+      "id": "tbb-license",
+      "url": "https://raw.githubusercontent.com/oneapi-src/oneTBB/v2021.11.0/LICENSE.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "not reproduced: the Apache-2.0 text of part 3 (identical but for the appendix placeholder); read to confirm the licence"
+    },
+    {
+      "id": "ade-license",
+      "url": "https://raw.githubusercontent.com/opencv/ade/v0.1.2e/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "not reproduced: the Apache-2.0 text of part 3; read to confirm the licence"
+    },
+    {
+      "id": "kleidicv-readme",
+      "url": "https://gitlab.arm.com/kleidi/kleidicv/-/raw/0.3.0/README.md",
+      "sha256": "24fe45a8fe09917087ec50bd87cdfb278f792e6a773501cd58cc456efbcd7f85",
+      "bytes": 645,
+      "use": "copyright line (SPDX-FileCopyrightText)"
+    },
+    {
+      "id": "kleidicv-license",
+      "url": "https://gitlab.arm.com/kleidi/kleidicv/-/raw/0.3.0/LICENSES/Apache-2.0.txt",
+      "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+      "bytes": 10280,
+      "use": "not reproduced: the Apache-2.0 text of part 3; read to confirm the licence"
+    },
+    {
+      "id": "libcxx-license",
+      "url": "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-19.1.0/libcxx/LICENSE.TXT",
+      "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b",
+      "bytes": 16703,
+      "use": "not reproduced: object-form redistribution is exempt from the attribution conditions; read to confirm the licence"
+    },
+    {
+      "id": "tesseract4android-license",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "not reproduced: the Apache-2.0 text of part 3"
+    },
+    {
+      "id": "tesseract-license",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/tesseract4android/src/main/cpp/tesseract/src/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "not reproduced: the Apache-2.0 text of part 3 (Tesseract 5.5.1 as vendored by Tesseract4Android 4.9.0)"
+    },
+    {
+      "id": "leptonica-license",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/tesseract4android/src/main/cpp/leptonica/src/leptonica-license.txt",
+      "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+      "bytes": 1521,
+      "use": "whole file (Leptonica 1.85.0 as vendored by Tesseract4Android 4.9.0)"
+    },
+    {
+      "id": "libjpeg-v9f-readme",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/tesseract4android/src/main/cpp/libjpeg/src/README",
+      "sha256": "7c25493a9f64fed34d01445467341bda77bc1cdbeccbe33558659ef173fb9ff2",
+      "bytes": 18719,
+      "use": "excerpt: section LEGAL ISSUES up to REFERENCES (libjpeg 9f as vendored by Tesseract4Android 4.9.0)"
+    },
+    {
+      "id": "libpng-1648-license",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/tesseract4android/src/main/cpp/libpng/src/LICENSE",
+      "sha256": "16d9daaafbf63a31a5bdc91d4600972548fef5aaa1244202393288dbd079c49a",
+      "bytes": 5345,
+      "use": "whole file (libpng 1.6.48 as vendored by Tesseract4Android 4.9.0)"
+    },
+    {
+      "id": "tessdata-fast-license",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "not reproduced: the Apache-2.0 text of part 3; read to confirm the licence"
+    },
+    {
+      "id": "shizuku-license",
+      "url": "https://raw.githubusercontent.com/RikkaApps/Shizuku-API/master/LICENSE",
+      "sha256": "64870037f294b6f2b75c8ebe77cc0702acb3b64f86b4b0e58bf8558525303686",
+      "bytes": 1062,
+      "use": "whole file; the MIT text of part 3 (master branch: the file carries no version)"
+    },
+    {
+      "id": "glance-protobuf-license",
+      "url": "jar:androidx.glance:glance-appwidget-external-protobuf:1.2.0!/META-INF/androidx/glance/glance-appwidget-external-protobuf/LICENSE.txt",
+      "sha256": "a01b712fbb30f80b86851468b6fa58e80eab68f69f325e88bbc7ddf47cf1b063",
+      "bytes": 1434,
+      "use": "whole file, read from the library jar in the Gradle cache (it has no copyright line)"
+    },
+    {
+      "id": "okhttp-publicsuffix-notice",
+      "url": "jar:com.squareup.okhttp3:okhttp:4.12.0!/okhttp3/internal/publicsuffix/NOTICE",
+      "sha256": "8a9c58fbded5ea3474315e4a9824ca8b1486098a1a03e897e0b19419d5e1876a",
+      "bytes": 218,
+      "use": "whole file, read from the library jar in the Gradle cache"
+    },
+    {
+      "id": "coil-license",
+      "url": "https://raw.githubusercontent.com/coil-kt/coil/3.6.3/LICENSE.txt",
+      "sha256": "d44a18f12b0f5a494ddc3ba0e980ae8b0936d938c611a518e80f2f1405098893",
+      "bytes": 11347,
+      "use": "copyright line (appendix); the text is the Apache-2.0 of part 3"
+    },
+    {
+      "id": "libsu-license",
+      "url": "https://raw.githubusercontent.com/topjohnwu/libsu/6.0.0/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "reorderable-license",
+      "url": "https://raw.githubusercontent.com/Calvin-LL/Reorderable/v3.1.0/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "flow-preferences-license",
+      "url": "https://raw.githubusercontent.com/tfcporciuncula/flow-preferences/1.9.1/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "timber-license",
+      "url": "https://raw.githubusercontent.com/JakeWharton/timber/5.0.1/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "accompanist-license",
+      "url": "https://raw.githubusercontent.com/google/accompanist/v0.37.3/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "dagger-license",
+      "url": "https://raw.githubusercontent.com/google/dagger/dagger-2.60.1/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    },
+    {
+      "id": "okhttp-license",
+      "url": "https://raw.githubusercontent.com/square/okhttp/parent-4.12.0/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "read to confirm the licence (Apache-2.0, no copyright line)"
+    }
+  ],
+  "components": [
+    {
+      "id": "opencv",
+      "name": "OpenCV",
+      "version": "4.11.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "opencv-license",
+        "opencv-copyright"
+      ],
+      "version_ref": "opencv_version",
+      "covers": [
+        "org.opencv:opencv"
+      ]
+    },
+    {
+      "id": "libjpeg-turbo",
+      "name": "libjpeg-turbo",
+      "version": "3.0.3",
+      "licence": "IJG License and Modified (3-clause) BSD License",
+      "sources": [
+        "libjpeg-turbo-license",
+        "libjpeg-turbo-ijg"
+      ]
+    },
+    {
+      "id": "libwebp",
+      "name": "libwebp",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "BSD-3-Clause",
+      "sources": [
+        "libwebp-license"
+      ]
+    },
+    {
+      "id": "libtiff",
+      "name": "libtiff",
+      "version": "4.6.0",
+      "licence": "libtiff licence (BSD-style)",
+      "sources": [
+        "libtiff-license"
+      ]
+    },
+    {
+      "id": "openexr",
+      "name": "OpenEXR (IlmImf)",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "BSD-3-Clause",
+      "sources": [
+        "openexr-license"
+      ]
+    },
+    {
+      "id": "openjpeg",
+      "name": "OpenJPEG",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "BSD-2-Clause",
+      "sources": [
+        "openjpeg-license"
+      ]
+    },
+    {
+      "id": "protobuf",
+      "name": "Protocol Buffers",
+      "version": "3.19.1",
+      "licence": "BSD-3-Clause",
+      "sources": [
+        "protobuf-license"
+      ]
+    },
+    {
+      "id": "cpufeatures",
+      "name": "cpufeatures",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "cpufeatures-license"
+      ]
+    },
+    {
+      "id": "opencv-libpng",
+      "name": "libpng (in OpenCV)",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "PNG Reference Library License version 2",
+      "sources": [
+        "libpng-license"
+      ]
+    },
+    {
+      "id": "zlib",
+      "name": "zlib",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "zlib License",
+      "sources": [
+        "zlib-license"
+      ]
+    },
+    {
+      "id": "carotene",
+      "name": "carotene",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "BSD-3-Clause (OpenCV 3-clause BSD License)",
+      "sources": [
+        "carotene-license"
+      ]
+    },
+    {
+      "id": "ittnotify",
+      "name": "ITT Notify (ittnotify)",
+      "version": "as bundled in OpenCV 4.11.0",
+      "licence": "BSD-3-Clause (offered as dual BSD/GPLv2; this app takes the BSD option)",
+      "sources": [
+        "ittnotify-license"
+      ]
+    },
+    {
+      "id": "onetbb",
+      "name": "oneTBB",
+      "version": "v2021.11.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "tbb-license"
+      ]
+    },
+    {
+      "id": "ade",
+      "name": "ADE",
+      "version": "0.1.2e",
+      "licence": "Apache-2.0",
+      "sources": [
+        "ade-license"
+      ]
+    },
+    {
+      "id": "kleidicv",
+      "name": "KleidiCV",
+      "version": "0.3.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "kleidicv-readme",
+        "kleidicv-license"
+      ]
+    },
+    {
+      "id": "libcxx",
+      "name": "libc++ runtime (libc++_shared.so from the OpenCV AAR)",
+      "version": "4.14.0",
+      "licence": "Apache-2.0 with LLVM exceptions",
+      "sources": [
+        "libcxx-license"
+      ],
+      "version_ref": "opencv_aligned_libcxx_version"
+    },
+    {
+      "id": "tesseract4android",
+      "name": "Tesseract4Android",
+      "version": "4.9.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "tesseract4android-license"
+      ],
+      "version_ref": "tesseract4android_version",
+      "covers": [
+        "cz.adaptech.tesseract4android:*"
+      ]
+    },
+    {
+      "id": "tesseract",
+      "name": "Tesseract OCR",
+      "version": "5.5.1",
+      "licence": "Apache-2.0",
+      "sources": [
+        "tesseract-license"
+      ]
+    },
+    {
+      "id": "leptonica",
+      "name": "Leptonica",
+      "version": "1.85.0",
+      "licence": "Leptonica licence (BSD-style)",
+      "sources": [
+        "leptonica-license"
+      ]
+    },
+    {
+      "id": "libjpeg",
+      "name": "libjpeg (IJG)",
+      "version": "v9f",
+      "licence": "IJG License",
+      "sources": [
+        "libjpeg-v9f-readme"
+      ]
+    },
+    {
+      "id": "libpng",
+      "name": "libpng",
+      "version": "1.6.48",
+      "licence": "PNG Reference Library License version 2",
+      "sources": [
+        "libpng-1648-license"
+      ]
+    },
+    {
+      "id": "tessdata-fast",
+      "name": "Tesseract trained data tessdata_fast (eng.traineddata)",
+      "version": "4.1.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "tessdata-fast-license"
+      ]
+    },
+    {
+      "id": "tessdata-best",
+      "name": "Tesseract trained data tessdata_best (jpn_weekly.traineddata, kor_weekly.traineddata)",
+      "version": "4.1.0",
+      "licence": "Apache-2.0",
+      "sources": []
+    },
+    {
+      "id": "androidx",
+      "name": "AndroidX and Jetpack Compose libraries",
+      "version": "various",
+      "licence": "Apache-2.0",
+      "sources": [],
+      "covers": [
+        "androidx.*"
+      ]
+    },
+    {
+      "id": "kotlin-stdlib",
+      "name": "Kotlin standard library",
+      "version": "2.4.21",
+      "licence": "Apache-2.0",
+      "sources": [],
+      "version_ref": "kotlin_version",
+      "covers": [
+        "org.jetbrains.kotlin:*"
+      ]
+    },
+    {
+      "id": "kotlinx-coroutines",
+      "name": "kotlinx.coroutines",
+      "version": "1.11.0",
+      "licence": "Apache-2.0",
+      "sources": [],
+      "version_ref": "kotlinx_coroutines_core_version",
+      "covers": [
+        "org.jetbrains.kotlinx:kotlinx-coroutines-*"
+      ]
+    },
+    {
+      "id": "kotlinx-serialization",
+      "name": "kotlinx.serialization",
+      "version": "1.13.0",
+      "licence": "Apache-2.0",
+      "sources": [],
+      "version_ref": "kotlinx_serialization_version",
+      "covers": [
+        "org.jetbrains.kotlinx:kotlinx-serialization-*"
+      ]
+    },
+    {
+      "id": "dagger-hilt",
+      "name": "Dagger and Hilt",
+      "version": "2.60.1",
+      "licence": "Apache-2.0",
+      "sources": [
+        "dagger-license"
+      ],
+      "version_ref": "hilt_version",
+      "covers": [
+        "com.google.dagger:*"
+      ]
+    },
+    {
+      "id": "inject",
+      "name": "javax.inject and jakarta.inject",
+      "version": "javax.inject 1, jakarta.inject-api 2.0.1",
+      "licence": "Apache-2.0",
+      "sources": []
+    },
+    {
+      "id": "coil",
+      "name": "Coil",
+      "version": "3.6.3",
+      "licence": "Apache-2.0",
+      "sources": [
+        "coil-license"
+      ],
+      "version_ref": "coil_version",
+      "covers": [
+        "io.coil-kt.coil3:*"
+      ]
+    },
+    {
+      "id": "okhttp",
+      "name": "OkHttp",
+      "version": "4.12.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "okhttp-license",
+        "okhttp-publicsuffix-notice"
+      ]
+    },
+    {
+      "id": "okio",
+      "name": "Okio",
+      "version": "3.18.1",
+      "licence": "Apache-2.0",
+      "sources": []
+    },
+    {
+      "id": "timber",
+      "name": "Timber",
+      "version": "5.0.1",
+      "licence": "Apache-2.0",
+      "sources": [
+        "timber-license"
+      ],
+      "version_ref": "timber_version",
+      "covers": [
+        "com.jakewharton.timber:*"
+      ]
+    },
+    {
+      "id": "flow-preferences",
+      "name": "flow-preferences",
+      "version": "1.9.1",
+      "licence": "Apache-2.0",
+      "sources": [
+        "flow-preferences-license"
+      ],
+      "version_ref": "flow_preferences_version",
+      "covers": [
+        "com.fredporciuncula:*"
+      ]
+    },
+    {
+      "id": "accompanist",
+      "name": "Accompanist permissions",
+      "version": "0.37.3",
+      "licence": "Apache-2.0",
+      "sources": [
+        "accompanist-license"
+      ],
+      "version_ref": "accompanist_version",
+      "covers": [
+        "com.google.accompanist:*"
+      ]
+    },
+    {
+      "id": "reorderable",
+      "name": "Reorderable",
+      "version": "3.1.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "reorderable-license"
+      ],
+      "version_ref": "reorderable_version",
+      "covers": [
+        "sh.calvin.reorderable:*"
+      ]
+    },
+    {
+      "id": "libsu",
+      "name": "libsu",
+      "version": "6.0.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "libsu-license"
+      ],
+      "version_ref": "libsu_version",
+      "covers": [
+        "com.github.topjohnwu.libsu:*"
+      ]
+    },
+    {
+      "id": "shizuku",
+      "name": "Shizuku API",
+      "version": "13.1.5",
+      "licence": "MIT",
+      "sources": [
+        "shizuku-license"
+      ],
+      "version_ref": "shizuku_version",
+      "covers": [
+        "dev.rikka.shizuku:*"
+      ]
+    },
+    {
+      "id": "glance-protobuf",
+      "name": "Protocol Buffers bundled in AndroidX Glance (glance-appwidget-external-protobuf)",
+      "version": "1.2.0",
+      "licence": "BSD-3-Clause",
+      "sources": [
+        "glance-protobuf-license"
+      ],
+      "version_ref": "glance_version"
+    }
+  ],
+  "data_files": [
+    {
+      "file": "eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2",
+      "component": "tessdata-fast"
+    },
+    {
+      "file": "jpn_weekly.traineddata",
+      "sha256": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "component": "tessdata-best"
+    },
+    {
+      "file": "kor_weekly.traineddata",
+      "sha256": "f888d4038348a0c3d25151e7f452bda0d74ca275b18cab146798bcbb94084fff",
+      "component": "tessdata-best"
+    }
+  ]
+}

@@ -47,10 +47,39 @@ class LicenseScreenTest {
         composeRule.onAllNodesWithText("Open-source notices").assertCountEquals(0)
     }
 
-    /** The ci build carries no engine, so its licence screen, and the screenshots of it, stay as they were. */
-    @Test fun `the notices asset is packaged exactly with the engine`() {
+    @Test fun `every build packages the Android notices and the engine notices exactly with the engine`() {
         val assets = ApplicationProvider.getApplicationContext<Application>().assets
-        assertEquals(BuildConfig.NATIVE_READER, openSourceNoticesPackaged(assets))
+        val expected = if (BuildConfig.NATIVE_READER) NOTICE_ASSETS else listOf(ANDROID_NOTICES_ASSET)
+        assertEquals(expected, packagedNoticeAssets(assets))
+    }
+
+    @Test fun `the real screen offers the entry and shows the packaged Android notices`() {
+        composeRule.setContent { FGATheme { LicenseScreen() } }
+        composeRule.onAllNodesWithText("Open-source notices").assertCountEquals(1)
+        composeRule.onNodeWithText("Open-source notices").performClick()
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Third-party notices of this app (libraries and data)").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test fun `both assets are shown in order and an unreadable one adds nothing`() {
+        runBlocking {
+            val both = loadNoticeAssets(NOTICE_ASSETS) { if (it == ANDROID_NOTICES_ASSET) "android one\n\nandroid two" else "engine one" }
+            assertEquals(listOf("android one", "android two", "engine one"), both)
+            val engineOnly = loadNoticeAssets(NOTICE_ASSETS) {
+                if (it == ANDROID_NOTICES_ASSET) throw java.io.IOException("unreadable") else "engine one"
+            }
+            assertEquals(listOf("engine one"), engineOnly)
+            assertEquals(emptyList(), loadNoticeAssets(NOTICE_ASSETS) { throw java.io.FileNotFoundException(it) })
+        }
+    }
+
+    @Test fun `a cancellation while reading an asset is not swallowed`() {
+        runBlocking {
+            assertFailsWith<CancellationException> {
+                loadNoticeAssets(NOTICE_ASSETS) { throw CancellationException("left the screen") }
+            }
+        }
     }
 
     @Test fun `a failed load shows no paragraphs and a cancelled one stays cancelled`() {

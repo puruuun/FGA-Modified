@@ -38,23 +38,30 @@ import kotlinx.coroutines.withContext
 /** Name of the repository LICENSE as bundled into the APK assets by the `copyLicenseAsset` task. */
 const val LICENSE_ASSET = "LICENSE"
 
+/** The notices of the libraries and data every build carries (a committed file, packaged in every build type). */
+const val ANDROID_NOTICES_ASSET = "licenses/THIRD_PARTY_NOTICES.txt"
+
 /**
  * The third-party notices of the text recogniser (design 0026, D-10), packaged by the
- * `copyEngineNotices` task only in builds that carry it; without the asset the screen shows no entry.
+ * `copyEngineNotices` task only in builds that carry it.
  */
 const val OPEN_SOURCE_NOTICES_ASSET = "ocr/THIRD_PARTY_NOTICES.txt"
 
-fun openSourceNoticesPackaged(assets: AssetManager): Boolean =
+/** Shown in this order, as one list. */
+val NOTICE_ASSETS = listOf(ANDROID_NOTICES_ASSET, OPEN_SOURCE_NOTICES_ASSET)
+
+fun assetPackaged(assets: AssetManager, name: String): Boolean =
     try {
-        assets.list(OPEN_SOURCE_NOTICES_ASSET.substringBeforeLast('/')).orEmpty()
-            .contains(OPEN_SOURCE_NOTICES_ASSET.substringAfterLast('/'))
+        assets.list(name.substringBeforeLast('/')).orEmpty().contains(name.substringAfterLast('/'))
     } catch (e: Exception) {
         false
     }
 
+fun packagedNoticeAssets(assets: AssetManager): List<String> = NOTICE_ASSETS.filter { assetPackaged(assets, it) }
+
 /**
- * The file is about 110 KB, too long for one Text: it is read off the main thread and shown as one
- * lazy item per paragraph, so only the visible ones are laid out.
+ * The Android notices are about 63 KB and the engine's about 110 KB, too long for one Text: they are read
+ * off the main thread and shown as one lazy item per paragraph, so only the visible ones are laid out.
  */
 fun noticeParagraphs(text: String): List<String> =
     text.split(Regex("\n\\s*\n")).map { it.trimEnd() }.filter { it.isNotBlank() }
@@ -70,13 +77,9 @@ fun LicenseScreen() {
         }
     }
     val notices: (suspend () -> List<String>)? = remember {
-        if (openSourceNoticesPackaged(context.assets)) {
-            {
-                withContext(Dispatchers.IO) {
-                    val text = context.assets.open(OPEN_SOURCE_NOTICES_ASSET).bufferedReader().use { it.readText() }
-                    noticeParagraphs(text)
-                }
-            }
+        val names = packagedNoticeAssets(context.assets)
+        if (names.isNotEmpty()) {
+            { loadNoticeAssets(names) { context.assets.open(it).bufferedReader().use { r -> r.readText() } } }
         } else {
             null
         }
@@ -130,6 +133,23 @@ fun LicenseScreenContent(licenseText: String, notices: (suspend () -> List<Strin
         }
     }
 }
+
+/**
+ * An asset that cannot be read adds nothing and does not hide the others; leaving the screen cancels the load,
+ * which must stay a cancellation.
+ */
+internal suspend fun loadNoticeAssets(names: List<String>, read: (String) -> String): List<String> =
+    withContext(Dispatchers.IO) {
+        names.flatMap { name ->
+            try {
+                noticeParagraphs(read(name))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+    }
 
 /** An unreadable asset shows an empty list; leaving the screen cancels the load, which must stay a cancellation. */
 internal suspend fun loadNoticesOrEmpty(load: suspend () -> List<String>): List<String> =

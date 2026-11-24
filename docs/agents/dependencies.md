@@ -49,6 +49,37 @@
   signed locally with `:app:assembleCi` / `:app:assembleBeta` (the `stable.yml` and `beta.yml`
   workflows were removed with the release key rotation, #128).
 
+## Third-party notices of the Android side
+
+`app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt` (packaged in every build type, shown on the
+licence screen before the Rust engine's notices) is written by hand. `tools/ci/android_notices_manifest.json`
+names, per component, its version, the URL each text and copyright line came from and the SHA-256 of
+each source, so a reviewer can re-fetch and compare. Copy texts verbatim from those upstream files,
+never from memory. `tools/ci/android_notices.py check` runs in Main CI through
+`tools/ci/test_android_notices.py` and fails when
+
+- a component's `version_ref` differs from `gradle/libs.versions.toml`, or `<name> <version>` is not in
+  the notices file;
+- a `*.traineddata` file under `assets/` has no `data_files` entry (name and SHA-256) or is not named in
+  the notices file;
+- an `implementation` / `api` / `runtimeOnly` dependency of `app`, `prefs`, `scripts` or `libautomata`
+  declared through the catalog matches no component's `covers` pattern (`group:artifact`, `*` allowed).
+  Only declared dependencies are looked at, so a new transitive dependency of a covered library raises
+  no alarm: add its component by hand when a bump brings one.
+
+It cannot see what is statically inside a native library. The third-party list of `libopencv_java4.so`
+and of Tesseract4Android's libraries changes with their versions, and the check compares versions only
+where the catalog has a key.
+
+- **A bump of OpenCV or Tesseract4Android: redo the bundled list from the library's build string and
+  `3rdparty/` at that tag.** For OpenCV, read `cv::getBuildInformation()` ("3rdparty dependencies"), then
+  for each entry the licence file and version under `3rdparty/<dir>` at the tag, and the oneTBB, ADE and
+  KleidiCV versions the build downloads. For Tesseract4Android, read its README (Tesseract, Leptonica,
+  libjpeg, libpng versions) and the vendored `cpp/*/src` licence files at the tag. Update the
+  notices file and the manifest (components, source URLs, SHA-256) together. The `opencv_aligned_libcxx_version`
+  component (libc++) moves with its own pin. A new runtime dependency or a new `*.traineddata` file
+  needs its entry in the same PR.
+
 ## Bump order
 
 The fork has no dependency bot (`renovate.json` was removed, owner 2026-10-30); version bumps

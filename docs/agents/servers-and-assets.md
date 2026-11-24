@@ -5,7 +5,7 @@ enum entries (`scripts/.../Images.kt`). `ImageLoader` looks up the current serve
 and **falls back to `En`** when the file is absent, so only add a server-specific copy when
 the art actually differs. `IFgoAutomataApi.findImage` additionally tries the `En` image on
 JP to support TranslateFGO. `assets/Support/` holds user-provided servant/CE images;
-`assets/tessdata/` the OCR data. Template images must be 720p — see the coordinates guide.
+`assets/tessdata/` the OCR data (every `*.traineddata` file needs an entry in `app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt` and in its manifest; `tools/ci/android_notices.py` fails without one). Template images must be 720p — see the coordinates guide.
 
 `docs/reference-images/{En,Jp,Cn,Tw,Kr}/<category>/` holds device screenshots, usually
 contributed by users, that the per-server templates were cut from. The category folders are

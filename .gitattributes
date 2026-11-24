@@ -7,3 +7,5 @@
 /native/ocr-model/NOTICE.txt text eol=lf
 /native/ocr-model/model.properties text eol=lf
 /LICENSE text eol=lf
+/app/src/main/assets/licenses/THIRD_PARTY_NOTICES.txt text eol=lf
+/tools/ci/android_notices_manifest.json text eol=lf

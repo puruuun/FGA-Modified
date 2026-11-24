@@ -221,7 +221,7 @@ Tapping an account card on the main screen opens that account's read-only dashbo
 
 The app is named **FGA(mod)** with package `io.github.fate_grand_automata.cardcount`. It installs separately from the official FGA and can update in place over earlier modified builds. See [Installation Guide](Installation-EN.md) for installation and beta builds, [Log Collection Setup](Log-Collection-Setup-EN.md) for initial log-collection setup, and [Import Original FGA Data](Original-FGA-Import-EN.md) for importing `.fga` configs from the official app.
 
-The full MIT License text is viewable in **More options → Advanced → License**.
+The full MIT License text is viewable in **More options → Advanced → License**. **Open-source notices** on the same screen shows the licences and copyright notices of the libraries and data files the app contains (OpenCV, Tesseract and others).
 
 ## Home-Screen Widgets
 
