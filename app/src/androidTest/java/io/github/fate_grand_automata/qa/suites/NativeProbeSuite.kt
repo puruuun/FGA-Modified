@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.qa.suites
 
+import io.github.fate_grand_automata.qa.NativeProbe
 import org.json.JSONObject
 import org.junit.runner.JUnitCore
 import org.junit.runner.Request
@@ -22,11 +23,15 @@ internal fun runNativeProbeCase(case: JSONObject): JSONObject {
     })
     val outcome = core.run(Request.method(NativeProbeTest::class.java, test))
     outcome.failures.firstOrNull()?.let { throw AssertionError("$test: ${it.message}", it.exception) }
-    // tools/device-qa/run.py reads `requires` to tell a missing feature from a missing library.
+    // tools/device-qa/run.py reads `requires` to tell a missing feature from a missing library, so
+    // it is attached only when the library loaded and the test skipped for the feature: a skip
+    // because the library is missing stays a plain skip, which --native fails.
     return JSONObject().put("test", test).apply {
         skipped?.let {
             put("skipped", it)
-            case.optString("requires").takeIf(String::isNotEmpty)?.let { feature -> put("requires", feature) }
+            if (NativeProbe.loaded) {
+                case.optString("requires").takeIf(String::isNotEmpty)?.let { feature -> put("requires", feature) }
+            }
         }
     }
 }

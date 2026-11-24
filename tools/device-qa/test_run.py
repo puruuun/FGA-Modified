@@ -72,6 +72,10 @@ class SummaryTest(unittest.TestCase):
     def test_native_crypto_fails_on_a_skipped_crypto_probe(self):
         self.assertFalse(self.passes([PING, CRYPTO_SKIPPED], require_native=True, require_crypto=True))
 
+    def test_native_fails_when_only_crypto_probes_ran_without_the_library(self):
+        missing = result("ringProbe", {"test": "ringProbe", "skipped": "libfga_ffi.so is not packaged; build with -Pfga.native=true"})
+        self.assertFalse(self.passes([missing], require_native=True))
+
     def test_native_crypto_passes_when_everything_ran(self):
         self.assertTrue(self.passes([PING, CRYPTO], require_native=True, require_crypto=True))
 
