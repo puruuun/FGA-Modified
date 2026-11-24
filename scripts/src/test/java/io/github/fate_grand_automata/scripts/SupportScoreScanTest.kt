@@ -109,7 +109,7 @@ class SupportScoreScanTest {
      * [guestOnly] list has the latter without a confirm-setup button, so it has no rows to find.
      * noSupportsPresent is the list's "not found" text.
      */
-    private class World(val total: Int, val perScreen: Int = 3, var guestOnly: Boolean = false) {
+    private class World(val total: Int, val perScreen: Int = 3, var guestOnly: Boolean = false, val pitch: Int = 400) {
         val exitManager = ExitManager()
         var offset = 0
         var onSupportScreen = true
@@ -174,7 +174,7 @@ class SupportScoreScanTest {
                 try { return block() } finally { inSnap = false }
             }
             override fun rows() = visible().mapIndexed { position, id ->
-                val bounds = SupportBounds(Region(76, 200 + 440 * position, 2356, 428))
+                val bounds = SupportBounds(Region(76, 200 + pitch * position, 2356, 428))
                 rowsBounds[bounds.region.y] = id
                 bounds
             }
@@ -203,7 +203,7 @@ class SupportScoreScanTest {
         /** A row position whose field the frames place partly outside the display, as a wrong geometry would. */
         var outsidePosition: Int? = null
 
-        fun position(bounds: SupportBounds) = (bounds.region.y - 200) / 440
+        fun position(bounds: SupportBounds) = (bounds.region.y - 200) / pitch
 
         /**
          * What the display shows now at 720p: a textured background with each visible row's field where
@@ -417,8 +417,9 @@ class SupportScoreScanTest {
         val maxScreens: Int = SupportScoreScanner.MAX_SCREENS,
         kotlin: (Int) -> SupportScores = ::kotlinScore,
         rust: (Int) -> EngineScore = ::rustScore,
+        pitch: Int = 400,
     ) {
-        val world = World(total, perScreen, guestOnly)
+        val world = World(total, perScreen, guestOnly, pitch)
         val time = TestTimeSource()
         val reader = Reader(world, time, kotlin)
         val engine = Engine(world, rust)
@@ -899,7 +900,7 @@ class SupportScoreScanTest {
 
         fun json(text: String): JsonElement = Json.parseToJsonElement(text)
         assertThat(lines[0]).isEqualTo(json("""
-            {"schema":2,"kind":"row","time":1790000000010,"server":"Jp","screen":0,"row":0,
+            {"schema":3,"kind":"row","time":1790000000010,"server":"Jp","screen":0,"row":0,
              "bounds":{"x":76,"y":200,"w":2356,"h":428},"crop":"crops/s000-r0.png","cropSha256":"${ScoreScanLog.sha256(crop0)}",
              "kotlin":{"classScore":62,"grandScore":16,"display":"compound","checkGrand":true,"micros":1500},
              "rust":{"status":"read","classScore":62,"grandScore":16,"display":"compound","classReason":null,"grandReason":null,
@@ -923,14 +924,14 @@ class SupportScoreScanTest {
         fun withoutMatch(line: JsonObject) =
             JsonObject(line + ("native" to JsonObject(line.obj("native") - "match")) + ("frameCheck" to JsonObject(line.obj("frameCheck") - "match" - "best")))
         assertThat(withoutMatch(natives[0])).isEqualTo(json("""
-            {"schema":2,"kind":"native","time":1790000000030,"server":"Jp","screen":0,"row":0,"cropSha256":"${ScoreScanLog.sha256(crop0)}",
+            {"schema":3,"kind":"native","time":1790000000030,"server":"Jp","screen":0,"row":0,"cropSha256":"${ScoreScanLog.sha256(crop0)}",
              "native":{"crop":"native/s000-r0.png","cropSha256":"${ScoreScanLog.sha256(native0)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":160,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
                        "clamped":[],"captureMicros":30000,"fieldOffset":0},
              "reason":null,"detail":null,"captureMicros":30000,"postNativeLooks":1,"frameCheck":{"offset":0},"nativeFrames":1}
         """))
         assertThat(withoutMatch(natives[1])).isEqualTo(json("""
-            {"schema":2,"kind":"native","time":1790000000040,"server":"Jp","screen":0,"row":1,"cropSha256":"${ScoreScanLog.sha256(crop1)}",
+            {"schema":3,"kind":"native","time":1790000000040,"server":"Jp","screen":0,"row":1,"cropSha256":"${ScoreScanLog.sha256(crop1)}",
              "native":{"crop":"native/s000-r1.png","cropSha256":"${ScoreScanLog.sha256(native1)}","frame":{"w":2560,"h":1440},
                        "scale":{"x":2.0,"y":2.0},"region":{"x":1996,"y":560,"w":200,"h":140},"field":{"x":40,"y":40,"w":120,"h":60},
                        "clamped":[],"captureMicros":30000,"fieldOffset":0},
@@ -951,10 +952,10 @@ class SupportScoreScanTest {
              "postNativeLooks":{"screens":1,"moreThanOne":0,"max":1}}
         """))
         assertThat(JsonObject(summary - "native")).isEqualTo(json("""
-            {"schema":2,"appVersion":"1.9.0-beta.1-rust.1","deviceModel":"Test Phone","androidVersion":"15 (API 35)",
+            {"schema":3,"appVersion":"1.9.0-beta.1-rust.1","deviceModel":"Test Phone","androidVersion":"15 (API 35)",
              "server":"Jp","folder":"support-score-scan/${result.folder}","startTime":1790000000000,"endTime":1790000000050,
              "endReason":"bottom","detail":null,"screens":1,"rows":2,
-             "counts":{"agree":1,"differ":1,"kotlinOnly":0,"rustOnly":1,"bothUnknown":0,
+             "counts":{"agree":1,"differ":1,"kotlinOnly":0,"rustOnly":1,"bothUnknown":0,"notAsked":0,
                        "kotlinClass62":1,"rustClass62":1,"kotlinGrand16":1,"rustGrand16":1},
              "engineLoadMicros":420000,
              "kotlinMicros":{"count":2,"median":1500,"max":1500},
@@ -962,6 +963,31 @@ class SupportScoreScanTest {
              "engineUnavailableReason":null}
         """))
         assertThat(result.folder).isEqualTo(SupportScoreScanner.stamp(1_790_000_000_000L))
+    }
+
+    @Test
+    fun `a field under the bottom band is read by the Kotlin reader only and logged as not asked`() {
+        // Rows at 200, 630 and 1060: the third is a whole 60x30 field under the band.
+        val scan = Scan(total = 3, pitch = 430)
+        val result = scan.run()
+        assertThat(scan.reader.calls.map { it.first }).containsExactly(0, 1, 2)
+        assertThat(scan.engine.reads.size).isEqualTo(2)
+        val lines = scan.lines(result)
+        assertThat(lines.map { it.obj("bounds").int("y") }).containsExactly(200, 630, 1060)
+        assertThat(lines[2].obj("rust")).isEqualTo(Json.parseToJsonElement("""
+            {"status":"not_asked","classScore":null,"grandScore":null,"display":"unknown","classReason":"bottom_band",
+             "grandReason":"bottom_band","confidence":null,"minCharConfidence":null,"text":"","detail":null,"micros":null,"callMicros":null}
+        """))
+        assertThat(lines[2].getValue("agree")).isEqualTo(JsonNull)
+        assertThat(lines[2].obj("kotlin").int("classScore")).isEqualTo(52)
+        assertThat(lines[1].obj("rust").str("status")).isEqualTo("read")
+        assertThat(File(scan.folder(result), lines[2].str("crop")).isFile).isTrue()
+        assertThat(listOf(result.rows, result.agree, result.differ)).containsExactly(3, 2, 0)
+        val counts = scan.summary(result).obj("counts")
+        assertThat(listOf("agree", "differ", "notAsked", "kotlinOnly", "bothUnknown", "kotlinClass62").map { counts.int(it) })
+            .containsExactly(2, 0, 1, 0, 0, 0)
+        assertThat(scan.summary(result).obj("rustMicros").int("count")).isEqualTo(2)
+        assertThat(scan.summary(result).obj("kotlinMicros").int("count")).isEqualTo(3)
     }
 
     private fun record(kotlin: SupportScores, rust: EngineScore) = ScoreScanRecord(
@@ -1251,7 +1277,7 @@ class SupportScoreScanTest {
     @Test
     fun `a native line with cut sides and no match, field by field`() {
         val expected = Json.parseToJsonElement("""
-            {"schema":2,"kind":"native","time":5,"server":"Kr","screen":1,"row":2,"cropSha256":"aa",
+            {"schema":3,"kind":"native","time":5,"server":"Kr","screen":1,"row":2,"cropSha256":"aa",
              "native":{"crop":"native/s001-r2.png","cropSha256":"bb","frame":{"w":2560,"h":1440},"scale":{"x":2.0,"y":2.0},
                        "region":{"x":0,"y":0,"w":170,"h":110},"field":{"x":10,"y":10,"w":120,"h":60},
                        "clamped":["left","top"],"match":null,"captureMicros":9,"fieldOffset":-2},

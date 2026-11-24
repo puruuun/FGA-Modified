@@ -42,7 +42,7 @@ class EngineFirstSelectionTest {
     fun releaseMocks() = io.mockk.clearAllMocks()
 
     /** The existing reader on mocked OCR and templates, as SupportScoreReaderTest drives it. */
-    private class ReaderFixture(server: GameServer, text: String, confidence: Int, engineFieldFits: Boolean) {
+    private class ReaderFixture(server: GameServer, text: String, confidence: Int, engineFieldFits: Boolean, rowY: Int = 408) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val messages = mockk<IScriptMessages>(relaxed = true)
         val logs = mutableListOf<String>()
@@ -50,7 +50,7 @@ class EngineFirstSelectionTest {
         val ocr = mockk<OcrService>()
         val crop = mockk<Pattern>(relaxed = true)
         val engineField = mockk<Pattern>(relaxed = true)
-        val bounds = SupportBounds(Region(76, 408, 2356, 428))
+        val bounds = SupportBounds(Region(76, rowY, 2356, 428))
         val region = SupportScoreLayout.numberRegion(bounds.region)
         val reader = SupportScoreReader(api, ocr)
 
@@ -103,8 +103,11 @@ class EngineFirstSelectionTest {
 
     private data class Outcome(val matched: Boolean, val ocrCalls: Int, val logs: List<String>)
 
-    private fun run(server: GameServer, text: String, confidence: Int, class62: Boolean, grand16: Boolean, engine: ((ReaderFixture) -> SupportScoreEngine)?, fits: Boolean = true): Outcome {
-        val f = ReaderFixture(server, text, confidence, fits)
+    private fun run(
+        server: GameServer, text: String, confidence: Int, class62: Boolean, grand16: Boolean,
+        engine: ((ReaderFixture) -> SupportScoreEngine)?, fits: Boolean = true, rowY: Int = 408,
+    ): Outcome {
+        val f = ReaderFixture(server, text, confidence, fits, rowY)
         var ocrCalls = 0
         every { f.ocr.detectTextLine(f.crop, any()) } answers { ocrCalls++; OcrText(text, confidence) }
         val reader = engine?.let { EngineFirstSupportScoreReader(f.api, it(f), f.reader) } ?: f.reader
@@ -136,6 +139,21 @@ class EngineFirstSelectionTest {
     }
 
     @Test
+    fun `a row under the bottom band reads, logs and decides as with the existing reader alone`() {
+        for (server in listOf<GameServer>(GameServer.Jp.Original, GameServer.Kr)) for ((text, confidence) in screens) {
+            for ((class62, grand16) in listOf(true to false, false to true, true to true)) {
+                val direct = run(server, text, confidence, class62, grand16, null, rowY = 1058)
+                assertThat(run(server, text, confidence, class62, grand16, { _ -> NoSupportScoreEngine }, rowY = 1058),
+                    "unavailable $server '$text' $class62 $grand16").isEqualTo(direct)
+                val engine = FakeSupportScoreEngine { EngineAnswers.compound(62, 16) }
+                assertThat(run(server, text, confidence, class62, grand16, { _ -> engine }, rowY = 1058),
+                    "bottom band $server '$text' $class62 $grand16").isEqualTo(direct)
+                assertThat(engine.reads).isEmpty()
+            }
+        }
+    }
+
+    @Test
     fun `with a complete engine answer the existing reader runs no OCR and the log line keeps its form`() {
         val outcome = run(GameServer.Jp.Original, "", 0, true, true, { _ -> FakeSupportScoreEngine { EngineAnswers.compound(62, 16) } })
         assertThat(outcome).isEqualTo(Outcome(true, 0, listOf("conditions 62 16 true true Compound true")))
@@ -160,10 +178,11 @@ class EngineFirstSelectionTest {
         engineAnswers: Map<Int, io.github.fate_grand_automata.scripts.supportSelection.EngineScore>,
         val existingAnswers: Map<Int, SupportScores>,
         engineReason: String? = null,
+        rowYs: List<Int> = List(3) { 208 + 400 * it },
     ) {
         val api = mockk<IFgoAutomataApi>(relaxed = true)
         val prefs = mockk<ISupportPreferences>(relaxed = true)
-        val rows = List(3) { SupportBounds(Region(76, 408 + 400 * it, 2356, 428)) }
+        val rows = rowYs.map { SupportBounds(Region(76, it, 2356, 428)) }
         val fields = rows.map { mockk<Pattern>(relaxed = true) }
         val engine = FakeSupportScoreEngine(engineReason) { field -> engineAnswers.getValue(fields.indexOf(field)) }
         val existingCalls = mutableListOf<Int>()
@@ -235,6 +254,19 @@ class EngineFirstSelectionTest {
         f.clicked(1)
         verify(exactly = 0) { with(f.api) { f.rows[2].region.click(any()) } }
         assertThat(f.existingCalls).containsExactly(1)
+    }
+
+    @Test
+    fun `a row under the bottom band is chosen on the existing reader's answer without an engine read`() {
+        val f = ListFixture(
+            mapOf(0 to EngineAnswers.compound(40, 16), 1 to EngineAnswers.compound(40, 16), 2 to EngineAnswers.compound(62, 16)),
+            mapOf(0 to unread, 1 to unread, 2 to read6216),
+            rowYs = listOf(258, 658, 1058),
+        )
+        assertThat(f.preferred.select()).isEqualTo(SupportSelectionResult.Done)
+        f.clicked(2)
+        assertThat(f.existingCalls).containsExactly(2)
+        assertThat(f.engine.reads).containsExactly(f.fields[0], f.fields[1])
     }
 
     @Test

@@ -2,6 +2,7 @@ package io.github.fate_grand_automata.scripts.supportSelection
 
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.locations.SupportScoreLayout
+import io.github.fate_grand_automata.scripts.locations.SupportScreenLocations
 import io.github.lib_automata.Pattern
 import kotlin.time.Duration
 
@@ -36,18 +37,62 @@ interface SupportScoreEngine : AutoCloseable {
 /**
  * The engine's input, cut the same way by the selection and the score scan: the row's score number
  * region from the caller's current snapshot. The engine was measured on exactly this crop, 60x30
- * grayscale at 720p. The selection gives it a crop of another size (a row cut by the screen edge)
- * only after [fits]; the scan gives it every crop and logs the engine's `CropSize` refusal.
+ * grayscale at 720p. Whether a field goes to the engine is decided here, in [refusal], for both:
+ * the selection gives the engine no field that [refusal] refuses; the scan gives it every crop of
+ * another size (a row cut by the screen edge) and logs the engine's `CropSize` refusal, and does
+ * not give it a field under the bottom band.
  */
 object SupportScoreEngineField {
     const val WIDTH = 60
     const val HEIGHT = 30
+
+    /**
+     * The field's rows 0 until this hold every row the engine's recogniser reads: it leaves out the
+     * bottom 4 of the 30 (`RowTrim::MEASURED` in native/fga-sensing, issue #639). The value is
+     * listed in native/fga-sensing/src/readers/support_score/row-trim.txt, which a Rust and a
+     * Kotlin test both read, so neither side can change alone.
+     */
+    const val RECOGNISED_ROWS_END = 26
 
     fun cut(api: IFgoAutomataApi, bounds: SupportBounds, tag: String): Pattern = with(api) {
         SupportScoreLayout.numberRegion(bounds.region).getPattern(tag)
     }
 
     fun fits(field: Pattern) = field.width == WIDTH && field.height == HEIGHT
+
+    /** Script y just below the last row the recogniser reads of this row's field. */
+    fun recognisedEndY(bounds: SupportBounds): Int =
+        bounds.region.y + SupportScoreLayout.SCORE_Y + RECOGNISED_ROWS_END * (SupportScoreLayout.SCORE_HEIGHT / HEIGHT)
+
+    /**
+     * Issue #657: the band at the bottom of the support screen can cover the lower rows of a field
+     * that is still a whole 60x30 crop, and the engine's own pixel rule (`clipping.rs`) only finds
+     * a flat band, not a textured one. So a field is refused by its position when the band, at its
+     * lowest measured top, can reach a row the recogniser reads: bounds.y above 1056. It is not
+     * refused for touching the band at all (bounds.y above 1048), because the third row of every
+     * first screen of a list lies at 1050 to 1066 and would then always go to the existing reader.
+     * A refused row is read by the existing reader like any row the engine does not answer; the
+     * selection reads it again with the engine once a swipe has moved it up (not in a list of three
+     * supports or fewer, or with no swipes).
+     */
+    fun coveredByBottomBand(bounds: SupportBounds): Boolean =
+        recognisedEndY(bounds) > SupportScreenLocations.BOTTOM_BAND_TOP_Y
+
+    /** Why the engine is not given [field] of [bounds], or null when it is. The size comes first. */
+    fun refusal(bounds: SupportBounds, field: Pattern): EngineFieldRefusal? = when {
+        !fits(field) -> EngineFieldRefusal.CropSize
+        coveredByBottomBand(bounds) -> EngineFieldRefusal.BottomBand
+        else -> null
+    }
+}
+
+/** Why the caller does not give a field to the engine (the engine's own refusals are [EngineUnknownReason]). */
+enum class EngineFieldRefusal {
+    /** Not 60x30: the row leaves the game area. */
+    CropSize,
+
+    /** 60x30, but the bottom band can cover a row the recogniser reads ([SupportScoreEngineField.coveredByBottomBand]). */
+    BottomBand,
 }
 
 /** The binding of every build that has no engine. */
