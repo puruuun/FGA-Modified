@@ -1,0 +1,128 @@
+package io.github.fate_grand_automata.capture
+
+import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class SupportFilterCriteriaTest {
+    @get:Rule val temp = TemporaryFolder()
+
+    private val builtin = """[
+        {"kind":"servant","folder":"Arcueid","id":2300500,"number":351,"name":"a","region":null},
+        {"kind":"ce","folder":"Black Grail.png","id":9400480,"number":48,"name":"b","region":null}
+    ]"""
+
+    /** A fictional image-download list in Atlas's export shape. */
+    private fun catalog(vararg rows: Triple<Long, Int, String>) = rows.joinToString(",", "[", "]") { (id, no, cls) ->
+        """{"id":$id,"collectionNo":$no,"name":"Servant $no","type":"normal","className":"$cls","rarity":5}"""
+    }
+
+    private fun lookup(
+        jpCatalog: String? = null,
+        krCaptured: String? = null,
+        jpEquips: String? = null,
+    ): SupportIdLookup {
+        val names = temp.newFolder()
+        val catalogs = temp.newFolder()
+        jpCatalog?.let { File(catalogs, "JP-servant.json").writeText(it) }
+        jpEquips?.let { File(catalogs, "JP-equip.json").writeText(it) }
+        krCaptured?.let { File(names, "basic_servant_details.json").writeText(it) }
+        return SupportIdLookup.load(builtin, GameNames(names), catalogs)
+    }
+
+    private val full by lazy { lookup(
+        jpCatalog = catalog(Triple(100100, 2, "saber"), Triple(900100, 900, "ruler")),
+        krCaptured = """[{"id":200200,"type":"normal","className":"archer","collectionNo":7,"name":"k"}]""",
+        jpEquips = """[{"id":9300100,"collectionNo":300,"name":"CE","type":"servantEquip","className":"","rarity":5}]""",
+    ) }
+
+    @Test fun builtInFolderNumberedFolderAndIdEntryMapToIds() {
+        assertEquals(2300500, full.servantId("Arcueid"))
+        assertEquals(100100, full.servantId("No.2 Somebody"))
+        // A KR folder carries the KR number, which only the KR list knows.
+        assertEquals(200200, full.servantId("KR.No.7 x"))
+        assertNull(full.servantId("No.7 x"))
+        assertEquals(555, full.servantId("#555"))
+        assertNull(full.servantId("My own image"))
+        assertNull(full.servantId("NA.No.2 x"))
+        assertEquals(9400480, full.ceId("Black Grail.png"))
+        assertEquals(9300100, full.ceId("No.300 CE"))
+        assertNull(full.ceId("Unknown.png"))
+    }
+
+    @Test fun classesComeFromTheServantLists() {
+        assertEquals(mapOf(100100L to 1, 900100L to 9, 200200L to 2), full.servantClassIds)
+        assertTrue(lookup().servantClassIds.isEmpty())
+    }
+
+    @Test fun migrationEntriesMapBackToTheSameId() {
+        for (id in listOf(2300500L, 100100L, 200200L, 424242L)) assertEquals(id, full.servantId(full.servantEntry(id)))
+        assertEquals("Arcueid", full.servantEntry(2300500))
+        assertEquals("#424242", full.servantEntry(424242))
+        assertEquals(9300100, full.ceId(full.ceEntry(9300100)))
+    }
+
+    private val on = SupportFilterSettings(enabled = true)
+
+    @Test fun switchOffBuildsNothing() {
+        assertEquals(SupportFilterBuild.Off, buildSupportFilter(on.copy(enabled = false, servants = setOf("Arcueid")), full))
+    }
+
+    @Test fun anUnmappableEntryStopsTheFilterAndNamesIt() {
+        val build = buildSupportFilter(on.copy(servants = setOf("Arcueid", "My own image"), ces = setOf("Unknown.png")), full)
+        assertEquals(SupportFilterBuild.Unmapped(listOf("My own image"), listOf("Unknown.png")), build)
+        assertNull(build.applied)
+    }
+
+    @Test fun classScoreWithoutAServantListStopsTheFilter() {
+        assertEquals(SupportFilterBuild.NoClassList, buildSupportFilter(on.copy(score62 = true), lookup()))
+        val ready = buildSupportFilter(on.copy(score62 = true), full).applied!!
+        assertTrue(ready.classScore62)
+        assertEquals(full.servantClassIds, ready.servantClassIds)
+    }
+
+    @Test fun everyConditionIsCarriedOver() {
+        val build = buildSupportFilter(
+            on.copy(
+                servants = setOf("Arcueid", "No.2 a"), ces = setOf("Black Grail.png"), mlb = true, maxAscended = true,
+                displayedAscensions = setOf("s1|Arcueid", "c2|Arcueid", "s4|No.2 a", "s2|Not chosen", "zz|Arcueid"),
+                skills = listOf(true, false, true), appendCheck = true, appends = listOf(false, true, false, false, true),
+                npCheck = true, minimumNp = 3, friendsOnly = true,
+            ),
+            full,
+        )
+        assertEquals(
+            SupportListCriteria(
+                servantIds = setOf(2300500, 100100), ceIds = setOf(9400480), ceMlb = true, maxAscended = true,
+                displayedAscensions = mapOf(2300500L to setOf(0, 12), 100100L to setOf(3)),
+                skillsMax = listOf(true, false, true), appendsMax = listOf(false, true, false, false, true),
+                minimumNpLevel = 3, friendsOnly = true,
+            ),
+            build.applied,
+        )
+    }
+
+    @Test fun conditionsTheScriptTiesToAPreferredServantNeedOne() {
+        val build = buildSupportFilter(
+            on.copy(maxAscended = true, skills = listOf(true, true, true), appendCheck = true, appends = List(5) { true }, mlb = true),
+            full,
+        )
+        // Nothing the script would apply is left, so the proxy relays the list untouched.
+        assertNull(build.applied)
+        assertEquals(SupportListCriteria(), (build as SupportFilterBuild.Ready).criteria)
+    }
+
+    @Test fun appendsNeedTheirSwitchAndNpNeedsALevelAboveOne() {
+        val c = buildSupportFilter(
+            on.copy(servants = setOf("Arcueid"), appends = List(5) { true }, npCheck = true, minimumNp = 1),
+            full,
+        ).applied!!
+        assertEquals(List(5) { false }, c.appendsMax)
+        assertEquals(0, c.minimumNpLevel)
+    }
+}

@@ -164,7 +164,14 @@ fun FgaApp(
                             navigateToWeeklySettings = { backStack.add(Route.WeeklyRouteSettings) },
                             navigateToWidgetSettings = { backStack.add(Route.WidgetSettings) },
                             navigateToGainsTracker = { backStack.add(Route.GainsTracker) },
-                            navigateToFriendManager = { backStack.add(Route.FriendManager()) }
+                            navigateToFriendManager = { backStack.add(Route.FriendManager()) },
+                            navigateToSupportListFilter = { backStack.add(Route.SupportListFilter) }
+                        )
+                    }
+                    entry<Route.SupportListFilter> {
+                        io.github.fate_grand_automata.ui.more.ManualSupportFilterScreen(
+                            prefs = hiltViewModel<io.github.fate_grand_automata.ui.more.ManualSupportFilterViewModel>().prefsCore,
+                            supportVm = supportVm
                         )
                     }
                     entry<Route.WeeklyRouteSettings> {

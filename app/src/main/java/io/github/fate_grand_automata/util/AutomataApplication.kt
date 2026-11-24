@@ -41,6 +41,7 @@ class AutomataApplication : Application() {
         io.github.fate_grand_automata.capture.chaldea.ChaldeaSyncManager.init(this, prefsCore)
         WidgetSettingsObserver.start(prefsCore) { WidgetRefresh.requestUpdate(this@AutomataApplication) }
         CaptureController.ensureProxy(this)
+        io.github.fate_grand_automata.capture.SupportListFilterController.init(this, prefsCore)
 
         CoroutineScope(Dispatchers.IO).launch { deleteLegacyEventCache(File(filesDir, "capture/names")) }
     }

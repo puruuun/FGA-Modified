@@ -23,3 +23,5 @@ If FGA cannot confirm the display switch or restoration, it stops without select
 
 - Reads digits and display icons using templates from KR and JP screens; blurry or low-resolution screens may fail to read and skip candidates.
 - Screen-switching speed on real devices may vary depending on your environment.
+
+To have the support list itself show only matching supports while log collection runs, see [Support list filter](Support-List-Filter-EN.md).

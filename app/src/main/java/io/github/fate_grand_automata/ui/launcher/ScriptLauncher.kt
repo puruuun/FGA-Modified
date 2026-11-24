@@ -62,6 +62,12 @@ fun ScriptLauncher(
                 ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore)
             }
 
+            // Manual play starts from the play button menu, so the manual support list filter is switched here (#685).
+            if (io.github.fate_grand_automata.ui.pref_support.rememberCaptureAvailable(prefsCore)) {
+                HorizontalDivider()
+                ManualSupportFilterRow(prefsCore.manualSupportFilter)
+            }
+
             HorizontalDivider()
 
             Row(

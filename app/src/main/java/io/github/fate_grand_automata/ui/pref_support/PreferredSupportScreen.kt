@@ -66,7 +66,9 @@ fun PreferredSupportScreen(
 ) {
     PreferredSupport(
         config = vm.supportPrefs,
-        vm = supportVm
+        vm = supportVm,
+        filter = SupportListFilterUi(R.string.support_list_filter_summary_config),
+        captureAvailable = rememberCaptureAvailable(vm.prefsCore)
     )
 
     val context = LocalContext.current
@@ -127,11 +129,23 @@ internal fun SupportPrefsCore.clearHiddenChecks(hasServants: Boolean, grandServa
     }
 }
 
+/**
+ * [filter] adds the support list filter (#685): its switch on top, the displayed ascension item and, next to each
+ * condition, whether the filter applies it.
+ */
 @Composable
 internal fun PreferredSupport(
     config: SupportPrefsCore,
-    vm: SupportViewModel
+    vm: SupportViewModel,
+    filter: SupportListFilterUi? = null,
+    captureAvailable: Boolean = true,
+    heading: String = stringResource(R.string.p_support_mode_preferred)
 ) {
+    @Composable
+    fun scope(applied: Boolean) {
+        if (filter != null) FilterScopeLabel(applied)
+    }
+
     val prefServants by config.preferredServants.remember()
     val prefCEs by config.preferredCEs.remember()
     val grandServant by config.grandServant.remember()
@@ -177,7 +191,21 @@ internal fun PreferredSupport(
     CappedWidth {
         LazyColumn {
             item {
-                Heading(stringResource(R.string.p_support_mode_preferred))
+                Heading(heading)
+            }
+
+            if (filter != null) {
+                item {
+                    Card(
+                        modifier = Modifier.padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        SupportListFilterHeader(config, filter, captureAvailable)
+                    }
+                }
             }
 
             item {
@@ -206,6 +234,12 @@ internal fun PreferredSupport(
                                 SupportImageDownload(SupportCatalogKind.Servant, select, { vm.refresh(context) })
                             }
                         )
+                        scope(applied = true)
+
+                        if (filter != null && prefServants.isNotEmpty()) {
+                            DisplayedAscensionPreference(config, servantEntries)
+                            scope(applied = true)
+                        }
 
                         // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
                         config.preferredNoblePhantasms.SupportSelectPreference(
@@ -217,15 +251,18 @@ internal fun PreferredSupport(
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
+                        scope(applied = false)
 
                         if (prefServants.isNotEmpty()) {
                             config.maxAscended.SwitchPreference(
                                 title = stringResource(R.string.p_battle_config_support_max_ascended)
                             )
+                            scope(applied = true)
 
                             config.grandServant.SwitchPreference(
                                 title = stringResource(R.string.p_battle_config_support_grand_servant)
                             )
+                            scope(applied = false)
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -244,6 +281,7 @@ internal fun PreferredSupport(
                                     )
                                 )
                             }
+                            scope(applied = true)
                         }
                         if (prefServants.isNotEmpty()) {
                             config.npLevelCheck.SwitchPreference(
@@ -256,14 +294,17 @@ internal fun PreferredSupport(
                                     entries = (2..5).associateWith { stringResource(R.string.p_np_min_level_entry, it) }
                                 )
                             }
+                            scope(applied = true)
                             config.score62Check.SwitchPreference(
                                 title = stringResource(R.string.p_score_62_check)
                             )
+                            scope(applied = true)
                             // The game shows +16 only for Grand servants.
                             if (grandServant) {
                                 config.grandScore16Check.SwitchPreference(
                                     title = stringResource(R.string.p_grand_score_16_check)
                                 )
+                                scope(applied = false)
                             }
                             config.appendSkillCheck.SwitchPreference(
                                 title = stringResource(R.string.p_append_skill_check)
@@ -276,6 +317,7 @@ internal fun PreferredSupport(
                                     }
                                 }
                             }
+                            scope(applied = true)
                         }
                     }
                 }
@@ -307,11 +349,13 @@ internal fun PreferredSupport(
                                 SupportImageDownload(SupportCatalogKind.CE, select, { vm.refresh(context) })
                             }
                         )
+                        scope(applied = true)
 
                         if (prefCEs.isNotEmpty()) {
                             config.mlb.SwitchPreference(
                                 title = stringResource(R.string.p_battle_config_support_mlb)
                             )
+                            scope(applied = true)
 
                             // These options only apply to Grand Servants
                             AnimatedVisibility(grandServant) {
@@ -325,6 +369,7 @@ internal fun PreferredSupport(
                                     config.requireBothNormalAndRewardMatch.SwitchPreference(
                                         title = stringResource(R.string.p_battle_config_support_require_both_normal_and_reward_match)
                                     )
+                                    scope(applied = false)
                                 }
                             }
                         }
@@ -356,6 +401,7 @@ internal fun PreferredSupport(
                         config.friendsOnly.SwitchPreference(
                             title = stringResource(R.string.p_battle_config_support_friends_only)
                         )
+                        scope(applied = true)
 
                         config.autoFriendRequest.SwitchPreference(
                             title = stringResource(R.string.p_battle_config_support_auto_friend_request),
@@ -364,10 +410,13 @@ internal fun PreferredSupport(
 
                         AnimatedVisibility (friendsOnly) {
                             if (vm.friends.isNotEmpty()) {
-                                config.friendNames.SupportSelectPreference(
-                                    title = stringResource(R.string.p_battle_config_support_friend_names),
-                                    entries = vm.friends
-                                )
+                                Column {
+                                    config.friendNames.SupportSelectPreference(
+                                        title = stringResource(R.string.p_battle_config_support_friend_names),
+                                        entries = vm.friends
+                                    )
+                                    scope(applied = false)
+                                }
                             } else {
                                 Preference(
                                     icon = icon(R.drawable.ic_info),

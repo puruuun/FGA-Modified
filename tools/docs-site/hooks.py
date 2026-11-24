@@ -131,6 +131,7 @@ GUIDE_GROUPS = [
             "scripts/Support-NP-Level",
             "scripts/Support-Append-Skills",
             "scripts/Support-Grand-CE",
+            "scripts/Support-List-Filter",
             "scripts/Ascension-Select",
             "scripts/Servant-Number-Portraits",
             "scripts/Default-Support-Images",
