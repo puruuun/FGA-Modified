@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.SupportFilterSource
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -152,9 +153,9 @@ object SupportFilterToggleMigration {
         prefs.supportFilterOn.set(manualOn)
         if (manualOn || anyConfigOn) prefs.supportFilterFeature.set(true)
         for (config in configs) {
-            if (config.contains(key)) config.edit().remove(key).commit()
+            if (config.contains(key)) config.edit(commit = true) { remove(key) }
         }
-        if (activeFile.contains(key)) activeFile.edit().remove(key).commit()
+        if (activeFile.contains(key)) activeFile.edit(commit = true) { remove(key) }
         prefs.supportFilterToggleMigrated.set(true)
         return true
     }

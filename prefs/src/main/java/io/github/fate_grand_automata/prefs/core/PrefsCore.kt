@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.prefs.core
 
+import androidx.core.content.edit
 import android.content.Context
 import com.fredporciuncula.flow.preferences.Serializer
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -277,7 +278,7 @@ class PrefsCore @Inject constructor(
     @Synchronized
     fun addSupportFilterProfile(name: String, id: String = java.util.UUID.randomUUID().toString()): SupportFilterProfileCore {
         val profile = forSupportFilterProfile(id)
-        profile.sharedPrefs.edit().clear().commit()
+        profile.sharedPrefs.edit(commit = true) { clear() }
         profile.name.set(name)
         supportFilterProfiles.set(supportFilterProfiles.get() + id)
         return profile
@@ -286,7 +287,7 @@ class PrefsCore @Inject constructor(
     @Synchronized
     fun removeSupportFilterProfile(id: String) {
         supportFilterProfiles.set(supportFilterProfiles.get() - id)
-        forSupportFilterProfile(id).sharedPrefs.edit().clear().commit()
+        forSupportFilterProfile(id).sharedPrefs.edit(commit = true) { clear() }
         supportFilterProfileMap.remove(id)
     }
 
