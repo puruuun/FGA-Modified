@@ -139,6 +139,46 @@ class SupportListFilterConditionsTest {
         assertEquals(listOf("saber62", "ruler62"), kept(text, c))
     }
 
+    /**
+     * JP's shape (#695): boards 1 to 9 with the classes they release, then nine boards with large base ids. [full] are
+     * the class boards with all 62 squares; [large] is what each large board lists, with [largeSquares] squares.
+     */
+    private fun jpBoards(full: Set<Int>, large: List<Int> = listOf(1), largeSquares: Int = 16): String {
+        val released = (1..7).associateWith { listOf(it) } + mapOf(8 to listOf(8, 9, 11, 23), 9 to listOf(10, 25, 28, 33, 38, 40))
+        val classBoards = released.map { (base, classes) ->
+            val squares = if (base in full) 62 else 30
+            """{"classBoardBaseId":$base,"squareIds":[${(1..squares).joinToString(",")}],"releasedClassIds":[${classes.joinToString(",")}]}"""
+        }
+        val largeBoards = (1..9).map { i ->
+            """{"classBoardBaseId":${1_700_000_000 + i},"squareIds":[${(1..largeSquares).joinToString(",")}],"releasedClassIds":[${large.joinToString(",")}]}"""
+        }
+        return (classBoards + largeBoards).joinToString(",", "[", "]")
+    }
+
+    @Test fun jpBoardsWithLargeBaseIdsNeverCountForTheClassScore() {
+        val c = SupportListCriteria(classScore62 = true, servantClassIds = mapOf(100L to 1, 108L to 8, 109L to 9, 133L to 33))
+        val text = body(
+            follower("saberFull", Svt(100), boards = jpBoards(full = setOf(1))),
+            // A large board that lists saber with 62 squares is still not the saber board.
+            follower("saberLargeOnly", Svt(100), boards = jpBoards(full = emptySet(), large = listOf(1), largeSquares = 62)),
+            follower("shielder", Svt(108), boards = jpBoards(full = setOf(8))),
+            follower("ruler", Svt(109), boards = jpBoards(full = setOf(8))),
+            follower("beast", Svt(133), boards = jpBoards(full = setOf(9))),
+            follower("beastBoard8", Svt(133), boards = jpBoards(full = setOf(8))),
+        )
+        assertEquals(listOf("saberFull", "shielder", "ruler", "beast"), kept(text, c))
+    }
+
+    @Test fun largeBoardsAreSkippedWhateverTheyHold() {
+        val c = SupportListCriteria(classScore62 = true, servantClassIds = mapOf(100L to 1))
+        val large = """{"classBoardBaseId":1700000001,"squareIds":"odd","releasedClassIds":null}"""
+        val text = body(
+            follower("full", Svt(100), boards = jpBoards(full = setOf(1)).replaceFirst("[{", "[$large,{")),
+            follower("other", Svt(200), boards = jpBoards(full = setOf(1))),
+        )
+        assertEquals(listOf("full"), kept(text, c))
+    }
+
     @Test fun classBoardsThatAreAbsentOrNullMatchNothing() {
         val c = SupportListCriteria(classScore62 = true, servantClassIds = mapOf(100L to 1))
         val text = body(
@@ -156,11 +196,13 @@ class SupportListFilterConditionsTest {
         val odd = listOf(
             "notAnArray" to """{"a":1}""",
             "elementNotAnObject" to "[$full,3]".replace("[[", "[").replace("],3]", ",3]"),
-            "squareIdsNotAnArray" to """[{"squareIds":62,"releasedClassIds":[1]}]""",
-            "releasedClassIdsNotAnArray" to """[{"squareIds":[$squares],"releasedClassIds":1}]""",
-            "squareIdNotAnInteger" to """[{"squareIds":[$squares,"x"],"releasedClassIds":[1]}]""",
-            "classIdNotAnInteger" to """[{"squareIds":[$squares],"releasedClassIds":[1.5]}]""",
-            "classIdAString" to """[{"squareIds":[$squares],"releasedClassIds":["1"]}]""",
+            "squareIdsNotAnArray" to """[{"classBoardBaseId":1,"squareIds":62,"releasedClassIds":[1]}]""",
+            "releasedClassIdsNotAnArray" to """[{"classBoardBaseId":1,"squareIds":[$squares],"releasedClassIds":1}]""",
+            "squareIdNotAnInteger" to """[{"classBoardBaseId":1,"squareIds":[$squares,"x"],"releasedClassIds":[1]}]""",
+            "classIdNotAnInteger" to """[{"classBoardBaseId":1,"squareIds":[$squares],"releasedClassIds":[1.5]}]""",
+            "classIdAString" to """[{"classBoardBaseId":1,"squareIds":[$squares],"releasedClassIds":["1"]}]""",
+            "baseIdMissing" to """[{"squareIds":[$squares],"releasedClassIds":[1]}]""",
+            "baseIdAString" to """[{"classBoardBaseId":"1","squareIds":[$squares],"releasedClassIds":[1]}]""",
         )
         for ((name, shape) in odd) {
             val text = body(follower("full", Svt(100), boards = full), follower("other", Svt(200), boards = full), follower("odd", Svt(100), boards = shape))

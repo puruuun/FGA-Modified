@@ -1581,8 +1581,7 @@
     <string name="capture_support_filter_last">"마지막 목록: %1$d명 중 %2$d명, 서번트 칸 %3$d개 중 %4$d개"</string>
     <string name="capture_support_filter_last_unchanged">"마지막 목록: 바꾸지 않음"</string>
     <string name="support_list_filter">"서포트 목록 필터"</string>
-    <string name="support_list_filter_summary_config">"이 전투 설정으로 스크립트가 실행되는 동안 로그 수집이 켜져 있으면, 게임이 받는 서포트 목록에 \'필터 적용\' 조건에 맞는 서포트만 보이게 합니다. 게임이 서버로 보내는 내용은 바꾸지 않습니다."</string>
-    <string name="support_list_filter_summary_manual">"직접 플레이할 때 쓰는 필터입니다. 스크립트가 실행 중이 아니고 로그 수집이 켜져 있으면, 게임이 받는 서포트 목록에 \'필터 적용\' 조건에 맞는 서포트만 보이게 합니다. 스크립트가 실행되는 동안은 그 전투 설정의 필터만 적용됩니다. 게임이 서버로 보내는 내용은 바꾸지 않습니다."</string>
+    <string name="support_list_filter_summary_config">"서포트 목록 필터가 이 전투 설정의 조건을 가져오면(재생 버튼 메뉴의 \'선택한 설정에서 가져오기\') \'필터 적용\' 표시가 붙은 조건을 적용합니다. 스크립트는 지금처럼 모든 조건을 화면에서 판독합니다."</string>
     <string name="support_list_filter_applied">"필터 적용"</string>
     <string name="support_list_filter_screen_only">"화면 판독만"</string>
     <string name="support_list_filter_capture_off">"로그 수집이 꺼져 있어 필터가 동작하지 않습니다. 추가 기능에서 로그 수집을 켜 주세요."</string>
@@ -1601,7 +1600,6 @@
     <string name="support_list_filter_import">"전투 설정에서 조건 가져오기"</string>
     <string name="support_list_filter_imported">"%1$s의 조건을 가져왔습니다"</string>
     <string name="support_list_filter_no_configs">"전투 설정이 아직 없습니다."</string>
-    <string name="support_list_filter_manual_title">"서포트 목록 필터 (직접 플레이)"</string>
     <string name="support_list_filter_none">"조건 없음"</string>
     <string name="support_list_filter_part_servants">"서번트 %1$d"</string>
     <string name="support_list_filter_part_ces">"예장 %1$d"</string>
@@ -1613,4 +1611,28 @@
     <string name="support_list_filter_part_score">"클래스 스코어 +62"</string>
     <string name="support_list_filter_part_friends">"친구만"</string>
     <string name="support_list_filter_part_final">"최종재림"</string>
+    <string name="support_list_filter_summary_profile">"재생 버튼 메뉴에서 이 프로필을 불러오거나 \'활성 필터로 사용\'을 누르면 서포트 목록 필터에 복사됩니다. \'필터 적용\' 표시가 붙은 조건만 적용됩니다. 나중에 프로필을 바꿔도 활성 필터는 바뀌지 않으니 다시 불러오세요."</string>
+    <string name="support_filter_feature">"이 기능 사용"</string>
+    <string name="support_filter_feature_summary">"끄면 재생 버튼 메뉴에 서포트 필터가 보이지 않고 아무것도 거르지 않습니다. 켜면 재생 버튼 메뉴에 토글과 조건이 있는 \'서포트 필터\' 버튼이 생깁니다. 로그 수집이 필요합니다."</string>
+    <string name="support_filter_profiles">"프로필"</string>
+    <string name="support_filter_profiles_none">"프로필이 아직 없습니다."</string>
+    <string name="support_filter_profile_add">"프로필 추가"</string>
+    <string name="support_filter_profile_name">"프로필 이름"</string>
+    <string name="support_filter_profile_rename">"이름 바꾸기"</string>
+    <string name="support_filter_profile_delete">"삭제"</string>
+    <string name="support_filter_profile_delete_confirm">"프로필 %1$s을(를) 삭제할까요? 활성 필터의 조건은 그대로 남습니다."</string>
+    <string name="support_filter_profile_use">"활성 필터로 사용"</string>
+    <string name="support_filter_profile_used">"서포트 목록 필터가 이제 %1$s의 조건을 씁니다"</string>
+    <string name="support_filter_profile_migrated">"내 필터"</string>
+    <string name="support_filter_chip_on">"서포트 필터 · 켜짐"</string>
+    <string name="support_filter_chip_off">"서포트 필터 · 꺼짐"</string>
+    <string name="support_filter_from">"조건 출처: %1$s"</string>
+    <string name="support_filter_from_none">"아직 없음"</string>
+    <string name="support_filter_from_config">"전투 설정 %1$s"</string>
+    <string name="support_filter_from_profile">"프로필 %1$s"</string>
+    <string name="support_filter_take_config">"선택한 설정에서 가져오기"</string>
+    <string name="support_filter_load_profile">"프로필 불러오기"</string>
+    <string name="support_filter_refresh_hint">"게임은 서포트 목록이 없을 때만 목록을 요청합니다. 켜고 끄거나 조건을 불러온 뒤에는 게임에서 서포트 목록을 갱신하세요."</string>
+    <string name="support_filter_line_servants">"서번트: %1$s"</string>
+    <string name="support_filter_line_ces">"예장: %1$s"</string>
 </resources>

@@ -57,6 +57,9 @@ sealed interface Route : NavKey {
     data object SupportListFilter : Route
 
     @Serializable
+    data class SupportFilterProfile(val id: String) : Route
+
+    @Serializable
     data object AddedFeatureTuning : Route
 
     @Serializable

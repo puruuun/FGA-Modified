@@ -1,23 +1,30 @@
 package io.github.fate_grand_automata.capture
 
 import android.content.Context
+import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.prefs.core.SupportFilterSource
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * Which support list criteria the capture proxy applies (#685). While a script runs, only its battle config decides;
- * otherwise the manual filter does. The proxy thread reads [criteria], a volatile reference to a ready object; every
- * write happens here, under one lock, from the script hooks or the manual filter's watcher.
+ * What the capture proxy applies to the next follower/list (#695). Owner decision: one filter, switched by hand;
+ * a script start or end changes nothing. The proxy thread reads [criteria], a volatile reference to a ready object;
+ * every write happens here, under one lock, from the prefs watcher in [SupportListFilterController].
  */
 object SupportListFilterState {
     private val lock = Any()
@@ -25,46 +32,37 @@ object SupportListFilterState {
     @Volatile
     private var active: SupportListCriteria? = null
 
-    private var manual: SupportFilterBuild = SupportFilterBuild.Off
-    private var script: SupportFilterBuild = SupportFilterBuild.Off
-    private var scriptRunning = false
+    /**
+     * Raised by every [request] and every [clear]. A build carries the value of its request and is applied only while
+     * that is still the latest, so a build that finishes after the switch went off, after a newer build was asked
+     * for, or after the watcher was replaced, changes nothing.
+     */
+    private var generation = 0L
 
-    // A build that finishes after its script ended, or after the next script started, must not apply.
-    private var scriptToken = 0L
-
-    /** What the proxy applies to the next follower/list; null relays every byte as received. */
+    /** Null relays every byte as received. */
     fun criteria(): SupportListCriteria? = active
 
-    fun setManual(build: SupportFilterBuild) = synchronized(lock) {
-        manual = build
-        update()
+    /** Stops the filter at once. A build still running is dropped when it finishes. */
+    fun clear() = synchronized(lock) {
+        generation++
+        set(null)
     }
 
-    /** From now on until [endScript], the manual filter is not applied; the script's build arrives through [setScript]. */
-    fun beginScript(): Long = synchronized(lock) {
-        scriptToken++
-        scriptRunning = true
-        script = SupportFilterBuild.Off
-        update()
-        scriptToken
+    /** The token of one build; a later [request] or [clear] makes it stale. */
+    fun request(): Long = synchronized(lock) { ++generation }
+
+    /**
+     * Applies [build] only when [token] is still the latest and [switchesOn] (the feature switch and the toggle, read
+     * now, under the lock) holds. The proxy gets criteria only from a ready build with a condition set.
+     * @return whether [build] was applied.
+     */
+    fun offer(token: Long, build: SupportFilterBuild, switchesOn: () -> Boolean): Boolean = synchronized(lock) {
+        if (token != generation || !switchesOn()) return@synchronized false
+        set(build.applied)
+        true
     }
 
-    fun setScript(token: Long, build: SupportFilterBuild) = synchronized(lock) {
-        if (!scriptRunning || token != scriptToken) return@synchronized
-        script = build
-        update()
-    }
-
-    /** Back to the manual filter. */
-    fun endScript() = synchronized(lock) {
-        scriptToken++
-        scriptRunning = false
-        script = SupportFilterBuild.Off
-        update()
-    }
-
-    private fun update() {
-        val next = (if (scriptRunning) script else manual).applied
+    private fun set(next: SupportListCriteria?) {
         if (next != active) {
             active = next
             // A result of other criteria, or of a filter that stopped, must not stay on screen.
@@ -72,72 +70,91 @@ object SupportListFilterState {
         }
     }
 
-    internal fun resetForTesting() = synchronized(lock) {
-        scriptToken = 0
-        scriptRunning = false
-        manual = SupportFilterBuild.Off
-        script = SupportFilterBuild.Off
-        active = null
-    }
+    internal fun resetForTesting() = clear()
 }
 
 /**
- * Builds the criteria off the proxy thread: once for the manual filter at app start and again whenever one of its
- * settings changes, and once per script start for the running battle config.
+ * Builds the criteria off the proxy thread, at app start and again whenever the feature switch, the toggle or one of
+ * the active conditions changes.
  */
 object SupportListFilterController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    @Volatile
-    private var appContext: Context? = null
 
     // One watcher per process; a second init (a new Application in a test run) replaces it instead of piling up.
     private var watcher: Job? = null
 
     internal val watcherForTesting: Job? get() = watcher
-    internal val manualBuildsForTesting = java.util.concurrent.atomic.AtomicInteger()
+
+    /** One per pass of the watcher, built or not. */
+    internal val passesForTesting = java.util.concurrent.atomic.AtomicInteger()
+
+    /** A test's slow or fixed build in place of the one that reads the files on disk. */
+    @Volatile
+    internal var buildForTesting: ((SupportPrefsCore) -> SupportFilterBuild)? = null
+
+    /** Unregisters the switch listener of the current watcher; held here, as SharedPreferences holds listeners weakly. */
+    private var stopWatchingSwitches: (() -> Unit)? = null
 
     @OptIn(FlowPreview::class)
     @Synchronized
     fun init(context: Context, prefs: PrefsCore) {
         val app = context.applicationContext
-        appContext = app
         watcher?.cancel()
+        stopWatchingSwitches?.invoke()
+        // A cancelled watcher can still be inside a build, which does not stop at a cancel: its result is stale from
+        // here on, before the new watcher's first pass.
+        SupportListFilterState.clear()
+        // Every change of either switch is one signal. Not the prefs' flows: flow-preferences conflates `asFlow()`, so
+        // an off and an on in quick succession could reach a collector as nothing at all.
+        val signals = Channel<Unit>(Channel.UNLIMITED)
+        stopWatchingSwitches = prefs.watchSupportFilterSwitches { signals.trySend(Unit) }
         watcher = scope.launch {
             runCatching { SupportFilterMigration.run(prefs, SupportIdLookup.load(app)) }
                 .onFailure { Timber.w(it, "Support list filter: migration failed") }
-            val manual = prefs.manualSupportFilter
-            SupportFilterSettings.changes(manual).debounce(200).collectLatest {
-                SupportListFilterState.setManual(build(app, manual, script = false))
-                manualBuildsForTesting.incrementAndGet()
-            }
+            runCatching { SupportFilterToggleMigration.run(prefs, app.getString(R.string.support_filter_profile_migrated)) }
+                .onFailure { Timber.w(it, "Support list filter: toggle migration failed") }
+            val active = prefs.activeSupportFilter
+            val switchesOn = { prefs.supportFilterFeature.get() && prefs.supportFilterOn.get() }
+            // One collector that never waits for a build, and decides from the switches as they are now, not from a
+            // value carried by the signal: no notification is lost, and the clear of an "off" always comes before the
+            // request of a later "on". A build runs in its own job; a later request or clear makes its token stale.
+            var running: Job? = null
+            merge(signals.receiveAsFlow(), SupportFilterSettings.changes(active).debounce(200).map { })
+                .collect {
+                    running?.cancel()
+                    if (switchesOn()) {
+                        val token = SupportListFilterState.request()
+                        running = launch {
+                            val build = build(app, active)
+                            if (isActive) SupportListFilterState.offer(token, build, switchesOn)
+                        }
+                    } else {
+                        SupportListFilterState.clear()
+                    }
+                    passesForTesting.incrementAndGet()
+                }
         }
     }
 
-    /** [config] is the running battle config's support settings, or null for a script without one. */
-    fun onScriptStart(config: SupportPrefsCore?) {
-        val token = SupportListFilterState.beginScript()
-        val context = appContext ?: return
-        if (config == null) return
-        scope.launch { SupportListFilterState.setScript(token, build(context, config, script = true)) }
-    }
-
-    fun onScriptEnd() = SupportListFilterState.endScript()
-
-    private fun build(context: Context, config: SupportPrefsCore, script: Boolean): SupportFilterBuild = try {
-        val settings = SupportFilterSettings.of(config, script)
-        if (!settings.enabled || !settings.preferredMode) SupportFilterBuild.Off
-        else buildSupportFilter(settings, SupportIdLookup.load(context))
+    private fun build(context: Context, config: SupportPrefsCore): SupportFilterBuild = try {
+        buildForTesting?.invoke(config) ?: buildSupportFilter(SupportFilterSettings.of(config), SupportIdLookup.load(context))
     } catch (e: Exception) {
         Timber.w(e, "Support list filter: criteria not built")
         SupportFilterBuild.Off
     }
 }
 
+/** Copies [from]'s conditions into the active filter (#695): a snapshot, so a later change to [from] is not applied. */
+fun PrefsCore.loadSupportFilter(from: SupportPrefsCore, source: SupportFilterSource, name: String) {
+    activeSupportFilter.copyConditionsFrom(from)
+    supportFilterSourceName.set(name)
+    supportFilterSource.set(source)
+}
+
 /**
- * Moves the servant and CE ids of the retired experiment (#636) into the manual filter, once. An id becomes the
+ * Moves the servant and CE ids of the retired experiment (#636) into the active filter, once. An id becomes the
  * built-in image name, a folder name that maps back to it, or an id entry when neither is known. The experiment's
- * switch is not carried over: the manual filter starts off, like every new switch.
+ * switch is not carried over.
  */
 object SupportFilterMigration {
     /** @return true when this call ran the migration. */
@@ -145,13 +162,71 @@ object SupportFilterMigration {
         if (prefs.supportFilterMigrated.get()) return false
         val servants = prefs.legacySupportFilterServants.get().mapNotNull { it.toLongOrNull() }.filter { it > 0 }
         val ces = prefs.legacySupportFilterCes.get().mapNotNull { it.toLongOrNull() }.filter { it > 0 }
-        val manual = prefs.manualSupportFilter
+        val manual = prefs.activeSupportFilter
         if (servants.isNotEmpty()) manual.preferredServants.set(manual.preferredServants.get() + servants.map(lookup::servantEntry))
         if (ces.isNotEmpty()) manual.preferredCEs.set(manual.preferredCEs.get() + ces.map(lookup::ceEntry))
         prefs.legacySupportFilterEnabled.resetToDefault()
         prefs.legacySupportFilterServants.resetToDefault()
         prefs.legacySupportFilterCes.resetToDefault()
         prefs.supportFilterMigrated.set(true)
+        return true
+    }
+}
+
+/**
+ * From the #685 switches to the #695 toggle, once. The manual filter's conditions stay the active conditions and are
+ * also kept as a profile; its switch becomes the toggle. The feature switch is turned on only for a user who had
+ * switched the filter on somewhere (the manual switch or any battle config's), so that user keeps seeing it and
+ * everyone else keeps the launcher as it was. The per-config switch is removed from every battle config's file; their
+ * other support settings are not touched.
+ */
+object SupportFilterToggleMigration {
+    const val PROFILE_ID = "migrated"
+
+    /** A test stops the run after this step, as a process that dies there would. */
+    internal var stopAfterStepForTesting = Int.MAX_VALUE
+
+    private class Stopped : RuntimeException()
+
+    /**
+     * The new values go to disk first, then the retired keys are removed, then the run is marked done; each step is
+     * committed before the next. A run that stopped half way therefore runs again from the start and ends as an
+     * uninterrupted run does: what is gone with the retired keys was already written in its new place.
+     * @return true when this call ran the migration.
+     */
+    fun run(prefs: PrefsCore, profileName: String): Boolean {
+        if (prefs.supportFilterToggleMigrated.get()) return false
+        val key = PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY
+        val activeFile = prefs.activeSupportFilterFile
+        val manualKnown = activeFile.contains(key)
+        val manualOn = activeFile.getBoolean(key, false)
+        // A filter that was never edited holds no condition key; it is not worth a profile.
+        val hasConditions = activeFile.all.keys.any { it != key }
+        val configs = prefs.battleConfigList.get().map { prefs.forBattleConfig(it).sharedPrefs }
+        val anyConfigOn = configs.any { it.getBoolean(key, false) }
+        fun step(n: Int) { if (n >= stopAfterStepForTesting) throw Stopped() }
+
+        if (hasConditions) {
+            // A fixed id, so a run that runs again replaces this profile instead of adding one.
+            val profile = prefs.addSupportFilterProfile(profileName, PROFILE_ID)
+            profile.support.copyConditionsFrom(prefs.activeSupportFilter)
+            profile.commit()
+            prefs.supportFilterSourceName.set(profileName)
+            prefs.supportFilterSource.set(SupportFilterSource.Profile)
+        }
+        // Only from the retired key: a run after it was removed must not turn the toggle off again.
+        if (manualKnown) prefs.supportFilterOn.set(manualOn)
+        if (manualOn || anyConfigOn) prefs.supportFilterFeature.set(true)
+        prefs.commitMainFile()
+        step(1)
+        for (config in configs) {
+            if (config.contains(key)) config.edit(commit = true) { remove(key) }
+        }
+        step(2)
+        if (activeFile.contains(key)) activeFile.edit(commit = true) { remove(key) }
+        step(3)
+        prefs.supportFilterToggleMigrated.set(true)
+        prefs.commitMainFile()
         return true
     }
 }

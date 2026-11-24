@@ -36,9 +36,11 @@ class BattleConfigCore private constructor(
     val context: Context get() = requireNotNull(_context)
     val sharedPrefs: SharedPreferences get() = requireNotNull(_sharedPrefs)
 
+    // A copy inside the app (export, then import) of a config the #695 migration has not reached yet would otherwise
+    // carry the retired switch along; `.fga` files lose it in BattleConfigFile.decode.
     fun import(map: Map<String, *>) =
         sharedPrefs.edit {
-            import(map)
+            import(map - PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY)
         }
 
     fun export(): Map<String, *> = sharedPrefs.all

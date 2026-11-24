@@ -157,7 +157,7 @@ internal fun MoreOptionsContent(
                                             onClick = goToFriendManager
                                         )
                                         if (captureAvailable) io.github.fate_grand_automata.ui.prefs.Preference(
-                                            title = stringResource(R.string.support_list_filter_manual_title),
+                                            title = stringResource(R.string.support_list_filter),
                                             icon = icon(Icons.Default.FilterList),
                                             onClick = goToSupportListFilter,
                                             modifier = Modifier.testTag("more:supportListFilter")
