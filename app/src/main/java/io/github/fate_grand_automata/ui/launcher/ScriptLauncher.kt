@@ -85,14 +85,8 @@ fun ScriptLauncher(
                     ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select)
                 }
 
-                if (panel == LauncherPanel.SupportFilter) {
-                    // Only the launchers that list battle configs have one selected; the others have nothing to take.
-                    val configId = selectedConfigId.takeIf {
-                        shownMode == ScriptModeEnum.Battle || shownMode == ScriptModeEnum.SupportImageMaker ||
-                            shownMode == ScriptModeEnum.WeeklyRoute
-                    }
-                    SupportFilterLauncherPanel(prefsCore, configId, Modifier.weight(0.7f))
-                }
+                // Only the launchers that list battle configs report a selected one; the others leave nothing to take.
+                if (panel == LauncherPanel.SupportFilter) SupportFilterLauncherPanel(prefsCore, selectedConfigId, Modifier.weight(0.7f))
             }
 
             HorizontalDivider()
