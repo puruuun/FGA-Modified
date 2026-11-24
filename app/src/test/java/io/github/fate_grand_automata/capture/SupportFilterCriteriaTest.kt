@@ -36,7 +36,11 @@ class SupportFilterCriteriaTest {
     }
 
     private val full by lazy { lookup(
-        jpCatalog = catalog(Triple(100100, 2, "saber"), Triple(900100, 900, "ruler")),
+        jpCatalog = catalog(
+            Triple(100100, 2, "saber"), Triple(900100, 900, "ruler"), Triple(110100, 110, "avenger"),
+            Triple(230100, 230, "moonCancer"), Triple(100200, 102, "alterEgo"), Triple(250100, 250, "foreigner"),
+            Triple(280100, 280, "pretender"),
+        ),
         krCaptured = """[{"id":200200,"type":"normal","className":"archer","collectionNo":7,"name":"k"}]""",
         jpEquips = """[{"id":9300100,"collectionNo":300,"name":"CE","type":"servantEquip","className":"","rarity":5}]""",
     ) }
@@ -55,9 +59,12 @@ class SupportFilterCriteriaTest {
         assertNull(full.ceId("Unknown.png"))
     }
 
-    @Test fun classesComeFromTheServantListsForTheSevenKnownClassesOnly() {
-        // A ruler's class id is not known to this repository, so it stays out.
-        assertEquals(mapOf(100100L to 1, 200200L to 2), full.servantClassIds)
+    @Test fun classesComeFromTheServantListsForTheTwelveObservedClassesOnly() {
+        // A ruler's class id was not observed in any class board, so it stays out.
+        assertEquals(
+            mapOf(100100L to 1, 200200L to 2, 110100L to 11, 230100L to 23, 100200L to 10, 250100L to 25, 280100L to 28),
+            full.servantClassIds,
+        )
         assertTrue(lookup().servantClassIds.isEmpty())
     }
 

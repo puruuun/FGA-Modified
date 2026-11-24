@@ -68,14 +68,15 @@ class SupportIdLookup(
         fun idEntry(id: Long) = "#$id"
 
         /**
-         * Atlas `className` to the game's class id, the one `releasedClassIds` of a class board holds. Only the seven
-         * classes whose ids this repository already knows are listed: the support deck's class ids 1 to 7 are these
-         * classes in this order (the friend manager labels them so, `classLabel`). Every other class, Extra and Beast
-         * classes included, is unknown until a real class board shows its id; a chosen servant of an unknown class stops
-         * the filter, and any other servant of one does not match the class score condition.
+         * Atlas `className` to the game's class id, the one `releasedClassIds` of a class board holds. These are the ids
+         * observed in `releasedClassIds` of a real KR follower/list on 2026-11-23: boards 1 to 7 hold [1]..[7], board 8
+         * [11, 23] and board 9 [10, 25, 28]. Ruler, shielder, the beast classes and every other class name were not
+         * observed in any board and stay unknown: a chosen servant of one with +62 stops the filter, and any other servant
+         * of one does not match the class score condition.
          */
         private val CLASS_IDS = mapOf(
             "saber" to 1, "archer" to 2, "lancer" to 3, "rider" to 4, "caster" to 5, "assassin" to 6, "berserker" to 7,
+            "avenger" to 11, "moonCancer" to 23, "alterEgo" to 10, "foreigner" to 25, "pretender" to 28,
         )
 
         fun classIdOf(className: String): Int? = CLASS_IDS[className]

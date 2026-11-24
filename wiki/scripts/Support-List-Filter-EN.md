@@ -37,7 +37,7 @@ Conditions marked **Screen reading only** (friend names, servant name + NP image
 ## When the filter does not run
 
 - **An entry that cannot be matched to a game ID**: an image of your own that does not say which servant or CE it is. The filter could hide the very supports you want, so it does not run for that config, and the screen names the entry. Built-in images and images from **Download images** can be matched.
-- **Class score on, and the class of a chosen servant is not known**: for now only the seven classes Saber, Archer, Lancer, Rider, Caster, Assassin and Berserker can be matched to a class board. With a servant of another class (an Extra class, for example) chosen and Class score +62 on, every support of that servant would be hidden, so the filter does not run and the screen names the servant.
+- **Class score on, and the class of a chosen servant is not known**: for now only the twelve classes Saber, Archer, Lancer, Rider, Caster, Assassin, Berserker, Avenger, Moon Cancer, Alter Ego, Foreigner and Pretender can be matched to a class board. With a servant of another class (Ruler, Shielder or Beast, for example) chosen and Class score +62 on, every support of that servant would be hidden, so the filter does not run and the screen names the servant.
 - **No servant list for the class score condition**: the servant's class comes from the servant list on the device, which the friend manager, the account dashboard and Download images get. The filter never downloads it.
 - A support list response in an unexpected shape goes to the game as received.
 
