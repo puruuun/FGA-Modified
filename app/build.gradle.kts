@@ -438,6 +438,30 @@ if (engineRegistered) {
             }
         }
     }
+
+    // Design 0026 PR D: the crypto probes link ring, rustls and rcgen, which THIRD_PARTY_NOTICES.txt
+    // does not list, so only the device-test build (tools/device-qa/run.py builds deviceTest and
+    // nothing else) may carry them. One cargoNdkBuild serves every variant, so the switch is refused
+    // before any other variant builds; apk_check.py beta|stable refuses the result as well.
+    if (nativeCryptoEnabled) {
+        val refuseCryptoProbes = tasks.register("refuseCryptoProbes") {
+            description = "Fails: -Pfga.native.crypto=true is for the deviceTest build only."
+            doLast {
+                throw GradleException(
+                    "-Pfga.native.crypto=true builds the crypto and TLS probes (ring, rustls, rcgen) into " +
+                        "libfga_ffi.so; only the deviceTest build may carry them. Build " +
+                        ":app:assembleDeviceTest with it, or leave it out (docs/agents/rust-native.md).",
+                )
+            }
+        }
+        androidComponents {
+            onVariants { variant ->
+                if (variant.buildType == "deviceTest") return@onVariants
+                val preBuild = "pre${variant.name.replaceFirstChar { it.uppercase() }}Build"
+                tasks.matching { it.name == preBuild }.configureEach { dependsOn(refuseCryptoProbes) }
+            }
+        }
+    }
 }
 
 /*

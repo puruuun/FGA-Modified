@@ -14,6 +14,11 @@ build's checkEngineApk<V> reads too (libfga_ffi.so for both shipped ABIs, the pi
 pin file, its notice and the third-party notices), and its arm64-v8a library is 16 KB page aligned:
 a 64-bit little-endian ELF file whose every LOAD segment is aligned to a non-zero multiple of 0x4000
 and, when the library is stored uncompressed, whose data starts at a 16 KB boundary of the APK.
+No libfga_ffi.so of a beta or stable APK exports the stage 1-0 crypto probes (design 0026 PR D):
+fga-ffi's crypto-probes feature links ring, rustls and rcgen, which THIRD_PARTY_NOTICES.txt does
+not list, so the dynamic symbol table of every ABI's library (ELF32 or ELF64, little-endian) is
+read and a defined NativeProbe ringProbe or rustlsProbe symbol fails the check; a library whose
+symbol table cannot be read fails too.
 
 The score scan (app/src/scoreScan) is found by two markers that survive R8, each in its own place:
 its string resources by name in the key pool of resources.arsc (the builds do not shrink or rename
@@ -43,6 +48,10 @@ SCAN_RESOURCES = ('support_score_scan', 'support_score_scan_result')
 # ScoreScanLog.ROOT in scripts/.../supportSelection/SupportScoreScanLog.kt.
 SCAN_DEX_STRING = b'support-score-scan'
 MODES = ('absent', 'stable', 'beta')
+# fga-ffi's jni_exports.rs, only with the crypto-probes feature.
+PROBE_PREFIX = 'Java_io_github_fate_1grand_1automata_qa_NativeProbe_'
+CRYPTO_PROBE_SYMBOLS = (PROBE_PREFIX + 'ringProbe', PROBE_PREFIX + 'rustlsProbe')
+SHT_DYNSYM = 11
 
 RES_STRING_POOL = 0x0001
 RES_TABLE = 0x0002
@@ -125,6 +134,74 @@ def load_alignments(elf):
     if not aligns:
         raise ValueError('no LOAD segment')
     return aligns
+
+
+def defined_dynamic_symbols(elf):
+    """Names of the defined symbols in .dynsym of a little-endian ELF32 or ELF64 file."""
+    if len(elf) < 52 or elf[:4] != b'\x7fELF':
+        raise ValueError('not an ELF file')
+    if elf[5] != 1 or elf[4] not in (1, 2):
+        raise ValueError('not a little-endian ELF32 or ELF64 file (EI_CLASS %d, EI_DATA %d)' % (elf[4], elf[5]))
+    wide = elf[4] == 2
+    if wide:
+        if len(elf) < 64:
+            raise ValueError('truncated ELF header')
+        shoff, = struct.unpack_from('<Q', elf, 0x28)
+        shentsize, shnum = struct.unpack_from('<HH', elf, 0x3a)
+        need = 64
+    else:
+        shoff, = struct.unpack_from('<I', elf, 0x20)
+        shentsize, shnum = struct.unpack_from('<HH', elf, 0x2e)
+        need = 40
+    if shnum == 0 or shentsize < need or shoff + shentsize * shnum > len(elf):
+        raise ValueError('no readable section header table')
+
+    def section(i):
+        base = shoff + i * shentsize
+        if wide:
+            _, sh_type, _, _, offset, size, link, _, _, entsize = struct.unpack_from('<IIQQQQIIQQ', elf, base)
+        else:
+            _, sh_type, _, _, offset, size, link, _, _, entsize = struct.unpack_from('<IIIIIIIIII', elf, base)
+        return sh_type, offset, size, link, entsize
+
+    tables = [section(i) for i in range(shnum) if section(i)[0] == SHT_DYNSYM]
+    if not tables:
+        raise ValueError('no dynamic symbol table')
+    names = set()
+    for _, offset, size, link, entsize in tables:
+        sym_size = 24 if wide else 16
+        if entsize != sym_size or offset + size > len(elf) or link >= shnum:
+            raise ValueError('malformed dynamic symbol table')
+        _, str_offset, str_size, _, _ = section(link)
+        if str_offset + str_size > len(elf):
+            raise ValueError('malformed dynamic string table')
+        for at in range(offset, offset + size - sym_size + 1, sym_size):
+            if wide:
+                name, _, _, shndx = struct.unpack_from('<IBBH', elf, at)
+            else:
+                name, _, _, _, _, shndx = struct.unpack_from('<IIIBBH', elf, at)
+            if shndx == 0 or name == 0:
+                continue
+            if name >= str_size:
+                raise ValueError('symbol name outside the dynamic string table')
+            end = elf.find(b'\0', str_offset + name, str_offset + str_size)
+            if end < 0:
+                raise ValueError('unterminated symbol name')
+            names.add(elf[str_offset + name:end].decode('utf-8', 'replace'))
+    return names
+
+
+def crypto_probe_problems(path, z):
+    problems = []
+    for lib in sorted(n for n in z.namelist() if n.startswith('lib/') and n.endswith('/' + LIBRARY)):
+        try:
+            found = [s for s in CRYPTO_PROBE_SYMBOLS if s in defined_dynamic_symbols(z.read(lib))]
+        except Exception as e:  # any error is a failed check with its reason, never a traceback
+            problems.append('%s: cannot read the dynamic symbols of %s: %s: %s' % (path, lib, type(e).__name__, e))
+            continue
+        problems += ['%s: %s exports the crypto probe %s (build without -Pfga.native.crypto=true)'
+                     % (path, lib, s) for s in found]
+    return problems
 
 
 def bad_alignments(aligns):
@@ -303,7 +380,7 @@ def check_present(path, z, required):
                     problems.append('%s: %s is stored at offset %d, not on a 16 KB boundary' % (path, lib, offset))
         except Exception as e:  # any error is a failed check with its reason, never a traceback
             problems.append('%s: cannot read %s: %s: %s' % (path, lib, type(e).__name__, e))
-    return problems
+    return problems + crypto_probe_problems(path, z)
 
 
 def check_apk(path, mode, required=None):
@@ -347,7 +424,7 @@ def main(argv):
             print('apk_check: %d APK(s) without %s or a %s model, %s' % (len(paths), LIBRARY, MODEL_EXTENSION, scan))
         else:
             print('apk_check: %d APK(s) with the %d entries of app/engine-apk-entries.txt (%s); '
-                  'arm64-v8a 16 KB aligned; %s' % (len(paths), len(required), model, scan))
+                  'arm64-v8a 16 KB aligned; no crypto probes; %s' % (len(paths), len(required), model, scan))
     return 1 if problems else 0
 
 

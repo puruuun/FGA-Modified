@@ -26,8 +26,39 @@ ENGINE = [
 ARM64 = 'lib/arm64-v8a/libfga_ffi.so'
 
 
-def elf(aligns, load=True):
-    """A minimal 64-bit little-endian ELF header with one program header per alignment."""
+PRODUCT_SYMBOLS = ['Java_io_github_fate_1grand_1automata_sensing_RustSensing_load',
+                   a.PROBE_PREFIX + 'ping', 'JNI_OnLoad']
+
+
+def symbol_sections(wide, symbols, undefined=(), file_offset=0):
+    """(.dynsym and .dynstr bytes placed at file_offset, their section headers, the shnum): a null
+    section, .dynsym (sh_link 2) and .dynstr. Defined symbols get section index 1, undefined 0."""
+    strtab = bytearray(b'\0')
+    entries = []
+    for name, shndx in [(s, 1) for s in symbols] + [(s, 0) for s in undefined]:
+        entries.append((len(strtab), shndx))
+        strtab += name.encode() + b'\0'
+    sym_size = 24 if wide else 16
+    dynsym = bytearray(sym_size)  # the null symbol
+    for name, shndx in entries:
+        if wide:
+            dynsym += struct.pack('<IBBHQQ', name, 0x12, 0, shndx, 0x1000, 8)
+        else:
+            dynsym += struct.pack('<IIIBBH', name, 0x1000, 8, 0x12, 0, shndx)
+    dynsym_at = file_offset
+    dynstr_at = file_offset + len(dynsym)
+    data = bytes(dynsym + strtab)
+    if wide:
+        sh = lambda t, off, size, link, ent: struct.pack('<IIQQQQIIQQ', 0, t, 0, 0, off, size, link, 0, 1, ent)
+    else:
+        sh = lambda t, off, size, link, ent: struct.pack('<IIIIIIIIII', 0, t, 0, 0, off, size, link, 0, 1, ent)
+    headers = sh(0, 0, 0, 0, 0) + sh(a.SHT_DYNSYM, dynsym_at, len(dynsym), 2, sym_size) + sh(3, dynstr_at, len(strtab), 0, 0)
+    return data, headers, 3
+
+
+def elf(aligns, load=True, symbols=PRODUCT_SYMBOLS, sections=True):
+    """A minimal 64-bit little-endian ELF file: one program header per alignment and, with
+    sections, a dynamic symbol table that defines symbols."""
     phoff = 64
     header = bytearray(64)
     header[:4] = b'\x7fELF'
@@ -41,7 +72,24 @@ def elf(aligns, load=True):
         struct.pack_into('<I', ph, 0, 1 if load else 6)
         struct.pack_into('<Q', ph, 48, align)
         body += ph
+    if sections:
+        data, headers, shnum = symbol_sections(True, symbols, file_offset=64 + len(body))
+        struct.pack_into('<Q', header, 0x28, 64 + len(body) + len(data))
+        struct.pack_into('<HH', header, 0x3a, 64, shnum)
+        body += data + headers
     return bytes(header + body)
+
+
+def elf32(symbols=PRODUCT_SYMBOLS, undefined=()):
+    """A minimal 32-bit little-endian ELF file with a dynamic symbol table (armeabi-v7a)."""
+    header = bytearray(52)
+    header[:4] = b'\x7fELF'
+    header[4] = 1
+    header[5] = 1
+    data, headers, shnum = symbol_sections(False, symbols, undefined, file_offset=52)
+    struct.pack_into('<I', header, 0x20, 52 + len(data))
+    struct.pack_into('<HH', header, 0x2e, 40, shnum)
+    return bytes(header + data + headers)
 
 
 def string_pool(strings, utf8=True):
@@ -137,8 +185,11 @@ class ApkCheckTest(unittest.TestCase):
                 z.writestr(info, arm64)
         return path
 
-    def engine_apk(self, name='e.apk', scan=True, **kwargs):
-        return self.apk(name, BASE + ENGINE, arm64=kwargs.pop('arm64', elf([0x4000, 0x4000])), scan=scan, **kwargs)
+    def engine_apk(self, name='e.apk', scan=True, armv7=None, **kwargs):
+        files = dict(kwargs.pop('files', None) or {})
+        files.setdefault('lib/armeabi-v7a/libfga_ffi.so', armv7 if armv7 is not None else elf32())
+        return self.apk(name, BASE + ENGINE, arm64=kwargs.pop('arm64', elf([0x4000, 0x4000])), scan=scan,
+                        files=files, **kwargs)
 
     def run_cli(self, *args):
         p = subprocess.run([sys.executable, SCRIPT, *args], capture_output=True)
@@ -397,6 +448,42 @@ class ApkCheckTest(unittest.TestCase):
                 self.assertEqual(code, 1, (label, mode))
                 self.assertIn('cannot look for the support score scan', out, (label, mode))
                 self.assertNotIn('Traceback', out, (label, mode))
+
+    # --- the crypto probes (design 0026 PR D) ---
+
+    def test_both_abis_symbols_are_read(self):
+        self.assertEqual(a.defined_dynamic_symbols(elf([0x4000])), set(PRODUCT_SYMBOLS))
+        self.assertEqual(a.defined_dynamic_symbols(elf32(undefined=['malloc'])), set(PRODUCT_SYMBOLS))
+
+    def test_crypto_probe_in_either_abi_fails_beta_and_stable(self):
+        for symbol in a.CRYPTO_PROBE_SYMBOLS:
+            with_probe = PRODUCT_SYMBOLS + [symbol]
+            for mode, scan in (('beta', True), ('stable', False)):
+                for label, kwargs in (('arm64', {'arm64': elf([0x4000], symbols=with_probe)}),
+                                      ('armv7', {'armv7': elf32(symbols=with_probe)})):
+                    code, out = self.run_cli(mode, self.engine_apk('c.apk', scan=scan, **kwargs))
+                    self.assertEqual(code, 1, (symbol, mode, label))
+                    self.assertIn('exports the crypto probe ' + symbol, out, (symbol, mode, label))
+
+    def test_an_undefined_probe_name_or_another_probe_passes(self):
+        apk = self.engine_apk('u.apk', armv7=elf32(symbols=PRODUCT_SYMBOLS + [a.PROBE_PREFIX + 'ringProbeX'],
+                                                    undefined=list(a.CRYPTO_PROBE_SYMBOLS)))
+        code, out = self.run_cli('beta', apk)
+        self.assertEqual(code, 0, out)
+        self.assertIn('no crypto probes', out)
+
+    def test_unreadable_symbol_table_fails(self):
+        bad = {
+            'no sections': {'arm64': elf([0x4000], sections=False)},
+            'not an ELF armv7': {'armv7': b'x'},
+            'big-endian armv7': {'armv7': elf32()[:5] + b'\x02' + elf32()[6:]},
+            'truncated armv7': {'armv7': elf32()[:60]},
+        }
+        for label, kwargs in bad.items():
+            code, out = self.run_cli('stable', self.engine_apk('t.apk', scan=False, **kwargs))
+            self.assertEqual(code, 1, label)
+            self.assertIn('cannot read the dynamic symbols', out, label)
+            self.assertNotIn('Traceback', out, label)
 
 
 if __name__ == '__main__':
