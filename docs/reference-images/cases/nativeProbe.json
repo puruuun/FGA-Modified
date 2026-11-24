@@ -5,8 +5,8 @@
     { "name": "ping", "suite": "nativeProbe", "test": "ping" },
     { "name": "cpuProbe", "suite": "nativeProbe", "test": "cpuProbe" },
     { "name": "panicProbe", "suite": "nativeProbe", "test": "panicProbe" },
-    { "name": "ringProbe", "suite": "nativeProbe", "test": "ringProbe" },
-    { "name": "rustlsProbe", "suite": "nativeProbe", "test": "rustlsProbe" },
+    { "name": "ringProbe", "suite": "nativeProbe", "test": "ringProbe", "requires": "crypto-probes" },
+    { "name": "rustlsProbe", "suite": "nativeProbe", "test": "rustlsProbe", "requires": "crypto-probes" },
     { "name": "tractProbe", "suite": "nativeProbe", "test": "tractProbe" },
     { "name": "ocrLoadNullPath", "suite": "nativeProbe", "test": "ocrLoadNullPath" }
   ]

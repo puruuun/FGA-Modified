@@ -59,10 +59,14 @@ export_probe!(
     Java_io_github_fate_1grand_1automata_qa_NativeProbe_panicProbe,
     probes::panic_probe
 );
+// Without the feature these two symbols do not exist, and NativeProbe's calls throw
+// UnsatisfiedLinkError, which NativeProbeTest reports as skipped.
+#[cfg(feature = "crypto-probes")]
 export_probe!(
     Java_io_github_fate_1grand_1automata_qa_NativeProbe_ringProbe,
     probes::ring_probe
 );
+#[cfg(feature = "crypto-probes")]
 export_probe!(
     Java_io_github_fate_1grand_1automata_qa_NativeProbe_rustlsProbe,
     probes::rustls_probe

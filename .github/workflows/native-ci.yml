@@ -75,6 +75,12 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets --features fga-ffi/ort-probe -- -D warnings
           cargo test --workspace --features fga-ffi/ort-probe
+      - name: Clippy and test, fga-ffi with crypto-probes
+        # Design 0026 PR D: the stage 1-0 crypto and TLS probes (ring, rustls, rcgen) left the
+        # product library; the feature keeps them building and tested for the device-test build.
+        run: |
+          cargo clippy --workspace --all-targets --features fga-ffi/crypto-probes -- -D warnings
+          cargo test -p fga-ffi --features crypto-probes
       - name: Clippy, fga-ffi with tract-threads
         # Issue #549: the measurement switch for tract's multi-threaded kernels. Lint only: on the
         # owner's PC with four jobs the lint added 17 s and the tests 93 s, and an Android lint and
@@ -87,12 +93,13 @@ jobs:
       - name: Licences and advisories
         run: cargo deny check
       - name: Android clippy
-        # The host clippy step already lints the crypto, TLS and inference code; this one adds the
+        # The host clippy steps already lint the crypto, TLS and inference code; this one adds the
         # code that only compiles for Android and ARM targets, such as the aarch64 and arm branches
-        # of probes/cpu.rs.
+        # of probes/cpu.rs, with and without the crypto probes (ring's ARM assembly).
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets -- -D warnings
+          cargo ndk -t armeabi-v7a -t arm64-v8a --platform 24 clippy --workspace --all-targets --features fga-ffi/crypto-probes -- -D warnings
       - name: Android build
         run: |
           export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"

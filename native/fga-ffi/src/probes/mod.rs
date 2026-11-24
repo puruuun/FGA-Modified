@@ -3,13 +3,16 @@
 
 mod compare;
 mod cpu;
+#[cfg(feature = "crypto-probes")]
 mod crypto;
+#[cfg(feature = "crypto-probes")]
 mod hex;
 mod inference;
 mod ocr;
 #[cfg(feature = "ort-probe")]
 mod ocr_ort;
 mod support_score;
+#[cfg(feature = "crypto-probes")]
 mod tls;
 
 pub use cpu::cpu_probe;
@@ -39,10 +42,12 @@ pub fn panic_probe() -> Result<String, String> {
     panic!("deliberate panic from panicProbe")
 }
 
+#[cfg(feature = "crypto-probes")]
 pub fn ring_probe() -> Result<String, String> {
     crypto::ring_checks()
 }
 
+#[cfg(feature = "crypto-probes")]
 pub fn rustls_probe() -> Result<String, String> {
     tls::handshake_in_memory()
 }
@@ -71,12 +76,14 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "crypto-probes")]
     #[test]
     fn ring_probe_passes() {
         let text = run_guarded(ring_probe);
         assert!(text.starts_with("OK: "), "{text}");
     }
 
+    #[cfg(feature = "crypto-probes")]
     #[test]
     fn rustls_probe_passes() {
         let text = run_guarded(rustls_probe);

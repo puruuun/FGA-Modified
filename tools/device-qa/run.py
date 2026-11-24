@@ -3,7 +3,7 @@
 Development aid. The authoritative check is `tools/device-qa/run.py`.
 
 Usage:
-    py -3 tools/device-qa/run.py [--build] [--native] [--native-ort] [--native-threads] [--ocr-model PATH] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
+    py -3 tools/device-qa/run.py [--build] [--native] [--native-ort] [--native-threads] [--native-crypto] [--ocr-model PATH] [--serial 127.0.0.1:5555] [--suite support] [--cases FILE]
 
 Python only moves files and calls adb/gradle. Reader logic stays in the app's androidTest code.
 """
@@ -59,7 +59,7 @@ def adb(adb_path: str, serial: str, *args: str) -> str:
     return result.stdout
 
 
-def gradle_command(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> list[str]:
+def gradle_command(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None, native_crypto: bool = False) -> list[str]:
     gradlew = REPO / ("gradlew.bat" if os.name == "nt" else "gradlew")
     cmd = [str(gradlew), "-PfgaDeviceTests=true", ":app:assembleDeviceTest", ":app:assembleDeviceTestAndroidTest", "--console=plain"]
     if native:
@@ -71,6 +71,9 @@ def gradle_command(native: bool, native_ort: bool = False, native_threads: bool 
     if native_threads:
         # Issue #549: without it the tract-threads cases of ocrProbe report themselves skipped.
         cmd.insert(2, "-Pfga.native.threads=true")
+    if native_crypto:
+        # Design 0026 PR D: without it the ringProbe and rustlsProbe cases of nativeProbe report themselves skipped.
+        cmd.insert(2, "-Pfga.native.crypto=true")
     if ocr_model is not None:
         if not native:
             sys.exit("--ocr-model needs --native: only a native build packages the model")
@@ -80,8 +83,8 @@ def gradle_command(native: bool, native_ort: bool = False, native_threads: bool 
     return cmd
 
 
-def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None) -> None:
-    if subprocess.run(gradle_command(native, native_ort, native_threads, ocr_model), cwd=REPO).returncode != 0:
+def gradle_build(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None, native_crypto: bool = False) -> None:
+    if subprocess.run(gradle_command(native, native_ort, native_threads, ocr_model, native_crypto), cwd=REPO).returncode != 0:
         sys.exit("gradle build failed")
 
 
@@ -195,10 +198,11 @@ def instrument(adb_path: str, serial: str, package: str, device_case: str) -> di
     return json.loads(raw)
 
 
-def required_skip(result: dict, require_native: bool, require_ort: bool, require_threads: bool = False) -> bool:
+def required_skip(result: dict, require_native: bool, require_ort: bool, require_threads: bool = False, require_crypto: bool = False) -> bool:
     """A skipped native case that the flags asked to run. An ONNX Runtime case says so with
     "requires": "ort"; it may be skipped under --native alone, never under --native-ort. A tract
-    thread case says "requires": "tract-threads" and may not be skipped under --native-threads."""
+    thread case says "requires": "tract-threads" and may not be skipped under --native-threads,
+    a crypto probe "requires": "crypto-probes" and may not be skipped under --native-crypto."""
     actual = result.get("actual") or {}
     if "skipped" not in actual:
         return False
@@ -206,17 +210,19 @@ def required_skip(result: dict, require_native: bool, require_ort: bool, require
         return require_ort
     if actual.get("requires") == "tract-threads":
         return require_threads
+    if actual.get("requires") == "crypto-probes":
+        return require_crypto
     return require_native
 
 
-def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str], require_native: bool = False, require_ort: bool = False, require_threads: bool = False) -> bool:
+def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_version: str, skipped: list[str], require_native: bool = False, require_ort: bool = False, require_threads: bool = False, require_crypto: bool = False) -> bool:
     results = report.get("results", [])
     failed = [r for r in results if not r.get("passed")]
     native_skipped = [r for r in results if r.get("passed") and "skipped" in (r.get("actual") or {})]
     # With --native a skipped probe means the library was not packaged, so the run proved nothing;
     # with --native-ort the same holds for the ONNX Runtime cases, with --native-threads for the
-    # tract thread cases.
-    native_missing = any(required_skip(r, require_native, require_ort, require_threads) for r in native_skipped)
+    # tract thread cases, with --native-crypto for the crypto probes.
+    native_missing = any(required_skip(r, require_native, require_ort, require_threads, require_crypto) for r in native_skipped)
     lines = [
         f"# 기기 판독 검증 결과 ({suite})",
         "",
@@ -229,7 +235,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
     if report.get("error"):
         lines += ["## 실행 오류", "", "```", report["error"], "```", ""]
     if native_missing:
-        lines += ["## 실행 오류", "", "--native, --native-ort 또는 --native-threads로 실행했지만 필요한 네이티브 라이브러리나 기능이 APK에 없어 네이티브 프로브가 skip됐습니다.", ""]
+        lines += ["## 실행 오류", "", "--native, --native-ort, --native-threads 또는 --native-crypto로 실행했지만 필요한 네이티브 라이브러리나 기능이 APK에 없어 네이티브 프로브가 skip됐습니다.", ""]
     if failed:
         lines += ["## 실패 케이스", ""]
         for r in failed:
@@ -250,7 +256,7 @@ def write_summary(report: dict, out_dir: Path, suite: str, serial: str, adb_vers
             lines.append(f"| {name} / {y} | {check['effect']} | {np_score} | {default_score} | {check['matched']} |")
         lines.append("")
     if native_skipped:
-        lines += ["## Skip 케이스 (네이티브 라이브러리를 못 불러왔거나 ONNX Runtime 또는 tract 스레드 기능이 없음, 항목마다 이유)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
+        lines += ["## Skip 케이스 (네이티브 라이브러리를 못 불러왔거나 ONNX Runtime, tract 스레드 또는 암호 프로브 기능이 없음, 항목마다 이유)", ""] + [f"- {r['name']}: {r['actual']['skipped']}" for r in native_skipped] + [""]
     top = sorted(results, key=lambda r: r.get("ocrMs", 0), reverse=True)[:10]
     lines += ["## OCR 비용 상위 10개", "", "| 케이스 | OCR 호출 | OCR ms | 전체 ms |", "|---|---|---|---|"]
     for r in top:
@@ -266,16 +272,17 @@ def main() -> int:
     parser.add_argument("--native", action="store_true", help="build and package the Rust library with --build (needs cargo-ndk); a skipped native probe then fails the run")
     parser.add_argument("--native-ort", action="store_true", help="as --native, with the ONNX Runtime probes (-Pfga.native.ort=true); a skipped ONNX Runtime case then fails the run too")
     parser.add_argument("--native-threads", action="store_true", help="as --native, with tract's multi-threaded kernels (-Pfga.native.threads=true); a skipped tract-threads case then fails the run too")
+    parser.add_argument("--native-crypto", action="store_true", help="as --native, with the crypto and TLS probes (-Pfga.native.crypto=true); a skipped crypto probe then fails the run too")
     parser.add_argument("--ocr-model", type=Path, help="with --build and --native: a local copy of the pinned OCR model, so Gradle does not download it (-Pfga.ocr.model)")
     parser.add_argument("--suite", default="support,bond,questItems,noblePhantasm,fpSell,skillLevel,weeklyRoute,rankUp", help="comma-separated suites (default: all)")
     parser.add_argument("--cases", help="repo-relative case JSON to use instead of the suite default")
     parser.add_argument("--local-fixtures", type=Path, help="local folder with device-only fixture images; files for paths under the device QA root are pushed before each suite")
     args = parser.parse_args()
-    if args.native_ort or args.native_threads:
+    if args.native_ort or args.native_threads or args.native_crypto:
         args.native = True
 
     if args.build:
-        gradle_build(args.native, args.native_ort, args.native_threads, args.ocr_model)
+        gradle_build(args.native, args.native_ort, args.native_threads, args.ocr_model, args.native_crypto)
     adb_path = find_adb()
     adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
@@ -303,9 +310,9 @@ def main() -> int:
             sys.exit(f"no case file for suite {suite}: {case_file.relative_to(REPO)}")
         report = instrument(adb_path, args.serial, package, device_case)
         (out_dir / f"report-{suite}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped, require_native=args.native, require_ort=args.native_ort, require_threads=args.native_threads)
-        if any(required_skip(r, args.native, args.native_ort, args.native_threads) for r in report.get("results", [])):
-            print(f"{suite}: --native, --native-ort or --native-threads was given but the APK lacks what it asked for; the native probes were skipped")
+        ok = write_summary(report, out_dir, suite, args.serial, adb_version, skipped, require_native=args.native, require_ort=args.native_ort, require_threads=args.native_threads, require_crypto=args.native_crypto)
+        if any(required_skip(r, args.native, args.native_ort, args.native_threads, args.native_crypto) for r in report.get("results", [])):
+            print(f"{suite}: --native, --native-ort, --native-threads or --native-crypto was given but the APK lacks what it asked for; the native probes were skipped")
         print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / f'summary-{suite}.md'}")
         overall = overall and ok
     # summary.md joins every suite summary so one file shows the whole run.

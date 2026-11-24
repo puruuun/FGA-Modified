@@ -35,14 +35,22 @@ class NativeProbeTest {
 
     @Test
     fun ringProbe() {
-        val result = probe("ringProbe", NativeProbe::ringProbe)
+        val result = cryptoProbe("ringProbe", NativeProbe::ringProbe)
         assertTrue(result, result.startsWith("OK:"))
     }
 
     @Test
     fun rustlsProbe() {
-        val result = probe("rustlsProbe", NativeProbe::rustlsProbe)
+        val result = cryptoProbe("rustlsProbe", NativeProbe::rustlsProbe)
         assertTrue(result, result.startsWith("OK:"))
+    }
+
+    /** The crypto probes exist only in a library built with `-Pfga.native.crypto=true` (design 0026 PR D). */
+    private fun cryptoProbe(name: String, call: () -> String): String = try {
+        probe(name, call)
+    } catch (_: UnsatisfiedLinkError) {
+        assumeTrue(CRYPTO_SKIPPED, false)
+        error("unreachable")
     }
 
     @Test
@@ -66,5 +74,7 @@ class NativeProbeTest {
 
     companion object {
         const val TAG = "FgaNativeProbe"
+        const val CRYPTO_SKIPPED =
+            "libfga_ffi.so was built without the crypto-probes feature; build with -Pfga.native=true -Pfga.native.crypto=true"
     }
 }

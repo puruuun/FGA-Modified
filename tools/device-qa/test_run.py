@@ -20,6 +20,9 @@ ORT = result("ort-recognise", {"equalToPyText": 370, "threads": 0})
 ORT_SKIPPED = result("ort-recognise", {"requires": "ort", "skipped": "libfga_ffi.so was built without the ort-probe feature"})
 THREADS = result("tract-threads-2", {"equalToPyText": 370, "threads": 2})
 THREADS_SKIPPED = result("tract-threads-2", {"requires": "tract-threads", "skipped": "libfga_ffi.so was built without the tract-threads feature"})
+PING = result("ping", {"test": "ping"})
+CRYPTO = result("ringProbe", {"test": "ringProbe"})
+CRYPTO_SKIPPED = result("ringProbe", {"test": "ringProbe", "requires": "crypto-probes", "skipped": "libfga_ffi.so was built without the crypto-probes feature"})
 
 
 class SummaryTest(unittest.TestCase):
@@ -63,6 +66,15 @@ class SummaryTest(unittest.TestCase):
     def test_native_threads_passes_when_everything_ran(self):
         self.assertTrue(self.passes([TRACT, THREADS], require_native=True, require_threads=True))
 
+    def test_native_alone_allows_skipped_crypto_probes(self):
+        self.assertTrue(self.passes([PING, CRYPTO_SKIPPED], require_native=True))
+
+    def test_native_crypto_fails_on_a_skipped_crypto_probe(self):
+        self.assertFalse(self.passes([PING, CRYPTO_SKIPPED], require_native=True, require_crypto=True))
+
+    def test_native_crypto_passes_when_everything_ran(self):
+        self.assertTrue(self.passes([PING, CRYPTO], require_native=True, require_crypto=True))
+
 
 class GradleCommandTest(unittest.TestCase):
     def command(self, **flags):
@@ -87,6 +99,10 @@ class GradleCommandTest(unittest.TestCase):
         self.assertNotIn("-Pfga.native.threads=true", self.command(native=True))
         self.assertIn("-Pfga.native.threads=true", self.command(native=True, native_threads=True))
         self.assertNotIn("-Pfga.native.ort=true", self.command(native=True, native_threads=True))
+
+    def test_crypto_property_only_with_the_flag(self):
+        self.assertNotIn("-Pfga.native.crypto=true", self.command(native=True))
+        self.assertIn("-Pfga.native.crypto=true", self.command(native=True, native_crypto=True))
 
     def test_without_a_model_no_model_property(self):
         cmd = self.command(native=True)

@@ -164,9 +164,18 @@ val nativeThreadsEnabled = providers.gradleProperty("fga.native.threads").orNull
 if (nativeThreadsEnabled && nativeSwitch != true) {
     throw GradleException("-Pfga.native.threads=true only works together with -Pfga.native=true")
 }
+// Design 0026 PR D: the stage 1-0 crypto and TLS probes (fga-ffi's crypto-probes feature, ring,
+// rustls and rcgen) are not in the product library; this device-test switch puts them back for
+// the nativeProbe suite's ringProbe and rustlsProbe cases.
+val nativeCryptoEnabled = providers.gradleProperty("fga.native.crypto").orNull == "true"
+if (nativeCryptoEnabled && nativeSwitch != true) {
+    throw GradleException("-Pfga.native.crypto=true only works together with -Pfga.native=true")
+}
 /** `--features` arguments for fga-ffi; empty when no switch is on, so the command stays as it was. */
 fun cargoFeatures(vararg features: String): List<String> {
-    val wanted = features.toList() + if (nativeThreadsEnabled) listOf("tract-threads") else emptyList()
+    val wanted = features.toList() +
+        (if (nativeThreadsEnabled) listOf("tract-threads") else emptyList()) +
+        (if (nativeCryptoEnabled) listOf("crypto-probes") else emptyList())
     return if (wanted.isEmpty()) emptyList() else listOf("--features", wanted.joinToString(","))
 }
 

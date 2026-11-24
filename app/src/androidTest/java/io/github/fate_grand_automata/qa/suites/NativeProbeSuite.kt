@@ -22,5 +22,11 @@ internal fun runNativeProbeCase(case: JSONObject): JSONObject {
     })
     val outcome = core.run(Request.method(NativeProbeTest::class.java, test))
     outcome.failures.firstOrNull()?.let { throw AssertionError("$test: ${it.message}", it.exception) }
-    return JSONObject().put("test", test).apply { skipped?.let { put("skipped", it) } }
+    // tools/device-qa/run.py reads `requires` to tell a missing feature from a missing library.
+    return JSONObject().put("test", test).apply {
+        skipped?.let {
+            put("skipped", it)
+            case.optString("requires").takeIf(String::isNotEmpty)?.let { feature -> put("requires", feature) }
+        }
+    }
 }

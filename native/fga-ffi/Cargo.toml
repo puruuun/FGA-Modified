@@ -18,11 +18,12 @@ workspace = true
 [dependencies]
 jni = "0.21.1"
 
-# ring and tract compile C or assembly, so every host that builds this crate needs a C compiler;
-# Android cross-builds use the NDK's clang.
-ring = "0.17.14"
-rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
-rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"] }
+# Only for the stage 1-0 crypto and TLS probes (feature `crypto-probes`, design 0026 PR D): the
+# product library does not link them. ring compiles C and assembly, so a host that builds the
+# feature needs a C compiler; Android cross-builds use the NDK's clang.
+ring = { version = "0.17.14", optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"], optional = true }
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "ring"], optional = true }
 tract-core = "0.23"
 # Issue #530 measures the PP-OCRv6 recogniser on devices. tract is the pure-Rust backend, so the
 # Android build gains no prebuilt runtime.
@@ -44,6 +45,11 @@ test-hooks = []
 # Microsoft's onnxruntime-android AAR, which Gradle extracts and passes in through ORT_LIB_PATH
 # (docs/agents/rust-native.md); on the PC it uses the prebuilt runtime that `ort` downloads.
 ort-probe = ["fga-sensing/ort"]
+# Design 0026 PR D: the stage 1-0 probes ringProbe and rustlsProbe (ring, rustls, rcgen), which
+# no product code calls. Off by default, so neither the product library nor its third-party
+# notices hold those crates; Gradle turns it on with `-Pfga.native.crypto=true` for a device-test
+# build that runs them (docs/agents/rust-native.md).
+crypto-probes = ["dep:ring", "dep:rustls", "dep:rcgen"]
 # Issue #549: tract's multi-threaded kernels for the tract probes, so ocrLoadTract can take more
 # than one thread. Off by default for the same reason as ort-probe; Gradle turns it on with
 # `-Pfga.native.threads=true`.
