@@ -1,0 +1,44 @@
+name: Robolectric cache
+
+# Fills the Robolectric android-all jar cache on main, where Main CI's test-and-build restores it.
+# Pull requests restore only (main-ci.yml): a PR can read main's caches, but its own saves are per ref
+# and evict the Gradle and NDK caches (issue #658). This workflow is not a required check and nothing
+# needs it: a missing entry makes test-and-build download the jars itself, with retries and a checksum.
+#
+# The first entry comes from the push that brings robolectric_android_all.json to main (the path filter
+# below matches a new file); after that, a push that changes the jar list, or workflow_dispatch.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ci/robolectric_android_all.json'
+      - 'tools/ci/robolectric_offline.py'
+      - '.github/workflows/robolectric-cache.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: robolectric-cache-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ROBOLECTRIC_OFFLINE_DIR: /home/runner/.cache/robolectric-android-all
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Restore, then save at the end of the job when the key was not found: an existing entry is kept.
+      - name: Cache the Robolectric jars
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ROBOLECTRIC_OFFLINE_DIR }}
+          key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}
+      - name: Fill the Robolectric jars
+        run: python3 tools/ci/robolectric_offline.py prefetch "$ROBOLECTRIC_OFFLINE_DIR"
