@@ -64,7 +64,7 @@ class ProxyServer(
     private val onGameResponse: (String, ByteArray, String?) -> Unit = { target, payload, encoding ->
         CaptureTracker.onGameResponse(target, payload, encoding)
     },
-    /** Experiment (#636): criteria for the support list filter, or null while it is off. Read per response. */
+    /** The support list filter's ready criteria (#636, #685), or null while it is off. Read per response. */
     private val supportListCriteria: () -> SupportListCriteria? = { null },
 ) {
     @Volatile
@@ -782,7 +782,7 @@ class ProxyServer(
             }
             val criteria = if (recordThis && reading && !account && resp.status in 200..299 &&
                 !req.method.equals("HEAD", true) && CaptureNames.path(path) == SupportListFilter.PATH
-            ) runCatching { supportListCriteria() }.getOrNull()?.takeIf { it.servantIds.isNotEmpty() } else null
+            ) runCatching { supportListCriteria() }.getOrNull()?.takeIf { it.hasConditions } else null
             val body = if (criteria != null) {
                 relaySupportList(ur, cout, resp, req.method, criteria)
             } else {
@@ -820,8 +820,9 @@ class ProxyServer(
     }
 
     /**
-     * Experiment (#636): the one path whose body is held back so it can be filtered. The wire bytes are kept up to
-     * [SupportListFilter.MAX_WIRE_BYTES]; past that, or when anything fails, they go to the game exactly as read.
+     * The support list filter (#636, #685): the one path whose body is held back so it can be filtered. The wire bytes
+     * are kept up to [SupportListFilter.MAX_WIRE_BYTES]; past that, or when anything fails, they go to the game exactly
+     * as read.
      * The returned result still carries the original payload, which is what capture records.
      */
     private var supportListRewriteHead: (ByteArray, Int) -> ByteArray? = SupportListFilter::rewriteHead

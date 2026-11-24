@@ -44,7 +44,7 @@ class CapturePrefsTest {
     }
 }
 
-private class InMemorySharedPreferences : SharedPreferences {
+internal class InMemorySharedPreferences : SharedPreferences {
     private val data = linkedMapOf<String, Any?>()
     private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 

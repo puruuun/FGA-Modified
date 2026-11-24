@@ -101,6 +101,10 @@ class GameNames(
         )
     }.getOrDefault(ChaldeaCollectionNumbers.EMPTY)
 
+    /** Cache-only rows of one Atlas list (for example `basic_servant`) of [server] (KR or JP); never downloads or throws. */
+    fun cachedRows(list: String, server: String): Map<Long, AtlasBasic> =
+        runCatching { cachedMetadata(list, server) }.getOrDefault(emptyMap())
+
     /** Ensures KR and JP servant, CE, and command-code lists are cached (respecting daily attempt limits). */
     suspend fun ensureChaldeaCollectionLists(shouldStop: () -> Boolean = { false }): Boolean = withContext(Dispatchers.IO) {
         mutex.withLock {

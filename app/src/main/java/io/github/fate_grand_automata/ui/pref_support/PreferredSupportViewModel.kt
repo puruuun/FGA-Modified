@@ -9,7 +9,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 
 @HiltViewModel(assistedFactory = PreferredSupportViewModel.Factory::class)
 class PreferredSupportViewModel @AssistedInject constructor(
-    prefsCore: PrefsCore,
+    val prefsCore: PrefsCore,
     @Assisted id: String
 ): ViewModel() {
     val supportPrefs = prefsCore.forBattleConfig(id).support

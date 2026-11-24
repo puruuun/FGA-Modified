@@ -31,6 +31,8 @@ class PrefsCore @Inject constructor(
 
         // increase for each changed Onboarding screen
         const val CURRENT_ONBOARDING_VERSION = 2
+
+        const val MANUAL_SUPPORT_FILTER_FILE = "support_list_filter_manual"
     }
 
     val onboardingCompletedVersion = maker.int("onboarding_completed_version")
@@ -88,12 +90,13 @@ class PrefsCore @Inject constructor(
     )
 
     /**
-     * Experiment (#636): the capture proxy leaves support list entries out of the response the game receives.
-     * Off by default; the ids are svtIds, stored as strings because the preference file has no long set.
+     * Retired experiment (#636): svtIds stored as strings. Only read once by the app's support filter migration (#685),
+     * which moves the ids into [manualSupportFilter] and sets [supportFilterMigrated].
      */
-    val captureSupportFilterEnabled = maker.bool("capture_support_filter_enabled", false)
-    val captureSupportFilterServants = maker.stringSet("capture_support_filter_servants")
-    val captureSupportFilterCes = maker.stringSet("capture_support_filter_ces")
+    val legacySupportFilterEnabled = maker.bool("capture_support_filter_enabled", false)
+    val legacySupportFilterServants = maker.stringSet("capture_support_filter_servants")
+    val legacySupportFilterCes = maker.stringSet("capture_support_filter_ces")
+    val supportFilterMigrated = maker.bool("capture_support_filter_migrated", false)
     val captureAdGuardAutoSwitch = maker.bool("capture_adguard_auto_switch", false)
     val captureAdGuardAutomationPassword = maker.string("capture_adguard_automation_password", "")
 
@@ -225,6 +228,15 @@ class PrefsCore @Inject constructor(
         }
 
     val servantEnhancement = ServantEnhancementPrefsCore(maker)
+
+    /**
+     * The support list filter for manual play (#685): the same condition items as a battle config's support settings,
+     * in a file of its own so it is part of no battle config and of no battle config export.
+     * [SupportPrefsCore.supportListFilter] is its switch.
+     */
+    val manualSupportFilter: SupportPrefsCore by lazy {
+        SupportPrefsCore(PrefMaker(context.getSharedPreferences(MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE)))
+    }
 
     init {
         RetreatMergeMigration.run(

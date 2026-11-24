@@ -605,7 +605,6 @@ fun GainsTrackerScreen(vm: GainsTrackerViewModel = viewModel()) {
                 onStopMinutes = { vm.prefsCore.chaldeaSyncStopMinutes.set(it) },
                 syncNow = ChaldeaSyncManager::syncNow,
             )
-            supportListFilterItems(vm.prefsCore)
         },
     )
 }

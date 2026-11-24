@@ -54,6 +54,9 @@ sealed interface Route : NavKey {
     data object FineTune : Route
 
     @Serializable
+    data object SupportListFilter : Route
+
+    @Serializable
     data object AddedFeatureTuning : Route
 
     @Serializable
