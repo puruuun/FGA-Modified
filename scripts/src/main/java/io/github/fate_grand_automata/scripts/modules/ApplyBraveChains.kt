@@ -166,6 +166,8 @@ class ApplyBraveChains @Inject constructor() {
                 npUsage = npUsage
             )
 
+            // Always comes only from Chain Priority, whose fallback uses this picker; here it acts as With NP, as upstream.
+            BraveChainEnum.Always,
             BraveChainEnum.WithNP -> withNp(
                 cards = cards,
                 rearrange = rearrange,

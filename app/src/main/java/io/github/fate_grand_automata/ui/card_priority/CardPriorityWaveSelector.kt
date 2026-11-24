@@ -150,9 +150,11 @@ fun CardPriorityWaveSelector(
                                         items[0].servantCards.toMutableStateList(),
                                         mutableStateOf(false),
                                         mutableStateOf(BraveChainEnum.None),
-                                        // A new entry copies the previous entry's style and servant priority switch.
+                                        // A new entry copies the previous entry's style, servant priority switch and Chain Priority.
                                         mutableStateOf(items.last().style.value),
-                                        mutableStateOf(items.last().useServantPriority.value)
+                                        mutableStateOf(items.last().useServantPriority.value),
+                                        mutableStateOf(items.last().useChainPriority.value),
+                                        items.last().chainPriority.toMutableStateList()
                                     )
                                 )
                             }

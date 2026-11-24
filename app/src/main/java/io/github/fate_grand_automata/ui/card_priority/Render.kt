@@ -28,6 +28,9 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
+import io.github.fate_grand_automata.scripts.enums.ChainTypeEnum
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityItem
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.ui.FGAListItemColors
 import io.github.fate_grand_automata.ui.drag_sort.DragSort
@@ -37,10 +40,16 @@ import io.github.fate_grand_automata.ui.prefs.remember
 import io.github.fate_grand_automata.util.stringRes
 
 @Composable
-fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
+fun CardPriorityListItem.Render(
+    cardSwapDetection: Pref<Boolean>,
+    chainShown: Boolean = ChainPriorityAvailability.SHOWN
+) {
     var style by style
     var useServantPriority by useServantPriority
+    var useChainPriority by useChainPriority
     val servantStyle = style == CardPriorityStyle.Servant
+    // Hidden until the planner shows the feature (#654); a Servant style entry ignores it like brave chains.
+    val chainPriorityOn = chainShown && useChainPriority && !servantStyle
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -105,15 +114,38 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                     colors = FGAListItemColors()
                 )
 
+                if (chainShown) {
+                    ListItem(
+                        modifier = Modifier
+                            .clickable(enabled = !servantStyle) { useChainPriority = !useChainPriority },
+                        headlineContent = { Text(stringResource(R.string.p_battle_config_use_chain_priority)) },
+                        trailingContent = {
+                            Switch(
+                                checked = useChainPriority,
+                                onCheckedChange = { useChainPriority = it },
+                                enabled = !servantStyle,
+                                colors = FGASwitchColors()
+                            )
+                        },
+                        colors = FGAListItemColors()
+                    )
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     var braveChains by braveChains
+                    // Always runs as With NP without Chain Priority, so that is what is shown. The saved value is kept.
+                    val shownBraveChains =
+                        if (!chainPriorityOn && braveChains == BraveChainEnum.Always) BraveChainEnum.WithNP
+                        else braveChains
 
                     val braveChainDialog = listDialog(
-                        selected = braveChains,
-                        onSelectedChange = { braveChains = it },
+                        selected = shownBraveChains,
+                        // Choosing the shown value again keeps the saved one
+                        onSelectedChange = { if (it != shownBraveChains) braveChains = it },
                         entries = BraveChainEnum.entries
+                            .filter { chainPriorityOn || it != BraveChainEnum.Always }
                             .associateWith { stringResource(it.stringRes) },
                         title = stringResource(R.string.p_brave_chains)
                     )
@@ -123,7 +155,7 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                             .weight(1f)
                             .clickable(enabled = !servantStyle) { braveChainDialog.show() },
                         headlineContent = { Text(stringResource(R.string.p_brave_chains)) },
-                        supportingContent = { Text(stringResource(braveChains.stringRes)) },
+                        supportingContent = { Text(stringResource(shownBraveChains.stringRes)) },
                         colors = FGAListItemColors()
                     )
 
@@ -145,6 +177,12 @@ fun CardPriorityListItem.Render(cardSwapDetection: Pref<Boolean>) {
                     )
                 }
             }
+        }
+
+        if (chainPriorityOn) {
+            ChainPriority(
+                priorities = chainPriority
+            )
         }
 
         if (useServantPriority && !servantStyle) {
@@ -213,6 +251,56 @@ private fun ServantPriority(
                 )
             },
             modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun ChainPriority(
+    priorities: SnapshotStateList<ChainPriorityItem>
+) {
+    ReorderPanel(
+        hint = stringResource(R.string.chain_priority_hint),
+        header = {
+            Text(
+                stringResource(R.string.p_chain_priority).uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    ) {
+        DragSort(
+            items = priorities,
+            key = { it.type },
+            style = {
+                if (it.isEnabled) {
+                    DragSortItemStyle(
+                        backgroundColor = colorResource(
+                            when (it.type) {
+                                ChainTypeEnum.Arts -> R.color.colorArts
+                                ChainTypeEnum.Quick -> R.color.colorQuick
+                                ChainTypeEnum.Buster -> R.color.colorBuster
+                                ChainTypeEnum.Mighty -> R.color.colorPrimaryDark
+                                ChainTypeEnum.Avoid -> R.color.colorAvoid
+                            }
+                        ),
+                        contentColor = Color.White,
+                        text = stringResource(it.type.stringRes)
+                    )
+                } else {
+                    // A chain that is off keeps its place but is never tried.
+                    DragSortItemStyle(
+                        backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        text = stringResource(it.type.stringRes)
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { index ->
+                val item = priorities[index]
+                priorities[index] = item.copy(isEnabled = !item.isEnabled)
+            }
         )
     }
 }

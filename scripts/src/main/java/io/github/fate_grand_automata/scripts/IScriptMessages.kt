@@ -1,5 +1,7 @@
 package io.github.fate_grand_automata.scripts
 
+import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
+import io.github.fate_grand_automata.scripts.enums.ChainTypeEnum
 import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.fate_grand_automata.scripts.models.CardColourCounts
 import io.github.fate_grand_automata.scripts.models.FieldSlot
@@ -108,7 +110,34 @@ sealed class ScriptLog {
         val cards: List<ParsedCard>,
         val sorted: List<CommandCard.Face>,
         val picked: List<CommandCard>,
-        val direct: String?
+        val direct: String?,
+        /** Only on an entry with Chain Priority on: the chain the attack makes and the order that was tried. */
+        val chain: ChainDecision? = null
+    ) : ScriptLog()
+
+    class ChainDecision(
+        /** Chain formed by the three cards played, or null when they form none or a type is unknown. */
+        val formed: ChainTypeEnum?,
+        val order: List<ChainTypeEnum>,
+        /** NP card types used for planning. */
+        val npTypes: Map<FieldSlot, CardTypeEnum>
+    )
+
+    /**
+     * The NP card type read in a Servant's details dialog.
+     *
+     * @param type The best type at or above [minSimilarity], or null when none is.
+     * @param scores Best match score per type.
+     * @param turnsText OCR text of the banner's remaining-turns digit, read only when no type matched after a skill.
+     */
+    class NpCardTypeReading(
+        val servant: TeamSlot,
+        val type: CardTypeEnum?,
+        val scores: Map<CardTypeEnum, Double>,
+        val minSimilarity: Double,
+        val reason: String,
+        val turnsText: String? = null,
+        val turns: Int? = null
     ) : ScriptLog()
 
     class FaceCardReadings(

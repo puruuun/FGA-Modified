@@ -56,6 +56,7 @@ import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardScore
 import io.github.fate_grand_automata.scripts.models.PerEntrySettings
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy
 import io.github.fate_grand_automata.scripts.modules.FaceCardReason
 import io.github.fate_grand_automata.scripts.modules.FaceCardReasonKind
@@ -67,6 +68,7 @@ import io.github.fate_grand_automata.ui.dialog.FgaDialog
 import io.github.fate_grand_automata.ui.prefs.EditTextPreference
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.remember
+import io.github.fate_grand_automata.util.stringRes
 import io.github.fate_grand_automata.util.toSp
 
 @Composable
@@ -446,6 +448,7 @@ private fun profileInput(profile: ExecutionProfileCore): FaceCardCheckPolicy.Pro
     val legacyServantPriority by profile.useServantPriority.remember()
     val servantPriorities by profile.useServantPriorities.remember()
     val braveChains by profile.braveChains.remember()
+    val chainPriorities by profile.useChainPriorities.remember()
     return FaceCardCheckPolicy.ProfileInput(
         skillCommand = skillCommand,
         entryCount = cardPriority.size,
@@ -454,7 +457,9 @@ private fun profileInput(profile: ExecutionProfileCore): FaceCardCheckPolicy.Pro
         styles = styles,
         legacyServantPriority = legacyServantPriority,
         servantPriorities = servantPriorities,
-        braveChains = braveChains
+        braveChains = braveChains,
+        // Same as the battle: a stored "on" counts as off while Chain Priority is hidden.
+        chainPriorities = if (ChainPriorityAvailability.SHOWN) chainPriorities else emptyList()
     )
 }
 
@@ -495,6 +500,7 @@ private fun faceCardReasonText(reason: FaceCardReason): String {
         FaceCardReasonKind.ServantStyle -> stringResource(R.string.face_card_reason_servant_style, entry)
         FaceCardReasonKind.ServantPriority -> stringResource(R.string.face_card_reason_servant_priority, entry)
         FaceCardReasonKind.BraveChains -> stringResource(R.string.face_card_reason_brave_chains, entry)
+        FaceCardReasonKind.ChainPriority -> stringResource(R.string.face_card_reason_chain_priority, entry)
         FaceCardReasonKind.NpMatchingShuffle -> stringResource(R.string.face_card_reason_np_matching_shuffle)
         FaceCardReasonKind.HakunoShuffle -> stringResource(R.string.face_card_reason_hakuno_shuffle)
         FaceCardReasonKind.CardCountStart -> stringResource(R.string.face_card_reason_card_count)
@@ -520,6 +526,8 @@ private fun CardPrioritySummary(profile: ExecutionProfileCore) {
     val styles by profile.cardPriorityStyles.remember()
     val legacyServantPriority by profile.useServantPriority.remember()
     val servantPriorities by profile.useServantPriorities.remember()
+    val chainFlags by profile.useChainPriorities.remember()
+    val chainOrder by profile.chainPriority.remember()
 
     val effectiveStyles = PerEntrySettings.withLegacy(styles, legacyStyle)
     val effectiveFlags = PerEntrySettings.withLegacy(servantPriorities, legacyServantPriority)
@@ -532,6 +540,8 @@ private fun CardPrioritySummary(profile: ExecutionProfileCore) {
             val servantStyle = PerEntrySettings.at(effectiveStyles, wave, CardPriorityStyle.Affinity) ==
                 CardPriorityStyle.Servant
             val servantPriorityOn = !servantStyle && PerEntrySettings.at(effectiveFlags, wave, false)
+            val chainPriorityOn = ChainPriorityAvailability.SHOWN && !servantStyle &&
+                PerEntrySettings.at(chainFlags, wave, false)
             val priorities: List<Pair<String, CardScore>> =
                 if (servantStyle) servantCards.atWave(wave).map { it.toString() to CardScore(it.type, CardAffinityEnum.Normal) }
                 else affinityPriorities.map { it.toString() to it }
@@ -602,6 +612,15 @@ private fun CardPrioritySummary(profile: ExecutionProfileCore) {
                 if (servantPriorityOn) {
                     Text(
                         stringResource(R.string.card_priority_summary_servant_priority),
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (chainPriorityOn) {
+                    val order = chainOrder.enabledAtWave(wave).map { stringResource(it.stringRes) }
+                    Text(
+                        stringResource(R.string.card_priority_summary_chain_priority, order.joinToString(">")),
                         modifier = Modifier.padding(start = 8.dp),
                         style = MaterialTheme.typography.bodySmall
                     )

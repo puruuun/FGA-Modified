@@ -30,6 +30,7 @@ import io.github.fate_grand_automata.scripts.modules.CardParser
 import io.github.fate_grand_automata.scripts.modules.Caster
 import io.github.fate_grand_automata.scripts.modules.ServantTracker
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import java.io.File
@@ -58,7 +59,8 @@ class ChainPriorityOffStateTest {
         brave: BraveChainEnum,
         rearrange: Boolean,
         split: CardPrioritySplit = CardPrioritySplit.Wave,
-        rotate: Int = 0
+        rotate: Int = 0,
+        chain: List<Boolean> = emptyList()
     ) = TestExecutionProfile(
         cardPriority = CardPriorityPerWave.of(List(3) { affinityLists[(it + rotate) % 3] }.joinToString("\n")),
         cardPrioritySplit = split,
@@ -67,7 +69,8 @@ class ChainPriorityOffStateTest {
         useServantPriorities = listOf(servantPriority, !servantPriority),
         servantPriority = ServantPriorityPerWave.of(List(3) { servantLists[(it + rotate) % 3] }.joinToString("\n")),
         braveChains = listOf(brave, BraveChainEnum.None),
-        rearrangeCards = listOf(rearrange, !rearrange)
+        rearrangeCards = listOf(rearrange, !rearrange),
+        useChainPriorities = chain
     )
 
     private fun configOf(
@@ -88,6 +91,8 @@ class ChainPriorityOffStateTest {
             every { target.servantPriority } returns source.servantPriority
             every { target.braveChains } returns source.braveChains
             every { target.rearrangeCards } returns source.rearrangeCards
+            every { target.useChainPriorities } returns source.useChainPriorities
+            every { target.chainPriority } returns source.chainPriority
         }
         stub(primary, config)
         every { config.spam } returns if (spam) listOf(
@@ -103,34 +108,49 @@ class ChainPriorityOffStateTest {
         }
     }
 
-    private class Clicker(config: IBattleConfig, profileIndex: Int?, spam: Boolean) {
+    /** Shared by every clicker: mocks are slow to create and keep their calls, so there is one of each. */
+    private object Mocks {
         val taps = mutableListOf<CommandCard>()
+        var spam = false
+        val api = mockk<IFgoAutomataApi>(relaxed = true)
+        val caster = mockk<Caster>(relaxed = true).also { caster ->
+            every { caster.use(any<CommandCard.Face>()) } answers { taps += firstArg<CommandCard.Face>() }
+            every { caster.use(any<CommandCard.NP>()) } answers { taps += firstArg<CommandCard.NP>() }
+            every { caster.canSpam(any()) } answers { spam && firstArg<SpamEnum>() == SpamEnum.Spam }
+        }
+
+        // Strict: the off state may ask the tracker only for the deployed servants, as before.
+        val tracker = mockk<ServantTracker>().also { tracker ->
+            every { tracker.deployed } returns mapOf(
+                FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B, FieldSlot.C to TeamSlot.C
+            )
+        }
+        val parser = mockk<CardParser>()
+
+        fun forget() = clearMocks(api, caster, tracker, answers = false, recordedCalls = true, childMocks = false)
+    }
+
+    private class Clicker(config: IBattleConfig, profileIndex: Int?, private val spam: Boolean, chainShown: Boolean) {
         val state = BattleState().also { it.nextStage() }
         private val card: Card
 
         init {
-            val execution = BattleExecution(config)
+            val execution = BattleExecution(config, chainShown)
             profileIndex?.let { execution.select(it) }
-            val caster = mockk<Caster>(relaxed = true)
-            every { caster.use(any<CommandCard.Face>()) } answers { taps += firstArg<CommandCard.Face>() }
-            every { caster.use(any<CommandCard.NP>()) } answers { taps += firstArg<CommandCard.NP>() }
-            every { caster.canSpam(any()) } answers { spam && firstArg<SpamEnum>() == SpamEnum.Spam }
-            // Strict: the off state may ask the tracker only for the deployed servants, as before.
-            val tracker = mockk<ServantTracker>()
-            every { tracker.deployed } returns mapOf(
-                FieldSlot.A to TeamSlot.A, FieldSlot.B to TeamSlot.B, FieldSlot.C to TeamSlot.C
-            )
-            card = Card(mockk(relaxed = true), tracker, state, caster, mockk<CardParser>(), ApplyBraveChains(), execution)
+            card = Card(Mocks.api, Mocks.tracker, state, Mocks.caster, Mocks.parser, ApplyBraveChains(), execution)
         }
 
         fun click(hand: List<ParsedCard>, stage: Int, totalTurn: Int, npUsage: NPUsage, allowNpSpam: Boolean): String {
-            taps.clear()
+            Mocks.taps.clear()
+            Mocks.spam = spam
             state.commandPosition = CommandPosition(stage, 0, totalTurn)
             return try {
                 card.clickCommandCards(hand, npUsage, allowNpSpam)
-                taps.joinToString(",") { it.label() }
+                Mocks.taps.joinToString(",") { it.label() }
             } catch (e: AutoBattle.BattleExitException) {
-                "EXIT(${taps.joinToString(",") { it.label() }})"
+                "EXIT(${Mocks.taps.joinToString(",") { it.label() }})"
+            } finally {
+                Mocks.forget()
             }
         }
     }
@@ -171,7 +191,8 @@ class ChainPriorityOffStateTest {
     private fun NPUsage.label() =
         nps.joinToString("") { "${it.autoSkillCode}" } + "/" + cardsBeforeNP + (directCards?.let { "/$it" } ?: "")
 
-    private fun record(): List<String> {
+    /** [chain] is the stored Chain Priority switch of every entry; [chainShown] the feature's availability. */
+    private fun record(chainShown: Boolean = false, chain: List<Boolean> = emptyList()): List<String> {
         val random = Random(654)
         val lines = mutableListOf<String>()
         val styleSets = listOf(
@@ -184,7 +205,9 @@ class ChainPriorityOffStateTest {
         // Wave entries of the primary profile, with and without NP Spam.
         for (styles in styleSets) for (servantPriority in listOf(false, true)) for (brave in braves)
             for (rearrange in listOf(false, true)) for (spam in listOf(false, true)) {
-                val clicker = Clicker(configOf(profile(styles, servantPriority, brave, rearrange), spam = spam), null, spam)
+                val clicker = Clicker(
+                    configOf(profile(styles, servantPriority, brave, rearrange, chain = chain), spam = spam), null, spam, chainShown
+                )
                 for (npUsage in npUsages) for (stage in 0..2) repeat(2) {
                     val hand = randomHand(random)
                     val allowNpSpam = random.nextBoolean()
@@ -197,11 +220,11 @@ class ChainPriorityOffStateTest {
 
         // Turn entries, and the second and third card-count profiles.
         for (brave in braves) for (rearrange in listOf(false, true)) {
-            val primary = profile(listOf(CardPriorityStyle.Affinity), false, brave, rearrange, CardPrioritySplit.Turn)
-            val secondary = profile(listOf(CardPriorityStyle.Servant, CardPriorityStyle.Affinity), true, brave, !rearrange, rotate = 1)
-            val tertiary = profile(listOf(CardPriorityStyle.Affinity), true, brave, rearrange, CardPrioritySplit.Turn, rotate = 2)
+            val primary = profile(listOf(CardPriorityStyle.Affinity), false, brave, rearrange, CardPrioritySplit.Turn, chain = chain)
+            val secondary = profile(listOf(CardPriorityStyle.Servant, CardPriorityStyle.Affinity), true, brave, !rearrange, rotate = 1, chain = chain)
+            val tertiary = profile(listOf(CardPriorityStyle.Affinity), true, brave, rearrange, CardPrioritySplit.Turn, rotate = 2, chain = chain)
             for (profileIndex in 0..2) {
-                val clicker = Clicker(configOf(primary, secondary, tertiary), profileIndex, false)
+                val clicker = Clicker(configOf(primary, secondary, tertiary), profileIndex, false, chainShown)
                 for (npUsage in npUsages) for (totalTurn in 0..3) {
                     val hand = randomHand(random)
                     val stage = random.nextInt(3)
@@ -215,7 +238,7 @@ class ChainPriorityOffStateTest {
         // Direct cards, strict and with the priority fallback.
         val directCodes = listOf("baq", "b4a", "?b4a", "4ab", "?qq5", "?aaa", "?456", "ab6", "?b5b")
         for (styles in styleSets) for (servantPriority in listOf(false, true)) for (brave in braves) {
-            val clicker = Clicker(configOf(profile(styles, servantPriority, brave, true), spam = true), null, true)
+            val clicker = Clicker(configOf(profile(styles, servantPriority, brave, true, chain = chain), spam = true), null, true, chainShown)
             for (code in directCodes) repeat(3) {
                 val sequence = DirectCardSequence.parse(code)
                 val npUsage = NPUsage(sequence.nps, sequence.cardsBeforeNP, sequence)
@@ -229,9 +252,7 @@ class ChainPriorityOffStateTest {
         return lines
     }
 
-    @Test
-    fun `card choices with chain priority off match the recorded choices`() {
-        val actual = record()
+    private fun assertMatchesFixture(actual: List<String>) {
         val file = File(fixturePath)
         if (System.getenv("FGA_RECORD_CHAIN654") == "1") {
             file.parentFile.mkdirs()
@@ -241,6 +262,39 @@ class ChainPriorityOffStateTest {
         assertThat(actual.size).isEqualTo(expected.size)
         actual.zip(expected).forEachIndexed { index, (a, e) ->
             assertThat(a, "line ${index + 1}").isEqualTo(e)
+        }
+    }
+
+    @Test
+    fun `card choices with chain priority off match the recorded choices`() {
+        assertMatchesFixture(record())
+    }
+
+    @Test
+    fun `a stored chain priority on is ignored while the feature is hidden`() {
+        assertMatchesFixture(record(chainShown = false, chain = listOf(true)))
+    }
+
+    @Test
+    fun `shown chain priority that is off in every entry picks as before`() {
+        assertMatchesFixture(record(chainShown = true, chain = listOf(false, false)))
+    }
+
+    @Test
+    fun `a saved Always acts as With NP where chain priority is off`() {
+        val random = Random(2)
+        for (shown in listOf(false, true)) for (rearrange in listOf(false, true)) {
+            val always = Clicker(
+                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.Always, rearrange)), null, false, shown
+            )
+            val withNp = Clicker(
+                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.WithNP, rearrange)), null, false, shown
+            )
+            for (npUsage in npUsages) repeat(20) {
+                val hand = randomHand(random)
+                assertThat(always.click(hand, 0, 0, npUsage, false), "$npUsage $hand")
+                    .isEqualTo(withNp.click(hand, 0, 0, npUsage, false))
+            }
         }
     }
 }

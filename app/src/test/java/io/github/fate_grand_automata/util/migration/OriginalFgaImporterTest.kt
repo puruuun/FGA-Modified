@@ -52,6 +52,42 @@ class OriginalFgaImporterTest {
         assertEquals(true, records.single()["support_friends_only"])
     }
 
+    @Test fun `upstream per-wave servant and chain priority switches become the fork's per-entry switches`() {
+        val source = dir("upstream")
+        script(source, "chain.fga", values() + mapOf(
+            "use_servant_priority" to true,
+            "use_servant_priority_per_wave" to "T,F,T",
+            "use_chain_priority" to true,
+            "use_chain_priority_per_wave" to "F,T",
+            "chain_priority" to "Mighty,!Buster,Arts,Quick,!Avoid\nBuster,Mighty,Arts,Quick,!Avoid"
+        ))
+        script(source, "all-waves.fga", values() + mapOf("autoskill_name" to "all", "use_chain_priority" to true))
+        script(source, "off.fga", values() + mapOf("autoskill_name" to "off", "use_chain_priority" to false))
+        val importer = OriginalFgaImporter(store)
+        assertEquals(ImportCounts(imported = 3), importer.run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
+
+        val chain = records.single { it["autoskill_name"] == values()["autoskill_name"] }
+        assertEquals("true,false,true", chain["use_servant_priorities"])
+        assertEquals(true, chain["use_servant_priority"])
+        assertEquals("false,true", chain["use_chain_priorities"])
+        assertEquals("Mighty,!Buster,Arts,Quick,!Avoid\nBuster,Mighty,Arts,Quick,!Avoid", chain["chain_priority"])
+        for (key in listOf("use_servant_priority_per_wave", "use_chain_priority_per_wave", "use_chain_priority")) {
+            assertFalse(key in chain, key)
+        }
+        assertEquals("true", records.single { it["autoskill_name"] == "all" }["use_chain_priorities"])
+        assertEquals("false", records.single { it["autoskill_name"] == "off" }["use_chain_priorities"])
+
+        // Importing the same files again finds the converted configs.
+        assertEquals(ImportCounts(skipped = 3), importer.run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
+    }
+
+    @Test fun `a fork export keeps its own per-entry switches`() {
+        val values = OriginalFgaImporter(store).convertUpstreamKeys(
+            mapOf("use_chain_priorities" to "true", "use_chain_priority_per_wave" to "F", "use_servant_priorities" to "false")
+        )
+        assertEquals(mapOf("use_chain_priorities" to "true", "use_servant_priorities" to "false"), values)
+    }
+
     @Test fun `images only copies every category and servant variants with names intact`() {
         val source = dir("original")
         val dest = dir("modified")

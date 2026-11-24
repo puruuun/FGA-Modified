@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy
 import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy.Input
 import io.github.fate_grand_automata.scripts.modules.FaceCardCheckPolicy.ProfileInput
@@ -31,9 +32,11 @@ class FaceCardCheckPolicyTest {
             styles: List<CardPriorityStyle> = emptyList(),
             legacyServantPriority: Boolean = false,
             servantPriorities: List<Boolean> = emptyList(),
-            braveChains: List<BraveChainEnum> = emptyList()
+            braveChains: List<BraveChainEnum> = emptyList(),
+            chainPriorities: List<Boolean> = emptyList()
         ) = ProfileInput(
-            skillCommand, entryCount, split, legacyStyle, styles, legacyServantPriority, servantPriorities, braveChains
+            skillCommand, entryCount, split, legacyStyle, styles, legacyServantPriority, servantPriorities, braveChains,
+            chainPriorities
         )
 
         fun input(
@@ -53,6 +56,8 @@ class FaceCardCheckPolicyTest {
             every { it.useServantPriority } returns p.legacyServantPriority
             every { it.useServantPriorities } returns p.servantPriorities
             every { it.braveChains } returns p.braveChains
+            every { it.useChainPriorities } returns p.chainPriorities
+            every { it.chainPriority } returns ChainPriorityPerWave.default
         }
 
         /** A strict battle config mock for the settings the policy reads. */
@@ -81,6 +86,8 @@ class FaceCardCheckPolicyTest {
             every { config.useServantPriority } answers { first.useServantPriority }
             every { config.useServantPriorities } answers { first.useServantPriorities }
             every { config.braveChains } answers { first.braveChains }
+            every { config.useChainPriorities } answers { first.useChainPriorities }
+            every { config.chainPriority } answers { first.chainPriority }
             return config
         }
 

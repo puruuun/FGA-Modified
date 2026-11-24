@@ -29,6 +29,7 @@ import io.github.fate_grand_automata.R
 @Composable
 fun ReorderPanel(
     modifier: Modifier = Modifier,
+    hint: String? = null,
     header: @Composable () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -44,7 +45,7 @@ fun ReorderPanel(
             Spacer(Modifier.height(10.dp))
             content()
             Spacer(Modifier.height(8.dp))
-            ReorderHint()
+            ReorderHint(hint)
         }
     }
 }
@@ -76,9 +77,9 @@ fun PriorityDirectionHeader() {
 }
 
 @Composable
-private fun ReorderHint() {
+private fun ReorderHint(hint: String?) {
     Text(
-        stringResource(R.string.card_priority_hint_move_item),
+        hint ?: stringResource(R.string.card_priority_hint_move_item),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

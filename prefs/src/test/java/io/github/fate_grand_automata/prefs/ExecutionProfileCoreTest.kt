@@ -24,6 +24,7 @@ import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.NpSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantSpamConfig
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 import kotlin.test.Test
 
 class ExecutionProfileCoreTest {
@@ -133,6 +134,36 @@ class ExecutionProfileCoreTest {
         settings.mode.set(GameAreaMode.Preset)
         settings.presetId.set("missing")
         assertThat(settings.selectedOffsets()).isEqualTo(null)
+    }
+
+    @Test
+    fun `chain priority is stored per profile with upstream's order format and survives a file round trip`() {
+        val store = MemoryPrefs()
+        val profiles = listOf("", "secondary_", "tertiary_").map { ExecutionProfileCore(PrefMaker(store), it) }
+        // Nothing stored: off in every entry, upstream's default order.
+        for (profile in profiles) {
+            assertThat(profile.useChainPriorities.get()).isEqualTo(emptyList())
+            assertThat(profile.chainPriority.get().toString()).isEqualTo("Mighty,Buster,Arts,Quick,!Avoid")
+        }
+        profiles[1].useChainPriorities.set(listOf(false, true))
+        profiles[1].chainPriority.set(ChainPriorityPerWave.of("Mighty,!Buster,Arts,Quick,!Avoid\nAvoid,Quick"))
+        assertThat(store.data["secondary_use_chain_priorities"]).isEqualTo("false,true")
+        assertThat(store.data["secondary_chain_priority"])
+            .isEqualTo("Mighty,!Buster,Arts,Quick,!Avoid\nAvoid,Quick,!Mighty,!Buster,!Arts")
+
+        val restored = MemoryPrefs()
+        restored.edit().also { it.import(BattleConfigFile.decode(BattleConfigFile.encode(store.all))) }.apply()
+        val reopened = listOf("", "secondary_", "tertiary_").map { ExecutionProfileCore(PrefMaker(restored), it) }
+        assertThat(reopened.map { it.useChainPriorities.get() }).isEqualTo(listOf(emptyList(), listOf(false, true), emptyList()))
+        assertThat(reopened[1].chainPriority.get().toString()).isEqualTo(profiles[1].chainPriority.get().toString())
+    }
+
+    @Test
+    fun `a saved Always brave chain is read back as Always`() {
+        val store = MemoryPrefs()
+        store.data["auto_skill_brave_chains"] = "Always,WithNP,Unknown"
+        assertThat(ExecutionProfileCore(PrefMaker(store)).braveChains.get())
+            .isEqualTo(listOf(BraveChainEnum.Always, BraveChainEnum.WithNP, BraveChainEnum.None))
     }
 
     /** In-memory Android interface, so these tests need neither a device nor a new dependency. */
