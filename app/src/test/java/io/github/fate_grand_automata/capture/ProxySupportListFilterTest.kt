@@ -96,6 +96,7 @@ class ProxySupportListFilterTest {
         criteria: SupportListCriteria?,
         readingOff: Boolean = false,
         configure: ProxyServer.() -> Unit = {},
+        source: () -> SupportListCriteria? = { criteria },
     ): List<Exchange> {
         val upstreamCerts = SingleUseCa.issue(gameHost)
         val mitmCerts = SingleUseCa.issue(gameHost)
@@ -126,7 +127,7 @@ class ProxySupportListFilterTest {
             sslContexts = emptyMap(),
             options = ProxyOptions(socks5 = true, ipSniff = true, maxConnections = 8),
             onGameResponse = { _, payload, _ -> captured += payload },
-            supportListCriteria = { criteria },
+            supportListCriteria = source,
         ).apply {
             upstreamSslFactoryForTesting = upstreamClientCtx.socketFactory
             upstreamHostnameVerifierForTesting = HostnameVerifier { host, session ->
@@ -191,6 +192,30 @@ class ProxySupportListFilterTest {
             val upstream = response(listJson.toByteArray(), chunked = chunked)
             val e = exchange(upstream, null)
             assertContentEquals(upstream, e.clientWire)
+        }
+    }
+
+    /** The proxy wired to the app's state, as the capture services wire it (#695). */
+    private fun exchangeWithState(upstream: ByteArray) =
+        exchangeAll(listOf(Step(request, upstream)), null, source = SupportListFilterState::criteria).single()
+
+    @Test(timeout = 30000)
+    fun featureOffOrToggleOffRelaysByteForByteThroughTheAppState() {
+        val ready = SupportFilterBuild.Ready(criteria)
+        try {
+            for (chunked in listOf(false, true)) {
+                val upstream = response(listJson.toByteArray(), chunked = chunked)
+                for ((feature, toggle) in listOf(false to true, true to false, false to false)) {
+                    SupportListFilterState.update(feature, toggle, ready)
+                    assertContentEquals(upstream, exchangeWithState(upstream).clientWire, "feature=$feature toggle=$toggle")
+                }
+                SupportListFilterState.update(true, true, ready)
+                val e = exchangeWithState(upstream)
+                assertEquals(1, kept(e.body).size)
+                assertContentEquals(request, e.upstreamReceived)
+            }
+        } finally {
+            SupportListFilterState.resetForTesting()
         }
     }
 

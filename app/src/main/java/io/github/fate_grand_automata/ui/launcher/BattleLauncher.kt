@@ -88,7 +88,9 @@ fun battleLauncher(
     prefs: IPreferences,
     modifier: Modifier = Modifier,
     prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore,
-    showLimits: Boolean = true
+    showLimits: Boolean = true,
+    /** Told the selected config's id, for the support list filter's "take from the selected config" (#695). */
+    onSelectedConfig: (String?) -> Unit = {},
 ): ScriptLauncherResponseBuilder {
     val captureRunningAtOpen = remember { io.github.fate_grand_automata.capture.CaptureTracker.running.value }
     val configs = remember { eligibleBattleConfigs(prefs) }
@@ -104,6 +106,7 @@ fun battleLauncher(
     var selectedConfigId by remember {
         mutableStateOf(prefs.selectedBattleConfig.id.takeIf { id -> configs.any { it.id == id } })
     }
+    LaunchedEffect(selectedConfigId) { onSelectedConfig(selectedConfigId) }
     // Every folder starts collapsed except the one that holds the selected config.
     var expandedFolders by remember {
         mutableStateOf(

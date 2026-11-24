@@ -30,13 +30,11 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.SupportFilterBuild
 import io.github.fate_grand_automata.capture.SupportFilterSettings
 import io.github.fate_grand_automata.capture.SupportIdLookup
-import io.github.fate_grand_automata.capture.SupportListLastResult
 import io.github.fate_grand_automata.capture.buildSupportFilter
 import io.github.fate_grand_automata.capture.captureFeaturesAvailable
 import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
-import io.github.fate_grand_automata.ui.more.SupportListLastResultLine
 import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.remember
 import kotlinx.coroutines.Dispatchers
@@ -44,26 +42,26 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 
 /**
- * The support list filter part of a support conditions screen (#685): the battle config's screen and the manual
- * filter's screen show the same items. [summary] says where the filter applies; [extra] goes under the switch.
+ * The support list filter part of a support conditions screen (#685, #695): a battle config's screen and a profile's
+ * screen show the same items. [summary] says what the "Filtered" labels mean; [extra] goes under it.
  */
 class SupportListFilterUi(
     val summary: Int,
     /** What the notices read; a test passes a fixed value instead of building from the files on disk. */
     val build: (@Composable (SupportPrefsCore) -> SupportFilterBuild?)? = null,
     val extra: @Composable () -> Unit = {},
-    /** False for the manual filter: it has no script, so script-only items are hidden and the selection mode is ignored. */
+    /** False for a profile: it belongs to no script, so the script-only items are hidden. */
     val script: Boolean = true,
 )
 
 /** The build of [config]'s settings, rebuilt whenever one of them changes. Null until the first build is done. */
 @Composable
-internal fun rememberSupportFilterBuild(config: SupportPrefsCore, script: Boolean): SupportFilterBuild? {
+internal fun rememberSupportFilterBuild(config: SupportPrefsCore): SupportFilterBuild? {
     val context = LocalContext.current.applicationContext
-    val build by produceState<SupportFilterBuild?>(null, config, script) {
+    val build by produceState<SupportFilterBuild?>(null, config) {
         SupportFilterSettings.changes(config).collectLatest {
             value = withContext(Dispatchers.IO) {
-                runCatching { buildSupportFilter(SupportFilterSettings.of(config, script), SupportIdLookup.load(context)) }
+                runCatching { buildSupportFilter(SupportFilterSettings.of(config), SupportIdLookup.load(context)) }
                     .getOrDefault(SupportFilterBuild.Off)
             }
         }
@@ -77,41 +75,27 @@ internal fun rememberCaptureAvailable(prefs: PrefsCore): Boolean {
     return captureFeaturesAvailable(enabled, android.os.Build.VERSION.SDK_INT)
 }
 
+/** What the labels mean and, when these conditions would not run as the active filter, why. No switch: see #695. */
 @Composable
 internal fun SupportListFilterHeader(config: SupportPrefsCore, ui: SupportListFilterUi, captureAvailable: Boolean) {
-    var enabled by config.supportListFilter.remember()
-    val build = ui.build?.invoke(config) ?: rememberSupportFilterBuild(config, ui.script)
-    val setEnabled = { on: Boolean ->
-        enabled = on
-        if (!on) SupportListLastResult.clear()
-    }
+    val build = ui.build?.invoke(config) ?: rememberSupportFilterBuild(config)
     Column {
         Preference(
             title = stringResource(R.string.support_list_filter),
             summary = stringResource(ui.summary),
-            onClick = { setEnabled(!enabled) },
-            modifier = Modifier.testTag(SupportListFilterSwitchTag),
-        ) {
-            androidx.compose.material3.Switch(
-                checked = enabled,
-                onCheckedChange = setEnabled,
-                colors = io.github.fate_grand_automata.ui.FGASwitchColors(),
+            modifier = Modifier.testTag(SupportListFilterHeaderTag),
+        )
+        val notice = if (!captureAvailable) stringResource(R.string.support_list_filter_capture_off)
+        else supportFilterStopReason(build)
+        if (notice != null) {
+            Text(
+                notice,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .testTag(SupportListFilterNoticeTag),
             )
-        }
-        if (enabled) {
-            SupportListLastResultLine(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-            val notice = if (!captureAvailable) stringResource(R.string.support_list_filter_capture_off)
-            else supportFilterStopReason(build)
-            if (notice != null) {
-                Text(
-                    notice,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .testTag(SupportListFilterNoticeTag),
-                )
-            }
         }
         ui.extra()
     }
@@ -195,7 +179,7 @@ internal fun DisplayedAscensionPreference(config: SupportPrefsCore, servantNames
     )
 }
 
-internal const val SupportListFilterSwitchTag = "supportListFilter:switch"
+internal const val SupportListFilterHeaderTag = "supportListFilter:header"
 internal const val SupportListFilterNoticeTag = "supportListFilter:notice"
 internal const val DisplayedAscensionTag = "supportListFilter:ascension"
 internal const val DisplayedAscensionChipTag = "supportListFilter:ascension:"

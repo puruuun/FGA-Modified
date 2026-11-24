@@ -64,10 +64,12 @@ fun PreferredSupportScreen(
     supportVm: SupportViewModel = viewModel(),
     autoClassVm: SupportClassAutoViewModel = viewModel()
 ) {
+    // With the feature off this screen looks as it did before the filter existed (#695).
+    val filterFeature by vm.prefsCore.supportFilterFeature.remember()
     PreferredSupport(
         config = vm.supportPrefs,
         vm = supportVm,
-        filter = SupportListFilterUi(R.string.support_list_filter_summary_config),
+        filter = if (filterFeature) SupportListFilterUi(R.string.support_list_filter_summary_config) else null,
         captureAvailable = rememberCaptureAvailable(vm.prefsCore)
     )
 
@@ -130,8 +132,8 @@ internal fun SupportPrefsCore.clearHiddenChecks(hasServants: Boolean, grandServa
 }
 
 /**
- * [filter] adds the support list filter (#685): its switch on top, the displayed ascension item and, next to each
- * condition, whether the filter applies it.
+ * [filter] adds the support list filter (#685, #695): what its labels mean on top, the displayed ascension item and,
+ * next to each condition, whether the filter applies it.
  */
 @Composable
 internal fun PreferredSupport(
@@ -145,6 +147,8 @@ internal fun PreferredSupport(
     fun scope(applied: Boolean) {
         if (filter != null) FilterScopeLabel(applied)
     }
+    // A profile belongs to no script, so the items only the script's screen reading uses are left out (#695).
+    val script = filter?.script != false
 
     val prefServants by config.preferredServants.remember()
     val prefCEs by config.preferredCEs.remember()
@@ -242,16 +246,18 @@ internal fun PreferredSupport(
                         }
 
                         // Re-ascension by Noble Phantasm name (0006 D-8): right under the servant choice.
-                        config.preferredNoblePhantasms.SupportSelectPreference(
-                            title = stringResource(R.string.p_battle_config_support_pref_nps),
-                            entries = vm.noblePhantasms
-                        )
-                        Text(
-                            text = stringResource(R.string.p_battle_config_support_pref_nps_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        scope(applied = false)
+                        if (script) {
+                            config.preferredNoblePhantasms.SupportSelectPreference(
+                                title = stringResource(R.string.p_battle_config_support_pref_nps),
+                                entries = vm.noblePhantasms
+                            )
+                            Text(
+                                text = stringResource(R.string.p_battle_config_support_pref_nps_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            scope(applied = false)
+                        }
 
                         if (prefServants.isNotEmpty()) {
                             config.maxAscended.SwitchPreference(
@@ -259,10 +265,12 @@ internal fun PreferredSupport(
                             )
                             scope(applied = true)
 
-                            config.grandServant.SwitchPreference(
-                                title = stringResource(R.string.p_battle_config_support_grand_servant)
-                            )
-                            scope(applied = false)
+                            if (script) {
+                                config.grandServant.SwitchPreference(
+                                    title = stringResource(R.string.p_battle_config_support_grand_servant)
+                                )
+                                scope(applied = false)
+                            }
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -300,7 +308,7 @@ internal fun PreferredSupport(
                             )
                             scope(applied = true)
                             // The game shows +16 only for Grand servants.
-                            if (grandServant) {
+                            if (script && grandServant) {
                                 config.grandScore16Check.SwitchPreference(
                                     title = stringResource(R.string.p_grand_score_16_check)
                                 )
@@ -358,7 +366,7 @@ internal fun PreferredSupport(
                             scope(applied = true)
 
                             // These options only apply to Grand Servants
-                            AnimatedVisibility(grandServant) {
+                            AnimatedVisibility(script && grandServant) {
                                 Column {
                                     config.bondCEEffect.ListPreference(
                                         title = stringResource(R.string.p_battle_config_support_bond_ce_effect_preference),
@@ -403,15 +411,14 @@ internal fun PreferredSupport(
                         )
                         scope(applied = true)
 
-                        // The manual filter has no script, and so nothing that sends friend requests.
-                        if (filter?.script != false) {
+                        if (script) {
                             config.autoFriendRequest.SwitchPreference(
                                 title = stringResource(R.string.p_battle_config_support_auto_friend_request),
                                 enabled = !friendsOnly
                             )
                         }
 
-                        AnimatedVisibility (friendsOnly) {
+                        AnimatedVisibility(script && friendsOnly) {
                             if (vm.friends.isNotEmpty()) {
                                 Column {
                                     config.friendNames.SupportSelectPreference(

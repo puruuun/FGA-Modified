@@ -11,15 +11,23 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.capture.CaptureLauncherFixture
 import io.github.fate_grand_automata.capture.SupportFilterBuild
 import io.github.fate_grand_automata.capture.SupportListLastResult
 import io.github.fate_grand_automata.prefs.core.PrefMaker
 import io.github.fate_grand_automata.prefs.core.PrefsCore
+import io.github.fate_grand_automata.prefs.core.SupportFilterSource
+import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.SupportListCounts
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.enums.GameServer
+import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
+import io.github.fate_grand_automata.ui.launcher.LauncherPanel
+import io.github.fate_grand_automata.ui.launcher.ScriptLauncher
 import io.github.fate_grand_automata.ui.more.ImportFromBattleConfig
-import io.github.fate_grand_automata.ui.more.ManualSupportFilter
 import io.github.fate_grand_automata.ui.more.MoreOptionsContent
+import io.github.fate_grand_automata.ui.more.SupportFilterProfile
+import io.github.fate_grand_automata.ui.more.SupportListFilterScreen
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import io.github.fate_grand_automata.util.StorageProvider
@@ -31,8 +39,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The support list filter screens of #685 at 360x1400dp (support screens) and 360x800dp (More), light and dark,
- * Korean. Images land in `build/outputs/roborazzi/support685/`. Recorded by `:app:recordRoborazziCi`.
+ * The support list filter of #695, light and dark, Korean: the launcher (feature off, filter panel, weekly panel) at
+ * the width the overlay window takes with a side panel on a 16:9 screen 720dp high, and the More and profile screens
+ * at 360dp. Images land in `build/outputs/roborazzi/support695/`. Recorded by `:app:recordRoborazziCi`.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -42,6 +51,11 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "dark={0}")
         fun params() = listOf(arrayOf<Any>(false), arrayOf<Any>(true))
+
+        // The overlay window on 1280x720dp: about 65% of the width alone, and the whole width less a margin with a panel.
+        const val LAUNCHER_WIDTH = 832
+        const val LAUNCHER_WIDE = 1256
+        const val LAUNCHER_HEIGHT = 640
     }
 
     private val compose = createComposeRule()
@@ -52,40 +66,95 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     private fun prefs(): PrefsCore {
-        val shared = context.getSharedPreferences("support685", Context.MODE_PRIVATE)
+        val shared = context.getSharedPreferences("support695", Context.MODE_PRIVATE)
         shared.edit().clear().commit()
         context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
         context.getSharedPreferences("t", Context.MODE_PRIVATE).edit().clear().commit()
         return PrefsCore(PrefMaker(shared), context).also { it.captureTrackerEnabled.set(true) }
     }
 
-    private fun shoot(name: String, height: Int, beforeCapture: () -> Unit = {}, content: @Composable () -> Unit) =
-        compose.shoot("support685", name, 360, height, dark = dark, locale = "ko", beforeCapture = beforeCapture) {
+    private fun shoot(name: String, width: Int, height: Int, beforeCapture: () -> Unit = {}, content: @Composable () -> Unit) =
+        compose.shoot("support695", name, width, height, dark = dark, locale = "ko", beforeCapture = beforeCapture) {
             Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) { content() }
         }
 
-    private fun SupportPrefsCoreFixture(prefs: PrefsCore) = prefs.forBattleConfig("t").support.apply {
-        supportListFilter.set(true)
-        preferredServants.set(setOf("Arcueid"))
-        preferredCEs.set(setOf("Black Grail.png"))
+    private fun SupportPrefsCore.longConditions() = apply {
+        preferredServants.set(setOf("Arcueid", "Merlin", "Skadi", "Altria Caster", "No.351 Somebody with a long name"))
+        displayedAscensions.set(setOf("s4|Arcueid", "c1|Arcueid", "s1|Merlin", "s2|Merlin", "s3|Merlin", "c2|Skadi"))
+        preferredCEs.set(setOf("Black Grail.png", "Kaleidoscope.png", "No.48 Some event CE.png"))
+        mlb.set(true)
         maxAscended.set(true)
+        skill1Max.set(true)
+        skill3Max.set(true)
+        appendSkillCheck.set(true)
+        appendSkillsMax[1].set(true)
+        minimumNpLevel.set(3)
+        npLevelCheck.set(true)
+        score62Check.set(true)
         friendsOnly.set(true)
     }
 
-    @Test fun battleConfigSupportScreenFilterOn() {
-        val prefs = prefs()
-        val support = SupportPrefsCoreFixture(prefs)
+    private fun launcherFixture(feature: Boolean): CaptureLauncherFixture {
+        context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        return CaptureLauncherFixture(context, GameServer.Kr).also {
+            it.core.captureTrackerEnabled.set(true)
+            it.core.supportFilterFeature.set(feature)
+        }
+    }
+
+    @Test fun launcherFeatureOff() {
+        val fixture = launcherFixture(feature = false)
+        shoot("LauncherFeatureOff", LAUNCHER_WIDTH, LAUNCHER_HEIGHT) {
+            ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core)
+        }
+    }
+
+    @Test fun launcherFilterPanel() {
+        val fixture = launcherFixture(feature = true)
+        fixture.core.supportFilterOn.set(true)
+        fixture.core.activeSupportFilter.longConditions()
+        fixture.core.supportFilterSource.set(SupportFilterSource.Profile)
+        fixture.core.supportFilterSourceName.set("주회용 필터")
         SupportListLastResult.resetForTesting()
-        val vm = SupportViewModel(StorageProvider(prefs, context))
-        shoot("BattleConfigSupportFilterOn", 1400, beforeCapture = {
+        shoot("LauncherFilterPanel", LAUNCHER_WIDE, LAUNCHER_HEIGHT, beforeCapture = {
             SupportListLastResult.filtered(SupportListCounts(20, 6, 498, 7))
             compose.waitForIdle()
         }) {
-            PreferredSupport(
-                support, vm,
+            ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, initialPanel = LauncherPanel.SupportFilter)
+        }
+    }
+
+    @Test fun launcherWeeklyPanel() {
+        val fixture = launcherFixture(feature = true)
+        shoot("LauncherWeeklyPanel", LAUNCHER_WIDE, LAUNCHER_HEIGHT) {
+            ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, initialPanel = LauncherPanel.Weekly)
+        }
+    }
+
+    @Test fun moreScreenWithTwoProfiles() {
+        val prefs = prefs()
+        prefs.supportFilterFeature.set(true)
+        prefs.addSupportFilterProfile("주회용 필터", "a").support.longConditions()
+        prefs.addSupportFilterProfile("고난도", "b").support.apply {
+            preferredServants.set(setOf("Skadi"))
+            friendsOnly.set(true)
+        }
+        shoot("MoreSupportListFilter", 360, 800) { SupportListFilterScreen(prefs, editProfile = {}) }
+    }
+
+    @Test fun profileScreen() {
+        val prefs = prefs()
+        val profile = prefs.addSupportFilterProfile("주회용 필터", "a")
+        profile.support.preferredServants.set(setOf("Arcueid"))
+        val vm = SupportViewModel(StorageProvider(prefs, context))
+        shoot("ProfileScreen", 360, 1400) {
+            SupportFilterProfile(
+                prefs, profile, vm,
                 filter = SupportListFilterUi(
-                    R.string.support_list_filter_summary_config,
+                    R.string.support_list_filter_summary_profile,
                     build = { SupportFilterBuild.Ready(SupportListCriteria(setOf(2300500L))) },
+                    extra = { ImportFromBattleConfig(prefs, profile) },
+                    script = false,
                 ),
                 captureAvailable = true,
             )
@@ -94,10 +163,12 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
 
     @Test fun battleConfigSupportScreenUnmappedNotice() {
         val prefs = prefs()
-        val support = SupportPrefsCoreFixture(prefs)
-        SupportListLastResult.resetForTesting()
+        val support = prefs.forBattleConfig("t").support.apply {
+            preferredServants.set(setOf("Arcueid"))
+            friendsOnly.set(true)
+        }
         val vm = SupportViewModel(StorageProvider(prefs, context))
-        shoot("BattleConfigSupportUnmapped", 800) {
+        shoot("BattleConfigSupportUnmapped", 360, 800) {
             PreferredSupport(
                 support, vm,
                 filter = SupportListFilterUi(
@@ -109,30 +180,10 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         }
     }
 
-    @Test fun manualFilterScreen() {
-        val prefs = prefs()
-        prefs.manualSupportFilter.supportListFilter.set(true)
-        prefs.manualSupportFilter.preferredServants.set(setOf("Arcueid"))
-        SupportListLastResult.resetForTesting()
-        val vm = SupportViewModel(StorageProvider(prefs, context))
-        shoot("ManualSupportFilter", 1400) {
-            ManualSupportFilter(
-                prefs, vm,
-                filter = SupportListFilterUi(
-                    R.string.support_list_filter_summary_manual,
-                    build = { SupportFilterBuild.Ready(SupportListCriteria(setOf(2300500L))) },
-                    extra = { ImportFromBattleConfig(prefs) },
-                    script = false,
-                ),
-                captureAvailable = true,
-            )
-        }
-    }
-
     @Test fun moreScreenAdditionalFeatures() {
         val prefs = prefs()
         shoot(
-            "MoreAdditionalFeatures", 800,
+            "MoreAdditionalFeatures", 360, 800,
             beforeCapture = {
                 compose.onNodeWithText(context.getString(R.string.p_additional_features)).performClick()
                 compose.waitForIdle()

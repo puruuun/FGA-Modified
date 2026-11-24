@@ -4,7 +4,6 @@ import android.content.Context
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
-import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
 import io.github.fate_grand_automata.util.chaldea.BuiltinSupportIds
 import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
@@ -68,15 +67,17 @@ class SupportIdLookup(
         fun idEntry(id: Long) = "#$id"
 
         /**
-         * Atlas `className` to the game's class id, the one `releasedClassIds` of a class board holds. These are the ids
-         * observed in `releasedClassIds` of a real KR follower/list on 2026-11-23: boards 1 to 7 hold [1]..[7], board 8
-         * [11, 23] and board 9 [10, 25, 28]. Ruler, shielder, the beast classes and every other class name were not
-         * observed in any board and stay unknown: a chosen servant of one with +62 stops the filter, and any other servant
-         * of one does not match the class score condition.
+         * Atlas `className` (spelled as Atlas spells it, which is how the servant lists store it) to the game's class id,
+         * the one `releasedClassIds` of a class board holds. The ids are Atlas's `SvtClass` enum, and each one was seen
+         * in `releasedClassIds` of a real follower/list: on KR (2026-11-23) boards 1 to 7 hold [1]..[7], board 8
+         * [11, 23] and board 9 [10, 25, 28]; on JP (2026-11-25) board 8 holds [8, 9, 11, 23] and board 9
+         * [10, 25, 28, 33, 38, 40]. Every other class name stays unknown: a chosen servant of one with +62 stops the
+         * filter, and any other servant of one does not match the class score condition.
          */
         private val CLASS_IDS = mapOf(
             "saber" to 1, "archer" to 2, "lancer" to 3, "rider" to 4, "caster" to 5, "assassin" to 6, "berserker" to 7,
-            "avenger" to 11, "moonCancer" to 23, "alterEgo" to 10, "foreigner" to 25, "pretender" to 28,
+            "shielder" to 8, "ruler" to 9, "alterEgo" to 10, "avenger" to 11, "moonCancer" to 23, "foreigner" to 25,
+            "pretender" to 28, "beast" to 33, "beastEresh" to 38, "unBeastOlgaMarie" to 40,
         )
 
         fun classIdOf(className: String): Int? = CLASS_IDS[className]
@@ -134,9 +135,8 @@ class SupportIdLookup(
     }
 }
 
-/** The support conditions of one battle config or of the manual filter, read once from its preferences. */
+/** The support conditions of the active filter, a profile or a battle config, read once from its preferences. */
 data class SupportFilterSettings(
-    val enabled: Boolean,
     val servants: Set<String> = emptySet(),
     val ces: Set<String> = emptySet(),
     val mlb: Boolean = false,
@@ -149,17 +149,13 @@ data class SupportFilterSettings(
     val minimumNp: Int = 0,
     val score62: Boolean = false,
     val friendsOnly: Boolean = false,
-    /** The script reads these conditions only in the Preferred selection mode. */
-    val preferredMode: Boolean = true,
 ) {
     companion object {
         /**
-         * [script]: the settings of a battle config about to run, whose filter follows its selection mode. The manual
-         * filter has no script to follow, so its stored selection mode (copied in by an import) is ignored.
+         * The stored selection mode is not read: the filter is switched by hand and applies to manual play as much as
+         * to a script (#695), so a config copied in with another mode still filters by its conditions.
          */
-        fun of(core: SupportPrefsCore, script: Boolean) = SupportFilterSettings(
-            preferredMode = !script || core.selectionMode.get() == SupportSelectionModeEnum.Preferred,
-            enabled = core.supportListFilter.get(),
+        fun of(core: SupportPrefsCore) = SupportFilterSettings(
             servants = core.preferredServants.get(),
             ces = core.preferredCEs.get(),
             mlb = core.mlb.get(),
@@ -176,18 +172,17 @@ data class SupportFilterSettings(
 
         /** Emits once at once and again whenever a value [of] reads changes. */
         fun changes(core: SupportPrefsCore): Flow<Unit> = merge(
-            core.supportListFilter.asFlow(), core.preferredServants.asFlow(), core.preferredCEs.asFlow(), core.mlb.asFlow(),
+            core.preferredServants.asFlow(), core.preferredCEs.asFlow(), core.mlb.asFlow(),
             core.maxAscended.asFlow(), core.displayedAscensions.asFlow(), core.skill1Max.asFlow(), core.skill2Max.asFlow(),
             core.skill3Max.asFlow(), core.appendSkillCheck.asFlow(), *core.appendSkillsMax.map { it.asFlow() }.toTypedArray(),
             core.npLevelCheck.asFlow(), core.minimumNpLevel.asFlow(), core.score62Check.asFlow(), core.friendsOnly.asFlow(),
-            core.selectionMode.asFlow(),
         ).map { }.onStart { emit(Unit) }
     }
 }
 
 /** What a filter's settings give the proxy. */
 sealed interface SupportFilterBuild {
-    /** The switch is off. */
+    /** The feature switch or the toggle is off, or the conditions could not be read. */
     data object Off : SupportFilterBuild
 
     data class Ready(val criteria: SupportListCriteria) : SupportFilterBuild
@@ -219,7 +214,6 @@ sealed interface SupportFilterBuild {
  * left to the script's screen reading.
  */
 fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup): SupportFilterBuild {
-    if (!settings.enabled || !settings.preferredMode) return SupportFilterBuild.Off
     val servantIds = settings.servants.associateWith(lookup::servantId)
     val ceIds = settings.ces.associateWith(lookup::ceId)
     val unmappedServants = servantIds.filterValues { it == null }.keys.sorted()

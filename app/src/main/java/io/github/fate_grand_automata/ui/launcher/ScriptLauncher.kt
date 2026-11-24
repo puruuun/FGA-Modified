@@ -3,9 +3,15 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,41 +37,62 @@ fun ScriptLauncher(
     onResponse: (ScriptLauncherResponse) -> Unit,
     prefs: IPreferences,
     prefsCore: PrefsCore,
-    onWeeklyExpanded: (Boolean) -> Unit = {},
+    /** True while a right panel (weekly missions or the support list filter) is open, so the window can widen. */
+    onSidePanelExpanded: (Boolean) -> Unit = {},
     prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> },
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> },
-    ownerTests: List<OwnerTestScript> = emptyList()
+    ownerTests: List<OwnerTestScript> = emptyList(),
+    /** A test opens a panel from the start. */
+    initialPanel: LauncherPanel = LauncherPanel.None,
 ) {
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
-    var weeklyOpen by remember { mutableStateOf(false) }
+    var openPanel by remember { mutableStateOf(initialPanel) }
     val weekly = remember { WeeklyPanelState() }
     val weeklyEnabled by prefsCore.weeklyRouteFeatureEnabled.remember()
+    val filterOffered = rememberSupportFilterOffered(prefsCore)
+    val filterOn by prefsCore.supportFilterOn.remember()
+    var selectedConfigId by remember { mutableStateOf<String?>(null) }
+    // The filter and the weekly missions share the right side: opening one closes the other (#695).
+    val panel = if (openPanel == LauncherPanel.SupportFilter && !filterOffered) LauncherPanel.None else openPanel
+    fun toggle(target: LauncherPanel) {
+        openPanel = if (panel == target) LauncherPanel.None else target
+        onSidePanelExpanded(openPanel != LauncherPanel.None)
+    }
     FgaScreen {
         Column(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            val modifier = Modifier.weight(1f)
+            lateinit var responseBuilder: ScriptLauncherResponseBuilder
+            Row(Modifier.weight(1f)) {
+                val modifier = Modifier.weight(1f).fillMaxHeight()
+                val select = { id: String? -> selectedConfigId = id }
 
-            val responseBuilder = when (shownMode) {
-                ScriptModeEnum.Battle -> expandedBattleLauncher(prefs, prefsCore, weeklyOpen, weekly, prepareWeekly, prepareProbe, modifier)
-                ScriptModeEnum.SupportImageMaker ->
-                    battleLauncher(prefs, modifier, prefsCore)
+                responseBuilder = when (shownMode) {
+                    ScriptModeEnum.Battle -> expandedBattleLauncher(
+                        prefs, prefsCore, panel == LauncherPanel.Weekly, weekly, prepareWeekly, prepareProbe, select, modifier
+                    )
+                    ScriptModeEnum.SupportImageMaker ->
+                        battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select)
 
-                ScriptModeEnum.FP -> fpLauncher(prefs, modifier)
-                ScriptModeEnum.Lottery -> lotteryLauncher(prefs, modifier)
-                ScriptModeEnum.PresentBox -> giftBoxLauncher(prefs, modifier)
-                ScriptModeEnum.CEEnhance -> ceEnhanceLauncher(modifier)
-                ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
-                ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
-                ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
-                ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore)
-            }
+                    ScriptModeEnum.FP -> fpLauncher(prefs, modifier)
+                    ScriptModeEnum.Lottery -> lotteryLauncher(prefs, modifier)
+                    ScriptModeEnum.PresentBox -> giftBoxLauncher(prefs, modifier)
+                    ScriptModeEnum.CEEnhance -> ceEnhanceLauncher(modifier)
+                    ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
+                    ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
+                    ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
+                    ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select)
+                }
 
-            // Manual play starts from the play button menu, so the manual support list filter is switched here (#685).
-            if (io.github.fate_grand_automata.ui.pref_support.rememberCaptureAvailable(prefsCore)) {
-                HorizontalDivider()
-                ManualSupportFilterRow(prefsCore.manualSupportFilter)
+                if (panel == LauncherPanel.SupportFilter) {
+                    // Only the launchers that list battle configs have one selected; the others have nothing to take.
+                    val configId = selectedConfigId.takeIf {
+                        shownMode == ScriptModeEnum.Battle || shownMode == ScriptModeEnum.SupportImageMaker ||
+                            shownMode == ScriptModeEnum.WeeklyRoute
+                    }
+                    SupportFilterLauncherPanel(prefsCore, configId, Modifier.weight(0.7f))
+                }
             }
 
             HorizontalDivider()
@@ -97,9 +124,23 @@ fun ScriptLauncher(
                     if (scriptMode == ScriptModeEnum.Battle && weeklyEnabled &&
                         (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
                     ) {
-                        TextButton(onClick = { weeklyOpen = !weeklyOpen; onWeeklyExpanded(weeklyOpen) }) {
+                        TextButton(onClick = { toggle(LauncherPanel.Weekly) }) {
                             Text(stringResource(R.string.weekly_route_title))
                         }
+                    }
+
+                    if (filterOffered) {
+                        FilterChip(
+                            selected = filterOn,
+                            onClick = { toggle(LauncherPanel.SupportFilter) },
+                            label = {
+                                Text(stringResource(if (filterOn) R.string.support_filter_chip_on else R.string.support_filter_chip_off))
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterVertically)
+                                .padding(horizontal = 4.dp)
+                                .testTag(SupportFilterChipTag),
+                        )
                     }
                 }
 
@@ -120,6 +161,9 @@ fun ScriptLauncher(
     }
 }
 
+/** The launcher's right side holds at most one of these. */
+enum class LauncherPanel { None, Weekly, SupportFilter }
+
 /** Adds a sibling to the unchanged left launcher; both use its original shared OK/Cancel row. */
 @Composable
 private fun expandedBattleLauncher(
@@ -129,12 +173,14 @@ private fun expandedBattleLauncher(
     weekly: WeeklyPanelState,
     prepare: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit,
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit,
+    onSelectedConfig: (String?) -> Unit,
     modifier: Modifier
 ): ScriptLauncherResponseBuilder {
     val context = LocalContext.current
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
     Row(modifier) {
-        left = battleLauncher(prefs, Modifier.weight(1f), core, showLimits = !open)
+        // The run limits stay visible next to the weekly panel too (#695): the window widens by the panel's share.
+        left = battleLauncher(prefs, Modifier.weight(1f), core, onSelectedConfig = onSelectedConfig)
         if (open) WeeklyLauncherPanel(if (prefs.gameServer is GameServer.Kr) "KR" else "JP",
             core, weekly, Modifier.weight(0.7f))
     }

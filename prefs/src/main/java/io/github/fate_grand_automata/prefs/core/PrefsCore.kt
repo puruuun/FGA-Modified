@@ -32,7 +32,17 @@ class PrefsCore @Inject constructor(
         // increase for each changed Onboarding screen
         const val CURRENT_ONBOARDING_VERSION = 2
 
+        /** The active filter's conditions; the name is from #685, when this file held the filter for manual play. */
         const val MANUAL_SUPPORT_FILTER_FILE = "support_list_filter_manual"
+
+        /** One file per support list filter profile (#695): this prefix and the profile's id. */
+        const val SUPPORT_FILTER_PROFILE_FILE_PREFIX = "support_filter_profile_"
+
+        /**
+         * The #685 switch, in a battle config's file and in [MANUAL_SUPPORT_FILTER_FILE]. Retired by #695; only the
+         * app's migration reads it, and a battle config import drops it.
+         */
+        const val LEGACY_SUPPORT_LIST_FILTER_KEY = "support_list_filter"
     }
 
     val onboardingCompletedVersion = maker.int("onboarding_completed_version")
@@ -97,6 +107,21 @@ class PrefsCore @Inject constructor(
     val legacySupportFilterServants = maker.stringSet("capture_support_filter_servants")
     val legacySupportFilterCes = maker.stringSet("capture_support_filter_ces")
     val supportFilterMigrated = maker.bool("capture_support_filter_migrated", false)
+
+    /**
+     * The support list filter (#695). [supportFilterFeature] is "use this feature" in More: off, the launcher looks as
+     * it did before the filter existed and the proxy relays every byte. [supportFilterOn] is the launcher's toggle.
+     */
+    val supportFilterFeature = maker.bool("support_filter_feature", false)
+    val supportFilterOn = maker.bool("support_filter_on", false)
+    val supportFilterSource = maker.enum("support_filter_source", SupportFilterSource.None)
+
+    /** The config or profile name [supportFilterSource] refers to, as it was when the conditions were copied. */
+    val supportFilterSourceName = maker.string("support_filter_source_name", "")
+    val supportFilterProfiles = maker.stringSet("support_filter_profiles")
+
+    /** Set once the app's migration from the #685 switches has run. */
+    val supportFilterToggleMigrated = maker.bool("support_filter_toggle_migrated", false)
     val captureAdGuardAutoSwitch = maker.bool("capture_adguard_auto_switch", false)
     val captureAdGuardAutomationPassword = maker.string("capture_adguard_automation_password", "")
 
@@ -229,13 +254,40 @@ class PrefsCore @Inject constructor(
 
     val servantEnhancement = ServantEnhancementPrefsCore(maker)
 
+    /** The file of [activeSupportFilter], for the app's migration of the retired #685 switch in it. */
+    val activeSupportFilterFile: android.content.SharedPreferences by lazy {
+        context.getSharedPreferences(MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE)
+    }
+
     /**
-     * The support list filter for manual play (#685): the same condition items as a battle config's support settings,
-     * in a file of its own so it is part of no battle config and of no battle config export.
-     * [SupportPrefsCore.supportListFilter] is its switch.
+     * The conditions the support list filter applies (#695): the same items as a battle config's support settings, in
+     * a file of its own so they are part of no battle config and of no battle config export. They are filled by
+     * copying a battle config's or a profile's conditions in.
      */
-    val manualSupportFilter: SupportPrefsCore by lazy {
-        SupportPrefsCore(PrefMaker(context.getSharedPreferences(MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE)))
+    val activeSupportFilter: SupportPrefsCore by lazy { SupportPrefsCore(PrefMaker(activeSupportFilterFile)) }
+
+    private val supportFilterProfileMap = mutableMapOf<String, SupportFilterProfileCore>()
+
+    @Synchronized
+    fun forSupportFilterProfile(id: String): SupportFilterProfileCore = supportFilterProfileMap.getOrPut(id) {
+        SupportFilterProfileCore(id, context.getSharedPreferences(SUPPORT_FILTER_PROFILE_FILE_PREFIX + id, Context.MODE_PRIVATE))
+    }
+
+    /** A new, empty profile named [name], added to [supportFilterProfiles]. */
+    @Synchronized
+    fun addSupportFilterProfile(name: String, id: String = java.util.UUID.randomUUID().toString()): SupportFilterProfileCore {
+        val profile = forSupportFilterProfile(id)
+        profile.sharedPrefs.edit().clear().commit()
+        profile.name.set(name)
+        supportFilterProfiles.set(supportFilterProfiles.get() + id)
+        return profile
+    }
+
+    @Synchronized
+    fun removeSupportFilterProfile(id: String) {
+        supportFilterProfiles.set(supportFilterProfiles.get() - id)
+        forSupportFilterProfile(id).sharedPrefs.edit().clear().commit()
+        supportFilterProfileMap.remove(id)
     }
 
     init {

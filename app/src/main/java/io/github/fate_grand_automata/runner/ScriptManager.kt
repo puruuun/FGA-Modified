@@ -37,7 +37,6 @@ import io.github.fate_grand_automata.scripts.enums.GameServers
 import io.github.fate_grand_automata.scripts.enums.ScriptModeEnum
 import io.github.fate_grand_automata.scripts.prefs.IPreferences
 import io.github.fate_grand_automata.ui.exit.BattleExit
-import io.github.fate_grand_automata.capture.SupportListFilterController
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncher
 import io.github.fate_grand_automata.ui.launcher.ScriptLauncherResponse
 import io.github.fate_grand_automata.ui.more.GameAreaPreviewManager
@@ -625,13 +624,8 @@ class ScriptManager @Inject constructor(
                             effectiveResp is ScriptLauncherResponse.WeeklyRoute,
                     )
                     delay(500.milliseconds)
-                    // The battle config whose support settings the support list filter follows during this run (#685).
-                    val supportFilter = if (effectiveResp is ScriptLauncherResponse.Battle ||
-                        effectiveResp is ScriptLauncherResponse.WeeklyRoute
-                    ) prefsCore.forBattleConfig(preferences.selectedBattleConfig.id).support else null
                     runEntryPoint(
                         screenshotService = screenshotService,
-                        supportFilter = supportFilter,
                         entryPointProvider = {
                             (effectiveResp as? ScriptLauncherResponse.OwnerTest)?.script?.entryPoint(scriptComponent)
                                 ?: getEntryPoint(hiltEntryPoint)
@@ -659,11 +653,7 @@ class ScriptManager @Inject constructor(
         }
     }
 
-    private suspend fun runEntryPoint(
-        screenshotService: ScreenshotService,
-        supportFilter: io.github.fate_grand_automata.prefs.core.SupportPrefsCore? = null,
-        entryPointProvider: () -> EntryPoint
-    ) {
+    private suspend fun runEntryPoint(screenshotService: ScreenshotService, entryPointProvider: () -> EntryPoint) {
         if (scriptState !is ScriptState.Stopped) {
             return
         }
@@ -695,8 +685,6 @@ class ScriptManager @Inject constructor(
             uiStateHolder.isRecording = true
         }
 
-        // Ended by onScriptExit, which every started entry point reaches.
-        SupportListFilterController.onScriptStart(supportFilter)
         entryPoint.run()
     }
 
@@ -721,7 +709,7 @@ class ScriptManager @Inject constructor(
                     prepareWeekly = weeklyRoute::prepare,
                     prepareProbe = weeklyRoute::prepareProbe,
                     ownerTests = ownerTestScripts.scripts,
-                    onWeeklyExpanded = { expanded ->
+                    onSidePanelExpanded = { expanded ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
                         val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }
                         if (base != null) {
@@ -762,12 +750,10 @@ class ScriptManager @Inject constructor(
 internal fun performScriptExitCaptureAndCleanup(
     e: Exception,
     onScriptEnd: () -> Unit = { CaptureAutoStart.onScriptEnd() },
-    onSupportFilterEnd: () -> Unit = { SupportListFilterController.onScriptEnd() },
     discardRun: () -> Unit = { CaptureTracker.discardRun() },
     cleanup: () -> Unit,
 ) {
     captureSafely("onScriptEnd") { onScriptEnd() }
-    captureSafely("onSupportFilterEnd") { onSupportFilterEnd() }
     if (e !is AutoBattle.ExitException &&
         (e !is AutoWeeklyRoute.ExitException || e.reason !is AutoWeeklyRoute.ExitReason.Finished)) {
         captureSafely("onScriptExitDiscard") { discardRun() }

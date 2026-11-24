@@ -65,9 +65,6 @@ class SupportPrefsCore(
     )
     val requireBothNormalAndRewardMatch = maker.bool("support_require_both_normal_and_reward_match")
 
-    /** The capture proxy filters the support list by these conditions while this config runs (#685). Off by default. */
-    val supportListFilter = maker.bool("support_list_filter")
-
     /**
      * Displayed ascension per preferred servant, for the support list filter only; the script does not read it. Each
      * entry is a token and a servant entry joined by `|` (see `DisplayedAscension` in scripts). No entry for a
@@ -76,8 +73,8 @@ class SupportPrefsCore(
     val displayedAscensions = maker.stringSet("support_pref_disp_ascension")
 
     /**
-     * Copies every support condition of [other] into this one, for "import from a battle config" of the manual
-     * filter. [supportListFilter] is the switch of this filter and stays as it is.
+     * Copies every support condition of [other] into this one: a battle config or a profile into the active support
+     * list filter (#695). A copy, not a link: a later change to [other] does not reach this one.
      */
     fun copyConditionsFrom(other: SupportPrefsCore) {
         // Changing the servants clears the NP images, so the servants go first.
