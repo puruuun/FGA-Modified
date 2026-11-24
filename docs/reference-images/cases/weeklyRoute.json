@@ -6378,6 +6378,174 @@
         "match": false,
         "by": "mismatch"
       }
+    },
+    {
+      "name": "JP-11-fuyuki-map-motion-drag-down-40",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": 40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "JP-11-fuyuki-map-motion-drag-up-40",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": -40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "JP-11-fuyuki-map-motion-zoom-0.85",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 0.85,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": false
+      }
+    },
+    {
+      "name": "JP-11-fuyuki-map-motion-zoom-1.0-shift-6",
+      "suite": "weeklyRoute",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/weekly-route/11.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 1.0,
+      "shiftX720": 6,
+      "shiftY720": 6,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": true
+      }
+    },
+    {
+      "name": "KR-39-traum-map-motion-drag-down-40",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/39-edge-93031216.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": 40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "KR-39-traum-map-motion-drag-up-40",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/39-edge-93031216.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": -40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "KR-39-traum-map-motion-zoom-0.85",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/39-edge-93031216.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 0.85,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": false
+      }
+    },
+    {
+      "name": "KR-39-traum-map-motion-zoom-1.0-shift-6",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/39-edge-93031216.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 1.0,
+      "shiftX720": 6,
+      "shiftY720": 6,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": true
+      }
+    },
+    {
+      "name": "KR-okeanos-wide-map-motion-drag-down-40",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-okeanos-map.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": 40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "KR-okeanos-wide-map-motion-drag-up-40",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-okeanos-map.png",
+      "view": "mapMotion",
+      "use": "drag",
+      "shiftY720": -40,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true
+      }
+    },
+    {
+      "name": "KR-okeanos-wide-map-motion-zoom-0.85",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-okeanos-map.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 0.85,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": false
+      }
+    },
+    {
+      "name": "KR-okeanos-wide-map-motion-zoom-1.0-shift-6",
+      "suite": "weeklyRoute",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/weekly-route/beta3-okeanos-map.png",
+      "view": "mapMotion",
+      "use": "zoom",
+      "scale": 1.0,
+      "shiftX720": 6,
+      "shiftY720": 6,
+      "expected": {
+        "fit": true,
+        "withinTolerance": true,
+        "atMinimum": true
+      }
     }
   ],
   "imports": {
