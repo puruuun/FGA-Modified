@@ -21,6 +21,7 @@ import io.github.fate_grand_automata.qa.suites.verifySkillLevelPanel
 import io.github.fate_grand_automata.qa.suites.verifyHakunoShuffle
 import io.github.fate_grand_automata.qa.suites.verifyCEEnhance
 import io.github.fate_grand_automata.qa.suites.verifyCardSwap
+import io.github.fate_grand_automata.qa.suites.verifyNpType
 import io.github.fate_grand_automata.qa.suites.runNativeProbeCase
 import io.github.fate_grand_automata.qa.suites.removeOcrProbeCopies
 import io.github.fate_grand_automata.qa.suites.runOcrProbeCase
@@ -92,6 +93,7 @@ class SupportDeviceTestRunner : Instrumentation() {
                             "hakunoShuffle" -> api.verifyHakunoShuffle()
                             "ceEnhance" -> api.verifyCEEnhance()
                             "cardSwap" -> api.verifyCardSwap()
+                            "npType" -> api.verifyNpType()
                             else -> error("Unknown suite")
                         })
                         api.checkCoverage()

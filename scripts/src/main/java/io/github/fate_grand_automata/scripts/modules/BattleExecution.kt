@@ -2,12 +2,14 @@ package io.github.fate_grand_automata.scripts.modules
 
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.enums.ChainTypeEnum
 import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.enums.CommandStartMode
 import io.github.fate_grand_automata.scripts.enums.ShuffleCardsEnum
 import io.github.fate_grand_automata.scripts.models.AutoSkillCommand
 import io.github.fate_grand_automata.scripts.models.PerEntrySettings
 import io.github.fate_grand_automata.scripts.models.SpamConfigPerTeamSlot
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 import io.github.fate_grand_automata.scripts.prefs.IBattleConfig
 import io.github.fate_grand_automata.scripts.prefs.IExecutionProfile
 import io.github.lib_automata.dagger.ScriptScope
@@ -15,8 +17,10 @@ import javax.inject.Inject
 
 /** Immutable action settings selected together, once per quest, after checking the hand. */
 @ScriptScope
-class BattleExecution @Inject constructor(config: IBattleConfig) {
-    class Profile(source: IExecutionProfile) {
+class BattleExecution(config: IBattleConfig, chainShown: Boolean) {
+    @Inject constructor(config: IBattleConfig) : this(config, ChainPriorityAvailability.SHOWN)
+
+    class Profile(source: IExecutionProfile, private val chainShown: Boolean = ChainPriorityAvailability.SHOWN) {
         val skillCommand = AutoSkillCommand.parse(source.skillCommand)
         val prioritySplit = source.cardPrioritySplit
         // An empty per-entry list means the profile predates per-entry settings: use the old single values.
@@ -32,13 +36,23 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
         )
         private val braveChains: List<BraveChainEnum> = source.braveChains.toList()
         private val rearrangeCards = source.rearrangeCards.toList()
+        // Not read at all while the feature is hidden: a stored "on" then counts as off.
+        private val chainFlags = if (chainShown) source.useChainPriorities.toList() else emptyList()
+        private val chainOrder = if (chainShown) source.chainPriority else ChainPriorityPerWave.default
 
         fun styleAt(entry: Int) = priority.styleAt(entry)
+
+        /** The chains to try at [entry], or null when Chain Priority is off there. A Servant style entry ignores it. */
+        fun chainPriorityAt(entry: Int): List<ChainTypeEnum>? =
+            if (styleAt(entry) == CardPriorityStyle.Servant || !PerEntrySettings.at(chainFlags, entry, false)) null
+            else chainOrder.enabledAtWave(entry)
 
         /** The servant style ignores brave chains and rearrange for that entry only. */
         fun braveChainAt(entry: Int) =
             if (styleAt(entry) == CardPriorityStyle.Servant) BraveChainEnum.None
-            else PerEntrySettings.at(braveChains, entry, BraveChainEnum.None)
+            else ChainPriorityAvailability.effectiveBraveChain(
+                PerEntrySettings.at(braveChains, entry, BraveChainEnum.None), chainShown, chainPriorityAt(entry) != null
+            )
 
         fun rearrangeAt(entry: Int) =
             styleAt(entry) != CardPriorityStyle.Servant && PerEntrySettings.at(rearrangeCards, entry, false)
@@ -48,14 +62,14 @@ class BattleExecution @Inject constructor(config: IBattleConfig) {
             if (prioritySplit == CardPrioritySplit.Turn) totalTurn else stage
     }
 
-    private val primary = Profile(config)
+    private val primary = Profile(config, chainShown)
     val spam = SpamConfigPerTeamSlot(config.spam.toList())
     val shuffleCards: ShuffleCardsEnum = config.shuffleCards
     val shuffleCardsWave = config.shuffleCardsWave
     private val secondary = if (config.commandStartMode == CommandStartMode.CardCount && config.secondaryStartEnabled)
-        Profile(config.secondaryExecution) else null
+        Profile(config.secondaryExecution, chainShown) else null
     private val tertiary = if (secondary != null && config.tertiaryStartEnabled)
-        Profile(config.tertiaryExecution) else null
+        Profile(config.tertiaryExecution, chainShown) else null
 
     var selectedIndex: Int? = null
         private set

@@ -15,4 +15,6 @@ internal class ExecutionProfile(core: ExecutionProfileCore) : IExecutionProfile 
     override val servantPriority by core.servantPriority
     override val rearrangeCards by core.rearrangeCards
     override val braveChains by core.braveChains
+    override val useChainPriorities by core.useChainPriorities
+    override val chainPriority by core.chainPriority
 }

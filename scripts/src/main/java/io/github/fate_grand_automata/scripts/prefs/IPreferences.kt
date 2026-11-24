@@ -51,6 +51,11 @@ interface IPreferences {
     val stageCounterNew: Boolean
     val waitBeforeTurn: Duration
     val waitBeforeCards: Duration
+    val waitAfterOrderChange: Duration
+    val servantDetailsWait: Duration
+
+    val npCardDetectionSimilarity: Double
+    val npCardTypeSimilarity: Double
 
     val support: ISupportPreferencesCommon
     val platformPrefs: PlatformPrefs

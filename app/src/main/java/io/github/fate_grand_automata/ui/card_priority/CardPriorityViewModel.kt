@@ -16,6 +16,8 @@ import io.github.fate_grand_automata.scripts.models.CardPriority
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 
 @HiltViewModel(assistedFactory = CardPriorityViewModel.Factory::class)
 class CardPriorityViewModel @AssistedInject constructor(
@@ -39,6 +41,8 @@ class CardPriorityViewModel @AssistedInject constructor(
         // Empty per-entry prefs mean a config saved before per-entry settings: use the old single values.
         val styles = PerEntrySettings.withLegacy(battleConfig.cardPriorityStyles.get(), battleConfig.cardPriorityStyle.get())
         val servantFlags = PerEntrySettings.withLegacy(battleConfig.useServantPriorities.get(), battleConfig.useServantPriority.get())
+        val chainFlags = battleConfig.useChainPriorities.get()
+        val chainPriority = battleConfig.chainPriority.get()
 
         cardPriority
             .take(CARD_PRIORITY_MAX_ENTRIES)
@@ -52,7 +56,9 @@ class CardPriorityViewModel @AssistedInject constructor(
                     mutableStateOf(rearrangeCards.getOrElse(it.index) { false }),
                     mutableStateOf(braveChains.getOrElse(it.index) { BraveChainEnum.None }),
                     mutableStateOf(PerEntrySettings.at(styles, it.index, CardPriorityStyle.Affinity)),
-                    mutableStateOf(PerEntrySettings.at(servantFlags, it.index, false))
+                    mutableStateOf(PerEntrySettings.at(servantFlags, it.index, false)),
+                    mutableStateOf(PerEntrySettings.at(chainFlags, it.index, false)),
+                    chainPriority.atWave(it.index).toMutableStateList()
                 )
             }
             .toMutableStateList()
@@ -85,5 +91,11 @@ class CardPriorityViewModel @AssistedInject constructor(
         // The old single prefs stay as they are; they only supply values for configs without these lists.
         battleConfig.cardPriorityStyles.set(cardPriorityItems.map { it.style.value })
         battleConfig.useServantPriorities.set(cardPriorityItems.map { it.useServantPriority.value })
+        // While Chain Priority is hidden, only a config that already holds chain settings (an import) keeps
+        // them in step with added or removed entries; every other config gets no new keys.
+        if (ChainPriorityAvailability.SHOWN || battleConfig.useChainPriorities.get().isNotEmpty()) {
+            battleConfig.useChainPriorities.set(cardPriorityItems.map { it.useChainPriority.value })
+            battleConfig.chainPriority.set(ChainPriorityPerWave.from(cardPriorityItems.map { it.chainPriority.toList() }))
+        }
     }
 }

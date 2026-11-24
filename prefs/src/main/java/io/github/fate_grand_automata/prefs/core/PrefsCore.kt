@@ -135,6 +135,9 @@ class PrefsCore @Inject constructor(
     val minSimilarity = maker.int("min_similarity", 80)
     val mlbSimilarity = maker.int("mlb_similarity", 70)
     val stageCounterSimilarity = maker.int("stage_counter_similarity", 85)
+    // Upstream's keys and defaults (#2087), so settings move between the fork and original FGA.
+    val npCardTypeSimilarity = maker.int("card_type_similarity", 50)
+    val npCardDetectionSimilarity = maker.int("np_card_detection_similarity", 80)
     val stageCounterNew = maker.bool("stage_counter_new")
 
     val skillDelay = maker.int("skill_delay", 500)
@@ -142,6 +145,8 @@ class PrefsCore @Inject constructor(
     val waitMultiplier = maker.int("wait_multiplier", 100)
     val waitBeforeTurn = maker.int("wait_before_turn", 500)
     val waitBeforeCards = maker.int("wait_before_cards", 2000)
+    val waitAfterOrderChange = maker.int("wait_after_order_change", 1000)
+    val servantDetailsWait = maker.int("servant_details_wait", 250)
 
     val clickWaitTime = maker.int("click_wait_time", 300)
     val clickDuration = maker.int("click_duration", 50)

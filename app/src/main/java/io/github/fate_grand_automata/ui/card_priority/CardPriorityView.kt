@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.prefs.core.Pref
 import io.github.fate_grand_automata.scripts.enums.CardPrioritySplit
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.prefs.DropdownPreference
@@ -34,7 +35,8 @@ fun CardPriorityView(
     items: SnapshotStateList<CardPriorityListItem>,
     cardPrioritySplit: Pref<CardPrioritySplit>,
     cardSwapDetection: Pref<Boolean>,
-    profileIndex: Int = 0
+    profileIndex: Int = 0,
+    chainShown: Boolean = ChainPriorityAvailability.SHOWN
 ) {
     val pagerState = rememberPagerState(pageCount = {items.size},)
     val scope = rememberCoroutineScope()
@@ -75,7 +77,7 @@ fun CardPriorityView(
                         .fillMaxWidth()
                 ) {
                     Column {
-                        items.getOrNull(it)?.Render(cardSwapDetection)
+                        items.getOrNull(it)?.Render(cardSwapDetection, chainShown)
                     }
                 }
             }

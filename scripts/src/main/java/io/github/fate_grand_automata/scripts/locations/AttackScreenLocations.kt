@@ -60,6 +60,13 @@ class AttackScreenLocations @Inject constructor(
         CommandCard.Face.E -> 880
     }.let { x -> Region(x - 100, 700, 500, 400) + faceCardDeltaY }.xFromCenter()
 
+    /** Where a Servant's portrait sits on an NP card of the card screen. */
+    fun servantNPMatchRegion(card: CommandCard.NP) = when (card) {
+        CommandCard.NP.A -> -620
+        CommandCard.NP.B -> -150
+        CommandCard.NP.C -> 324
+    }.let { x -> Region(x - 50, 100, 400, 400) + faceCardDeltaY }.xFromCenter()
+
     fun supportCheckRegion(card: CommandCard.Face) =
         affinityRegion(card) + Location(-50, 100)
 

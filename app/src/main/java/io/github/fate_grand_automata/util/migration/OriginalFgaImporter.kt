@@ -77,7 +77,7 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
                 try {
                     val text = file.openInput().use { it.readBounded(MAX_SCRIPT_BYTES).toString(Charsets.UTF_8) }
                     problem = ImportProblem.InvalidScript
-                    val values = BattleConfigFile.decode(text.removePrefix("\uFEFF"))
+                    val values = convertUpstreamKeys(BattleConfigFile.decode(text.removePrefix("\uFEFF")))
                     require(values["autoskill_name"] is String || values["autoskill_cmd"] is String)
                     require("autoskill_name" !in values || values["autoskill_name"] is String)
                     require("autoskill_cmd" !in values || values["autoskill_cmd"] is String)
@@ -208,6 +208,29 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
         return OriginalImportReport(scriptCounts, imageCounts, issues, issueCount)
     }
 
+    /**
+     * Original FGA keeps per-wave switches in its own keys and format (`T,F`); the fork keeps them per wave or
+     * turn entry (`true,false`). Chain Priority's order already uses upstream's key and format (#654).
+     */
+    internal fun convertUpstreamKeys(values: Map<String, Any>): Map<String, Any> {
+        val result = LinkedHashMap(values)
+        // A blank per-wave value is how upstream stores "never saved per wave": it then uses its single switch.
+        fun perWave(key: String): String? =
+            (result.remove(key) as? String)?.takeIf { it.isNotBlank() }
+                ?.split(",")?.joinToString(",") { (it.trim() == "T").toString() }
+
+        // The fork falls back to use_servant_priority itself when use_servant_priorities is absent.
+        val servantPerWave = perWave(UPSTREAM_SERVANT_PER_WAVE)
+        if (servantPerWave != null && FORK_SERVANT_PER_ENTRY !in result) result[FORK_SERVANT_PER_ENTRY] = servantPerWave
+
+        val chainPerWave = perWave(UPSTREAM_CHAIN_PER_WAVE)
+        // Upstream uses its single switch for every wave only when no per-wave value is saved.
+        val chainAllWaves = result.remove(UPSTREAM_CHAIN_ALL_WAVES) as? Boolean
+        val chain = chainPerWave ?: chainAllWaves?.toString()
+        if (chain != null && FORK_CHAIN_PER_ENTRY !in result) result[FORK_CHAIN_PER_ENTRY] = chain
+        return result
+    }
+
     private fun comparable(values: Map<String, *>): Map<String, *> = values.mapValues { (_, value) ->
         if (value is Collection<*>) value.toSet() else value
     }
@@ -258,6 +281,11 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
     }
 
     companion object {
+        private const val UPSTREAM_SERVANT_PER_WAVE = "use_servant_priority_per_wave"
+        private const val UPSTREAM_CHAIN_PER_WAVE = "use_chain_priority_per_wave"
+        private const val UPSTREAM_CHAIN_ALL_WAVES = "use_chain_priority"
+        private const val FORK_SERVANT_PER_ENTRY = "use_servant_priorities"
+        private const val FORK_CHAIN_PER_ENTRY = "use_chain_priorities"
         private val IMAGE_KINDS = setOf("servant", "ce", "friend")
         private val IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "webp", "bmp")
         private const val MAX_SCRIPT_BYTES = 4 * 1024 * 1024

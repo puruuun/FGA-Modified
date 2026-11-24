@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 import io.github.fate_grand_automata.scripts.prefs.IExecutionProfile
 
 class TestExecutionProfile(
@@ -19,5 +20,7 @@ class TestExecutionProfile(
     override val useServantPriorities: List<Boolean> = emptyList(),
     override val servantPriority: ServantPriorityPerWave = ServantPriorityPerWave.default,
     override val braveChains: List<BraveChainEnum> = emptyList(),
-    override val rearrangeCards: List<Boolean> = emptyList()
+    override val rearrangeCards: List<Boolean> = emptyList(),
+    override val useChainPriorities: List<Boolean> = emptyList(),
+    override val chainPriority: ChainPriorityPerWave = ChainPriorityPerWave.default
 ) : IExecutionProfile

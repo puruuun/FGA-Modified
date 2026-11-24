@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.locations
 
+import io.github.fate_grand_automata.scripts.enums.GameServer
 import io.github.fate_grand_automata.scripts.models.EnemyTarget
 import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.OrderChangeMember
@@ -146,6 +147,25 @@ class BattleScreenLocations @Inject constructor(
     val servantDetailsInfoClick = Location(-660, 110).xFromCenter()
     
     val servantDetailsFaceCardRegion = Region(-685, 410, 110, 60).xFromCenter()
+
+    /**
+     * The corner of the NP card art that shows the NP's card type, in the same dialog as
+     * [servantDetailsFaceCardRegion]. Both are part of the NP card image, so this one is placed
+     * relative to the face card and follows it when the dialog layout changes.
+     */
+    val servantNpCardTypeRegion = Region(-50, 350, 100, 50) + servantDetailsFaceCardRegion.location
+
+    /**
+     * Digits on the remaining-turns line of the banner covering the NP card art. The JP and default region is
+     * upstream's (#2087), which fits JP's "(残りNターン)". KR's "(앞으로 N턴)" puts the digit further right, where
+     * upstream's region would read a Hangul glyph: the KR region was measured on the two KR banner captures in
+     * docs/reference-images/Kr/battle and drawn on both by a verifier (#654). That the digit is read there is shown
+     * only by the planner's device run of the npType suite.
+     */
+    val servantNpChangeTurnsRegion = when (gameServer) {
+        is GameServer.Kr -> Region(75, 354, 26, 34)
+        else -> Region(29, 354, 28, 34)
+    } + servantDetailsFaceCardRegion.location
 
     val battleSafeMiddleOfScreenClick = Location(0, 550).xFromCenter()
 }

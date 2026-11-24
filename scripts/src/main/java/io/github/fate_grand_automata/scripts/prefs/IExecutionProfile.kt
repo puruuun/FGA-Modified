@@ -6,6 +6,7 @@ import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.ServantCardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.scripts.models.ServantPriorityPerWave
+import io.github.fate_grand_automata.scripts.models.battle.ChainPriorityPerWave
 
 /** Battle actions that may differ between the two start conditions. */
 interface IExecutionProfile {
@@ -24,4 +25,8 @@ interface IExecutionProfile {
     val servantPriority: ServantPriorityPerWave
     val rearrangeCards: List<Boolean>
     val braveChains: List<BraveChainEnum>
+    /** Chain Priority switch per entry; empty means off for every entry. Ignored on a Servant style entry. */
+    val useChainPriorities: List<Boolean>
+    /** Chain Priority order per entry, in upstream's format. */
+    val chainPriority: ChainPriorityPerWave
 }
