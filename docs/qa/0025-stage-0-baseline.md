@@ -640,7 +640,7 @@ PaddleOCR PP-OCRv6 small 인식 모델을 새 크레이트 `native/fga-sensing`�
 
 - 거부한 단계는 없습니다. 2단계에서 크기가 변하지 않는 기능 끄기는 없었습니다(우리가 끌 수 있는 기본 기능은 `tract-onnx`의 `transformers` 하나였고, 나머지 tract 기능은 tract 크레이트끼리 켭니다).
 - 모든 단계에서 판독 표의 수치(저장 표본 +62 86/86, +16 167/167, 틀린 값·거짓 62·16 0, 거부 사유 빈 칸 7·잘림 1·낮은 확신도 4, 잘린 칸 24 중 23 거부)는 4.15와 같습니다.
-- 1단계: `ring`, `rustls`, `rcgen`과 그것만 쓰던 크레이트 19개(`rustls-webpki`, `rustls-pki-types`, `yasna`, `time` 등)가 빠졌습니다. 라이브러리 안에 이 크레이트들의 기호가 0개이고(기준선 1,739개), 내보내는 JNI 함수는 17개에서 15개(`ringProbe`, `rustlsProbe`가 빠짐)입니다. 이 두 프로브는 `fga-ffi`의 `crypto-probes` 기능으로 옮겨 기기 검사 빌드에서만 `-Pfga.native.crypto=true`(`run.py --native-crypto`)로 넣습니다. 기능 없이 만든 라이브러리에서는 `nativeProbe`의 두 케이스가 skip으로 보고됩니다. 판독기 코드(`fga-sensing`)는 `fga-ffi`에 의존하지 않으므로 PC 평가 실행 파일이 기준선과 같습니다.
+- 1단계: `ring`, `rustls`, `rcgen`을 포함해 크레이트 16개(그것만 쓰던 `rustls-webpki`, `rustls-pki-types`, `yasna`, `time` 등 13개)가 빠졌습니다. 처음에 19개로 적었던 것은 `cargo tree` 출력에서 같은 크레이트가 `(*)`로 한 번 더 나온 줄 3개를 센 것입니다. 고지 파일에서 빠진 크레이트 23개는 1단계 16개와 2단계 7개를 합한 수입니다. 라이브러리 안에 이 크레이트들의 기호가 0개이고(기준선 1,739개), 내보내는 JNI 함수는 17개에서 15개(`ringProbe`, `rustlsProbe`가 빠짐)입니다. 이 두 프로브는 `fga-ffi`의 `crypto-probes` 기능으로 옮겨 기기 검사 빌드에서만 `-Pfga.native.crypto=true`(`run.py --native-crypto`)로 넣습니다. 기능 없이 만든 라이브러리에서는 `nativeProbe`의 두 케이스가 skip으로 보고됩니다. 판독기 코드(`fga-sensing`)는 `fga-ffi`에 의존하지 않으므로 PC 평가 실행 파일이 기준선과 같습니다.
 - 2단계: `tract-transformers`, `rayon`, `rayon-core`, `crossbeam` 3개, `float-ord`가 빠졌습니다. `transformers`는 ONNX 확장 연산자 `Attention`, `MultiHeadAttention`, `GroupQueryAttention`을 등록하는데 이 모델은 쓰지 않습니다(쓰면 불러오기에서 실패합니다). tract는 `tract-transformers`의 모델 변환을 이름으로 요청할 때만 적용하고 백엔드는 요청하지 않습니다.
 - 3단계: 내보내는 함수 15개와 필요한 시스템 라이브러리(`libdl`, `libm`, `libc`)가 2단계와 같고, arm64의 `LOAD` 정렬은 모두 `0x4000`입니다. 같은 소스로 다시 만든 라이브러리가 바이트 단위로 같습니다. `panic = "unwind"`와 `opt-level` 3은 그대로입니다.
 - 제3자 고지(`THIRD_PARTY_NOTICES.txt`): 112,568 B → 75,504 B. 생성기(`tools/ci/native_notices.py`)는 `fga-ffi`의 기본 기능으로 `cargo tree`를 읽으므로, 제품 라이브러리에 없는 `ring` 등은 목록에서 빠지고 들어 있는 크레이트는 모두 남습니다. 생성기 입력은 바꿀 필요가 없었습니다.
@@ -666,7 +666,12 @@ CI의 `engine-apk` 작업은 cargo 캐시 키가 `Cargo.lock`과 툴체인이어
 
 엔진이 더하는 항목(후): `libfga_ffi.so` arm64 16,895,120 B, armeabi-v7a 10,289,128 B(둘 다 압축 없이 저장), 모델 21,234,383 B(APK 안에서 18,539,123 B), 제3자 고지 75,504 B(APK 안에서 12,361 B). 엔진이 더하는 양은 약 52.4 MB에서 약 45.8 MB가 됐습니다. `apk_check.py beta`, `stable`, `absent`, `checkRustKeepRulesBeta`, `checkRustKeepRulesCi`, `zipalign -c -P 16`이 모두 통과했습니다.
 
-**기기 측정은 하지 못했습니다.** 이 작업에서 쓸 수 있는 기기는 MuMu(`127.0.0.1:16416`)뿐이었는데, `adb devices`에 없었고 한 번 허용된 `adb connect 127.0.0.1:16416`이 "연결을 거부했으므로 연결하지 못했습니다 (10061)"로 실패했습니다. 그래서 `ocrProbe`의 기기 판독 수와 기기 판독 시간(5% 기준)은 재지 않았고, 계획자에게 남깁니다. 명령: `py -3 tools/device-qa/run.py --build --native --ocr-model build/orchestration/rust/ocr/models/PP-OCRv6_rec_small.onnx --suite ocrProbe --local-fixtures <fixtures> --serial 127.0.0.1:16416`을 기준선(`origin/rust`)과 이 PR의 빌드로 한 번씩.
+**기기 측정 (MuMu, Android 15, 계획자 실행, 2026-11-24~25).** 구현 담당은 MuMu에 연결하지 못했고(`adb connect 127.0.0.1:16416`이 10061로 거부됨), 계획자가 이어서 돌렸습니다. 기준선 2bea3036과 PR head 736ceebf의 `deviceTest` 빌드로 `ocrProbe`를 기준선, PR, PR, 기준선, 기준선, PR 순서로 여섯 번 돌렸습니다. 중간에 끊긴 한 번은 뺐습니다.
+
+- **판독은 여섯 번 모두 같습니다.** 시간과 메모리 항목을 뺀 보고서 JSON 전체를 비교했습니다. `+62` 86/86, `+16` 167/167, 틀린 값 0, 엔진 오류 0입니다.
+- **칸당 시간은 판정할 수 없습니다.** `rust-engine`의 칸당 중간값은 기준선 71.3 ms(64.7~115.4), PR 63.2 ms(59.6~78.5)이고, 짝지은 비율은 0.92, 0.68, 0.89입니다. 그런데 바뀌지 않은 Kotlin과 Tesseract 케이스도 짝 사이에서 0.72~1.57배 움직였고, 다른 엔진 경로 케이스는 PR이 더 느리게 나왔습니다(`rust-engine-short-model` 1.55, `rust-engine-after-close` 1.16). 흔들림이 5%보다 훨씬 커서 D-12의 5% 기준을 채웠다고도 어겼다고도 말할 수 없습니다. 그동안 PC의 CPU 사용률은 다른 세션 때문에 18~100%였습니다.
+- **`nativeProbe` (PR 빌드, 한 번).** `panicProbe`가 LTO로 만든 라이브러리에서도 ARM에서 통과합니다(`ERR: panic: ...`로 돌아옴). `ringProbe`와 `rustlsProbe`는 `requires: crypto-probes`로 skip됐습니다.
+- **다음 비교.** 이 기록 뒤에 `ocrProbe`의 엔진 케이스(`tract-*`와 `ort-*`의 인식 케이스, `rust-reader`, `rust-engine`과 손상 모델 케이스)가 칸마다 판독 스레드의 CPU 시간을 함께 적습니다(`perJniCallThreadCpu`, `perFieldThreadCpu`: 중간값과 p90, `Debug.threadCpuTimeNanos`). 다른 프로세스가 벽시계 시간은 빼앗아도 판독 스레드의 CPU 시간은 늘리지 않으므로, 부하가 있는 PC에서도 두 빌드를 비교할 수 있습니다. ONNX Runtime의 기본 스레드와 `tract-threads`의 풀 스레드는 세지 않습니다.
 
 ## 5. 남은 일
 
