@@ -56,9 +56,10 @@
   `libc++_shared.so` and `libopencv_java5.so` is 16 KB aligned (`0x4000`), and both `libc++_shared.so`
   copies are byte-identical to those of the 4.14.0 AAR that the fork used to extract and package in
   place of 4.11.0's 4 KB aligned one, so that workaround (`opencv_aligned_libcxx_version`,
-  `alignedLibCxx`, `ExtractAlignedLibCxx`, the `pickFirsts` entry) is gone. The armeabi-v7a
-  libraries are 4 KB aligned, as the extracted copy was. The 16 KB requirement applies to 64-bit
-  libraries only. Nothing else in the APK ships a `libc++_shared.so`: Tesseract4Android does not, and
+  `alignedLibCxx`, `ExtractAlignedLibCxx`, the `pickFirsts` entry) is gone. By ABI, the `LOAD`
+  alignment of both libraries in the 5.1.0 AAR is `0x4000` on arm64-v8a and x86_64 and `0x1000` on
+  armeabi-v7a and x86. The 32-bit ones are 4 KB aligned, as the extracted copy was. The 16 KB
+  requirement applies to 64-bit libraries only. The app ships arm64-v8a and armeabi-v7a. Nothing else in the APK ships a `libc++_shared.so`: Tesseract4Android does not, and
   ONNX Runtime links its C++ runtime in.
 - The JVM unit tests use openpnp OpenCV 4.9.0 (`opencv_jvm_version`), a separate artifact that never
   reaches the APK. It stays at 4.9.0: the `scripts` tests use only `core`, `imgproc` and `imgcodecs`,
@@ -119,7 +120,10 @@ What the check cannot see, so a reviewer must:
   dependencies" line (a library the binary links from the device, such as `z`, is not redistributed and
   gets no entry), the per-library version lines ("ZLib", "JPEG", "WEBP", "PNG", "TIFF", "OpenEXR",
   "JPEG 2000", "Parallel framework", "Trace"), "Built-in fonts", and the "Other third-party libraries"
-  block (HarfBuzz, DNN MLAS, Custom HAL, Protobuf, Flatbuffers). For each library that is built in, take
+  block (HarfBuzz, DNN MLAS, Custom HAL, Protobuf, Flatbuffers). The build information does not list
+  everything: also check `modules/*/3rdparty/` and third-party code compiled into OpenCV's own sources
+  (5.1.0: SoftFloat and FDLIBM in `modules/core/src/softfloat.cpp`, Annoy and MSCR's `chi_table.h` in
+  `modules/features`), and confirm in the binary that each one is linked in. For each library that is built in, take
   its licence file and version from `3rdparty/<dir>` (5.x: also `hal/carotene`, `hal/kleidicv`,
   `modules/imgproc/fonts`) at the tag, plus the oneTBB and KleidiCV versions the build downloads
   (`3rdparty/tbb/CMakeLists.txt`, `hal/kleidicv/kleidicv.cmake`). For Tesseract4Android, read its README

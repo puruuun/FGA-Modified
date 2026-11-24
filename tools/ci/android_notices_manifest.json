@@ -213,6 +213,34 @@
       "use": "whole file"
     },
     {
+      "id": "softfloat-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/5.1.0/modules/core/3rdparty/SoftFloat/COPYING.txt",
+      "sha256": "0c5b08365136da52639d777f1ebfc03988b0169d80655c90c59f1b3fa3e526a2",
+      "bytes": 1732,
+      "use": "whole file"
+    },
+    {
+      "id": "softfloat-source",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/5.1.0/modules/core/src/softfloat.cpp",
+      "sha256": "0e8ded6d38b4b4b255d1ef1988fda0fcc89e7d6b53d0d05f01f6bd7b79056522",
+      "bytes": 168012,
+      "use": "excerpt: the licence comments at the top, from the SoftFloat block to the second FDLIBM block"
+    },
+    {
+      "id": "annoy-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/5.1.0/modules/features/3rdparty/annoy/LICENSE",
+      "sha256": "95c519bf46158c01af843f7837c6d0616f6b3ed10549902846fbb4a801ec3423",
+      "bytes": 550,
+      "use": "whole file; copyright line"
+    },
+    {
+      "id": "chi-table-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/5.1.0/modules/features/3rdparty/mscr/chi_table_LICENSE.txt",
+      "sha256": "676858659f4115246b41f2f44dcfbf17db52c6b1755f1102b78a87062dff0c07",
+      "bytes": 1559,
+      "use": "whole file"
+    },
+    {
       "id": "libcxx-license",
       "url": "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-19.1.0/libcxx/LICENSE.TXT",
       "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b",
@@ -493,6 +521,34 @@
       "licence": "SIL Open Font License 1.1",
       "sources": [
         "rubik-ofl"
+      ]
+    },
+    {
+      "id": "softfloat",
+      "name": "Berkeley SoftFloat",
+      "version": "Release 3c",
+      "licence": "BSD-3-Clause; the FDLIBM parts under Sun Microsystems' permission notice",
+      "sources": [
+        "softfloat-license",
+        "softfloat-source"
+      ]
+    },
+    {
+      "id": "annoy",
+      "name": "Annoy (cvannoy, in OpenCV features)",
+      "version": "as bundled in OpenCV 5.1.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "annoy-license"
+      ]
+    },
+    {
+      "id": "chi-table",
+      "name": "chi_table.h (MSCR, in OpenCV features)",
+      "version": "as bundled in OpenCV 5.1.0",
+      "licence": "BSD-3-Clause-style licence of chi_table.h",
+      "sources": [
+        "chi-table-license"
       ]
     },
     {
