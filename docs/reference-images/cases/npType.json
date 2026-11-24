@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "suite": "npType",
+  "cases": [
+    {
+      "name": "kr-emiya-buster",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-emiya-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-melusine-stage1-buster",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-melusine-stage1-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-melusine-stage3-arts",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-melusine-stage3-arts.png",
+      "type": "Arts",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-quick",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-quick.png",
+      "type": "Quick",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "kr-bb-banner-3-turns",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-bb-banner-3-turns.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 3
+    },
+    {
+      "name": "kr-emiya-banner-1-turn",
+      "suite": "npType",
+      "server": "Kr",
+      "file": "docs/reference-images/Kr/battle/np-type-details-emiya-banner-1-turn.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 1
+    },
+    {
+      "name": "jp-buster",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/battle-servant-details-np-buster.png",
+      "type": "Buster",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-aoko-arts",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/np-type-details-aoko-arts.png",
+      "type": "Arts",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-quick",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/np-type-details-quick.png",
+      "type": "Quick",
+      "similarity": 0.5,
+      "minScore": 0.85,
+      "maxOtherScore": 0.4
+    },
+    {
+      "name": "jp-banner-1-turn",
+      "suite": "npType",
+      "server": "Jp",
+      "file": "docs/reference-images/Jp/battle/battle-servant-details-np-arts-changed.png",
+      "type": "",
+      "similarity": 0.5,
+      "maxOtherScore": 0.4,
+      "turns": 1
+    }
+  ]
+}
