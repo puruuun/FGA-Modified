@@ -286,6 +286,22 @@ class EngineApkJobTest(unittest.TestCase):
         self.assertIn('python3 tools/ci/apk_check.py stable "$apk"', steps[stable_check])
         self.assertNotIn('apk/beta', steps[stable_check])
 
+    def test_no_build_or_check_step_is_switched_off(self):
+        steps = self.steps()
+        builds = [self.one_step(steps, ':app:assembleBeta'), self.one_step(steps, ':app:assembleCi')]
+        checks = [self.one_step(steps, 'apk_check.py beta'), self.one_step(steps, 'apk_check.py stable')]
+        for i in builds + checks:
+            self.assertNotRegex(steps[i], r'(?m)^\s*(?:-\s+)?continue-on-error\s*:', steps[i])
+            self.assertNotRegex(steps[i], r'(?m)^\s*(?:-\s+)?if\s*:', steps[i])
+        for i in checks:
+            lines = steps[i].split('\n')
+            self.assertEqual(lines.count('        run: |'), 1, steps[i])
+            script = [l.strip() for l in lines[lines.index('        run: |') + 1:] if l.strip()]
+            self.assertEqual(script[:1], ['set -eu'], steps[i])
+        self.assertEqual(self.job.count('\n    steps:\n'), 1)
+        header = self.job.split('\n    steps:\n')[0]
+        self.assertNotRegex(header, r'(?m)^\s*continue-on-error\s*:', header)
+
 
 class MainCiApkCheckTest(unittest.TestCase):
     def test_checks_the_ci_apk_without_engine_and_scan(self):
