@@ -450,7 +450,7 @@ Rules:
 
 - A PR that touches `native/` runs all of the above before its first push, plus the full Kotlin unit test command from `AGENTS.md`.
 - A Kotlin-only change needs no Rust tools: `debug`, `ci` and `deviceTest` and the unit tests build without them, and `-Pfga.native=false` must always build every remaining build type except `rust` without them. The beta and stable APKs need them (design 0026, D-7).
-- BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed there with SIGILL (see the comment at the top of `app/build.gradle.kts`). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
+- BlueStacks runs the ARM libraries through binary translation, and OpenCV once crashed on BlueStacks Air (macOS) with SIGILL (see the OpenCV entry in [`dependencies.md`](dependencies.md)). A new crate that uses SIMD or assembly (crypto, inference) is run on BlueStacks and on a real phone before anything is built on top of it.
 - `native/target/` is never committed.
 - The owner's PC has Rust on the MSVC host toolchain, Visual Studio 2022 Build Tools, `cargo-ndk`, `cargo-deny`, and the NDK that `native/ndk-version.txt` names (28.2.13676358) under `%LOCALAPPDATA%/Android/Sdk/ndk/`; set `ANDROID_NDK_HOME` to it. If something still does not build there, report it instead of installing anything.
 

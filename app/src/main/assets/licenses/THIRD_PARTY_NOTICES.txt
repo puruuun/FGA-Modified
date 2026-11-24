@@ -12,10 +12,10 @@ Contents: 1. components; 2. notices that a licence asks for; 3. licence texts.
 1. Components
 ====================================================================================================
 
-OpenCV and what is built into it (libopencv_java4.so)
+OpenCV and what is built into it (libopencv_java5.so)
 -----------------------------------------------------
 
-* OpenCV 4.11.0
+* OpenCV 5.1.0
   Licence: Apache-2.0
   Copyright (C) 2000-2022, Intel Corporation, all rights reserved.
   Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
@@ -26,83 +26,110 @@ OpenCV and what is built into it (libopencv_java4.so)
   Copyright (C) 2019-2023, Xperience AI, all rights reserved.
   Copyright (C) 2019-2022, Shenzhen Institute of Artificial Intelligence and Robotics for Society, all rights reserved.
   Copyright (C) 2022-2023, Southern University of Science And Technology, all rights reserved.
-  Source: libopencv_java4.so, from org.opencv:opencv; https://github.com/opencv/opencv at tag 4.11.0. Third party copyrights are property of their respective owners.
+  Copyright (C) 2023-2025, OpenCV AI, all rights reserved.
+  Copyright (C) 2024, Bigvision LLC, all rights reserved.
+  Source: libopencv_java5.so, from org.opencv:opencv; https://github.com/opencv/opencv at tag 5.1.0. Third party copyrights are property of their respective owners.
 
-* libjpeg-turbo 3.0.3
+* libjpeg-turbo 3.1.2
   Licence: IJG License and Modified (3-clause) BSD License
   This software is copyright (C) 1991-2020, Thomas G. Lane, Guido Vollbeding.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libjpeg-turbo. Notice sentence in part 2; texts in part 3.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/libjpeg-turbo. Notice sentence in part 2; texts in part 3.
 
-* libwebp as bundled in OpenCV 4.11.0
+* libwebp as bundled in OpenCV 5.1.0
   Licence: BSD-3-Clause
   Copyright (c) 2010, Google Inc. All rights reserved.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libwebp/COPYING.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/libwebp/COPYING.
 
-* libtiff 4.6.0
-  Licence: libtiff licence (BSD-style)
-  Copyright (c) 1988-1997 Sam Leffler
-  Copyright (c) 1991-1997 Silicon Graphics, Inc.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libtiff/COPYRIGHT.
+* libtiff 4.7.2
+  Licence: libtiff licence (BSD-style); its LZW code under the Berkeley licence in the same file
+  Copyright © 1988-1997 Sam Leffler
+  Copyright © 1991-1997 Silicon Graphics, Inc.
+  Copyright (c) 1985, 1986 The Regents of the University of California.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/libtiff/LICENSE.md.
 
-* OpenEXR (IlmImf) 2.3.0
-  Licence: BSD-3-Clause
-  Copyright (c) 2006, Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/openexr/LICENSE.
-
-* OpenJPEG as bundled in OpenCV 4.11.0
+* OpenJPEG 2.5.4
   Licence: BSD-2-Clause
   Copyright (c) 2002-2014, Universite catholique de Louvain (UCL), Belgium
   Copyright (c) 2002-2014, Professor Benoit Macq
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/openjpeg/LICENSE (more copyright lines in the text of part 3).
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/openjpeg/LICENSE (more copyright lines in the text of part 3).
 
 * Protocol Buffers 3.19.1
   Licence: BSD-3-Clause
   Copyright 2008 Google Inc.  All rights reserved.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/protobuf/LICENSE.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/protobuf/LICENSE.
 
-* cpufeatures as bundled in OpenCV 4.11.0
+* cpufeatures as bundled in OpenCV 5.1.0
   Licence: Apache-2.0
   Copyright (C) 2016 The Android Open Source Project
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/cpufeatures/LICENSE.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/cpufeatures/LICENSE.
 
-* libpng (in OpenCV) 1.6.43
+* libpng (in OpenCV) 1.6.57
   Licence: PNG Reference Library License version 2
-  Copyright (c) 1995-2024 The PNG Reference Library Authors.
-  Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libpng/LICENSE. Acknowledgement is appreciated by the authors, not required.
+  Copyright (c) 1995-2026 The PNG Reference Library Authors.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 3rdparty/libpng/LICENSE. Acknowledgement is appreciated by the authors, not required.
 
-* carotene as bundled in OpenCV 4.11.0
+* carotene as bundled in OpenCV 5.1.0
   Licence: BSD-3-Clause (OpenCV 3-clause BSD License)
   Copyright (C) 2014-2015, NVIDIA Corporation, all rights reserved.
-  Source: Built into libopencv_java4.so; header of OpenCV 4.11.0 3rdparty/carotene/src/absdiff.cpp.
+  Source: Built into libopencv_java5.so; header of OpenCV 5.1.0 hal/carotene/src/absdiff.cpp.
 
-* ITT Notify (ittnotify) as bundled in OpenCV 4.11.0
-  Licence: BSD-3-Clause (offered as dual BSD/GPLv2; this app takes the BSD option)
-  Copyright (c) 2005-2014 Intel Corporation. All rights reserved.
-  Source: Built into libopencv_java4.so; header of OpenCV 4.11.0 3rdparty/ittnotify/src/ittnotify/ittnotify_config.h.
+* ITT Notify (ittnotify) 3.25.4
+  Licence: BSD-3-Clause (offered as GPL-2.0-only OR BSD-3-Clause; this app takes the BSD option)
+  Copyright (C) 2005-2019 Intel Corporation
+  Copyright (c) 2019 Intel Corporation. All rights reserved.
+  Source: Built into libopencv_java5.so (build information: "Trace: YES (with Intel ITT(3.25.4))"); OpenCV 5.1.0 3rdparty/ittnotify/src/ittnotify/ittnotify_config.h (SPDX line) and BSD-3-Clause.txt in the same folder.
 
-* oneTBB v2021.11.0
+* oneTBB v2022.1.0
   Licence: Apache-2.0
-  Source: Built into libopencv_java4.so; https://github.com/oneapi-src/oneTBB at tag v2021.11.0 (LICENSE.txt). No copyright line in the licence file.
+  Source: Built into libopencv_java5.so; https://github.com/uxlfoundation/oneTBB at tag v2022.1.0 (LICENSE.txt), the release OpenCV 5.1.0 3rdparty/tbb/CMakeLists.txt downloads. No copyright line in the licence file.
 
-* ADE 0.1.2e
+* FlatBuffers 25.9.23
   Licence: Apache-2.0
-  Source: Built into libopencv_java4.so; https://github.com/opencv/ade at tag v0.1.2e (LICENSE). No copyright line in the licence file.
+  Source: Built into libopencv_java5.so (build information: "Flatbuffers: builtin/3rdparty (25.9.23)"); OpenCV 5.1.0 3rdparty/flatbuffers/LICENSE.txt. No copyright line in the licence file.
 
-* FlatBuffers 23.5.9
+* KleidiCV 26.09
   Licence: Apache-2.0
-  Source: Built into libopencv_java4.so (build information: "Flatbuffers: builtin/3rdparty (23.5.9)"); OpenCV 4.11.0 3rdparty/flatbuffers/LICENSE.txt. No copyright line in the licence file.
+  SPDX-FileCopyrightText: 2023 - 2026 Arm Limited and/or its affiliates <open-source-office@arm.com>
+  Source: Built into libopencv_java5.so for arm64-v8a only; https://gitlab.arm.com/kleidi/kleidicv at tag 26.09 (README.md, LICENSES/Apache-2.0.txt), the version OpenCV 5.1.0 hal/kleidicv/kleidicv.cmake downloads.
 
-* KleidiCV 0.3.0
+* HarfBuzz 14.2.1
+  Licence: Old MIT (HarfBuzz licence)
+  Copyright lines: those of 3rdparty/harfbuzz/COPYING, reproduced in part 3.
+  Source: Built into libopencv_java5.so (build information: "HarfBuzz: build (14.2.1)"); OpenCV 5.1.0 3rdparty/harfbuzz/COPYING.
+
+* MLAS (Microsoft Linear Algebra Subprograms) from ONNX Runtime v1.26.0
+  Licence: MIT
+  Copyright (c) Microsoft Corporation
+  Source: Built into libopencv_java5.so (build information: "DNN MLAS: YES (SGEMM-only, vendored)"); OpenCV 5.1.0 3rdparty/mlas/LICENSE, vendored from onnxruntime commit 62f742f1aa0c3102745ed35e3d869eaee845b9ac (3rdparty/mlas/README.md).
+
+* Rubik font (built-in font of OpenCV) as bundled in OpenCV 5.1.0
+  Licence: SIL Open Font License 1.1
+  Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik),
+  Source: Built into libopencv_java5.so (build information: "Built-in fonts: sans"); OpenCV 5.1.0 modules/imgproc/fonts/Rubik.ttf.gz and Rubik-Italic.ttf.gz, licence modules/imgproc/fonts/Rubik_OFL.txt.
+
+* Berkeley SoftFloat Release 3c (cv::softfloat in OpenCV core)
+  Licence: BSD-3-Clause; the FDLIBM parts under Sun Microsystems' permission notice
+  Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the University of California.  All rights reserved.
+  Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+  Copyright (C) 2004 by Sun Microsystems, Inc. All rights reserved.
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 modules/core/3rdparty/SoftFloat/COPYING.txt and the licence comments at the top of modules/core/src/softfloat.cpp.
+
+* Annoy (cvannoy, in OpenCV features) as bundled in OpenCV 5.1.0
   Licence: Apache-2.0
-  SPDX-FileCopyrightText: 2023 - 2024 Arm Limited and/or its affiliates <open-source-office@arm.com>
-  Source: Built into libopencv_java4.so; https://gitlab.arm.com/kleidi/kleidicv at tag 0.3.0 (README.md, LICENSES/Apache-2.0.txt).
+  Copyright (c) 2013 Spotify AB
+  Source: Built into libopencv_java5.so; OpenCV 5.1.0 modules/features/3rdparty/annoy/LICENSE (the Apache-2.0 text is in part 3).
+
+* chi_table.h (MSCR, in OpenCV features) as bundled in OpenCV 5.1.0
+  Licence: BSD-3-Clause-style licence of chi_table.h
+  Copyright (C) 2007 Per-Erik Forssen, all rights reserved.
+  Source: Built into libopencv_java5.so (modules/features/src/mser.cpp includes it); OpenCV 5.1.0 modules/features/3rdparty/mscr/chi_table_LICENSE.txt.
 
 C++ runtime
 -----------
 
-* libc++ runtime (libc++_shared.so from the OpenCV AAR) 4.14.0
+* libc++ runtime (libc++_shared.so from the OpenCV AAR) 5.1.0
   Licence: Apache-2.0 with LLVM exceptions
-  Source: libc++_shared.so taken from the OpenCV 4.14.0 AAR (org.opencv:opencv:4.14.0) for its 16 KB alignment; LLVM project, libcxx/LICENSE.TXT. For object-form redistribution the licence exempts the attribution conditions, so only this line is given.
+  Source: libc++_shared.so of the OpenCV 5.1.0 AAR (org.opencv:opencv:5.1.0); LLVM project, libcxx/LICENSE.TXT. For object-form redistribution the licence exempts the attribution conditions, so only this line is given.
 
 Text recognition libraries (Tesseract4Android)
 ----------------------------------------------
@@ -222,14 +249,14 @@ Java and Kotlin libraries
 Independent JPEG Group (libjpeg-turbo in OpenCV, libjpeg v9f in Tesseract4Android):
 This software is based in part on the work of the Independent JPEG Group.
 
-ITT Notify (ittnotify) in OpenCV is offered under a dual BSD/GPLv2 licence. This app
+ITT Notify (ittnotify) in OpenCV is offered as GPL-2.0-only OR BSD-3-Clause. This app
 uses it under the BSD licence, whose text is in part 3.
 
 libpng: the authors appreciate an acknowledgement but do not require one. This app uses libpng
 (in OpenCV and in Tesseract4Android).
 
-zlib: libopencv_java4.so links the zlib of the device (its build information says "ZLib: z (ver
-1.2.13)" and lists "z" under the extra dependencies; libz.so is a library of the system). The app does
+zlib: libopencv_java5.so links the zlib of the device (its build information says "ZLib: z (ver
+1.3.0.1)" and lists "z" under the extra dependencies; libz.so is a library of the system). The app does
 not contain or redistribute zlib.
 
 OkHttp public suffix data (okhttp3/internal/publicsuffix, in the APK as part of OkHttp
@@ -260,7 +287,7 @@ The licence text of assets/licenses/tessdata-best/LICENSE is the Apache License 
 ====================================================================================================
 
 Apache License 2.0 (OpenCV, libc++ with LLVM exceptions, the Apache-2.0 components above, and
-the tessdata files). Text of https://github.com/opencv/opencv/blob/4.11.0/LICENSE:
+the tessdata files). Text of https://github.com/opencv/opencv/blob/5.1.0/LICENSE:
 
 
                                  Apache License
@@ -489,7 +516,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-libjpeg-turbo 3.0.3 (in OpenCV): 3rdparty/libjpeg-turbo/LICENSE.md
+libjpeg-turbo 3.1.2 (in OpenCV): 3rdparty/libjpeg-turbo/LICENSE.md
 
 libjpeg-turbo Licenses
 ======================
@@ -587,7 +614,7 @@ intended solely for clarification.
 The Modified (3-clause) BSD License
 ===================================
 
-Copyright (C)2009-2023 D. R. Commander.  All Rights Reserved.<br>
+Copyright (C)2009-2024 D. R. Commander.  All Rights Reserved.<br>
 Copyright (C)2015 Viktor Szathmáry.  All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -627,7 +654,7 @@ attribution and endorsement protections to other entities.  Thus, it was
 desirable to choose a license that granted us the same protections for new code
 that were granted to the IJG for code derived from their software.
 
-libjpeg-turbo 3.0.3 (in OpenCV): the IJG licence, section LEGAL ISSUES of 3rdparty/libjpeg-turbo/README.ijg
+libjpeg-turbo 3.1.2 (in OpenCV): the IJG licence, section LEGAL ISSUES of 3rdparty/libjpeg-turbo/README.ijg
 
 LEGAL ISSUES
 ============
@@ -768,10 +795,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-libtiff: 3rdparty/libtiff/COPYRIGHT
+libtiff: 3rdparty/libtiff/LICENSE.md
 
-Copyright (c) 1988-1997 Sam Leffler
-Copyright (c) 1991-1997 Silicon Graphics, Inc.
+# LibTIFF license
+
+Copyright © 1988-1997 Sam Leffler\
+Copyright © 1991-1997 Silicon Graphics, Inc.
 
 Permission to use, copy, modify, distribute, and sell this software and 
 its documentation for any purpose is hereby granted without fee, provided
@@ -792,41 +821,31 @@ WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
 LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 
 OF THIS SOFTWARE.
 
-OpenEXR: 3rdparty/openexr/LICENSE
+# Lempel-Ziv & Welch Compression (tif_lzw.c) license
+The code of tif_lzw.c is derived from the compress program whose code is
+derived from software contributed to Berkeley by James A. Woods,
+derived from original work by Spencer Thomas and Joseph Orost.
 
-Copyright (c) 2006, Industrial Light & Magic, a division of Lucasfilm
-Entertainment Company Ltd.  Portions contributed and copyright held by
-others as indicated.  All rights reserved.
+The original Berkeley copyright notice appears below in its entirety:
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
+Copyright (c) 1985, 1986 The Regents of the University of California.
+All rights reserved.
 
-    * Redistributions of source code must retain the above
-      copyright notice, this list of conditions and the following
-      disclaimer.
+This code is derived from software contributed to Berkeley by
+James A. Woods, derived from original work by Spencer Thomas
+and Joseph Orost.
 
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided with
-      the distribution.
-
-    * Neither the name of Industrial Light & Magic nor the names of
-      any other contributors to this software may be used to endorse or
-      promote products derived from this software without specific prior
-      written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Redistribution and use in source and binary forms are permitted
+provided that the above copyright notice and this paragraph are
+duplicated in all such forms and that any documentation,
+advertising materials, and other materials related to such
+distribution and use acknowledge that the software was developed
+by the University of California, Berkeley.  The name of the
+University may not be used to endorse or promote products derived
+from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 OpenJPEG: 3rdparty/openjpeg/LICENSE
 
@@ -929,8 +948,8 @@ COPYRIGHT NOTICE, DISCLAIMER, and LICENSE
 PNG Reference Library License version 2
 ---------------------------------------
 
- * Copyright (c) 1995-2024 The PNG Reference Library Authors.
- * Copyright (c) 2018-2024 Cosmin Truta.
+ * Copyright (c) 1995-2026 The PNG Reference Library Authors.
+ * Copyright (c) 2018-2026 Cosmin Truta.
  * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
  * Copyright (c) 1996-1997 Andreas Dilger.
  * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
@@ -1058,7 +1077,7 @@ to supporting the PNG file format in commercial products.  If you use
 this source code in a product, acknowledgment is not required but would
 be appreciated.
 
-carotene: licence comment at the top of 3rdparty/carotene/src/absdiff.cpp
+carotene: licence comment at the top of hal/carotene/src/absdiff.cpp
 
 /*
  * By downloading, copying, installing or using the software you agree to this license.
@@ -1099,38 +1118,335 @@ carotene: licence comment at the top of 3rdparty/carotene/src/absdiff.cpp
  * the use of this software, even if advised of the possibility of such damage.
  */
 
-ITT Notify: the BSD LICENSE part of the header comment of 3rdparty/ittnotify/src/ittnotify/ittnotify_config.h
+ITT Notify: the header comment of 3rdparty/ittnotify/src/ittnotify/ittnotify_config.h and 3rdparty/ittnotify/src/ittnotify/BSD-3-Clause.txt
 
-  BSD LICENSE
+/*
+  Copyright (C) 2005-2019 Intel Corporation
 
-  Copyright (c) 2005-2014 Intel Corporation. All rights reserved.
-  All rights reserved.
+  SPDX-License-Identifier: GPL-2.0-only OR BSD-3-Clause
+*/
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
+BSD-3-Clause.txt of the same folder:
 
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in
-      the documentation and/or other materials provided with the
-      distribution.
-    * Neither the name of Intel Corporation nor the names of its
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
+Copyright (c) 2019 Intel Corporation. All rights reserved.
 
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+HarfBuzz: 3rdparty/harfbuzz/COPYING
+
+HarfBuzz is licensed under the so-called "Old MIT" license.  Details follow.
+For parts of HarfBuzz that are licensed under different licenses see individual
+files names COPYING in subdirectories where applicable.
+
+Copyright © 2010-2022  Google, Inc.
+Copyright © 2015-2020  Ebrahim Byagowi
+Copyright © 2019,2020  Facebook, Inc.
+Copyright © 2012,2015  Mozilla Foundation
+Copyright © 2011  Codethink Limited
+Copyright © 2008,2010  Nokia Corporation and/or its subsidiary(-ies)
+Copyright © 2009  Keith Stribley
+Copyright © 2011  Martin Hosken and SIL International
+Copyright © 2007  Chris Wilson
+Copyright © 2005,2006,2020,2021,2022,2023  Behdad Esfahbod
+Copyright © 2004,2007,2008,2009,2010,2013,2021,2022,2023  Red Hat, Inc.
+Copyright © 1998-2005  David Turner and Werner Lemberg
+Copyright © 2016  Igalia S.L.
+Copyright © 2022  Matthias Clasen
+Copyright © 2018,2021  Khaled Hosny
+Copyright © 2018,2019,2020  Adobe, Inc
+Copyright © 2013-2015  Alexei Podtelezhnikov
+
+For full copyright notices consult the individual files in the package.
+
+
+Permission is hereby granted, without written agreement and without
+license or royalty fees, to use, copy, modify, and distribute this
+software and its documentation for any purpose, provided that the
+above copyright notice and the following two paragraphs appear in
+all copies of this software.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE TO ANY PARTY FOR
+DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN
+IF THE COPYRIGHT HOLDER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+THE COPYRIGHT HOLDER SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
+PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+
+MLAS (in OpenCV): 3rdparty/mlas/LICENSE
+
+MIT License
+
+Copyright (c) Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Rubik font (in OpenCV): modules/imgproc/fonts/Rubik_OFL.txt
+
+Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik),
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.
+
+Berkeley SoftFloat (in OpenCV): modules/core/3rdparty/SoftFloat/COPYING.txt
+
+
+License for Berkeley SoftFloat Release 3c
+
+John R. Hauser
+2017 February 10
+
+The following applies to the whole of SoftFloat Release 3c as well as to
+each source file individually.
+
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions, and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+ 3. Neither the name of the University nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS", AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE
+DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+SoftFloat and FDLIBM (in OpenCV): the licence comments at the top of modules/core/src/softfloat.cpp
+
+/*============================================================================
+
+This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
+Package, Release 3c, by John R. Hauser.
+
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions, and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. Neither the name of the University nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS", AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE
+DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=============================================================================*/
+
+// FDLIBM licenses:
+
+/*
+ * ====================================================
+ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+ * ====================================================
+ */
+
+/*
+ * ====================================================
+ * Copyright (C) 2004 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+ * ====================================================
+ */
+
+Annoy (in OpenCV): modules/features/3rdparty/annoy/LICENSE
+
+Copyright (c) 2013 Spotify AB
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+chi_table.h (in OpenCV): modules/features/3rdparty/mscr/chi_table_LICENSE.txt
+
+                          License Agreement
+                          For chi_table.h
+
+Copyright (C) 2007 Per-Erik Forssen, all rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+  * Redistribution's of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+
+  * Redistribution's in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+  * The name of the copyright holders may not be used to endorse or promote products
+    derived from this software without specific prior written permission.
+
+This software is provided by the copyright holders and contributors "as is" and
+any express or implied warranties, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose are disclaimed.
+In no event shall the Intel Corporation or contributors be liable for any direct,
+indirect, incidental, special, exemplary, or consequential damages
+(including, but not limited to, procurement of substitute goods or services;
+loss of use, data, or profits; or business interruption) however caused
+and on any theory of liability, whether in contract, strict liability,
+or tort (including negligence or otherwise) arising in any way out of
+the use of this software, even if advised of the possibility of such damage.
 
 Leptonica: leptonica-license.txt
 
