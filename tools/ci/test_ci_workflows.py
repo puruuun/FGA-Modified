@@ -237,7 +237,23 @@ class EngineApkJobTest(unittest.TestCase):
 
     def test_builds_and_checks_the_beta(self):
         self.assertIn('./gradlew :app:assembleBeta -PfgaDebugSigning=true', self.job)
-        self.assertIn('python3 tools/ci/apk_check.py present "$@"', self.job)
+        self.assertIn('python3 tools/ci/apk_check.py beta "$@"', self.job)
+
+
+class MainCiApkCheckTest(unittest.TestCase):
+    def test_checks_the_ci_apk_without_engine_and_scan(self):
+        job = job_block(read(MAIN_CI), 'test-and-build')
+        self.assertRegex(job, r'run: \./gradlew :app:assembleCi\s*\n')
+        self.assertIn('python3 tools/ci/apk_check.py absent "$@"', job)
+
+    def test_every_apk_check_call_names_a_mode_the_script_has(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import apk_check
+        for path in (MAIN_CI, ENGINE_CI):
+            modes = re.findall(r'apk_check\.py (\S+) ', strip_comments(read(path)))
+            self.assertTrue(modes, path)
+            for mode in modes:
+                self.assertIn(mode, apk_check.MODES, path)
 
     def test_ndk_pin_file_names_one_version(self):
         with open(os.path.join(REPO, 'native', 'ndk-version.txt'), encoding='utf-8') as f:

@@ -1,4 +1,4 @@
-package io.github.fate_grand_automata.rusttest
+package io.github.fate_grand_automata.scorescan
 
 import io.github.fate_grand_automata.imaging.MediaProjectionScreenshotService
 import io.github.fate_grand_automata.runner.ScreenshotServiceHolder
@@ -22,8 +22,8 @@ import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
- * Issue #600, rust build type only: the support score scan's full-display frame, through
- * [ScreenshotServiceHolder.withFullDisplayFrames], the same capture as the settings calibration's
+ * Issue #600, beta and rust build types only (the scoreScan source set): the support score scan's
+ * full-display frame, through [ScreenshotServiceHolder.withFullDisplayFrames], the same capture as the settings calibration's
  * [ScreenshotServiceHolder.takeFullDisplayScreenshot] with the chance to take a newer frame before the
  * restore. It is called on the script thread, the only thread that takes the run's 720p screenshots,
  * which waits in `runBlocking` while the holder runs the capture, the frame loop and the judging on a

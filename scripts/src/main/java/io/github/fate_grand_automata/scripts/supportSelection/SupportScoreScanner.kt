@@ -104,7 +104,7 @@ class ApiScoreScanFrames(
 }
 
 /**
- * The owner's support score scan (issue #568, the rust build type only): reads every score field of
+ * The owner's support score scan (issue #568, the beta and rust build types only): reads every score field of
  * the support list with the Kotlin reader and the Rust engine and logs both. Neither answer decides
  * anything. Its only gesture is [SupportScreen.scrollDown]; it never taps, refreshes or opens
  * anything, so it cannot enter a quest or spend anything. Reading a screen's rows takes a while

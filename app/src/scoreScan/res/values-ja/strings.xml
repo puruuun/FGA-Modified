@@ -1,0 +1,15 @@
+<resources>
+    <string name="support_score_scan">サポートスコアスキャン</string>
+    <string name="support_score_scan_not_started">サポートスコアスキャンを開始しませんでした: %1$s</string>
+    <string name="support_score_scan_result">サポートスコアスキャン終了: %1$s\n画面: %2$d、読んだ行: %3$d\n2つの判定が一致: %4$d、不一致: %5$d\nフォルダ: %6$s</string>
+    <string name="support_score_scan_reason_not_support_list_or_dialog">サポート一覧の画面ではないか、ダイアログが一覧を覆っています</string>
+    <string name="support_score_scan_reason_list_not_loaded">サポート一覧がまだ読み込まれていません</string>
+    <string name="support_score_scan_reason_no_rows">サポート一覧に読み取れるサポートがありません</string>
+    <string name="support_score_scan_reason_rows_lost">サポートが画面に表示されなくなりました</string>
+    <string name="support_score_scan_reason_engine_unavailable">この端末ではスコアを判定できません</string>
+    <string name="support_score_scan_reason_low_space">空き容量が不足しています</string>
+    <string name="support_score_scan_reason_user_stopped">ユーザーが停止しました</string>
+    <string name="support_score_scan_reason_bottom">一覧の最後に到達しました</string>
+    <string name="support_score_scan_reason_screen_limit">画面数の上限に到達しました</string>
+    <string name="support_score_scan_reason_native_restore_failed">元の解像度のフレームを撮影した後、画面キャプチャを元に戻せませんでした</string>
+</resources>

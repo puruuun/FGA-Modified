@@ -148,12 +148,14 @@ jobs:
         env:
           MODEL_FILE: ${{ steps.model.outputs.file }}
         run: ./gradlew :app:assembleBeta -PfgaDebugSigning=true "-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"
-      - name: The APK carries the engine
+      - name: The APK carries the engine and the support score scan
+        # Design 0026, PR C: the beta offers the owner's support score scan; the stable ci APK must
+        # not (apk_check.py stable, run by the release procedure on the staged file).
         run: |
           set -eu
           set -- app/build/outputs/apk/beta/*.apk
           [ -e "$1" ] || { echo "No beta APK under app/build/outputs/apk/beta"; exit 1; }
-          python3 tools/ci/apk_check.py present "$@"
+          python3 tools/ci/apk_check.py beta "$@"
       - name: 16 KB alignment inside the APK, with the SDK's own tools
         run: |
           set -eu

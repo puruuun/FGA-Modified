@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.util.Locale
 
 /**
- * Where the support score scan (issue #568, the rust build type only) keeps its folders. One folder
+ * Where the support score scan (issue #568, the beta and rust build types only) keeps its folders. One folder
  * per scan; the format is in docs/agents/rust-native.md, "Rust test APK".
  */
 interface ScoreScanStorage {
