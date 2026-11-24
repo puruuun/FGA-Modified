@@ -81,6 +81,25 @@ class OriginalFgaImporterTest {
         assertEquals(ImportCounts(skipped = 3), importer.run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
     }
 
+    @Test fun `a blank per-wave value leaves upstream's single switch in charge`() {
+        val importer = OriginalFgaImporter(store)
+        val values = importer.convertUpstreamKeys(mapOf(
+            "use_chain_priority_per_wave" to "", "use_chain_priority" to true,
+            "use_servant_priority_per_wave" to " ", "use_servant_priority" to true
+        ))
+        assertEquals(mapOf("use_servant_priority" to true, "use_chain_priorities" to "true"), values)
+    }
+
+    @Test fun `a per-wave list shorter than three waves keeps its values and the fork repeats the last`() {
+        val values = OriginalFgaImporter(store).convertUpstreamKeys(mapOf(
+            "use_chain_priority_per_wave" to "F,T", "use_chain_priority" to false,
+            "use_servant_priority_per_wave" to "T", "use_servant_priority" to false
+        ))
+        assertEquals("false,true", values["use_chain_priorities"])
+        assertEquals("true", values["use_servant_priorities"])
+        assertEquals(false, values["use_servant_priority"])
+    }
+
     @Test fun `a fork export keeps its own per-entry switches`() {
         val values = OriginalFgaImporter(store).convertUpstreamKeys(
             mapOf("use_chain_priorities" to "true", "use_chain_priority_per_wave" to "F", "use_servant_priorities" to "false")

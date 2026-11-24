@@ -44,6 +44,7 @@ import kotlin.test.Test
  */
 class ChainPriorityOffStateTest {
     private val fixturePath = "src/test/resources/chain654/off-state-card-choices.txt"
+    private val EXTRA_FIXTURE = "src/test/resources/chain654/off-state-card-choices-extra.txt"
 
     private val affinityLists = listOf(
         "WB, WA, WQ, B, A, Q, RB, RA, RQ",
@@ -252,8 +253,51 @@ class ChainPriorityOffStateTest {
         return lines
     }
 
-    private fun assertMatchesFixture(actual: List<String>) {
-        val file = File(fixturePath)
+    /**
+     * Stored Brave Chains [storedAlways] (Always on this branch; recorded on main with None, which is how main reads a
+     * stored Always) and direct cards with unselected `p` places.
+     */
+    private fun recordExtra(storedAlways: BraveChainEnum): List<String> {
+        val random = Random(2654)
+        val lines = mutableListOf<String>()
+        val styleSets = listOf(
+            listOf(CardPriorityStyle.Affinity),
+            listOf(CardPriorityStyle.Affinity, CardPriorityStyle.Servant)
+        )
+        for (styles in styleSets) for (servantPriority in listOf(false, true)) for (rearrange in listOf(false, true))
+            for (spam in listOf(false, true)) {
+                val clicker = Clicker(
+                    configOf(profile(styles, servantPriority, storedAlways, rearrange), spam = spam), null, spam, false
+                )
+                for (npUsage in npUsages) for (stage in 0..1) repeat(2) {
+                    val hand = randomHand(random)
+                    val allowNpSpam = random.nextBoolean()
+                    val result = clicker.click(hand, stage, 0, npUsage, allowNpSpam)
+                    lines += "always styles=${styles.joinToString("+")} sp=$servantPriority rearrange=$rearrange " +
+                        "spam=$spam allow=$allowNpSpam stage=$stage np=${npUsage.label()} " +
+                        "hand=${hand.joinToString(" ") { it.label() }} -> $result"
+                }
+            }
+
+        val directCodes = listOf("?bpp", "?p4p", "?ppp", "?pp6", "?aqp", "?5pp", "?p45")
+        for (styles in styleSets) for (servantPriority in listOf(false, true))
+            for (brave in listOf(BraveChainEnum.None, BraveChainEnum.WithNP)) {
+                val clicker = Clicker(configOf(profile(styles, servantPriority, brave, true), spam = true), null, true, false)
+                for (code in directCodes) repeat(3) {
+                    val sequence = DirectCardSequence.parse(code)
+                    val npUsage = NPUsage(sequence.nps, sequence.cardsBeforeNP, sequence)
+                    val hand = randomHand(random)
+                    val stage = random.nextInt(3)
+                    val result = clicker.click(hand, stage, 0, npUsage, true)
+                    lines += "direct-p styles=${styles.joinToString("+")} sp=$servantPriority brave=$brave stage=$stage " +
+                        "np=${npUsage.label()} hand=${hand.joinToString(" ") { it.label() }} -> $result"
+                }
+            }
+        return lines
+    }
+
+    private fun assertMatchesFixture(actual: List<String>, path: String = fixturePath) {
+        val file = File(path)
         if (System.getenv("FGA_RECORD_CHAIN654") == "1") {
             file.parentFile.mkdirs()
             file.writeText(actual.joinToString("\n") + "\n")
@@ -271,6 +315,11 @@ class ChainPriorityOffStateTest {
     }
 
     @Test
+    fun `a stored Always while hidden and direct cards with unselected places match the recorded choices`() {
+        assertMatchesFixture(recordExtra(BraveChainEnum.Always), EXTRA_FIXTURE)
+    }
+
+    @Test
     fun `a stored chain priority on is ignored while the feature is hidden`() {
         assertMatchesFixture(record(chainShown = false, chain = listOf(true)))
     }
@@ -281,14 +330,14 @@ class ChainPriorityOffStateTest {
     }
 
     @Test
-    fun `a saved Always acts as With NP where chain priority is off`() {
+    fun `a saved Always acts as With NP where chain priority is shown but off`() {
         val random = Random(2)
-        for (shown in listOf(false, true)) for (rearrange in listOf(false, true)) {
+        for (rearrange in listOf(false, true)) {
             val always = Clicker(
-                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.Always, rearrange)), null, false, shown
+                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.Always, rearrange)), null, false, true
             )
             val withNp = Clicker(
-                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.WithNP, rearrange)), null, false, shown
+                configOf(profile(listOf(CardPriorityStyle.Affinity), false, BraveChainEnum.WithNP, rearrange)), null, false, true
             )
             for (npUsage in npUsages) repeat(20) {
                 val hand = randomHand(random)

@@ -486,15 +486,16 @@ class ServantTracker(
     fun npCardsDetectedUsingServantFaces(): Set<CommandCard.NP> {
         if (!readsNpCardTypes) return emptySet()
 
-        return CommandCard.NP.list
-            .filter { npCard ->
-                val teamSlot = deployed[npCard.toFieldSlot()] ?: return@filter false
-                // Searching at the configured similarity makes every value of the setting take effect
-                faceCardImages[teamSlot].orEmpty().any { image ->
-                    locations.attack.servantNPMatchRegion(npCard).find(image, prefs.npCardDetectionSimilarity) != null
+        return useSameSnapIn {
+            CommandCard.NP.list
+                .filter { npCard ->
+                    val teamSlot = deployed[npCard.toFieldSlot()] ?: return@filter false
+                    faceCardImages[teamSlot].orEmpty().any { image ->
+                        npReader.npPortraitScore(npCard, image) >= prefs.npCardDetectionSimilarity
+                    }
                 }
-            }
-            .toSet()
+                .toSet()
+        }
     }
 
     /**

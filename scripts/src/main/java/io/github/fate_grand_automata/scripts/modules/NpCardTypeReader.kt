@@ -3,13 +3,15 @@ package io.github.fate_grand_automata.scripts.modules
 import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.Images
 import io.github.fate_grand_automata.scripts.enums.CardTypeEnum
+import io.github.fate_grand_automata.scripts.models.CommandCard
 import io.github.lib_automata.OcrService
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.TextLineOcrOptions
 
 /**
  * Reads the NP card type in a Servant's details dialog (INFO tab) and the remaining-turns digit of the banner
- * that covers it after a type-changing skill. Shared by [ServantTracker] and the `npType` device QA suite.
+ * that covers it after a type-changing skill, and matches face cards with NP card portraits. Shared by
+ * [ServantTracker] and the `npType` device QA suite.
  */
 class NpCardTypeReader(
     api: IFgoAutomataApi,
@@ -42,6 +44,15 @@ class NpCardTypeReader(
         return Reading(type, scores)
     }
 
+    /**
+     * How well a Servant's face card [face], captured in the details dialog, matches the portrait on [npCard] of the
+     * card screen. ServantTracker compares it with the NP card detection similarity to keep a spam NP in the plan.
+     */
+    fun npPortraitScore(npCard: CommandCard.NP, face: Pattern): Double =
+        locations.attack.servantNPMatchRegion(npCard).getPattern("NP portrait $npCard").use {
+            it.findBestMatch(face, 0.0)?.score ?: 0.0
+        }
+
     /** The banner's remaining turns, or null without OCR. A text that is not a single positive number gives null turns. */
     fun readChangeTurns(): TurnsReading? {
         val ocr = ocr ?: return null
@@ -53,8 +64,9 @@ class NpCardTypeReader(
 
     companion object {
         /**
-         * Upstream's OCR input for this digit: the 720p crop enlarged 2x with INTER_CUBIC, then thresholded at 0.5.
-         * Not tuned on our captures; the npType device suite reports whether Tesseract reads KR and JP digits.
+         * Equal to upstream's `detectText(upscale = true)` for this digit (#2087): the 720p crop enlarged 2x with
+         * INTER_CUBIC, then thresholded at 0.5. Not tuned on our captures; only the planner's device run of the
+         * npType suite shows that Tesseract reads the KR and JP digits with it.
          */
         val TURN_DIGIT_OCR = TextLineOcrOptions(scale = 2, threshold = 0.5)
     }

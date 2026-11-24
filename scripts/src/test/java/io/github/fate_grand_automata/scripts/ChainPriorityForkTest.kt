@@ -351,7 +351,19 @@ class ChainPriorityForkTest {
         val shown = BattleExecution(config, true).active
         assertThat(shown.braveChainAt(0)).isEqualTo(BraveChainEnum.Always)
         assertThat(shown.braveChainAt(1)).isEqualTo(BraveChainEnum.WithNP)
-        assertThat(BattleExecution(config, false).active.braveChainAt(0)).isEqualTo(BraveChainEnum.WithNP)
+        // Hidden, it reads as the None that main reads a stored Always as.
+        assertThat(BattleExecution(config, false).active.braveChainAt(0)).isEqualTo(BraveChainEnum.None)
+        assertThat(BattleExecution(config, false).active.braveChainAt(1)).isEqualTo(BraveChainEnum.None)
+    }
+
+    @Test
+    fun `a saved Always turns the face card check on only while the feature is shown`() {
+        val config = FaceCardCheckPolicyTest.config(
+            primary = FaceCardCheckPolicyTest.profile(braveChains = listOf(BraveChainEnum.Always))
+        )
+        assertThat(FaceCardCheckPolicy.decide(FaceCardCheckPolicy.Input.of(config, chainShown = false)).enabled).isFalse()
+        assertThat(FaceCardCheckPolicy.decide(FaceCardCheckPolicy.Input.of(config, chainShown = true)).reason?.kind)
+            .isEqualTo(FaceCardReasonKind.BraveChains)
     }
 
     @Test

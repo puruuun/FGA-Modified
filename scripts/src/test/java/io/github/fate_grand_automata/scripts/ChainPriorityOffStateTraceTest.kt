@@ -10,6 +10,7 @@ import io.github.fate_grand_automata.scripts.locations.IScriptAreaTransforms
 import io.github.fate_grand_automata.scripts.locations.Locations
 import io.github.fate_grand_automata.scripts.locations.MasterLocations
 import io.github.fate_grand_automata.scripts.models.AutoSkillAction
+import io.github.fate_grand_automata.scripts.models.FieldSlot
 import io.github.fate_grand_automata.scripts.models.OrderChangeMember
 import io.github.fate_grand_automata.scripts.models.ServantTarget
 import io.github.fate_grand_automata.scripts.models.Skill
@@ -62,6 +63,12 @@ class ChainPriorityOffStateTraceTest {
         private var captures = 0
         private var depth = 0
 
+        /** Regions where the SUPPORT label of a servant is shown. */
+        var supportRegions = emptySet<Region>()
+
+        /** Regions where a captured servant portrait is no longer found (a different servant entered). */
+        var changedRegions = emptySet<Region>()
+
         private fun named(name: String): Pattern = mockk<Pattern>(relaxed = true).also { names[it] = name }
         private fun Pattern.name() = names[this] ?: "?"
 
@@ -79,7 +86,11 @@ class ChainPriorityOffStateTraceTest {
             }
         }
 
-        private fun answer(image: Pattern) = image.name() != Images.ServantCheckSupport.name
+        private fun Region.answer(image: Pattern) = when {
+            image.name() == Images.ServantCheckSupport.name -> this in supportRegions
+            image.name().startsWith("capture") -> this !in changedRegions
+            else -> true
+        }
 
         override fun Region.getPattern(tag: String): Pattern {
             trace += "capture $this '$tag'"
@@ -164,8 +175,11 @@ class ChainPriorityOffStateTraceTest {
     }
 
     /** Brave chains turn the face-card check on, so the details dialog is opened for every servant. */
-    private fun config(chainPriorities: List<Boolean> = emptyList()): IBattleConfig = FaceCardCheckPolicyTest.config(
-        primary = FaceCardCheckPolicyTest.profile(braveChains = listOf(BraveChainEnum.WithNP), chainPriorities = chainPriorities)
+    private fun config(
+        chainPriorities: List<Boolean> = emptyList(),
+        braveChains: List<BraveChainEnum> = listOf(BraveChainEnum.WithNP)
+    ): IBattleConfig = FaceCardCheckPolicyTest.config(
+        primary = FaceCardCheckPolicyTest.profile(braveChains = braveChains, chainPriorities = chainPriorities)
     )
 
     private fun run(makeTracker: (IFgoAutomataApi, IBattleConfig) -> ServantTracker, config: IBattleConfig = config()): List<String> {
@@ -188,8 +202,27 @@ class ChainPriorityOffStateTraceTest {
         return api.trace
     }
 
-    private fun assertMatchesFixture(actual: List<String>) {
-        val file = File(fixturePath)
+    /** Servant 3 is a support; the next run brings a different support into the same slot. */
+    private fun runSupportChange(makeTracker: (IFgoAutomataApi, IBattleConfig) -> ServantTracker): List<String> {
+        val api = TraceApi(prefs(), locations())
+        val tracker = makeTracker(api, config())
+        val battle = api.locations.battle
+        fun step(name: String, block: () -> Unit) {
+            api.trace += "== $name"
+            block()
+        }
+        api.supportRegions = setOf(battle.servantChangeSupportCheckRegion(FieldSlot.C))
+        step("servants and support enter") { tracker.beginTurn() }
+        step("next turn") { tracker.beginTurn() }
+        api.changedRegions = setOf(battle.servantChangeCheckRegion(FieldSlot.C))
+        step("next run with a different support") { tracker.nextRun(); tracker.beginTurn() }
+        api.changedRegions = emptySet()
+        step("turn after the support change") { tracker.beginTurn() }
+        return api.trace
+    }
+
+    private fun assertMatchesFixture(actual: List<String>, path: String = fixturePath) {
+        val file = File(path)
         if (System.getenv("FGA_RECORD_CHAIN654") == "1") {
             file.parentFile.mkdirs()
             file.writeText(actual.joinToString("\n") + "\n")
@@ -204,6 +237,28 @@ class ChainPriorityOffStateTraceTest {
     @Test
     fun `taps reads and waits with chain priority off match the recorded trace`() {
         assertMatchesFixture(run({ api, config -> ServantTracker(api, config) }))
+    }
+
+    @Test
+    fun `a support change with chain priority off matches the recorded trace`() {
+        assertMatchesFixture(runSupportChange { api, config -> ServantTracker(api, config) }, SUPPORT_FIXTURE)
+    }
+
+    @Test
+    fun `a support change with chain priority shown but off matches the recorded trace`() {
+        assertMatchesFixture(
+            runSupportChange { api, config -> ServantTracker(api, config, mockk<OcrService>(), chainShown = true) },
+            SUPPORT_FIXTURE
+        )
+    }
+
+    // Recorded from main, which reads a stored Always as None: no face card check, so no dialog.
+    @Test
+    fun `a stored Always while the feature is hidden matches the recorded trace`() {
+        assertMatchesFixture(
+            run({ api, config -> ServantTracker(api, config) }, config(braveChains = listOf(BraveChainEnum.Always))),
+            ALWAYS_FIXTURE
+        )
     }
 
     @Test
@@ -238,6 +293,11 @@ class ChainPriorityOffStateTraceTest {
         val choice = trace.indexOf("== skill with a choice")
         val nextStep = trace.indexOf("== skill with three choices")
         assertThat(trace.subList(choice, nextStep).count { it == "click Location(x=324, y=810) x1" }).isEqualTo(1)
+    }
+
+    private companion object {
+        const val SUPPORT_FIXTURE = "src/test/resources/chain654/off-state-trace-support.txt"
+        const val ALWAYS_FIXTURE = "src/test/resources/chain654/off-state-trace-always.txt"
     }
 }
 

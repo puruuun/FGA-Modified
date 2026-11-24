@@ -457,7 +457,7 @@ private fun profileInput(profile: ExecutionProfileCore): FaceCardCheckPolicy.Pro
         styles = styles,
         legacyServantPriority = legacyServantPriority,
         servantPriorities = servantPriorities,
-        braveChains = braveChains,
+        braveChains = FaceCardCheckPolicy.braveChainsForCheck(braveChains, ChainPriorityAvailability.SHOWN),
         // Same as the battle: a stored "on" counts as off while Chain Priority is hidden.
         chainPriorities = if (ChainPriorityAvailability.SHOWN) chainPriorities else emptyList()
     )

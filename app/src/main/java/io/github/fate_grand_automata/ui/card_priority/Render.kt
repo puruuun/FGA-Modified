@@ -135,10 +135,10 @@ fun CardPriorityListItem.Render(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     var braveChains by braveChains
-                    // Always runs as With NP without Chain Priority, so that is what is shown. The saved value is kept.
+                    // A saved Always is shown as what it acts as here (None while hidden, With NP when Chain Priority
+                    // is off for the entry). The saved value is kept.
                     val shownBraveChains =
-                        if (!chainPriorityOn && braveChains == BraveChainEnum.Always) BraveChainEnum.WithNP
-                        else braveChains
+                        ChainPriorityAvailability.effectiveBraveChain(braveChains, chainShown, chainPriorityOn)
 
                     val braveChainDialog = listDialog(
                         selected = shownBraveChains,

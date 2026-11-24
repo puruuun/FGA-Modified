@@ -214,9 +214,12 @@ class OriginalFgaImporter(private val scripts: ImportedScriptStore) {
      */
     internal fun convertUpstreamKeys(values: Map<String, Any>): Map<String, Any> {
         val result = LinkedHashMap(values)
+        // A blank per-wave value is how upstream stores "never saved per wave": it then uses its single switch.
         fun perWave(key: String): String? =
-            (result.remove(key) as? String)?.split(",")?.joinToString(",") { (it == "T").toString() }
+            (result.remove(key) as? String)?.takeIf { it.isNotBlank() }
+                ?.split(",")?.joinToString(",") { (it.trim() == "T").toString() }
 
+        // The fork falls back to use_servant_priority itself when use_servant_priorities is absent.
         val servantPerWave = perWave(UPSTREAM_SERVANT_PER_WAVE)
         if (servantPerWave != null && FORK_SERVANT_PER_ENTRY !in result) result[FORK_SERVANT_PER_ENTRY] = servantPerWave
 

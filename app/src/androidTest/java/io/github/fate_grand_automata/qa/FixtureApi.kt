@@ -102,6 +102,14 @@ internal class FixtureApi(
     internal val ocr = MeasuredOcr(TesseractOcrService(runner.targetContext))
     internal fun fixtureText(file: String): String = runner.fixture(file).toString(Charsets.UTF_8)
 
+    /** A second screen, decoded and scaled to 720p exactly as the case frame is (grayscale). */
+    internal fun framePattern(file: String): Pattern {
+        val picture = decodeFrame(runner.fixture(file), false)
+        val targetWidth = picture.width * 720 / picture.height
+        return if (picture.width == targetWidth && picture.height == 720) picture
+            else picture.use { it.resize(Size(targetWidth, 720)) }
+    }
+
     internal fun fixturePattern(file: String, color: Boolean = false): Pattern =
         ByteArrayInputStream(runner.fixture(file)).use { DroidCvPattern(it, color) }
 

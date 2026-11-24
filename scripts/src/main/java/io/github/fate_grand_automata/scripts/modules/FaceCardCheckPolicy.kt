@@ -61,6 +61,14 @@ data class FaceCardCheckDecision(val enabled: Boolean, val reason: FaceCardReaso
  * battle config, shared by the battle ([ServantTracker]) and the battle config screen.
  */
 object FaceCardCheckPolicy {
+    /**
+     * A stored Always counts as None while Chain Priority is hidden, as it did before the feature (#654). Shown, it
+     * acts as With NP or Always, and both need the check.
+     */
+    fun braveChainsForCheck(stored: List<BraveChainEnum>, chainShown: Boolean) =
+        if (chainShown) stored
+        else stored.map { ChainPriorityAvailability.effectiveBraveChain(it, chainShown = false, chainPriorityOn = false) }
+
     /** The settings of one execution profile that matter to the decision, as stored (legacy values included). */
     data class ProfileInput(
         val skillCommand: String,
@@ -84,7 +92,7 @@ object FaceCardCheckPolicy {
                 styles = source.cardPriorityStyles,
                 legacyServantPriority = source.useServantPriority,
                 servantPriorities = source.useServantPriorities,
-                braveChains = source.braveChains,
+                braveChains = braveChainsForCheck(source.braveChains, chainShown),
                 chainPriorities = if (chainShown) source.useChainPriorities else emptyList()
             )
         }

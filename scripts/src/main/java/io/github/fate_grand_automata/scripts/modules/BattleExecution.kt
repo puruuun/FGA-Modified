@@ -20,7 +20,7 @@ import javax.inject.Inject
 class BattleExecution(config: IBattleConfig, chainShown: Boolean) {
     @Inject constructor(config: IBattleConfig) : this(config, ChainPriorityAvailability.SHOWN)
 
-    class Profile(source: IExecutionProfile, chainShown: Boolean = ChainPriorityAvailability.SHOWN) {
+    class Profile(source: IExecutionProfile, private val chainShown: Boolean = ChainPriorityAvailability.SHOWN) {
         val skillCommand = AutoSkillCommand.parse(source.skillCommand)
         val prioritySplit = source.cardPrioritySplit
         // An empty per-entry list means the profile predates per-entry settings: use the old single values.
@@ -47,15 +47,12 @@ class BattleExecution(config: IBattleConfig, chainShown: Boolean) {
             if (styleAt(entry) == CardPriorityStyle.Servant || !PerEntrySettings.at(chainFlags, entry, false)) null
             else chainOrder.enabledAtWave(entry)
 
-        /**
-         * The servant style ignores brave chains and rearrange for that entry only.
-         * Always is only offered with Chain Priority (owner decision, #654); without it a saved Always acts as With NP.
-         */
+        /** The servant style ignores brave chains and rearrange for that entry only. */
         fun braveChainAt(entry: Int) =
             if (styleAt(entry) == CardPriorityStyle.Servant) BraveChainEnum.None
-            else PerEntrySettings.at(braveChains, entry, BraveChainEnum.None).let {
-                if (it == BraveChainEnum.Always && chainPriorityAt(entry) == null) BraveChainEnum.WithNP else it
-            }
+            else ChainPriorityAvailability.effectiveBraveChain(
+                PerEntrySettings.at(braveChains, entry, BraveChainEnum.None), chainShown, chainPriorityAt(entry) != null
+            )
 
         fun rearrangeAt(entry: Int) =
             styleAt(entry) != CardPriorityStyle.Servant && PerEntrySettings.at(rearrangeCards, entry, false)

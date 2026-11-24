@@ -156,9 +156,11 @@ class BattleScreenLocations @Inject constructor(
     val servantNpCardTypeRegion = Region(-50, 350, 100, 50) + servantDetailsFaceCardRegion.location
 
     /**
-     * Digits on the remaining-turns line of the banner covering the NP card art. Upstream's region fits JP's
-     * "(残りNターン)". KR's "(앞으로 N턴)" puts the digit further right, where upstream's region would read a
-     * Hangul glyph; the KR region was measured on two KR banner captures (#654).
+     * Digits on the remaining-turns line of the banner covering the NP card art. The JP and default region is
+     * upstream's (#2087), which fits JP's "(残りNターン)". KR's "(앞으로 N턴)" puts the digit further right, where
+     * upstream's region would read a Hangul glyph: the KR region was measured on the two KR banner captures in
+     * docs/reference-images/Kr/battle and drawn on both by a verifier (#654). That the digit is read there is shown
+     * only by the planner's device run of the npType suite.
      */
     val servantNpChangeTurnsRegion = when (gameServer) {
         is GameServer.Kr -> Region(75, 354, 26, 34)
