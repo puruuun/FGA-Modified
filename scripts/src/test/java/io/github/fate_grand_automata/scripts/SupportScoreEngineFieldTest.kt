@@ -40,9 +40,11 @@ class SupportScoreEngineFieldTest {
 
     @Test
     fun `the recognised rows end where the shared row trim says`() {
-        val table = listOf(File("../native/fga-sensing/src/readers/support_score/row-trim.txt"),
-            File("native/fga-sensing/src/readers/support_score/row-trim.txt")).first { it.isFile }
-            .readLines()
+        // Set by scripts/build.gradle.kts, which also declares the file as an input of the test task.
+        val path = checkNotNull(System.getProperty("fga.scoreRowTrim")) {
+            "fga.scoreRowTrim is not set: run this test through Gradle (:scripts:test)"
+        }
+        val table = File(path).readLines()
             .filter { it.isNotBlank() && !it.startsWith("#") }
             .map { it.trim().split(' ') }
             .associate { (name, value) -> name to value.toInt() }

@@ -73,10 +73,9 @@ class SupportScoreScanTest {
     @TempDir
     lateinit var dir: File
 
-    /** A 60x30 gray field; save writes its pixels, as a lossless encoder keeps them. */
-    private class FieldPattern(private val pixels: ByteArray) : Pattern {
+    /** A 60x[height] gray field; save writes its pixels, as a lossless encoder keeps them. */
+    private class FieldPattern(private val pixels: ByteArray, override val height: Int = 30) : Pattern {
         override val width = 60
-        override val height = 30
         override var tag = ""
         var closed = false
         override fun resize(size: Size): Pattern = throw UnsupportedOperationException()
@@ -84,7 +83,7 @@ class SupportScoreScanTest {
         override fun findMatches(template: Pattern, similarity: Double): Sequence<Match> = emptySequence()
         override fun crop(region: Region): Pattern = throw UnsupportedOperationException()
         override fun save(stream: OutputStream) = stream.write(pixels)
-        override fun copy(): Pattern = FieldPattern(pixels.copyOf())
+        override fun copy(): Pattern = FieldPattern(pixels.copyOf(), height)
         override fun threshold(value: Double): Pattern = throw UnsupportedOperationException()
         override fun isWhite() = false
         override fun isBlack() = false
@@ -95,7 +94,7 @@ class SupportScoreScanTest {
         override fun close() { closed = true }
 
         companion object {
-            fun of(id: Int) = FieldPattern(ByteArray(60 * 30) { (id * 7 + it % 13).toByte() })
+            fun of(id: Int, height: Int = 30) = FieldPattern(ByteArray(60 * height) { (id * 7 + it % 13).toByte() }, height)
         }
     }
 
@@ -180,7 +179,9 @@ class SupportScoreScanTest {
             }
             override fun field(bounds: SupportBounds): Pattern {
                 check(inSnap) { "field outside a snapshot" }
-                return FieldPattern.of(rowsBounds.getValue(bounds.region.y)).also { patterns += it }
+                // As getPattern crops it: a field below the game area's 1440 loses its lower rows (2 script px a row).
+                val height = minOf(30, (1440 - (bounds.region.y + 310)) / 2)
+                return FieldPattern.of(rowsBounds.getValue(bounds.region.y), height).also { patterns += it }
             }
             override fun fieldImageRegion(bounds: SupportBounds) =
                 if (position(bounds) == outsidePosition) Region(1250, 0, 60, 30) else fieldImage(position(bounds))
@@ -389,6 +390,8 @@ class SupportScoreScanTest {
             val pixels = field.grayPixels()!!
             reads += pixels to world.currentSnap
             onRead(reads.size)
+            // The real engine answers another size before it looks at the pixels (wire.rs encode_unknown).
+            if (field.width != 60 || field.height != 30) return EngineAnswers.refused(EngineUnknownReason.CropSize)
             if (reason != null) return EngineScore.unknown(EngineUnknownReason.Unavailable, reason)
             val id = (0 until 1000).first { FieldPattern.of(it).grayPixels().contentEquals(pixels) }
             return score(id).also { onReturned(reads.size) }
@@ -988,6 +991,46 @@ class SupportScoreScanTest {
             .containsExactly(2, 0, 1, 0, 0, 0)
         assertThat(scan.summary(result).obj("rustMicros").int("count")).isEqualTo(2)
         assertThat(scan.summary(result).obj("kotlinMicros").int("count")).isEqualTo(3)
+    }
+
+    @Test
+    fun `a field cut by the bottom of the game area still goes to the engine and is logged with its crop_size answer`() {
+        // Rows at 200, 640 and 1080: the third field ends below 1440 and is cut to 60x25.
+        val scan = Scan(total = 3, pitch = 440)
+        val result = scan.run()
+        assertThat(scan.engine.reads.size).isEqualTo(3)
+        assertThat(scan.engine.reads[2].first.size).isEqualTo(60 * 25)
+        val line = scan.lines(result)[2]
+        assertThat(line.obj("bounds").int("y")).isEqualTo(1080)
+        assertThat(line.obj("rust").str("status")).isEqualTo("read")
+        assertThat(line.obj("rust").str("classReason")).isEqualTo("crop_size")
+        assertThat(line.obj("rust").str("grandReason")).isEqualTo("crop_size")
+        assertThat(scan.summary(result).obj("counts").int("notAsked")).isEqualTo(0)
+    }
+
+    @Test
+    fun `at the band's boundary the scan asks the engine at 1056 and not at 1058, and a not-asked row still counts for the Kotlin reader`() {
+        // JP rows at 200, 628 and 1056 or 1058; the third shows +62/+16, which the Kotlin reader reads there.
+        fun scan(pitch: Int) = Scan(
+            total = 3, pitch = pitch, server = GameServer.Jp.Original,
+            kotlin = { id -> if (id == 2) SupportScores(62, 16, SupportScoreDisplay.Compound) else kotlinScore(id) },
+            rust = { id -> if (id == 2) EngineAnswers.compound(62, 16) else rustScore(id) },
+        )
+        val asked = scan(428)
+        val askedResult = asked.run()
+        assertThat(asked.lines(askedResult)[2].obj("bounds").int("y")).isEqualTo(1056)
+        assertThat(asked.engine.reads.size).isEqualTo(3)
+        assertThat(asked.lines(askedResult)[2].obj("rust").str("status")).isEqualTo("read")
+
+        val skipped = scan(429)
+        val result = skipped.run()
+        assertThat(skipped.lines(result)[2].obj("bounds").int("y")).isEqualTo(1058)
+        assertThat(skipped.engine.reads.size).isEqualTo(2)
+        assertThat(skipped.lines(result)[2].obj("rust").str("status")).isEqualTo("not_asked")
+        val counts = skipped.summary(result).obj("counts")
+        assertThat(listOf("notAsked", "kotlinClass62", "kotlinGrand16", "rustClass62", "rustGrand16", "agree", "differ").map { counts.int(it) })
+            .containsExactly(1, 1, 1, 0, 0, 2, 0)
+        assertThat(skipped.summary(result).obj("kotlinMicros").int("count")).isEqualTo(3)
     }
 
     private fun record(kotlin: SupportScores, rust: EngineScore) = ScoreScanRecord(
