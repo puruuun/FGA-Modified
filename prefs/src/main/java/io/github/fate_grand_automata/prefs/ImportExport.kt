@@ -36,6 +36,9 @@ fun SharedPreferences.Editor.import(map: Map<String, *>) {
 object BattleConfigFile {
     private val json = Json
 
+    /** The per-config support list filter switch of #685, retired by #695. */
+    private val RETIRED_KEYS = setOf(io.github.fate_grand_automata.prefs.core.PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY)
+
     fun encode(values: Map<String, *>): String {
         val entries = values.mapNotNull { (key, value) ->
             value.toJson()?.let { key to it }
@@ -57,6 +60,9 @@ object BattleConfigFile {
         val decoded = LinkedHashMap<String, Any>(rawObject.size)
 
         for ((key, element) in rawObject) {
+            // Every `.fga` import (the config list and the original FGA folder) comes through here, so a key that no
+            // version reads any more is dropped in this one place and does not make a re-import look different.
+            if (key in RETIRED_KEYS) continue
             if (schema[key] == PrefType.StringSet && element is JsonArray) {
                 if (!element.all { it is JsonPrimitive && it.isString }) {
                     throw IllegalArgumentException("Expected array of strings for '$key'")

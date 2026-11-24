@@ -37,9 +37,10 @@ class SupportFilterCriteriaTest {
 
     private val full by lazy { lookup(
         jpCatalog = catalog(
-            Triple(100100, 2, "saber"), Triple(900100, 900, "ruler"), Triple(110100, 110, "avenger"),
+            Triple(100100, 2, "saber"), Triple(900100, 900, "beastII"), Triple(110100, 110, "avenger"),
             Triple(230100, 230, "moonCancer"), Triple(100200, 102, "alterEgo"), Triple(250100, 250, "foreigner"),
-            Triple(280100, 280, "pretender"),
+            Triple(280100, 280, "pretender"), Triple(800100, 1, "shielder"), Triple(910100, 91, "ruler"),
+            Triple(330100, 330, "beast"), Triple(380100, 380, "beastEresh"), Triple(400100, 400, "unBeastOlgaMarie"),
         ),
         krCaptured = """[{"id":200200,"type":"normal","className":"archer","collectionNo":7,"name":"k"}]""",
         jpEquips = """[{"id":9300100,"collectionNo":300,"name":"CE","type":"servantEquip","className":"","rarity":5}]""",
@@ -59,10 +60,13 @@ class SupportFilterCriteriaTest {
         assertNull(full.ceId("Unknown.png"))
     }
 
-    @Test fun classesComeFromTheServantListsForTheTwelveObservedClassesOnly() {
-        // A ruler's class id was not observed in any class board, so it stays out.
+    @Test fun classesComeFromTheServantListsForTheObservedClassesOnly() {
+        // beastII was not seen in any class board, so it stays out.
         assertEquals(
-            mapOf(100100L to 1, 200200L to 2, 110100L to 11, 230100L to 23, 100200L to 10, 250100L to 25, 280100L to 28),
+            mapOf(
+                100100L to 1, 200200L to 2, 110100L to 11, 230100L to 23, 100200L to 10, 250100L to 25, 280100L to 28,
+                800100L to 8, 910100L to 9, 330100L to 33, 380100L to 38, 400100L to 40,
+            ),
             full.servantClassIds,
         )
         assertTrue(lookup().servantClassIds.isEmpty())
@@ -75,11 +79,7 @@ class SupportFilterCriteriaTest {
         assertEquals(9300100, full.ceId(full.ceEntry(9300100)))
     }
 
-    private val on = SupportFilterSettings(enabled = true)
-
-    @Test fun switchOffBuildsNothing() {
-        assertEquals(SupportFilterBuild.Off, buildSupportFilter(on.copy(enabled = false, servants = setOf("Arcueid")), full))
-    }
+    private val on = SupportFilterSettings()
 
     @Test fun anUnmappableEntryStopsTheFilterAndNamesIt() {
         val build = buildSupportFilter(on.copy(servants = setOf("Arcueid", "My own image"), ces = setOf("Unknown.png")), full)
@@ -95,17 +95,13 @@ class SupportFilterCriteriaTest {
     }
 
     @Test fun classScoreWithAChosenServantOfUnknownClassStopsTheFilterAndNamesIt() {
-        val build = buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 ruler"), score62 = true), full)
-        assertEquals(SupportFilterBuild.UnknownClass(listOf("No.900 ruler")), build)
+        val build = buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 beast"), score62 = true), full)
+        assertEquals(SupportFilterBuild.UnknownClass(listOf("No.900 beast")), build)
         assertNull(build.applied)
         // Without the class score condition the same servants filter as usual.
-        assertEquals(setOf(100100L, 900100L), buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 ruler")), full).applied!!.servantIds)
+        assertEquals(setOf(100100L, 900100L), buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 beast")), full).applied!!.servantIds)
         // With no servant chosen, a servant of unknown class simply does not match the condition.
         assertTrue(buildSupportFilter(on.copy(score62 = true), full).applied!!.classScore62)
-    }
-
-    @Test fun aConfigOutsideThePreferredModeBuildsNothing() {
-        assertEquals(SupportFilterBuild.Off, buildSupportFilter(on.copy(servants = setOf("Arcueid"), preferredMode = false), full))
     }
 
     @Test fun everyConditionIsCarriedOver() {

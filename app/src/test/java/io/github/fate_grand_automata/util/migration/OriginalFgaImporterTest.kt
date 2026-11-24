@@ -81,6 +81,20 @@ class OriginalFgaImporterTest {
         assertEquals(ImportCounts(skipped = 3), importer.run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
     }
 
+    @Test fun `an export that still carries the retired support list filter switch neither keeps it nor duplicates a config`() {
+        val source = dir("beta11")
+        // As 1.8.2-beta.11 wrote it: the config's keys plus the per-config switch #695 retired.
+        script(source, "old.fga", values() + ("support_list_filter" to true))
+        assertEquals(ImportCounts(imported = 1), OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
+        assertFalse("support_list_filter" in records.single())
+
+        // The same config after the #695 migration took the switch out of it: the old export is found, not added again.
+        records.clear()
+        records += BattleConfigFile.decode(BattleConfigFile.encode(values()))
+        assertEquals(ImportCounts(skipped = 1), OriginalFgaImporter(store).run(ImportSelection.Scripts, LocalDocument(source), null, null).scripts)
+        assertEquals(1, records.size)
+    }
+
     @Test fun `a blank per-wave value leaves upstream's single switch in charge`() {
         val importer = OriginalFgaImporter(store)
         val values = importer.convertUpstreamKeys(mapOf(

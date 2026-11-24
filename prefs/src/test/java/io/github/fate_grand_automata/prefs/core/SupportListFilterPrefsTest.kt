@@ -2,7 +2,7 @@ package io.github.fate_grand_automata.prefs.core
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
+import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import io.github.fate_grand_automata.prefs.BattleConfigFile
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
@@ -12,16 +12,14 @@ class SupportListFilterPrefsTest {
     private fun core() = InMemorySharedPreferences().let { it to SupportPrefsCore(PrefMaker(it)) }
 
     @Test
-    fun `the new keys are off and empty by default`() {
+    fun `the ascension set is empty by default`() {
         val (_, support) = core()
-        assertThat(support.supportListFilter.get()).isFalse()
         assertThat(support.displayedAscensions.get()).isEqualTo(emptySet())
     }
 
     @Test
-    fun `import copies every condition and keeps the filter's own switch`() {
+    fun `copying takes every condition`() {
         val (_, source) = core()
-        source.supportListFilter.set(true)
         source.preferredServants.set(setOf("Arcueid", "No.351 x"))
         source.preferredNoblePhantasms.set(setOf("np.png"))
         source.displayedAscensions.set(setOf("s4|Arcueid", "c1|No.351 x"))
@@ -42,7 +40,6 @@ class SupportListFilterPrefsTest {
         val (_, target) = core()
         target.copyConditionsFrom(source)
 
-        assertThat(target.supportListFilter.get()).isFalse()
         assertThat(target.preferredServants.get()).isEqualTo(setOf("Arcueid", "No.351 x"))
         // Copied after the servants, which clear the NP images when they change.
         assertThat(target.preferredNoblePhantasms.get()).isEqualTo(setOf("np.png"))
@@ -62,14 +59,32 @@ class SupportListFilterPrefsTest {
     }
 
     @Test
-    fun `the per config switch and the ascension set survive a battle config export`() {
+    fun `a copy is a snapshot`() {
+        val (_, source) = core()
+        source.preferredServants.set(setOf("Arcueid"))
+        source.friendsOnly.set(true)
+        val (_, target) = core()
+        target.copyConditionsFrom(source)
+        source.preferredServants.set(setOf("Other"))
+        source.friendsOnly.set(false)
+        assertThat(target.preferredServants.get()).isEqualTo(setOf("Arcueid"))
+        assertThat(target.friendsOnly.get()).isTrue()
+    }
+
+    @Test
+    fun `the ascension set survives a battle config export and the retired switch is no longer part of the schema`() {
         val (store, support) = core()
-        support.supportListFilter.set(true)
         support.displayedAscensions.set(setOf("s1|Arcueid"))
         val decoded = BattleConfigFile.decode(BattleConfigFile.encode(store.all))
-        assertThat(decoded["support_list_filter"]).isEqualTo(true)
         assertThat((decoded["support_pref_disp_ascension"] as Collection<*>).toSet()).isEqualTo(setOf("s1|Arcueid"))
-        assertThat(BattleConfigCore.prefTypes["support_list_filter"]).isEqualTo(PrefType.Boolean)
         assertThat(BattleConfigCore.prefTypes["support_pref_disp_ascension"]).isEqualTo(PrefType.StringSet)
+        assertThat(BattleConfigCore.prefTypes[PrefsCore.LEGACY_SUPPORT_LIST_FILTER_KEY]).isNull()
+    }
+
+    @Test
+    fun `an old export that still carries the per config switch decodes`() {
+        val decoded = BattleConfigFile.decode("""{"autoskill_name":"old","support_list_filter":true,"support_friends_only":true}""")
+        assertThat(decoded["autoskill_name"]).isEqualTo("old")
+        assertThat(decoded["support_friends_only"]).isEqualTo(true)
     }
 }

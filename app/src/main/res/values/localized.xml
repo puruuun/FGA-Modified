@@ -1610,8 +1610,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="capture_support_filter_last">"Last list: %2$d of %1$d people, %4$d of %3$d servant slots"</string>
     <string name="capture_support_filter_last_unchanged">"Last list: not changed"</string>
     <string name="support_list_filter">"Support list filter"</string>
-    <string name="support_list_filter_summary_config">"While a script runs with this battle config and log collection is on, the support list the game receives shows only the supports that meet the conditions marked \"Filtered\". Nothing the game sends is changed."</string>
-    <string name="support_list_filter_summary_manual">"For playing by hand: while no script runs and log collection is on, the support list the game receives shows only the supports that meet the conditions marked \"Filtered\". While a script runs, only its battle config\'s filter applies. Nothing the game sends is changed."</string>
+    <string name="support_list_filter_summary_config">"When the support list filter takes this battle config's conditions (play button menu, \"Take from the selected config\"), it applies the ones marked \"Filtered\". The script itself reads every condition on screen, as before."</string>
     <string name="support_list_filter_applied">"Filtered"</string>
     <string name="support_list_filter_screen_only">"Screen reading only"</string>
     <string name="support_list_filter_capture_off">"Log collection is off, so the filter does nothing. Turn on log collection under More > Additional features."</string>
@@ -1630,7 +1629,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_list_filter_import">"Import conditions from a battle config"</string>
     <string name="support_list_filter_imported">"Imported the conditions of %1$s"</string>
     <string name="support_list_filter_no_configs">"There is no battle config yet."</string>
-    <string name="support_list_filter_manual_title">"Support list filter (manual play)"</string>
     <string name="support_list_filter_none">"No conditions"</string>
     <string name="support_list_filter_part_servants">"%1$d servants"</string>
     <string name="support_list_filter_part_ces">"%1$d CEs"</string>
@@ -1642,4 +1640,28 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_list_filter_part_score">"class score +62"</string>
     <string name="support_list_filter_part_friends">"friends only"</string>
     <string name="support_list_filter_part_final">"final ascension"</string>
+    <string name="support_list_filter_summary_profile">"Copied into the support list filter when you load this profile in the play button menu or choose \"Use as active filter\". Only the conditions marked \"Filtered\" are applied. Changing the profile later does not change the active filter: load it again."</string>
+    <string name="support_filter_feature">"Use this feature"</string>
+    <string name="support_filter_feature_summary">"Off: the play button menu shows no support filter and nothing is filtered. On: the play button menu gets a \"Support filter\" button with the toggle and the conditions. Needs log collection."</string>
+    <string name="support_filter_profiles">"Profiles"</string>
+    <string name="support_filter_profiles_none">"No profiles yet."</string>
+    <string name="support_filter_profile_add">"Add profile"</string>
+    <string name="support_filter_profile_name">"Profile name"</string>
+    <string name="support_filter_profile_rename">"Rename"</string>
+    <string name="support_filter_profile_delete">"Delete"</string>
+    <string name="support_filter_profile_delete_confirm">"Delete the profile %1$s? The active filter keeps its conditions."</string>
+    <string name="support_filter_profile_use">"Use as active filter"</string>
+    <string name="support_filter_profile_used">"The support list filter now uses the conditions of %1$s"</string>
+    <string name="support_filter_profile_migrated">"My filter"</string>
+    <string name="support_filter_chip_on">"Support filter · On"</string>
+    <string name="support_filter_chip_off">"Support filter · Off"</string>
+    <string name="support_filter_from">"Conditions from: %1$s"</string>
+    <string name="support_filter_from_none">"not set yet"</string>
+    <string name="support_filter_from_config">"battle config %1$s"</string>
+    <string name="support_filter_from_profile">"profile %1$s"</string>
+    <string name="support_filter_take_config">"Take from the selected config"</string>
+    <string name="support_filter_load_profile">"Load profile"</string>
+    <string name="support_filter_refresh_hint">"The game asks for the support list only when it has none. After switching or loading, refresh the support list in the game."</string>
+    <string name="support_filter_line_servants">"Servants: %1$s"</string>
+    <string name="support_filter_line_ces">"CEs: %1$s"</string>
 </resources>

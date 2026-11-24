@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.prefs.core
 
+import androidx.core.content.edit
 import android.content.Context
 import com.fredporciuncula.flow.preferences.Serializer
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,7 +33,18 @@ class PrefsCore @Inject constructor(
         // increase for each changed Onboarding screen
         const val CURRENT_ONBOARDING_VERSION = 2
 
+        /** The active filter's conditions; the name is from #685, when this file held the filter for manual play. */
         const val MANUAL_SUPPORT_FILTER_FILE = "support_list_filter_manual"
+
+        /** One file per support list filter profile (#695): this prefix and the profile's id. */
+        const val SUPPORT_FILTER_PROFILE_FILE_PREFIX = "support_filter_profile_"
+
+        /**
+         * The #685 switch, in a battle config's file and in [MANUAL_SUPPORT_FILTER_FILE]. Retired by #695; only the
+         * app's migration reads it; `BattleConfigFile.decode` drops it from every `.fga` import and
+         * [BattleConfigCore.import] from a copy made inside the app.
+         */
+        const val LEGACY_SUPPORT_LIST_FILTER_KEY = "support_list_filter"
     }
 
     val onboardingCompletedVersion = maker.int("onboarding_completed_version")
@@ -91,12 +103,27 @@ class PrefsCore @Inject constructor(
 
     /**
      * Retired experiment (#636): svtIds stored as strings. Only read once by the app's support filter migration (#685),
-     * which moves the ids into [manualSupportFilter] and sets [supportFilterMigrated].
+     * which moves the ids into [activeSupportFilter] and sets [supportFilterMigrated].
      */
     val legacySupportFilterEnabled = maker.bool("capture_support_filter_enabled", false)
     val legacySupportFilterServants = maker.stringSet("capture_support_filter_servants")
     val legacySupportFilterCes = maker.stringSet("capture_support_filter_ces")
     val supportFilterMigrated = maker.bool("capture_support_filter_migrated", false)
+
+    /**
+     * The support list filter (#695). [supportFilterFeature] is "use this feature" in More: off, the launcher looks as
+     * it did before the filter existed and the proxy relays every byte. [supportFilterOn] is the launcher's toggle.
+     */
+    val supportFilterFeature = maker.bool("support_filter_feature", false)
+    val supportFilterOn = maker.bool("support_filter_on", false)
+    val supportFilterSource = maker.enum("support_filter_source", SupportFilterSource.None)
+
+    /** The config or profile name [supportFilterSource] refers to, as it was when the conditions were copied. */
+    val supportFilterSourceName = maker.string("support_filter_source_name", "")
+    val supportFilterProfiles = maker.stringSet("support_filter_profiles")
+
+    /** Set once the app's migration from the #685 switches has run. */
+    val supportFilterToggleMigrated = maker.bool("support_filter_toggle_migrated", false)
     val captureAdGuardAutoSwitch = maker.bool("capture_adguard_auto_switch", false)
     val captureAdGuardAutomationPassword = maker.string("capture_adguard_automation_password", "")
 
@@ -229,14 +256,76 @@ class PrefsCore @Inject constructor(
 
     val servantEnhancement = ServantEnhancementPrefsCore(maker)
 
-    /**
-     * The support list filter for manual play (#685): the same condition items as a battle config's support settings,
-     * in a file of its own so it is part of no battle config and of no battle config export.
-     * [SupportPrefsCore.supportListFilter] is its switch.
-     */
-    val manualSupportFilter: SupportPrefsCore by lazy {
-        SupportPrefsCore(PrefMaker(context.getSharedPreferences(MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE)))
+    /** The file of [activeSupportFilter], for the app's migration of the retired #685 switch in it. */
+    val activeSupportFilterFile: android.content.SharedPreferences by lazy {
+        context.getSharedPreferences(MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE)
     }
+
+    /**
+     * The conditions the support list filter applies (#695): the same items as a battle config's support settings, in
+     * a file of its own so they are part of no battle config and of no battle config export. They are filled by
+     * copying a battle config's or a profile's conditions in.
+     */
+    val activeSupportFilter: SupportPrefsCore by lazy { SupportPrefsCore(PrefMaker(activeSupportFilterFile)) }
+
+    private val supportFilterProfileMap = mutableMapOf<String, SupportFilterProfileCore>()
+
+    @Synchronized
+    fun forSupportFilterProfile(id: String): SupportFilterProfileCore = supportFilterProfileMap.getOrPut(id) {
+        SupportFilterProfileCore(id, context.getSharedPreferences(SUPPORT_FILTER_PROFILE_FILE_PREFIX + id, Context.MODE_PRIVATE))
+    }
+
+    /**
+     * The profiles to list, by name. An id whose file is gone (no name) is left out rather than shown as an unnamed
+     * row; it stays in [supportFilterProfiles] and does no harm there.
+     */
+    fun supportFilterProfilesToShow(ids: Set<String> = supportFilterProfiles.get()): List<SupportFilterProfileCore> =
+        ids.map(::forSupportFilterProfile).filter { it.name.get().isNotBlank() }.sortedBy { it.name.get().lowercase() }
+
+    /** A new, empty profile named [name], added to [supportFilterProfiles]. Both files are written before it returns. */
+    @Synchronized
+    fun addSupportFilterProfile(name: String, id: String = java.util.UUID.randomUUID().toString()): SupportFilterProfileCore {
+        val profile = forSupportFilterProfile(id)
+        profile.sharedPrefs.edit(commit = true) { clear() }
+        profile.name.set(name)
+        profile.commit()
+        supportFilterProfiles.set(supportFilterProfiles.get() + id)
+        commitMainFile()
+        return profile
+    }
+
+    /** Removes the profile from the list and deletes its file, as a battle config's file is deleted. */
+    @Synchronized
+    fun removeSupportFilterProfile(id: String) {
+        supportFilterProfiles.set(supportFilterProfiles.get() - id)
+        // On disk before the file goes, so a stop in between cannot leave an id without a file.
+        commitMainFile()
+        // The context keeps the loaded file in memory after the delete, so it is emptied first.
+        forSupportFilterProfile(id).sharedPrefs.edit(commit = true) { clear() }
+        supportFilterProfileMap.remove(id)
+        context.deleteSharedPreferences(SUPPORT_FILTER_PROFILE_FILE_PREFIX + id)
+    }
+
+    private val mainFile = maker.prefs
+
+    /**
+     * Calls [onChange] on every change of [supportFilterFeature] or [supportFilterOn], one call per change, also when
+     * the file is cleared. The returned function unregisters it; keep it, as the file holds its listeners weakly.
+     */
+    fun watchSupportFilterSwitches(onChange: () -> Unit): () -> Unit {
+        val keys = setOf(supportFilterFeature.key, supportFilterOn.key)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == null || key in keys) onChange()
+        }
+        mainFile.registerOnSharedPreferenceChangeListener(listener)
+        return { mainFile.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    /**
+     * Writes what [Pref.set] has only applied to memory so far, synchronously; for a migration whose steps must be on
+     * disk in order.
+     */
+    fun commitMainFile() = mainFile.edit(commit = true) { }
 
     init {
         RetreatMergeMigration.run(

@@ -169,8 +169,15 @@ fun FgaApp(
                         )
                     }
                     entry<Route.SupportListFilter> {
-                        io.github.fate_grand_automata.ui.more.ManualSupportFilterScreen(
-                            prefs = hiltViewModel<io.github.fate_grand_automata.ui.more.ManualSupportFilterViewModel>().prefsCore,
+                        io.github.fate_grand_automata.ui.more.SupportListFilterScreen(
+                            prefs = hiltViewModel<io.github.fate_grand_automata.ui.more.SupportListFilterViewModel>().prefsCore,
+                            editProfile = { backStack.add(Route.SupportFilterProfile(it)) }
+                        )
+                    }
+                    entry<Route.SupportFilterProfile> { key ->
+                        io.github.fate_grand_automata.ui.more.SupportFilterProfileScreen(
+                            prefs = hiltViewModel<io.github.fate_grand_automata.ui.more.SupportListFilterViewModel>().prefsCore,
+                            id = key.id,
                             supportVm = supportVm
                         )
                     }

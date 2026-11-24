@@ -350,6 +350,12 @@ object SupportListFilter {
         class Read(val full: Map<Int, Boolean>) : Boards
     }
 
+    /**
+     * The class boards the support screen's "+62" is about: `classBoardBaseId` 1 to 9. JP also sends boards with large
+     * base ids and up to 16 squares (#695); those never count, whatever classes they list.
+     */
+    private val CLASS_BOARD_BASE_IDS = 1L..9L
+
     /** One entry per board, each with its squares in `squareIds` and the classes it covers in `releasedClassIds`. */
     private fun classBoards(follower: JsonObject): Boards {
         val value = follower["userClassBoardInfo"]
@@ -358,6 +364,8 @@ object SupportListFilter {
         val full = HashMap<Int, Boolean>()
         for (board in boards) {
             val entry = board as? JsonObject ?: return Boards.Odd
+            val base = integer(entry["classBoardBaseId"] ?: return Boards.Odd) ?: return Boards.Odd
+            if (base !in CLASS_BOARD_BASE_IDS) continue
             val squares = entry["squareIds"] as? JsonArray ?: return Boards.Odd
             val classes = entry["releasedClassIds"] as? JsonArray ?: return Boards.Odd
             if (squares.any { integer(it) == null }) return Boards.Odd
