@@ -62,14 +62,17 @@ published (unless the owner explicitly requests an immediate stable release):
      Staging is manual: no script in the repository copies or names the release APKs.
    - **Mandatory: check the staged file** before it is installed, handed to the owner or uploaded:
      ```bash
-     py -3 -I tools/ci/apk_check.py present build/release-assets/FGA-beta-<beta.versionName>-arm.apk
+     py -3 -I tools/ci/apk_check.py beta build/release-assets/FGA-beta-<beta.versionName>-arm.apk
      ```
+     Mode `beta` needs the engine and the support score scan, which the beta offers in its
+     launcher (design 0026 PR C; [`rust-native.md`](rust-native.md), "Support score scan").
      If it fails, **stop**: delete the staged file, do not install or hand it out, and report the
      output. The signing happens inside the Gradle build (the `signBetaRotated` finalizer), so the
      check runs on the signed file, the exact one that is shipped.
    - **Emergency build without the engine** (the risk table of design 0026; only on the planner's
      decision): build with `-Pfga.native=false`, check the staged file with `apk_check.py absent`
-     instead, and say in the release note or the hand-over that this build has no Rust reader.
+     instead, and say in the release note or the hand-over that this build has no Rust reader. It
+     has no support score scan either: the scan needs the engine, so that build leaves it out.
    - Install onto BlueStacks (`adb -s 127.0.0.1:5555 install -r ...`) and/or provide the APK path
      to the owner for tablet testing.
    - Do **not** publish beta APKs to GitHub Releases unless the owner explicitly asks.
@@ -113,11 +116,17 @@ When promoting to stable `X.Y.Z`:
    (by hand: no script in the repository stages or names it; no `.sha256` file, GitHub shows each
    asset's SHA-256), then, **mandatory, before anything else is done with it**:
    ```bash
-   py -3 -I tools/ci/apk_check.py present build/release-assets/FGA-mod-<version>-arm.apk
+   py -3 -I tools/ci/apk_check.py stable build/release-assets/FGA-mod-<version>-arm.apk
    ```
-   If it fails, **stop**: delete the staged file, do not install, attach or publish it, rebuild
-   with `-Pfga.native=true` and report. The check runs on the signed file, the exact one that is
-   uploaded.
+   Mode `stable` needs the engine and fails when the APK contains the support score scan (its
+   string resources or its code; design 0026 PR C): the scan is in the beta only, never in a
+   stable release. If it fails, **stop**: delete the staged file, do not install, attach or
+   publish it, rebuild (with `-Pfga.native=true` for a missing engine; from the `ci` build type
+   for a scan) and report. The check runs on the signed file, the exact one that is
+   uploaded. CI's `engine-apk` job builds this form too (debug-signed) and runs the same
+   `apk_check.py stable` for every code change ([`rust-native.md`](rust-native.md), "CI"), so a
+   build change that puts the scan into it shows before the release; a missing
+   `-Pfga.native=true` on the release PC and the re-signed file are still caught only here.
    - **Emergency stable without the engine** (only on the planner's decision): build
      `./gradlew :app:assembleCi` without the property, check the staged file with
      `apk_check.py absent`, and say in the release note (`wiki/releases/<version>-KR.md` and the

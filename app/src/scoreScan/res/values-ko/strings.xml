@@ -6,7 +6,7 @@
     <string name="support_score_scan_reason_list_not_loaded">서포트 목록을 아직 불러오지 않았습니다</string>
     <string name="support_score_scan_reason_no_rows">서포트 목록에 읽을 서포트가 없습니다</string>
     <string name="support_score_scan_reason_rows_lost">서포트가 더 이상 화면에 없습니다</string>
-    <string name="support_score_scan_reason_engine_unavailable">Rust 엔진을 사용할 수 없습니다</string>
+    <string name="support_score_scan_reason_engine_unavailable">이 기기에서는 점수를 판독할 수 없습니다</string>
     <string name="support_score_scan_reason_low_space">저장 공간이 부족합니다</string>
     <string name="support_score_scan_reason_user_stopped">사용자가 중지했습니다</string>
     <string name="support_score_scan_reason_bottom">목록 끝에 도달했습니다</string>

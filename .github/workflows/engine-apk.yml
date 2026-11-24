@@ -1,6 +1,7 @@
 name: Engine APK
 
-# Design 0026, D-8: a beta APK built the way a release is, with the engine, and checked as shipped.
+# Design 0026, D-8: a beta APK built the way a release is, with the engine, and checked as shipped;
+# then the stable form (ci with -Pfga.native=true), checked for the engine and against the score scan.
 # The owner's decision: it runs for every change that is not documentation only, the same rule as
 # Main CI's build (ci_gate.py classify), since any Kotlin or resource change can change what the
 # engine variant packages or what R8 keeps. The push paths below are that rule written as a filter:
@@ -148,12 +149,15 @@ jobs:
         env:
           MODEL_FILE: ${{ steps.model.outputs.file }}
         run: ./gradlew :app:assembleBeta -PfgaDebugSigning=true "-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"
-      - name: The APK carries the engine
+      - name: The APK carries the engine and the support score scan
+        # Design 0026, PR C: the beta offers the owner's support score scan; the stable ci APK must
+        # not (apk_check.py stable, run below on the stable form and by the release procedure on the
+        # staged file).
         run: |
           set -eu
           set -- app/build/outputs/apk/beta/*.apk
           [ -e "$1" ] || { echo "No beta APK under app/build/outputs/apk/beta"; exit 1; }
-          python3 tools/ci/apk_check.py present "$@"
+          python3 tools/ci/apk_check.py beta "$@"
       - name: 16 KB alignment inside the APK, with the SDK's own tools
         run: |
           set -eu
@@ -169,3 +173,21 @@ jobs:
           test "$aligns" = "0x4000"
       - name: The keep rules held
         run: grep -F 'io.github.fate_grand_automata.sensing.RustSensing' app/build/outputs/mapping/beta/seeds.txt
+      - name: Build the stable APK with the engine
+        # The stable form: the ci build type with -Pfga.native=true. A second Gradle run in the same
+        # job, so cargoNdkBuild, provideOcrModel and the compiled modules are up to date or come
+        # from the build cache; what it adds is the ci variant's packaging and R8. The scan must stay
+        # out of it (offersScoreScan), which only apk_check.py stable below can tell.
+        env:
+          MODEL_FILE: ${{ steps.model.outputs.file }}
+        run: ./gradlew :app:assembleCi -Pfga.native=true -PfgaDebugSigning=true "-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"
+      - name: The stable APK carries the engine and not the support score scan
+        # The ci output folder is AGP's own (outputs/apk/ci), apart from the beta's; it must hold
+        # exactly the APK this job just built, named as signCiRotated names it.
+        run: |
+          set -eu
+          dir=app/build/outputs/apk/ci
+          apk="$dir/app-ci.apk"
+          found=$(find "$dir" -maxdepth 1 -name '*.apk' | sort)
+          [ "$found" = "$apk" ] || { echo "Expected only $apk under $dir, found: ${found:-nothing}"; exit 1; }
+          python3 tools/ci/apk_check.py stable "$apk"

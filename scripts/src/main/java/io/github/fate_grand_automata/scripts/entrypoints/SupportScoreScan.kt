@@ -18,9 +18,9 @@ import io.github.lib_automata.dagger.ScriptScope
 import javax.inject.Inject
 
 /**
- * Issue #568: the owner's support score scan, started only from the rust build type's launcher
- * (no [io.github.fate_grand_automata.scripts.enums.ScriptModeEnum] value). [ScoreScanStorage],
- * [ScoreScanDevice] and [ScoreScanNativeFrames] are bound only in that build type, so no other build
+ * Issue #568: the owner's support score scan, started only from the launcher of the beta and rust
+ * build types (no [io.github.fate_grand_automata.scripts.enums.ScriptModeEnum] value). [ScoreScanStorage],
+ * [ScoreScanDevice] and [ScoreScanNativeFrames] are bound only in those build types, so no other build
  * can construct it. [reader] is the existing reader itself, not the selection's engine-first
  * [io.github.fate_grand_automata.scripts.supportSelection.ISupportScoreReader] binding, so the scan
  * keeps comparing the two readers.

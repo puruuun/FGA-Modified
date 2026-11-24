@@ -104,8 +104,10 @@ class ApiScoreScanFrames(
 }
 
 /**
- * The owner's support score scan (issue #568, the rust build type only): reads every score field of
- * the support list with the Kotlin reader and the Rust engine and logs both. Neither answer decides
+ * The owner's support score scan (issue #568, the beta and rust build types only): reads every score field of
+ * the support list with the Kotlin reader and the Rust engine and logs both; a field the support
+ * selection would not give the engine for the bottom band ([SupportScoreEngineField.refusal]) is
+ * read by the Kotlin reader only and logged as not asked. Neither answer decides
  * anything. Its only gesture is [SupportScreen.scrollDown]; it never taps, refreshes or opens
  * anything, so it cannot enter a quest or spend anything. Reading a screen's rows takes a while
  * (the Kotlin reader runs OCR several times per row), so the stop and the screen are looked at
@@ -366,7 +368,9 @@ class SupportScoreScanner(
                 val kotlinStart = timeSource.markNow()
                 val kotlin = reader.read(rows[row], true, checkGrand, index, row)
                 val kotlinMicros = kotlinStart.elapsedNow().inWholeMicroseconds
-                val rust = engine.read(fields[row])
+                val notAsked = SupportScoreEngineField.refusal(rows[row], fields[row])
+                    ?.takeIf { it == EngineFieldRefusal.BottomBand }
+                val rust = if (notAsked == null) engine.read(fields[row]) else null
                 // After both reads, so a read that fails leaves neither; a failing appendLine, or a
                 // process killed between the two writes, can still leave a crop without its line.
                 val crop = ScoreScanLog.cropName(index, row)
@@ -383,11 +387,12 @@ class SupportScoreScanner(
                     kotlinCheckGrand = checkGrand,
                     kotlinMicros = kotlinMicros,
                     rust = rust,
+                    notAsked = notAsked,
                 )
                 folder.appendLine(ScoreScanLog.line(record))
                 tally.add(record)
                 screens = index + 1
-                if (ScoreScanLog.status(rust) == "unavailable") return ScreenOutcome.End(engineUnavailable())
+                if (rust != null && ScoreScanLog.status(rust) == "unavailable") return ScreenOutcome.End(engineUnavailable())
                 logged += ScoreScanLoggedRow(
                     screen = index,
                     row = row,
