@@ -282,6 +282,40 @@ class NativeCiSettingsTest(unittest.TestCase):
         self.assertEqual(jobs, ['rust'])
 
 
+class RobolectricCacheTest(unittest.TestCase):
+    """Issue #658: the tests must not fetch Robolectric's jars themselves."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.job = job_block(read(MAIN_CI), 'test-and-build')
+
+    def position(self, needle):
+        i = self.job.find(needle)
+        self.assertNotEqual(i, -1, '%r missing from test-and-build' % needle)
+        return i
+
+    def test_cache_key_is_the_jar_list_and_the_action_is_pinned(self):
+        self.assertRegex(
+            self.job,
+            r'uses: actions/cache@[0-9a-f]{40}\n\s+with:\n\s+path: \$\{\{ env\.ROBOLECTRIC_OFFLINE_DIR \}\}')
+        self.assertIn(
+            "key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}", self.job)
+
+    def test_jars_are_filled_after_the_cache_and_before_the_tests(self):
+        cache = self.position('actions/cache@')
+        fill = self.position('tools/ci/robolectric_offline.py prefetch "$ROBOLECTRIC_OFFLINE_DIR"')
+        tests = self.position('./gradlew -I tools/ci/robolectric-offline.init.gradle :app:testCiUnitTest')
+        self.assertLess(cache, fill)
+        self.assertLess(fill, tests)
+
+    def test_the_unit_tests_run_offline(self):
+        self.assertRegex(self.job, r'ROBOLECTRIC_OFFLINE_DIR: /home/runner/\S+')
+        init = read(os.path.join(HERE, 'robolectric-offline.init.gradle'))
+        self.assertIn("'robolectric.offline', 'true'", init)
+        self.assertIn("'robolectric.dependency.dir'", init)
+        self.assertIn("System.getenv('ROBOLECTRIC_OFFLINE_DIR')", init)
+
+
 class WorkflowWiringTest(unittest.TestCase):
     def setUp(self):
         self.text = read(MAIN_CI)

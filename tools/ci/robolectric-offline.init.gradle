@@ -1,0 +1,11 @@
+// Passed to Gradle with -I by Main CI. Robolectric then reads its android-all jars from the
+// directory the workflow cached and filled (robolectric_offline.py) and never fetches one itself.
+def dir = System.getenv('ROBOLECTRIC_OFFLINE_DIR')
+if (dir) {
+    allprojects {
+        tasks.withType(Test).configureEach {
+            systemProperty 'robolectric.offline', 'true'
+            systemProperty 'robolectric.dependency.dir', dir
+        }
+    }
+}
