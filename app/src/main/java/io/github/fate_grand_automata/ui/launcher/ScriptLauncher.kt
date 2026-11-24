@@ -37,8 +37,8 @@ fun ScriptLauncher(
     onResponse: (ScriptLauncherResponse) -> Unit,
     prefs: IPreferences,
     prefsCore: PrefsCore,
-    /** True while a right panel (weekly missions or the support list filter) is open, so the window can widen. */
-    onSidePanelExpanded: (Boolean) -> Unit = {},
+    /** How much wider the window should be for the open right panel: 1 with none. */
+    onSidePanelExpanded: (Float) -> Unit = {},
     prepareWeekly: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit = { _, _, _ -> },
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit = { _, _, _ -> },
     ownerTests: List<OwnerTestScript> = emptyList(),
@@ -56,8 +56,11 @@ fun ScriptLauncher(
     val panel = if (openPanel == LauncherPanel.SupportFilter && !filterOffered) LauncherPanel.None else openPanel
     fun toggle(target: LauncherPanel) {
         openPanel = if (panel == target) LauncherPanel.None else target
-        onSidePanelExpanded(openPanel != LauncherPanel.None)
+        onSidePanelExpanded(openPanel.widen)
     }
+    val filterPanel: (@Composable (Modifier) -> Unit)? = if (panel == LauncherPanel.SupportFilter) {
+        { width -> SupportFilterLauncherPanel(prefsCore, selectedConfigId, width) }
+    } else null
     FgaScreen {
         Column(
             modifier = Modifier
@@ -70,10 +73,11 @@ fun ScriptLauncher(
 
                 responseBuilder = when (shownMode) {
                     ScriptModeEnum.Battle -> expandedBattleLauncher(
-                        prefs, prefsCore, panel == LauncherPanel.Weekly, weekly, prepareWeekly, prepareProbe, select, modifier
+                        prefs, prefsCore, panel == LauncherPanel.Weekly, weekly, prepareWeekly, prepareProbe, select,
+                        filterPanel, modifier
                     )
                     ScriptModeEnum.SupportImageMaker ->
-                        battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select)
+                        battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select, sidePanel = filterPanel)
 
                     ScriptModeEnum.FP -> fpLauncher(prefs, modifier)
                     ScriptModeEnum.Lottery -> lotteryLauncher(prefs, modifier)
@@ -82,11 +86,14 @@ fun ScriptLauncher(
                     ScriptModeEnum.ServantLevel -> servantLevelLauncher(prefsCore.servantEnhancement, modifier)
                     ScriptModeEnum.SkillLevel -> skillLevelLauncher(prefs, SkillLevelMode.Skill, modifier)
                     ScriptModeEnum.AppendLevel -> skillLevelLauncher(prefs, SkillLevelMode.Append, modifier)
-                    ScriptModeEnum.WeeklyRoute -> battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select)
+                    ScriptModeEnum.WeeklyRoute ->
+                        battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select, sidePanel = filterPanel)
                 }
 
-                // Only the launchers that list battle configs report a selected one; the others leave nothing to take.
-                if (panel == LauncherPanel.SupportFilter) SupportFilterLauncherPanel(prefsCore, selectedConfigId, Modifier.weight(0.7f))
+                // The launchers with a config list place the panel themselves, as wide as that list. The others have no
+                // list to match and no selected config to take: the panel gets a fixed share, the one a config list
+                // takes of a battle launcher (1 of 2.5).
+                if (filterPanel != null && shownMode !in CONFIG_LIST_MODES) filterPanel(Modifier.weight(1f / 2.5f))
             }
 
             HorizontalDivider()
@@ -155,8 +162,15 @@ fun ScriptLauncher(
     }
 }
 
-/** The launcher's right side holds at most one of these. */
-enum class LauncherPanel { None, Weekly, SupportFilter }
+/**
+ * The launcher's right side holds at most one of these. [widen] is how much wider the window gets for it: the weekly
+ * panel as before; the filter panel by about one config list column (1 of the launcher's 2.5 parts), so the list and
+ * the options keep their width.
+ */
+enum class LauncherPanel(val widen: Float) { None(1f), Weekly(1.7f), SupportFilter(1.4f) }
+
+/** The script modes whose launcher lists battle configs, and so has a selected one. */
+private val CONFIG_LIST_MODES = setOf(ScriptModeEnum.Battle, ScriptModeEnum.SupportImageMaker, ScriptModeEnum.WeeklyRoute)
 
 /** Adds a sibling to the unchanged left launcher; both use its original shared OK/Cancel row. */
 @Composable
@@ -168,13 +182,14 @@ private fun expandedBattleLauncher(
     prepare: (AtlasRouteRepository.Dataset, List<RouteItem>, List<String>) -> Unit,
     prepareProbe: (AtlasRouteRepository.Dataset, List<RouteItem>, Boolean) -> Unit,
     onSelectedConfig: (String?) -> Unit,
+    filterPanel: (@Composable (Modifier) -> Unit)?,
     modifier: Modifier
 ): ScriptLauncherResponseBuilder {
     val context = LocalContext.current
     var left = ScriptLauncherResponseBuilder({ false }, { ScriptLauncherResponse.Cancel })
     Row(modifier) {
         // The run limits stay visible next to the weekly panel too (#695): the window widens by the panel's share.
-        left = battleLauncher(prefs, Modifier.weight(1f), core, onSelectedConfig = onSelectedConfig)
+        left = battleLauncher(prefs, Modifier.weight(1f), core, onSelectedConfig = onSelectedConfig, sidePanel = filterPanel)
         if (open) WeeklyLauncherPanel(if (prefs.gameServer is GameServer.Kr) "KR" else "JP",
             core, weekly, Modifier.weight(0.7f))
     }

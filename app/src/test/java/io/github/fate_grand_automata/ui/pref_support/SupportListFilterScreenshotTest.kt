@@ -52,8 +52,10 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         @ParameterizedRobolectricTestRunner.Parameters(name = "dark={0}")
         fun params() = listOf(arrayOf<Any>(false), arrayOf<Any>(true))
 
-        // The overlay window on 1280x720dp: about 65% of the width alone, and the whole width less a margin with a panel.
+        // The overlay window on 1280x720dp: about 65% of the width alone, 1.4 times that with the filter panel, and the
+        // whole width less a margin with the weekly panel.
         const val LAUNCHER_WIDTH = 832
+        const val LAUNCHER_FILTER = 1164
         const val LAUNCHER_WIDE = 1256
         const val LAUNCHER_HEIGHT = 640
     }
@@ -73,8 +75,8 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         return PrefsCore(PrefMaker(shared), context).also { it.captureTrackerEnabled.set(true) }
     }
 
-    private fun shoot(name: String, width: Int, height: Int, beforeCapture: () -> Unit = {}, content: @Composable () -> Unit) =
-        compose.shoot("support695", name, width, height, dark = dark, locale = "ko", beforeCapture = beforeCapture) {
+    private fun shoot(name: String, width: Int, height: Int, locale: String = "ko", beforeCapture: () -> Unit = {}, content: @Composable () -> Unit) =
+        compose.shoot("support695", name, width, height, dark = dark, locale = locale, beforeCapture = beforeCapture) {
             Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) { content() }
         }
 
@@ -109,14 +111,20 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         }
     }
 
-    @Test fun launcherFilterPanel() {
+    @Test fun launcherFilterPanel() = filterPanel("ko")
+
+    // The buttons' labels are longest in Japanese.
+    @Test fun launcherFilterPanelJa() = filterPanel("ja")
+
+    private fun filterPanel(locale: String) {
         val fixture = launcherFixture(feature = true)
         fixture.core.supportFilterOn.set(true)
         fixture.core.activeSupportFilter.longConditions()
         fixture.core.supportFilterSource.set(SupportFilterSource.Profile)
         fixture.core.supportFilterSourceName.set("주회용 필터")
         SupportListLastResult.resetForTesting()
-        shoot("LauncherFilterPanel", LAUNCHER_WIDE, LAUNCHER_HEIGHT, beforeCapture = {
+        fixture.core.addSupportFilterProfile("주회용 필터", "a")
+        shoot("LauncherFilterPanel", LAUNCHER_FILTER, LAUNCHER_HEIGHT, locale, beforeCapture = {
             SupportListLastResult.filtered(SupportListCounts(20, 6, 498, 7))
             compose.waitForIdle()
         }) {

@@ -8,6 +8,8 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.width
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -421,6 +423,27 @@ class SupportListFilterUiTest {
         compose.waitForIdle()
         compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
     }
+
+    private fun assertPanelAsWideAsTheConfigList() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        launcher(fixture, initial = LauncherPanel.SupportFilter)
+        val list = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherConfigListTag).getUnclippedBoundsInRoot()
+        val panel = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot()
+        // Equal weights in one row; the row hands out leftover pixels one at a time, so they may differ by one pixel.
+        assertEquals(list.width.value, panel.width.value, 1f / 1.5f + 0.01f)
+        // The buttons are never clipped: stacked or side by side, each lies inside the panel.
+        for (tag in listOf(SupportFilterTakeConfigTag, SupportFilterLoadProfileTag)) {
+            val button = compose.onNodeWithTag(tag).getUnclippedBoundsInRoot()
+            assertTrue(button.left >= panel.left && button.right <= panel.right, "$tag $button in $panel")
+        }
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theFilterPanelIsAsWideAsTheConfigListAt840() = assertPanelAsWideAsTheConfigList()
+
+    @Test @Config(qualifiers = "ja-w1280dp-h720dp-hdpi")
+    fun theFilterPanelIsAsWideAsTheConfigListAt1280() = assertPanelAsWideAsTheConfigList()
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theChipIsOfferedOutsideTheBattleLauncherTooWithNothingToTake() {

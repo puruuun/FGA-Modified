@@ -3,7 +3,6 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.SupportFilterBuild
@@ -87,9 +89,9 @@ internal fun SupportFilterLauncherPanel(
 
     Column(
         modifier
-            .fillMaxHeight()
-            .padding(start = 8.dp, end = 8.dp, top = 5.dp)
             .testTag(SupportFilterPanelTag)
+            .fillMaxHeight()
+            .padding(start = 4.dp, end = 4.dp, top = 5.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -136,11 +138,8 @@ internal fun SupportFilterLauncherPanel(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(vertical = 4.dp),
-        ) {
-            val configName = remember(selectedConfigId) { selectedConfigId?.let { prefs.forBattleConfig(it).name.get() } }
+        val configName = remember(selectedConfigId) { selectedConfigId?.let { prefs.forBattleConfig(it).name.get() } }
+        SideBySideOrStacked(Modifier.padding(vertical = 4.dp)) {
             OutlinedButton(
                 onClick = {
                     val id = selectedConfigId ?: return@OutlinedButton
@@ -148,8 +147,35 @@ internal fun SupportFilterLauncherPanel(
                 },
                 enabled = selectedConfigId != null,
                 modifier = Modifier.testTag(SupportFilterTakeConfigTag),
-            ) { Text(stringResource(R.string.support_filter_take_config)) }
+            ) { Text(stringResource(R.string.support_filter_take_config), textAlign = TextAlign.Center) }
             LoadProfileButton(prefs, profileIds)
+        }
+    }
+}
+
+/**
+ * The children side by side at their natural width when they all fit, otherwise one under the other at the full width,
+ * so a button label never gets clipped in a narrow panel (owner, #695).
+ */
+@Composable
+private fun SideBySideOrStacked(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Layout(content, modifier) { measurables, constraints ->
+        val gap = 8.dp.roundToPx()
+        val natural = measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }
+        val fits = natural.sum() + gap * (measurables.size - 1).coerceAtLeast(0) <= constraints.maxWidth
+        val placeables = measurables.mapIndexed { i, m ->
+            val width = if (fits) natural[i] else constraints.maxWidth
+            m.measure(Constraints.fixedWidth(width))
+        }
+        val width = if (fits) natural.sum() + gap * (placeables.size - 1).coerceAtLeast(0) else constraints.maxWidth
+        val height = if (fits) placeables.maxOfOrNull { it.height } ?: 0 else placeables.sumOf { it.height } + gap * (placeables.size - 1).coerceAtLeast(0)
+        layout(width, height) {
+            var x = 0
+            var y = 0
+            for (p in placeables) {
+                p.placeRelative(x, y)
+                if (fits) x += p.width + gap else y += p.height + gap
+            }
         }
     }
 }
@@ -164,8 +190,10 @@ private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>) {
         OutlinedButton(
             onClick = { open = true },
             enabled = profiles.isNotEmpty(),
-            modifier = Modifier.testTag(SupportFilterLoadProfileTag),
-        ) { Text(stringResource(R.string.support_filter_load_profile)) }
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(SupportFilterLoadProfileTag),
+        ) { Text(stringResource(R.string.support_filter_load_profile), textAlign = TextAlign.Center) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             for (profile in profiles) {
                 val name = profile.name.get()

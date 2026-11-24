@@ -90,6 +90,8 @@ fun battleLauncher(
     prefsCore: io.github.fate_grand_automata.prefs.core.PrefsCore,
     /** Told the selected config's id, for the support list filter's "take from the selected config" (#695). */
     onSelectedConfig: (String?) -> Unit = {},
+    /** A third column after the options, as wide as the config list; it gets its width modifier. */
+    sidePanel: (@Composable (Modifier) -> Unit)? = null,
 ): ScriptLauncherResponseBuilder {
     val captureRunningAtOpen = remember { io.github.fate_grand_automata.capture.CaptureTracker.running.value }
     val configs = remember { eligibleBattleConfigs(prefs) }
@@ -327,13 +329,7 @@ fun battleLauncher(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(5.dp, 2.dp)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
-                .width(1.dp)
-        ) { }
+        LauncherColumnDivider()
 
         val mainConfigState = rememberLazyListState()
         LazyColumn(
@@ -576,6 +572,12 @@ fun battleLauncher(
                 )
             }
         }
+
+        if (sidePanel != null) {
+            LauncherColumnDivider()
+            // The same weight as the config list, so the panel is exactly as wide as the list (owner, #695).
+            sidePanel(Modifier.weight(1f))
+        }
     }
 
     return ScriptLauncherResponseBuilder(
@@ -592,6 +594,17 @@ fun battleLauncher(
             ScriptLauncherResponse.Battle
         }
     )
+}
+
+@Composable
+private fun LauncherColumnDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(5.dp, 2.dp)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
+            .width(1.dp)
+    ) { }
 }
 
 internal const val LauncherResetAllTag = "launcher-reset-all"

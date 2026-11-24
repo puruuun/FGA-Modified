@@ -709,14 +709,14 @@ class ScriptManager @Inject constructor(
                     prepareWeekly = weeklyRoute::prepare,
                     prepareProbe = weeklyRoute::prepareProbe,
                     ownerTests = ownerTestScripts.scripts,
-                    onSidePanelExpanded = { expanded ->
+                    onSidePanelExpanded = { widen ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
                         val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }
                         if (base != null) {
                             launcherBaseWidth = base
                             val available = service.resources.displayMetrics.widthPixels
                             window?.setLayout(
-                                if (expanded) minOf(available - 24, (base * 1.7).toInt()) else base,
+                                if (widen > 1f) minOf(available - 24, (base * widen).toInt()) else base,
                                 android.view.WindowManager.LayoutParams.WRAP_CONTENT
                             )
                         }
