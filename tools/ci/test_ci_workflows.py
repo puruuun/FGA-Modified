@@ -239,6 +239,53 @@ class EngineApkJobTest(unittest.TestCase):
         self.assertIn('./gradlew :app:assembleBeta -PfgaDebugSigning=true', self.job)
         self.assertIn('python3 tools/ci/apk_check.py beta "$@"', self.job)
 
+    def steps(self):
+        """The text of each step of the job (comments removed), in order."""
+        out = []
+        for line in self.job.split('\n'):
+            if line.startswith('      - '):
+                out.append([line])
+            elif out:
+                out[-1].append(line)
+        return ['\n'.join(s) for s in out]
+
+    def one_step(self, steps, needle):
+        found = [i for i, s in enumerate(steps) if needle in s]
+        self.assertEqual(len(found), 1, 'expected one step with %r, found %d' % (needle, len(found)))
+        return found[0]
+
+    def test_builds_and_checks_both_forms_in_order(self):
+        steps = self.steps()
+        beta_build = self.one_step(steps, ':app:assembleBeta')
+        beta_check = self.one_step(steps, 'apk_check.py beta')
+        stable_build = self.one_step(steps, ':app:assembleCi')
+        stable_check = self.one_step(steps, 'apk_check.py stable')
+        self.assertLess(beta_build, beta_check)
+        self.assertLess(beta_check, stable_build)
+        self.assertLess(stable_build, stable_check)
+        modes = re.findall(r'apk_check\.py (\S+)', self.job)
+        self.assertEqual(sorted(modes), ['beta', 'stable'])
+
+        model = '"-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"'
+        for i, task in ((beta_build, ':app:assembleBeta'), (stable_build, ':app:assembleCi')):
+            runs = re.findall(r'run: (\./gradlew .*)', steps[i])
+            self.assertEqual(len(runs), 1, steps[i])
+            args = runs[0].split()
+            self.assertEqual(args[:2], ['./gradlew', task])
+            self.assertIn('-PfgaDebugSigning=true', args)
+            self.assertIn(model, runs[0])
+            self.assertIn('MODEL_FILE: ${{ steps.model.outputs.file }}', steps[i])
+        self.assertIn('-Pfga.native=true', re.findall(r'run: (\./gradlew .*)', steps[stable_build])[0].split())
+        self.assertNotIn('fga.native', steps[beta_build])
+
+        self.assertIn('app/build/outputs/apk/beta/', steps[beta_check])
+        self.assertNotIn('outputs/apk/ci', steps[beta_check])
+        self.assertIn('dir=app/build/outputs/apk/ci\n', steps[stable_check])
+        self.assertIn('apk="$dir/app-ci.apk"', steps[stable_check])
+        self.assertIn('[ "$found" = "$apk" ]', steps[stable_check])
+        self.assertIn('python3 tools/ci/apk_check.py stable "$apk"', steps[stable_check])
+        self.assertNotIn('apk/beta', steps[stable_check])
+
 
 class MainCiApkCheckTest(unittest.TestCase):
     def test_checks_the_ci_apk_without_engine_and_scan(self):

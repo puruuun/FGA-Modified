@@ -123,7 +123,10 @@ When promoting to stable `X.Y.Z`:
    stable release. If it fails, **stop**: delete the staged file, do not install, attach or
    publish it, rebuild (with `-Pfga.native=true` for a missing engine; from the `ci` build type
    for a scan) and report. The check runs on the signed file, the exact one that is
-   uploaded.
+   uploaded. CI's `engine-apk` job builds this form too (debug-signed) and runs the same
+   `apk_check.py stable` for every code change ([`rust-native.md`](rust-native.md), "CI"), so a
+   build change that puts the scan into it shows before the release; a missing
+   `-Pfga.native=true` on the release PC and the re-signed file are still caught only here.
    - **Emergency stable without the engine** (only on the planner's decision): build
      `./gradlew :app:assembleCi` without the property, check the staged file with
      `apk_check.py absent`, and say in the release note (`wiki/releases/<version>-KR.md` and the
