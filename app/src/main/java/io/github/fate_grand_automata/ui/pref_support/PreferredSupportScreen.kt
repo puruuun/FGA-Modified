@@ -403,10 +403,13 @@ internal fun PreferredSupport(
                         )
                         scope(applied = true)
 
-                        config.autoFriendRequest.SwitchPreference(
-                            title = stringResource(R.string.p_battle_config_support_auto_friend_request),
-                            enabled = !friendsOnly
-                        )
+                        // The manual filter has no script, and so nothing that sends friend requests.
+                        if (filter?.script != false) {
+                            config.autoFriendRequest.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_auto_friend_request),
+                                enabled = !friendsOnly
+                            )
+                        }
 
                         AnimatedVisibility (friendsOnly) {
                             if (vm.friends.isNotEmpty()) {

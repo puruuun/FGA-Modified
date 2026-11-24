@@ -229,7 +229,8 @@ object SupportListFilter {
         var changed = false
         val entries = LinkedHashMap<String, JsonElement>(follower)
         // Read once per follower, and only when a condition needs it.
-        val boards = if (criteria.classScore62 && !excluded) classBoardSquares(follower) else null
+        val boards = if (criteria.classScore62 && !excluded) classBoards(follower) else Boards.Missing
+        if (boards == Boards.Odd) return null
 
         fun reduceSlot(slot: JsonElement, grand: Boolean): JsonElement {
             val row = slot as? JsonObject
@@ -271,10 +272,10 @@ object SupportListFilter {
 
     /**
      * A filled slot matches when every condition that is set holds. Null when a field a set condition reads has a shape
-     * this code has not seen, so the caller passes the response through. [boards] maps a class id to the number of
-     * whether a board of the follower that covers it is full; null means the follower has no readable board data.
+     * this code has not seen, so the caller passes the response through. [boards] is the follower's class boards;
+     * without them a slot that needs the class score does not match.
      */
-    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Map<Int, Boolean>?): Boolean? {
+    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Boards): Boolean? {
         val svtId = row.long("svtId")
         if (svtId == null || svtId <= 0L) return false
         if (criteria.servantIds.isNotEmpty() && svtId !in criteria.servantIds) return false
@@ -312,7 +313,7 @@ object SupportListFilter {
         if (criteria.minimumNpLevel > 0 && (row.long("treasureDeviceLv") ?: return null) < criteria.minimumNpLevel) return false
         if (criteria.classScore62) {
             val classId = criteria.servantClassIds[svtId] ?: return false
-            if (boards == null || boards[classId] != true) return false
+            if (boards !is Boards.Read || boards.full[classId] != true) return false
         }
         return true
     }
@@ -337,26 +338,41 @@ object SupportListFilter {
         return levels
     }
 
-    /**
-     * Class id to "a board that covers it has all [CLASS_SCORE_SQUARES] squares", from the follower's class boards (`userClassBoardInfo`, one entry per board, each with the
-     * classes it covers in `releasedClassIds`). Null when the follower has no board list: a slot that needs the class
-     * score then does not match.
-     */
-    private fun classBoardSquares(follower: JsonObject): Map<Int, Boolean>? {
-        val boards = follower["userClassBoardInfo"] as? JsonArray ?: return null
+    /** A follower's class boards (`userClassBoardInfo`) as the class score condition reads them. */
+    private sealed interface Boards {
+        /** No board list (the key is absent or null): a slot that needs the class score does not match. */
+        data object Missing : Boards
+
+        /** A board list of a shape this code has not seen: the whole response passes unchanged. */
+        data object Odd : Boards
+
+        /** Class id to "a board that covers it has all [CLASS_SCORE_SQUARES] squares". */
+        class Read(val full: Map<Int, Boolean>) : Boards
+    }
+
+    /** One entry per board, each with its squares in `squareIds` and the classes it covers in `releasedClassIds`. */
+    private fun classBoards(follower: JsonObject): Boards {
+        val value = follower["userClassBoardInfo"]
+        if (value == null || value is JsonNull) return Boards.Missing
+        val boards = value as? JsonArray ?: return Boards.Odd
         val full = HashMap<Int, Boolean>()
         for (board in boards) {
-            val entry = board as? JsonObject ?: continue
-            val count = (entry["squareIds"] as? JsonArray)?.size ?: continue
-            val classes = entry["releasedClassIds"] as? JsonArray ?: continue
-            for (value in classes) {
-                val id = (value as? JsonPrimitive)?.takeIf { !it.isString }?.longOrNull ?: continue
-                if (id !in 0L..Int.MAX_VALUE.toLong()) continue
-                full[id.toInt()] = full[id.toInt()] == true || count == CLASS_SCORE_SQUARES
+            val entry = board as? JsonObject ?: return Boards.Odd
+            val squares = entry["squareIds"] as? JsonArray ?: return Boards.Odd
+            val classes = entry["releasedClassIds"] as? JsonArray ?: return Boards.Odd
+            if (squares.any { integer(it) == null }) return Boards.Odd
+            for (element in classes) {
+                val id = integer(element) ?: return Boards.Odd
+                if (id !in 0L..Int.MAX_VALUE.toLong()) return Boards.Odd
+                full[id.toInt()] = full[id.toInt()] == true || squares.size == CLASS_SCORE_SQUARES
             }
         }
-        return full
+        return Boards.Read(full)
     }
+
+    /** An integer as a JSON number; the string "100" is not one. */
+    private fun integer(element: JsonElement): Long? =
+        (element as? JsonPrimitive)?.takeIf { !it.isString && it !is JsonNull }?.longOrNull
 
     private const val UNKNOWN_CE = Long.MIN_VALUE
 

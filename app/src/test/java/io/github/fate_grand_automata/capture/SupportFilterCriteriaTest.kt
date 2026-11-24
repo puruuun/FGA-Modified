@@ -55,8 +55,9 @@ class SupportFilterCriteriaTest {
         assertNull(full.ceId("Unknown.png"))
     }
 
-    @Test fun classesComeFromTheServantLists() {
-        assertEquals(mapOf(100100L to 1, 900100L to 9, 200200L to 2), full.servantClassIds)
+    @Test fun classesComeFromTheServantListsForTheSevenKnownClassesOnly() {
+        // A ruler's class id is not known to this repository, so it stays out.
+        assertEquals(mapOf(100100L to 1, 200200L to 2), full.servantClassIds)
         assertTrue(lookup().servantClassIds.isEmpty())
     }
 
@@ -84,6 +85,20 @@ class SupportFilterCriteriaTest {
         val ready = buildSupportFilter(on.copy(score62 = true), full).applied!!
         assertTrue(ready.classScore62)
         assertEquals(full.servantClassIds, ready.servantClassIds)
+    }
+
+    @Test fun classScoreWithAChosenServantOfUnknownClassStopsTheFilterAndNamesIt() {
+        val build = buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 ruler"), score62 = true), full)
+        assertEquals(SupportFilterBuild.UnknownClass(listOf("No.900 ruler")), build)
+        assertNull(build.applied)
+        // Without the class score condition the same servants filter as usual.
+        assertEquals(setOf(100100L, 900100L), buildSupportFilter(on.copy(servants = setOf("No.2 a", "No.900 ruler")), full).applied!!.servantIds)
+        // With no servant chosen, a servant of unknown class simply does not match the condition.
+        assertTrue(buildSupportFilter(on.copy(score62 = true), full).applied!!.classScore62)
+    }
+
+    @Test fun aConfigOutsideThePreferredModeBuildsNothing() {
+        assertEquals(SupportFilterBuild.Off, buildSupportFilter(on.copy(servants = setOf("Arcueid"), preferredMode = false), full))
     }
 
     @Test fun everyConditionIsCarriedOver() {

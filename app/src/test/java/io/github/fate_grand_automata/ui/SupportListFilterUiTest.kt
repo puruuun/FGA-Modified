@@ -19,6 +19,7 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.scripts.capture.SupportListCounts
 import io.github.fate_grand_automata.ui.launcher.ManualSupportFilterRow
 import io.github.fate_grand_automata.ui.launcher.ManualSupportFilterRowTag
+import io.github.fate_grand_automata.ui.launcher.ManualSupportFilterReasonTag
 import io.github.fate_grand_automata.ui.more.ImportConfigTag
 import io.github.fate_grand_automata.ui.more.ImportFromBattleConfigTag
 import io.github.fate_grand_automata.ui.more.ManualSupportFilter
@@ -143,6 +144,77 @@ class SupportListFilterUiTest {
         compose.onNodeWithText(context.getString(R.string.support_list_filter_unmapped, "My image, My CE.png")).assertExists()
     }
 
+    @Test fun noticeWhenNoServantListIsOnDisk() {
+        val prefs = prefs()
+        prefs.forBattleConfig("t").support.supportListFilter.set(true)
+        battleConfig(prefs, build = SupportFilterBuild.NoClassList)
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_no_class_list)).assertExists()
+    }
+
+    @Test fun noticeNamesTheServantsOfUnknownClass() {
+        val prefs = prefs()
+        prefs.forBattleConfig("t").support.supportListFilter.set(true)
+        battleConfig(prefs, build = SupportFilterBuild.UnknownClass(listOf("No.1 Mash", "No.900 ruler")))
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_unknown_class, "No.1 Mash, No.900 ruler")).assertExists()
+    }
+
+    @Test fun playButtonMenuShowsWhyTheManualFilterDoesNotRun() {
+        val prefs = prefs()
+        val manual = prefs.manualSupportFilter
+        manual.preferredServants.set(setOf("Arcueid"))
+        var build: SupportFilterBuild = SupportFilterBuild.UnknownClass(listOf("Arcueid"))
+        compose.setContent { FGATheme { ManualSupportFilterRow(manual, build = { build }) } }
+        // Switched off, the summary shows.
+        compose.onNodeWithText("서번트 1").assertExists()
+        compose.onNodeWithTag(ManualSupportFilterReasonTag).assertDoesNotExist()
+        compose.onNodeWithTag(ManualSupportFilterRowTag).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_unknown_class, "Arcueid")).assertExists()
+    }
+
+    @Test fun playButtonMenuShowsUnmappedAndNoClassListToo() {
+        val prefs = prefs()
+        val manual = prefs.manualSupportFilter
+        manual.supportListFilter.set(true)
+        compose.setContent {
+            FGATheme {
+                androidx.compose.foundation.layout.Column {
+                    ManualSupportFilterRow(manual, build = { SupportFilterBuild.Unmapped(listOf("Mine"), emptyList()) })
+                    ManualSupportFilterRow(manual, build = { SupportFilterBuild.NoClassList })
+                }
+            }
+        }
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_unmapped, "Mine")).assertExists()
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_no_class_list)).assertExists()
+    }
+
+    private val autoFriendRequest get() = context.getString(R.string.p_battle_config_support_auto_friend_request)
+    private val friendsOnlyTitle get() = context.getString(R.string.p_battle_config_support_friends_only)
+
+    @Test fun theManualFilterHidesTheScriptOnlyFriendRequestSwitch() {
+        val prefs = prefs()
+        val vm = SupportViewModel(StorageProvider(prefs, context))
+        compose.setContent {
+            FGATheme {
+                ManualSupportFilter(
+                    prefs, vm,
+                    filter = SupportListFilterUi(R.string.support_list_filter_summary_manual, build = { SupportFilterBuild.Off }, script = false),
+                    captureAvailable = true,
+                )
+            }
+        }
+        compose.onNode(hasScrollAction()).performScrollToNode(androidx.compose.ui.test.hasText(friendsOnlyTitle))
+        compose.onNodeWithText(friendsOnlyTitle).assertExists()
+        compose.onNodeWithText(autoFriendRequest).assertDoesNotExist()
+    }
+
+    @Test fun theBattleConfigScreenKeepsTheFriendRequestSwitch() {
+        val prefs = prefs()
+        battleConfig(prefs)
+        compose.onNode(hasScrollAction()).performScrollToNode(androidx.compose.ui.test.hasText(autoFriendRequest))
+        compose.onNodeWithText(autoFriendRequest).assertExists()
+    }
+
     @Test fun displayedAscensionChipsAreStoredPerServant() {
         val prefs = prefs()
         val support = prefs.forBattleConfig("t").support
@@ -184,6 +256,7 @@ class SupportListFilterUiTest {
                     filter = SupportListFilterUi(
                         R.string.support_list_filter_summary_manual, build = { SupportFilterBuild.Off },
                         extra = { io.github.fate_grand_automata.ui.more.ImportFromBattleConfig(prefs) },
+                        script = false,
                     ),
                     captureAvailable = true,
                 )

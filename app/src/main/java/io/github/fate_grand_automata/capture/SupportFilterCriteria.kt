@@ -4,6 +4,7 @@ import android.content.Context
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
 import io.github.fate_grand_automata.util.chaldea.BuiltinSupportIds
 import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
@@ -67,13 +68,14 @@ class SupportIdLookup(
         fun idEntry(id: Long) = "#$id"
 
         /**
-         * Atlas `className` to the game's class id, the one `releasedClassIds` of a class board holds. Taken from
-         * Atlas's class list; a class missing here makes the class score condition not match for its servants.
+         * Atlas `className` to the game's class id, the one `releasedClassIds` of a class board holds. Only the seven
+         * classes whose ids this repository already knows are listed: the support deck's class ids 1 to 7 are these
+         * classes in this order (the friend manager labels them so, `classLabel`). Every other class, Extra and Beast
+         * classes included, is unknown until a real class board shows its id; a chosen servant of an unknown class stops
+         * the filter, and any other servant of one does not match the class score condition.
          */
         private val CLASS_IDS = mapOf(
-            "saber" to 1, "archer" to 2, "lancer" to 3, "rider" to 4, "caster" to 5, "assassin" to 6,
-            "berserker" to 7, "shielder" to 8, "ruler" to 9, "alterEgo" to 10, "avenger" to 11,
-            "moonCancer" to 23, "foreigner" to 25, "pretender" to 28, "beast" to 33,
+            "saber" to 1, "archer" to 2, "lancer" to 3, "rider" to 4, "caster" to 5, "assassin" to 6, "berserker" to 7,
         )
 
         fun classIdOf(className: String): Int? = CLASS_IDS[className]
@@ -146,9 +148,16 @@ data class SupportFilterSettings(
     val minimumNp: Int = 0,
     val score62: Boolean = false,
     val friendsOnly: Boolean = false,
+    /** The script reads these conditions only in the Preferred selection mode. */
+    val preferredMode: Boolean = true,
 ) {
     companion object {
-        fun of(core: SupportPrefsCore) = SupportFilterSettings(
+        /**
+         * [script]: the settings of a battle config about to run, whose filter follows its selection mode. The manual
+         * filter has no script to follow, so its stored selection mode (copied in by an import) is ignored.
+         */
+        fun of(core: SupportPrefsCore, script: Boolean) = SupportFilterSettings(
+            preferredMode = !script || core.selectionMode.get() == SupportSelectionModeEnum.Preferred,
             enabled = core.supportListFilter.get(),
             servants = core.preferredServants.get(),
             ces = core.preferredCEs.get(),
@@ -170,6 +179,7 @@ data class SupportFilterSettings(
             core.maxAscended.asFlow(), core.displayedAscensions.asFlow(), core.skill1Max.asFlow(), core.skill2Max.asFlow(),
             core.skill3Max.asFlow(), core.appendSkillCheck.asFlow(), *core.appendSkillsMax.map { it.asFlow() }.toTypedArray(),
             core.npLevelCheck.asFlow(), core.minimumNpLevel.asFlow(), core.score62Check.asFlow(), core.friendsOnly.asFlow(),
+            core.selectionMode.asFlow(),
         ).map { }.onStart { emit(Unit) }
     }
 }
@@ -190,6 +200,12 @@ sealed interface SupportFilterBuild {
     /** The class score condition is on, but no servant list is on disk to tell a servant's class, so the filter does not run. */
     data object NoClassList : SupportFilterBuild
 
+    /**
+     * The class score condition is on and these chosen servants have no known class id, so the filter does not run:
+     * it would hide every support of theirs (owner decision, #685).
+     */
+    data class UnknownClass(val servants: List<String>) : SupportFilterBuild
+
     /** What the proxy applies: null unless the criteria are ready and set at least one condition. */
     val applied: SupportListCriteria? get() = (this as? Ready)?.criteria?.takeIf { it.hasConditions }
 }
@@ -197,10 +213,12 @@ sealed interface SupportFilterBuild {
 /**
  * The criteria for [settings]. Conditions the script applies only together with a preferred servant (final ascension,
  * skills, appends) are applied by the filter on the same terms, so the filter never hides a support the script would
- * take. Friend names, NP images, the class tab and the grand conditions are left to the script's screen reading.
+ * take. NP level and the class score are applied as stored; the support screen shows them only with a preferred servant
+ * and clears them when the last one is removed. Friend names, NP images, the class tab and the grand conditions are
+ * left to the script's screen reading.
  */
 fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup): SupportFilterBuild {
-    if (!settings.enabled) return SupportFilterBuild.Off
+    if (!settings.enabled || !settings.preferredMode) return SupportFilterBuild.Off
     val servantIds = settings.servants.associateWith(lookup::servantId)
     val ceIds = settings.ces.associateWith(lookup::ceId)
     val unmappedServants = servantIds.filterValues { it == null }.keys.sorted()
@@ -210,6 +228,10 @@ fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup)
     }
     val hasServants = servantIds.isNotEmpty()
     if (settings.score62 && lookup.servantClassIds.isEmpty()) return SupportFilterBuild.NoClassList
+    if (settings.score62) {
+        val unknown = servantIds.filterValues { it !in lookup.servantClassIds }.keys.sorted()
+        if (unknown.isNotEmpty()) return SupportFilterBuild.UnknownClass(unknown)
+    }
     val ascensions = HashMap<Long, MutableSet<Int>>()
     for (stored in settings.displayedAscensions) {
         val (token, servant) = DisplayedAscension.parse(stored) ?: continue

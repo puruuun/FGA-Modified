@@ -139,6 +139,38 @@ class SupportListFilterConditionsTest {
         assertEquals(listOf("saber62", "ruler62"), kept(text, c))
     }
 
+    @Test fun classBoardsThatAreAbsentOrNullMatchNothing() {
+        val c = SupportListCriteria(classScore62 = true, servantClassIds = mapOf(100L to 1))
+        val text = body(
+            follower("full", Svt(100), boards = boards(listOf(1) to 62)),
+            follower("absent", Svt(100)),
+            follower("null", Svt(100), boards = "null"),
+        )
+        assertEquals(listOf("full"), kept(text, c))
+    }
+
+    @Test fun classBoardsOfAnOddShapeLeaveEverythingUnchanged() {
+        val c = SupportListCriteria(classScore62 = true, servantClassIds = mapOf(100L to 1))
+        val full = boards(listOf(1) to 62)
+        val squares = (1..62).joinToString(",")
+        val odd = listOf(
+            "notAnArray" to """{"a":1}""",
+            "elementNotAnObject" to "[$full,3]".replace("[[", "[").replace("],3]", ",3]"),
+            "squareIdsNotAnArray" to """[{"squareIds":62,"releasedClassIds":[1]}]""",
+            "releasedClassIdsNotAnArray" to """[{"squareIds":[$squares],"releasedClassIds":1}]""",
+            "squareIdNotAnInteger" to """[{"squareIds":[$squares,"x"],"releasedClassIds":[1]}]""",
+            "classIdNotAnInteger" to """[{"squareIds":[$squares],"releasedClassIds":[1.5]}]""",
+            "classIdAString" to """[{"squareIds":[$squares],"releasedClassIds":["1"]}]""",
+        )
+        for ((name, shape) in odd) {
+            val text = body(follower("full", Svt(100), boards = full), follower("other", Svt(200), boards = full), follower("odd", Svt(100), boards = shape))
+            assertNull(kept(text, c), name)
+        }
+        // Without the class score condition the boards are not read.
+        val text = body(follower("a", Svt(100), boards = """{"a":1}"""), follower("b", Svt(200)))
+        assertEquals(listOf("a"), kept(text, SupportListCriteria(setOf(100))))
+    }
+
     @Test fun friendsOnlyLeavesNonFriendsOutAndKeepsOtherTypes() {
         val npc = """{"type":3,"userId":"npc"}"""
         val text = body(follower("f", Svt(100)), follower("n", Svt(100), type = 2), npc)

@@ -52,16 +52,18 @@ class SupportListFilterUi(
     /** What the notices read; a test passes a fixed value instead of building from the files on disk. */
     val build: (@Composable (SupportPrefsCore) -> SupportFilterBuild?)? = null,
     val extra: @Composable () -> Unit = {},
+    /** False for the manual filter: it has no script, so script-only items are hidden and the selection mode is ignored. */
+    val script: Boolean = true,
 )
 
 /** The build of [config]'s settings, rebuilt whenever one of them changes. Null until the first build is done. */
 @Composable
-internal fun rememberSupportFilterBuild(config: SupportPrefsCore): SupportFilterBuild? {
+internal fun rememberSupportFilterBuild(config: SupportPrefsCore, script: Boolean): SupportFilterBuild? {
     val context = LocalContext.current.applicationContext
-    val build by produceState<SupportFilterBuild?>(null, config) {
+    val build by produceState<SupportFilterBuild?>(null, config, script) {
         SupportFilterSettings.changes(config).collectLatest {
             value = withContext(Dispatchers.IO) {
-                runCatching { buildSupportFilter(SupportFilterSettings.of(config), SupportIdLookup.load(context)) }
+                runCatching { buildSupportFilter(SupportFilterSettings.of(config, script), SupportIdLookup.load(context)) }
                     .getOrDefault(SupportFilterBuild.Off)
             }
         }
@@ -78,7 +80,7 @@ internal fun rememberCaptureAvailable(prefs: PrefsCore): Boolean {
 @Composable
 internal fun SupportListFilterHeader(config: SupportPrefsCore, ui: SupportListFilterUi, captureAvailable: Boolean) {
     var enabled by config.supportListFilter.remember()
-    val build = ui.build?.invoke(config) ?: rememberSupportFilterBuild(config)
+    val build = ui.build?.invoke(config) ?: rememberSupportFilterBuild(config, ui.script)
     val setEnabled = { on: Boolean ->
         enabled = on
         if (!on) SupportListLastResult.clear()
@@ -98,15 +100,8 @@ internal fun SupportListFilterHeader(config: SupportPrefsCore, ui: SupportListFi
         }
         if (enabled) {
             SupportListLastResultLine(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-            val notice = when {
-                !captureAvailable -> stringResource(R.string.support_list_filter_capture_off)
-                build is SupportFilterBuild.Unmapped -> stringResource(
-                    R.string.support_list_filter_unmapped,
-                    (build.servants + build.ces).joinToString(),
-                )
-                build is SupportFilterBuild.NoClassList -> stringResource(R.string.support_list_filter_no_class_list)
-                else -> null
-            }
+            val notice = if (!captureAvailable) stringResource(R.string.support_list_filter_capture_off)
+            else supportFilterStopReason(build)
             if (notice != null) {
                 Text(
                     notice,
@@ -120,6 +115,15 @@ internal fun SupportListFilterHeader(config: SupportPrefsCore, ui: SupportListFi
         }
         ui.extra()
     }
+}
+
+/** Why a filter that is switched on does not run, or null when nothing stops it. */
+@Composable
+internal fun supportFilterStopReason(build: SupportFilterBuild?): String? = when (build) {
+    is SupportFilterBuild.Unmapped -> stringResource(R.string.support_list_filter_unmapped, (build.servants + build.ces).joinToString())
+    is SupportFilterBuild.NoClassList -> stringResource(R.string.support_list_filter_no_class_list)
+    is SupportFilterBuild.UnknownClass -> stringResource(R.string.support_list_filter_unknown_class, build.servants.joinToString())
+    else -> null
 }
 
 /** Under a condition: whether the filter applies it, or only the script's screen reading does. */

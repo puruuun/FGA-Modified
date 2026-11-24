@@ -80,6 +80,7 @@ internal fun ManualSupportFilter(
     filter: SupportListFilterUi = SupportListFilterUi(
         summary = R.string.support_list_filter_summary_manual,
         extra = { ImportFromBattleConfig(prefs) },
+        script = false,
     ),
     captureAvailable: Boolean = rememberCaptureAvailable(prefs),
 ) {

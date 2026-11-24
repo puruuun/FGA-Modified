@@ -122,6 +122,7 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
                     R.string.support_list_filter_summary_manual,
                     build = { SupportFilterBuild.Ready(SupportListCriteria(setOf(2300500L))) },
                     extra = { ImportFromBattleConfig(prefs) },
+                    script = false,
                 ),
                 captureAvailable = true,
             )

@@ -20,7 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
+import io.github.fate_grand_automata.capture.SupportFilterBuild
 import io.github.fate_grand_automata.capture.SupportFilterSettings
+import io.github.fate_grand_automata.ui.pref_support.rememberSupportFilterBuild
+import io.github.fate_grand_automata.ui.pref_support.supportFilterStopReason
 import io.github.fate_grand_automata.capture.SupportListLastResult
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
@@ -33,10 +36,16 @@ import kotlinx.coroutines.flow.map
  * Editing happens under More > 서포트 목록 필터.
  */
 @Composable
-internal fun ManualSupportFilterRow(manual: SupportPrefsCore, modifier: Modifier = Modifier) {
+internal fun ManualSupportFilterRow(
+    manual: SupportPrefsCore,
+    modifier: Modifier = Modifier,
+    /** A test passes a fixed value instead of building from the files on disk. */
+    build: (@Composable (SupportPrefsCore) -> SupportFilterBuild?)? = null,
+) {
     var enabled by manual.supportListFilter.remember()
-    val changes = remember(manual) { SupportFilterSettings.changes(manual).map { SupportFilterSettings.of(manual) } }
-    val settings by changes.collectAsState(initial = SupportFilterSettings.of(manual))
+    val changes = remember(manual) { SupportFilterSettings.changes(manual).map { SupportFilterSettings.of(manual, script = false) } }
+    val settings by changes.collectAsState(initial = SupportFilterSettings.of(manual, script = false))
+    val reason = if (enabled) supportFilterStopReason(build?.invoke(manual) ?: rememberSupportFilterBuild(manual, script = false)) else null
     val setEnabled = { on: Boolean ->
         enabled = on
         if (!on) SupportListLastResult.clear()
@@ -51,12 +60,21 @@ internal fun ManualSupportFilterRow(manual: SupportPrefsCore, modifier: Modifier
     ) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.support_list_filter_manual_title), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                supportFilterSummary(settings),
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (reason != null) {
+                Text(
+                    reason,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.testTag(ManualSupportFilterReasonTag),
+                )
+            } else {
+                Text(
+                    supportFilterSummary(settings),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Switch(checked = enabled, onCheckedChange = setEnabled, colors = FGASwitchColors())
     }
@@ -90,3 +108,4 @@ internal fun supportFilterSummary(settings: SupportFilterSettings): String {
 }
 
 internal const val ManualSupportFilterRowTag = "launcher:supportListFilter"
+internal const val ManualSupportFilterReasonTag = "launcher:supportListFilter:reason"

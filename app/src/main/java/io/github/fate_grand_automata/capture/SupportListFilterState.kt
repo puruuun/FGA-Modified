@@ -94,6 +94,9 @@ object SupportListFilterController {
     // One watcher per process; a second init (a new Application in a test run) replaces it instead of piling up.
     private var watcher: Job? = null
 
+    internal val watcherForTesting: Job? get() = watcher
+    internal val manualBuildsForTesting = java.util.concurrent.atomic.AtomicInteger()
+
     @OptIn(FlowPreview::class)
     @Synchronized
     fun init(context: Context, prefs: PrefsCore) {
@@ -105,7 +108,8 @@ object SupportListFilterController {
                 .onFailure { Timber.w(it, "Support list filter: migration failed") }
             val manual = prefs.manualSupportFilter
             SupportFilterSettings.changes(manual).debounce(200).collectLatest {
-                SupportListFilterState.setManual(build(app, manual))
+                SupportListFilterState.setManual(build(app, manual, script = false))
+                manualBuildsForTesting.incrementAndGet()
             }
         }
     }
@@ -115,14 +119,15 @@ object SupportListFilterController {
         val token = SupportListFilterState.beginScript()
         val context = appContext ?: return
         if (config == null) return
-        scope.launch { SupportListFilterState.setScript(token, build(context, config)) }
+        scope.launch { SupportListFilterState.setScript(token, build(context, config, script = true)) }
     }
 
     fun onScriptEnd() = SupportListFilterState.endScript()
 
-    private fun build(context: Context, config: SupportPrefsCore): SupportFilterBuild = try {
-        val settings = SupportFilterSettings.of(config)
-        if (!settings.enabled) SupportFilterBuild.Off else buildSupportFilter(settings, SupportIdLookup.load(context))
+    private fun build(context: Context, config: SupportPrefsCore, script: Boolean): SupportFilterBuild = try {
+        val settings = SupportFilterSettings.of(config, script)
+        if (!settings.enabled || !settings.preferredMode) SupportFilterBuild.Off
+        else buildSupportFilter(settings, SupportIdLookup.load(context))
     } catch (e: Exception) {
         Timber.w(e, "Support list filter: criteria not built")
         SupportFilterBuild.Off

@@ -9,6 +9,7 @@ import io.github.fate_grand_automata.scripts.capture.SupportListCounts
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
 import io.github.fate_grand_automata.scripts.entrypoints.AutoLottery
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
+import io.github.fate_grand_automata.scripts.enums.SupportSelectionModeEnum
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -141,17 +142,66 @@ class SupportListFilterStateTest {
         assertFalse("support_list_filter" in config.export())
     }
 
+    @Test fun aBattleConfigFiltersOnlyInThePreferredModeAndTheManualFilterIgnoresTheMode() {
+        val prefs = prefs()
+        val support = prefs.forBattleConfig("cfg").support
+        support.supportListFilter.set(true)
+        support.preferredServants.set(setOf("Arcueid"))
+        for (mode in SupportSelectionModeEnum.entries) {
+            support.selectionMode.set(mode)
+            val build = buildSupportFilter(SupportFilterSettings.of(support, script = true), lookup)
+            if (mode == SupportSelectionModeEnum.Preferred) assertEquals(SupportListCriteria(setOf(2300500L)), build.applied, mode.name)
+            else assertEquals(SupportFilterBuild.Off, build, mode.name)
+        }
+        // An import copies the mode into the manual store; the manual filter does not follow it.
+        support.selectionMode.set(SupportSelectionModeEnum.First)
+        val manual = prefs.manualSupportFilter
+        manual.copyConditionsFrom(support)
+        manual.supportListFilter.set(true)
+        assertEquals(SupportSelectionModeEnum.First, manual.selectionMode.get())
+        assertEquals(
+            SupportListCriteria(setOf(2300500L)),
+            buildSupportFilter(SupportFilterSettings.of(manual, script = false), lookup).applied,
+        )
+    }
+
+    @Test fun initTwiceLeavesOneWatcherAndOneChangeRebuildsOnce() {
+        val prefs = prefs()
+        SupportListFilterController.init(context, prefs)
+        val first = SupportListFilterController.watcherForTesting!!
+        SupportListFilterController.init(context, prefs)
+        val second = SupportListFilterController.watcherForTesting!!
+        assertTrue(first.isCancelled)
+        assertTrue(second.isActive)
+        fun settle(): Int {
+            var last = -1
+            var count = SupportListFilterController.manualBuildsForTesting.get()
+            val until = System.currentTimeMillis() + 10_000
+            while ((count < 1 || count != last) && System.currentTimeMillis() < until) {
+                last = count
+                Thread.sleep(700)
+                count = SupportListFilterController.manualBuildsForTesting.get()
+            }
+            return count
+        }
+        val before = settle()
+        prefs.manualSupportFilter.friendsOnly.set(true)
+        val after = settle()
+        assertEquals(1, after - before)
+        second.cancel()
+    }
+
     @Test fun grandConditionsAreLeftToTheScript() {
         val prefs = prefs()
         val support = prefs.forBattleConfig("grand").support
         support.supportListFilter.set(true)
         support.preferredServants.set(setOf("Arcueid"))
-        val plain = buildSupportFilter(SupportFilterSettings.of(support), lookup)
+        val plain = buildSupportFilter(SupportFilterSettings.of(support, script = true), lookup)
         support.grandServant.set(true)
         support.grandScore16Check.set(true)
         support.bondCEEffect.set(BondCEEffectEnum.NP)
         support.requireBothNormalAndRewardMatch.set(true)
-        assertEquals(plain, buildSupportFilter(SupportFilterSettings.of(support), lookup))
+        assertEquals(plain, buildSupportFilter(SupportFilterSettings.of(support, script = true), lookup))
         assertEquals(SupportListCriteria(setOf(2300500L)), plain.applied)
     }
 }
