@@ -20,6 +20,13 @@ undocumented_unsafe_blocks = "deny"
 [profile.release]
 # catch_unwind at the JNI boundary only works with unwinding; abort would take the app down.
 panic = "unwind"
+# Design 0026 PR D: link-time optimisation across all crates in one codegen unit, so code that
+# libfga_ffi.so never reaches is dropped across crate boundaries. opt-level stays at the default 3
+# (size is not bought with speed), and panic stays "unwind" (above). Measured: stripped arm64
+# library -2.06 MB, armeabi-v7a -0.97 MB, every stored sample read identically; a clean release
+# build takes about three times as long (docs/qa/0025-stage-0-baseline.md, 4.18).
+lto = "fat"
+codegen-units = 1
 
 [profile.dev]
 panic = "unwind"
