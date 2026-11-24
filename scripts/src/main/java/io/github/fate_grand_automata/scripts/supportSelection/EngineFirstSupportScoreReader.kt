@@ -4,6 +4,7 @@ import io.github.fate_grand_automata.scripts.IFgoAutomataApi
 import io.github.fate_grand_automata.scripts.diagnostics.DiagnosticJson
 import io.github.fate_grand_automata.scripts.diagnostics.IReaderDiagnostics
 import io.github.fate_grand_automata.scripts.diagnostics.NoReaderDiagnostics
+import io.github.fate_grand_automata.scripts.locations.SupportScreenLocations
 import io.github.lib_automata.Pattern
 import io.github.lib_automata.dagger.ScriptScope
 import java.text.SimpleDateFormat
@@ -81,6 +82,7 @@ class EngineFirstSupportScoreReader(
     private sealed interface Outcome {
         data class Unavailable(val reason: String) : Outcome
         data class FieldSize(val width: Int, val height: Int) : Outcome
+        data class BottomBand(val recognisedEndY: Int) : Outcome
         data class Incomplete(val score: EngineScore) : Outcome
         data class Answered(val score: EngineScore) : Outcome
     }
@@ -102,18 +104,25 @@ class EngineFirstSupportScoreReader(
         return SupportScoreEngineField.cut(api, bounds, FIELD_TAG).use { field ->
             val outcome: Outcome
             val scores: SupportScores
-            if (!SupportScoreEngineField.fits(field)) {
-                outcome = Outcome.FieldSize(field.width, field.height)
-                scores = fallback.read(bounds, checkClass, checkGrand, screen, row)
-            } else {
-                val score = engine.read(field)
-                val answer = EngineScoreCompleteness.answer(score, checkClass, checkGrand)
-                if (answer != null) {
-                    outcome = Outcome.Answered(score)
-                    scores = answer
-                } else {
-                    outcome = Outcome.Incomplete(score)
+            when (SupportScoreEngineField.refusal(bounds, field)) {
+                EngineFieldRefusal.CropSize -> {
+                    outcome = Outcome.FieldSize(field.width, field.height)
                     scores = fallback.read(bounds, checkClass, checkGrand, screen, row)
+                }
+                EngineFieldRefusal.BottomBand -> {
+                    outcome = Outcome.BottomBand(SupportScoreEngineField.recognisedEndY(bounds))
+                    scores = fallback.read(bounds, checkClass, checkGrand, screen, row)
+                }
+                null -> {
+                    val score = engine.read(field)
+                    val answer = EngineScoreCompleteness.answer(score, checkClass, checkGrand)
+                    if (answer != null) {
+                        outcome = Outcome.Answered(score)
+                        scores = answer
+                    } else {
+                        outcome = Outcome.Incomplete(score)
+                        scores = fallback.read(bounds, checkClass, checkGrand, screen, row)
+                    }
                 }
             }
             if (record) record(bounds, checkClass, checkGrand, screen, row, outcome, scores, field, started)
@@ -142,6 +151,11 @@ class EngineFirstSupportScoreReader(
             is Outcome.Answered -> null
             is Outcome.Unavailable -> linkedMapOf("why" to "unavailable", "detail" to outcome.reason)
             is Outcome.FieldSize -> linkedMapOf("why" to "fieldSize", "size" to listOf(outcome.width, outcome.height))
+            is Outcome.BottomBand -> linkedMapOf(
+                "why" to "bottomBand",
+                "recognisedEndY1440" to outcome.recognisedEndY,
+                "bandTopY1440" to SupportScreenLocations.BOTTOM_BAND_TOP_Y,
+            )
             is Outcome.Incomplete -> linkedMapOf(
                 "why" to "incomplete",
                 "class" to outcome.score.classScore.describe(),

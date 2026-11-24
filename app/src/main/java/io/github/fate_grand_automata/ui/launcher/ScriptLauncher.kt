@@ -86,7 +86,7 @@ fun ScriptLauncher(
                             Text(stringResource(R.string.p_script_mode_support_image_maker))
                         }
                     }
-                    // Issue #568: empty outside the rust build type.
+                    // Issue #568: empty outside the beta and rust build types (BuildConfig.SCORE_SCAN).
                     ownerTests.filter { it.offeredFor(scriptMode) }.forEach { test ->
                         TextButton(onClick = { onResponse(ScriptLauncherResponse.OwnerTest(test)) }) {
                             Text(test.label(LocalContext.current))

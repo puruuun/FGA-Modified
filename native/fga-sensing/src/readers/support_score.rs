@@ -158,7 +158,9 @@ pub struct RowTrim {
 impl RowTrim {
     /// Reads the crop as it is.
     pub const NONE: RowTrim = RowTrim { top: 0, bottom: 0 };
-    /// Rows 3..26 of the 60x30 crop (issue #639).
+    /// Rows 3..26 of the 60x30 crop (issue #639). The Kotlin caller's bottom-band rule (issue
+    /// #657) protects the rows up to the bottom of this trim, so its value is also listed in
+    /// `support_score/row-trim.txt`, which a test here and one in Kotlin both read.
     pub const MEASURED: RowTrim = RowTrim { top: 3, bottom: 4 };
 
     /// The image the recogniser reads. Fails when no row would be left.

@@ -1,5 +1,5 @@
 # What an APK that carries the Rust engine must hold (design 0026, D-8). One list for both checks:
-# checkEngineApk<V> and checkEngineBundle<V> in app/build.gradle.kts, and tools/ci/apk_check.py present.
+# checkEngineApk<V> and checkEngineBundle<V> in app/build.gradle.kts, and tools/ci/apk_check.py stable and beta.
 # The abi lines must equal shippedAbis in app/build.gradle.kts; the build stops when they differ.
 # In entry lines, {abi} stands for each abi, {model} for the file that
 # native/ocr-model/model.properties names, and {model_stem} for that name without .onnx.

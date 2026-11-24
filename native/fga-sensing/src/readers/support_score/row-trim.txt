@@ -1,0 +1,10 @@
+# The rows the support-score recogniser leaves out of the score field (RowTrim::MEASURED, the
+# default ScoreConfig::row_trim), listed once for both sides (issue #657). The Rust test
+# (tests.rs, row_trim_matches_the_shared_table) checks RowTrim::MEASURED, the default config and
+# the crop height against it; the Kotlin test (scripts, SupportScoreEngineFieldTest) checks that
+# SupportScoreEngineField.RECOGNISED_ROWS_END is crop_height minus bottom, the end of the rows the
+# bottom-band rule protects. A change on one side fails until this file and the other side follow.
+# One entry per line: name value.
+crop_height 30
+top 3
+bottom 4

@@ -237,7 +237,86 @@ class EngineApkJobTest(unittest.TestCase):
 
     def test_builds_and_checks_the_beta(self):
         self.assertIn('./gradlew :app:assembleBeta -PfgaDebugSigning=true', self.job)
-        self.assertIn('python3 tools/ci/apk_check.py present "$@"', self.job)
+        self.assertIn('python3 tools/ci/apk_check.py beta "$@"', self.job)
+
+    def steps(self):
+        """The text of each step of the job (comments removed), in order."""
+        out = []
+        for line in self.job.split('\n'):
+            if line.startswith('      - '):
+                out.append([line])
+            elif out:
+                out[-1].append(line)
+        return ['\n'.join(s) for s in out]
+
+    def one_step(self, steps, needle):
+        found = [i for i, s in enumerate(steps) if needle in s]
+        self.assertEqual(len(found), 1, 'expected one step with %r, found %d' % (needle, len(found)))
+        return found[0]
+
+    def test_builds_and_checks_both_forms_in_order(self):
+        steps = self.steps()
+        beta_build = self.one_step(steps, ':app:assembleBeta')
+        beta_check = self.one_step(steps, 'apk_check.py beta')
+        stable_build = self.one_step(steps, ':app:assembleCi')
+        stable_check = self.one_step(steps, 'apk_check.py stable')
+        self.assertLess(beta_build, beta_check)
+        self.assertLess(beta_check, stable_build)
+        self.assertLess(stable_build, stable_check)
+        modes = re.findall(r'apk_check\.py (\S+)', self.job)
+        self.assertEqual(sorted(modes), ['beta', 'stable'])
+
+        model = '"-Pfga.ocr.model=$HOME/fga-ocr-model/$MODEL_FILE"'
+        for i, task in ((beta_build, ':app:assembleBeta'), (stable_build, ':app:assembleCi')):
+            runs = re.findall(r'run: (\./gradlew .*)', steps[i])
+            self.assertEqual(len(runs), 1, steps[i])
+            args = runs[0].split()
+            self.assertEqual(args[:2], ['./gradlew', task])
+            self.assertIn('-PfgaDebugSigning=true', args)
+            self.assertIn(model, runs[0])
+            self.assertIn('MODEL_FILE: ${{ steps.model.outputs.file }}', steps[i])
+        self.assertIn('-Pfga.native=true', re.findall(r'run: (\./gradlew .*)', steps[stable_build])[0].split())
+        self.assertNotIn('fga.native', steps[beta_build])
+
+        self.assertIn('app/build/outputs/apk/beta/', steps[beta_check])
+        self.assertNotIn('outputs/apk/ci', steps[beta_check])
+        self.assertIn('dir=app/build/outputs/apk/ci\n', steps[stable_check])
+        self.assertIn('apk="$dir/app-ci.apk"', steps[stable_check])
+        self.assertIn('[ "$found" = "$apk" ]', steps[stable_check])
+        self.assertIn('python3 tools/ci/apk_check.py stable "$apk"', steps[stable_check])
+        self.assertNotIn('apk/beta', steps[stable_check])
+
+    def test_no_build_or_check_step_is_switched_off(self):
+        steps = self.steps()
+        builds = [self.one_step(steps, ':app:assembleBeta'), self.one_step(steps, ':app:assembleCi')]
+        checks = [self.one_step(steps, 'apk_check.py beta'), self.one_step(steps, 'apk_check.py stable')]
+        for i in builds + checks:
+            self.assertNotRegex(steps[i], r'(?m)^\s*(?:-\s+)?continue-on-error\s*:', steps[i])
+            self.assertNotRegex(steps[i], r'(?m)^\s*(?:-\s+)?if\s*:', steps[i])
+        for i in checks:
+            lines = steps[i].split('\n')
+            self.assertEqual(lines.count('        run: |'), 1, steps[i])
+            script = [l.strip() for l in lines[lines.index('        run: |') + 1:] if l.strip()]
+            self.assertEqual(script[:1], ['set -eu'], steps[i])
+        self.assertEqual(self.job.count('\n    steps:\n'), 1)
+        header = self.job.split('\n    steps:\n')[0]
+        self.assertNotRegex(header, r'(?m)^\s*continue-on-error\s*:', header)
+
+
+class MainCiApkCheckTest(unittest.TestCase):
+    def test_checks_the_ci_apk_without_engine_and_scan(self):
+        job = job_block(read(MAIN_CI), 'test-and-build')
+        self.assertRegex(job, r'run: \./gradlew :app:assembleCi\s*\n')
+        self.assertIn('python3 tools/ci/apk_check.py absent "$@"', job)
+
+    def test_every_apk_check_call_names_a_mode_the_script_has(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import apk_check
+        for path in (MAIN_CI, ENGINE_CI):
+            modes = re.findall(r'apk_check\.py (\S+) ', strip_comments(read(path)))
+            self.assertTrue(modes, path)
+            for mode in modes:
+                self.assertIn(mode, apk_check.MODES, path)
 
     def test_ndk_pin_file_names_one_version(self):
         with open(os.path.join(REPO, 'native', 'ndk-version.txt'), encoding='utf-8') as f:

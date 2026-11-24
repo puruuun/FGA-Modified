@@ -344,6 +344,27 @@ fn the_defaults_are_pinned() {
     assert_eq!(default.row_trim, RowTrim { top: 3, bottom: 4 });
 }
 
+#[test]
+fn row_trim_matches_the_shared_table() {
+    let mut entries = Vec::new();
+    for line in include_str!("row-trim.txt")
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
+    {
+        let fields: Vec<&str> = line.split(' ').collect();
+        assert_eq!(fields.len(), 2, "{line}");
+        entries.push((fields[0].to_owned(), fields[1].parse::<usize>().unwrap()));
+    }
+    let ours = vec![
+        ("crop_height".to_owned(), EXPECTED_CROP_SIZE.1),
+        ("top".to_owned(), RowTrim::MEASURED.top),
+        ("bottom".to_owned(), RowTrim::MEASURED.bottom),
+    ];
+    assert_eq!(entries, ours);
+    assert_eq!(ScoreConfig::default().row_trim, RowTrim::MEASURED);
+    assert_eq!(ScoreConfig::default().expected_size, EXPECTED_CROP_SIZE);
+}
+
 fn reader(script: Scripted, config: ScoreConfig) -> SupportScoreReader<Scripted> {
     SupportScoreReader::new(Recognizer::new(script).unwrap(), config).unwrap()
 }

@@ -237,7 +237,7 @@ class ScriptManager @Inject constructor(
 
         val scriptExitedString by lazy { context.getString(R.string.script_exited) }
 
-        // Issue #568: the list is empty outside the rust build type.
+        // Issue #568: the list is empty outside the beta and rust build types (BuildConfig.SCORE_SCAN).
         val ownerTestMessage = ownerTestScripts.scripts.firstNotNullOfOrNull { it.exitMessage(context, e) }
         if (ownerTestMessage != null) {
             messages.notify(ownerTestMessage)

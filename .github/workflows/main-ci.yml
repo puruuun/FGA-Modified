@@ -101,10 +101,11 @@ jobs:
         run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
-      - name: The APK holds no Rust library
+      - name: The APK holds no Rust library and no support score scan
         # Design 0026, D-6: the ci build type without -Pfga.native=true does not carry the engine
         # (beta and rust do, and so does the stable ci APK built with -Pfga.native=true; engine-apk.yml
-        # builds and checks a beta APK with it).
+        # builds and checks a beta APK and that stable form, apk_check.py beta and stable). PR C: no
+        # ci APK carries the score scan, which only the beta and rust build types compile.
         run: |
           set -eu
           set -- app/build/outputs/apk/ci/*.apk

@@ -38,6 +38,12 @@ java {
 
 tasks.test {
     useJUnitPlatform()
+
+    // The support-score row trim the Rust test checks too (issue #657). Declared as an input, so a
+    // change to the table runs the Kotlin side of the check instead of an up-to-date or cached result.
+    val scoreRowTrim = rootProject.layout.projectDirectory.file("native/fga-sensing/src/readers/support_score/row-trim.txt")
+    systemProperty("fga.scoreRowTrim", scoreRowTrim.asFile.path)
+    inputs.file(scoreRowTrim).withPathSensitivity(PathSensitivity.NONE).withPropertyName("scoreRowTrim")
 }
 
 // Unit tests run on the Gradle toolchain JVM (21) and never reach Android, so they may target a

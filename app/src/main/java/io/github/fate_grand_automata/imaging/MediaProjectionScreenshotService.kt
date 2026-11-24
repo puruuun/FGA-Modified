@@ -191,7 +191,7 @@ class MediaProjectionScreenshotService(
 
     /**
      * Reads the capture's state under the capture lock and changes nothing. For a caller of
-     * [withFullDisplayFrames] during a run (the rust build's support score scan), which compares
+     * [withFullDisplayFrames] during a run (the beta and rust builds' support score scan), which compares
      * it before and after: a first resize that throws after detaching the surface leaves the display
      * without the reader, and later screenshots serve the old frame from [bufferMat] as "nothing new";
      * a restore that throws leaves the full-size reader in place, so later screenshots are of the full

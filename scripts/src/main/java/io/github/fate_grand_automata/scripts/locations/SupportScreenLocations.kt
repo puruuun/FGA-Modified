@@ -94,4 +94,19 @@ class SupportScreenLocations @Inject constructor(
     }
 
     val refreshRegion = Region(1770, 195, 175, 165) + headerOffset
+
+    companion object {
+        /**
+         * The top edge of the band across the bottom of the support screen, which covers the lower
+         * part of a row scrolled under it. Issue #657 measured it on 65 crops (tablet 3040x1904 and
+         * MuMu 1920x1080, JP and KR) at 1418 to 1422, mode 1420; this is the lowest value, so a rule
+         * built on it errs towards "covered". It is kept although it also refuses whole JP fields at
+         * bounds.y 1058 (planner, 2026-11-24): bounds.y carries about one 720p pixel of match error,
+         * and a limit at 1058 would leave no margin before the first cut JP position (1060). Only y: script y spans 0..1440 of the game area on every
+         * aspect ratio (FgoGameAreaManager scales a screen wider than 16:9 by its height and a
+         * narrower one by its width, with bars above and below), so it needs no wide value and no X
+         * anchor. Wide aspect ratios and devices other than those two were not measured.
+         */
+        const val BOTTOM_BAND_TOP_Y = 1418
+    }
 }

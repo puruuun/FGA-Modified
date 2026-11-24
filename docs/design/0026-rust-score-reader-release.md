@@ -75,7 +75,7 @@
   - 점수 스캔 모드: `beta`와 `rust`만.
   - `RUST_TEST_BUILD` 하나로 묶여 있던 세 가지를 `NATIVE_READER`(엔진 연결)와 `SCORE_SCAN`(스캔 모드) 두 값으로 나눕니다. `rust` 빌드 타입은 그대로 두고 둘 다 켭니다.
 - **D-7. 베타·정식 빌드는 Rust 도구가 없으면 실패합니다.** 조용히 라이브러리 없이 만들어지면 사용자에게 엔진 없는 판이 나갑니다. 릴리스는 소유자 PC에서 만들고 그 PC에는 도구가 있습니다.
-  - 엔진이 들어가는 빌드(베타, `-Pfga.native=true`를 준 정식 `ci`)는 도구가 없으면 처음에 실패합니다(`checkRustTools`). 정식 빌드에서 속성을 빠뜨리면 빌드만으로는 Main CI의 `ci`와 구별할 수 없으므로, 릴리스 절차가 올릴 파일에 `apk_check.py present`를 돌리고 실패하면 멈춥니다(베타도 같음). 엔진 없는 긴급 빌드는 문서화된 예외입니다(베타는 `-Pfga.native=false`, 정식은 속성 없이, 그 뒤 `apk_check.py absent`, 릴리스 노트에 명시).
+  - 엔진이 들어가는 빌드(베타, `-Pfga.native=true`를 준 정식 `ci`)는 도구가 없으면 처음에 실패합니다(`checkRustTools`). 정식 빌드에서 속성을 빠뜨리면 빌드만으로는 Main CI의 `ci`와 구별할 수 없으므로, 릴리스 절차가 올릴 파일에 검사를 돌리고 실패하면 멈춥니다: 베타는 `apk_check.py beta`(엔진과 점수 스캔이 모두 있어야 함), 정식은 `apk_check.py stable`(엔진은 있고 점수 스캔은 없어야 함). (2026-11-24: 처음에는 두 경우 모두 `apk_check.py present` 하나였으나, PR C에서 점수 스캔이 베타에만 들어가면서 모드가 `beta`와 `stable`로 나뉘었고 `present`는 없어졌습니다. 결정의 뜻은 같습니다.) 엔진 없는 긴급 빌드는 문서화된 예외입니다(베타는 `-Pfga.native=false`, 정식은 속성 없이, 그 뒤 `apk_check.py absent`, 릴리스 노트에 명시).
 - **D-8. Main CI는 라이브러리가 든 APK를 만들어 검사합니다.** `apk_check.py`는 "베타·정식 APK에는 라이브러리 두 개(ABI별)와 모델, 고지 파일이 있어야 하고, `ci` APK에는 없어야 한다"로 바뀝니다. R8 유지 규칙 검사(`checkRustKeepRules`)는 라이브러리가 든 모든 빌드 타입에서 돕니다. 이 검사가 없으면 R8이 JNI 함수를 지워도 빌드는 통과합니다.
 - **D-9. 모델 파일의 호스팅은 미뤘습니다(열린 결정).** 처음 안은 이 저장소의 GitHub Release 자산에서 받고 ModelScope를 예비로 두는 것이었습니다. 그러나 이 저장소에 모델만 든 GitHub Release를 올리면 Obtainium이 그것을 앱 업데이트로 사용자에게 제안합니다. 그래서 어디에 둘지는 아직 정하지 않았습니다. 그때까지 `native/ocr-model/model.properties`는 ModelScope 주소 하나와 크기, SHA-256 고정을 유지합니다.
   - 이유: 저장소에 커밋하면 21 MB가 이력에 영구히 남고 5 MiB 가드와 0025 결정을 바꿔야 합니다. 외부 주소 하나에만 의존하면 그 주소가 사라질 때 릴리스를 못 만듭니다.
@@ -166,6 +166,7 @@ PR B가 `rust`에서 끝나고 소유자가 `rust` 시험 APK로 짧게 확인�
 3. PR B.
 4. 소유자 결정(2026-11-23)에 따른 계획: PR B가 끝나면 소유자가 `rust` 시험 APK로 짧게 확인하고, 단위를 `main`으로 올립니다. 판독 진단을 받는 실사용 확인(§6)은 `main`에서 만든 베타로 하며, 정식판에 실리기 전에 끝냅니다.
 5. PR C와 PR D는 단위가 `main`에 오른 뒤에 이어서 합니다.
+   - PR C: 완료(2026-11-24, `feat/score-scan-in-beta` → `rust`). 스캔은 `app/src/scoreScan` 소스 세트로 옮겼고, 엔진이 든 `beta`와 `rust`만 컴파일합니다. `-Pfga.native=false`로 만든 긴급 베타에는 항목이 없습니다. `apk_check.py`의 모드는 `absent`, `stable`(엔진 있음, 스캔 없음), `beta`(엔진과 스캔)입니다.
 6. 실사용 확인을 통과한 판이 정규 릴리스에 실립니다.
 
 ## 9. 이 설계가 바꾸는 이전 결정
