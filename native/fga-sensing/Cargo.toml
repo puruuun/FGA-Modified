@@ -18,15 +18,18 @@ default = []
 tract = ["dep:tract-onnx", "_backend"]
 # Issue #549, a measurement switch, off by default: tract-linalg's multi-threaded matrix kernels
 # (its `multithread-mm` feature, which runs them on a rayon pool) and the pool the tract backend
-# builds for them. Both crates are already in the build through tract-onnx (rayon through
-# tract-transformers), so the switch adds no crate.
+# builds for them. tract-linalg is in the build through tract-onnx; rayon is in Cargo.lock, but
+# since tract-onnx's `transformers` default is off only this switch links it.
 tract-threads = ["tract", "dep:tract-linalg", "tract-linalg/multithread-mm", "dep:rayon"]
 ort = ["dep:ort", "_backend"]
 # Internal: lets the evaluation tool require "any backend", which Cargo cannot express directly.
 _backend = []
 
 [dependencies]
-tract-onnx = { version = "0.23", optional = true }
+# default-features off (design 0026 PR D): the only default, `transformers`, adds the ONNX
+# contrib operators Attention, MultiHeadAttention and GroupQueryAttention (tract-transformers),
+# which the PP-OCRv6 recogniser does not use; its attention is plain MatMul and Softmax.
+tract-onnx = { version = "0.23", optional = true, default-features = false }
 # Only for `tract-threads`: named so that its feature can be switched on. The versions are the
 # ones tract-onnx already resolves to.
 tract-linalg = { version = "0.23", optional = true }

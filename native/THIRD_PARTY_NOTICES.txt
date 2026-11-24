@@ -238,7 +238,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ====================================================================================================
-2. Rust crates linked into libfga_ffi.so (91)
+2. Rust crates linked into libfga_ffi.so (84)
 ====================================================================================================
 Each crate is used under the licence named after "Used under"; for a choice of licences
 the first of MIT, Apache-2.0, ISC, BSD-3-Clause, BSD-2-Clause, Zlib, Unicode-3.0 is taken. The full texts are in part 3:
@@ -326,24 +326,6 @@ combine 4.6.9
   Licence files in the crate: LICENSE
   Copyright (c) 2015 Markus Westerlind
 
-crossbeam-deque 0.8.8
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2019 The Crossbeam Project Developers
-
-crossbeam-epoch 0.9.21
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2019 The Crossbeam Project Developers
-
-crossbeam-utils 0.8.23
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2019 The Crossbeam Project Developers
-
 downcast-rs 2.0.2
   Licence: MIT OR Apache-2.0
   Used under: MIT
@@ -385,12 +367,6 @@ filetime 0.2.30
   Used under: MIT
   Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
   Copyright (c) 2014 Alex Crichton
-
-float-ord 0.3.2
-  Licence: MIT / Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2015 The rust-float-ord Developers
 
 foldhash 0.2.0
   Licence: Zlib
@@ -639,18 +615,6 @@ rawpointer 0.2.1
   Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
   Copyright (c) 2015
 
-rayon 1.12.0
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2010 The Rust Project Developers
-
-rayon-core 1.13.0
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: LICENSE-APACHE, LICENSE-MIT
-  Copyright (c) 2010 The Rust Project Developers
-
 rustfft 6.4.1
   Licence: MIT OR Apache-2.0
   Used under: MIT
@@ -778,12 +742,6 @@ tract-onnx-opl 0.23.10
   Licence files in the crate: LICENSE, LICENSE-APACHE, LICENSE-MIT
   No copyright line in its licence files. Authors in its Cargo.toml: Mathieu Poumeyrol
 
-tract-transformers 0.23.10
-  Licence: MIT OR Apache-2.0
-  Used under: MIT
-  Licence files in the crate: none; the licence is taken from its Cargo.toml
-  No copyright line in its licence files. Authors in its Cargo.toml: Mathieu Poumeyrol, Louis Chouraki
-
 transpose 0.2.3
   Licence: MIT OR Apache-2.0
   Used under: MIT
@@ -826,7 +784,7 @@ zmij 1.0.23
 3. Licence texts
 ====================================================================================================
 ====================================================================================================
-MIT (used by 89 crates and the Rust standard library; text as in anyhow 1.0.104, LICENSE-MIT)
+MIT (used by 82 crates and the Rust standard library; text as in anyhow 1.0.104, LICENSE-MIT)
 ====================================================================================================
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated

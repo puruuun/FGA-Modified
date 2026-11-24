@@ -440,12 +440,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "float-ord"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ce81f49ae8a0482e4c55ea62ebbd7e5a686af544c00b9d090bba3ff9be97b3d"
-
-[[package]]
 name = "foldhash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1709,7 +1703,6 @@ dependencies = [
  "tract-hir",
  "tract-nnef",
  "tract-onnx-opl",
- "tract-transformers",
 ]
 
 [[package]]
@@ -1724,17 +1717,6 @@ dependencies = [
  "rand_distr",
  "rustfft",
  "tract-extra",
- "tract-nnef",
-]
-
-[[package]]
-name = "tract-transformers"
-version = "0.23.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77f24c7b447fb64b64e90b2e8194d33f729efe9022ac9136c10ed2e70abb6de0"
-dependencies = [
- "float-ord",
- "rayon",
  "tract-nnef",
 ]
 
