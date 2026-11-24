@@ -11,3 +11,5 @@ For Grand supports, FGA checks both the free slot and the bonus-up (reward) slot
 Bond CE effect icons use the same template images and the same matching threshold (`0.60`) as the original FGA instead of the global Min Similarity, because the icons are small and even a half-pixel shift lowers the score.
 
 In the beta, when inspecting a Grand support row, the `FGA.SupportCe` log prints a single line with the CE scores and regions for the free and reward slots, MLB results, the bond-effect setting and NP/default-effect scores, and the final decision. If a support is not being picked, check this log together with your support settings.
+
+To have the support list itself show only matching supports while log collection runs, see [Support list filter](Support-List-Filter-EN.md).

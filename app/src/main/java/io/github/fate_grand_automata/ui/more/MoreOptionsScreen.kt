@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Card
@@ -42,7 +43,8 @@ fun MoreOptionsScreen(
     navigateToWeeklySettings: () -> Unit = {},
     navigateToWidgetSettings: () -> Unit = {},
     navigateToGainsTracker: () -> Unit = {},
-    navigateToFriendManager: () -> Unit = {}
+    navigateToFriendManager: () -> Unit = {},
+    navigateToSupportListFilter: () -> Unit = {}
 ) {
     GameAreaPreviewEffect(vm.prefsCore, vm.gameAreaPreview)
     val pickDirectory = rememberLauncherForActivityResult(OpenDocTreePersistable()) {
@@ -70,6 +72,7 @@ fun MoreOptionsScreen(
         goToWidgetSettings = navigateToWidgetSettings,
         goToGainsTracker = navigateToGainsTracker,
         goToFriendManager = navigateToFriendManager,
+        goToSupportListFilter = navigateToSupportListFilter,
         additionalTools = { AdditionalTools(vm) },
         pickDirectory = { pickDirectory.launch(Uri.EMPTY) }
     )
@@ -93,6 +96,7 @@ internal fun MoreOptionsContent(
     downloadSummary: String = "",
     downloadIcons: () -> Unit = {},
     goToWidgetSettings: () -> Unit = {},
+    goToSupportListFilter: () -> Unit = {},
 ) {
     val captureEnabled by prefs.captureTrackerEnabled.asFlow()
         .collectAsState(initial = prefs.captureTrackerEnabled.get())
@@ -151,6 +155,12 @@ internal fun MoreOptionsContent(
                                             title = stringResource(R.string.friends_title),
                                             icon = icon(Icons.Default.People),
                                             onClick = goToFriendManager
+                                        )
+                                        if (captureAvailable) io.github.fate_grand_automata.ui.prefs.Preference(
+                                            title = stringResource(R.string.support_list_filter_manual_title),
+                                            icon = icon(Icons.Default.FilterList),
+                                            onClick = goToSupportListFilter,
+                                            modifier = Modifier.testTag("more:supportListFilter")
                                         )
                                     }
                                     additionalFeatures()

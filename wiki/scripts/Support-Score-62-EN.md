@@ -19,3 +19,5 @@ Turn on **Require Class score +62** and **Require Grand score +16** independentl
 Other conditions such as normal skills, NP, and CEs must also pass, and Append Skill checks always run last. This filter applies to **Preferred** selection. Because setting **Fallback** to **First** bypasses preferred conditions, set **Fallback** to **Manual** if you want the condition strictly enforced.
 
 On the JP server score display, even if OCR reads the `+` sign as `4`, `+62/+16` is still recognized properly as long as another read or the `+16` template confirms Grand `16`, or even if some of the multiple OCR reads only capture the Grand score portion. Even when the screen is dim and digit OCR returns empty, it is still recognized properly if the `+16` template is confirmed through the last digit. If readings remain unclear or conflicting, the candidate is treated as undetermined and skipped as before. Score reading behavior on the KR server is unchanged.
+
+To have the support list itself show only matching supports while log collection runs, see [Support list filter](Support-List-Filter-EN.md).

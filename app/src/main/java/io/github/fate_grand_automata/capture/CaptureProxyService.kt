@@ -607,7 +607,7 @@ class CaptureProxyService : Service() {
                     rootAutoRetreat.recordNonGameUpstreamFailure()
                     CaptureProxyStatus.incrementNonGameUpstreamFailure()
                 },
-                supportListCriteria = { supportFilterCriteria(prefs) },
+                supportListCriteria = SupportListFilterState::criteria,
             )
             val actualPort = try {
                 created.start(preferredPort = preferredPort, allowFallback = false)
@@ -775,7 +775,7 @@ class CaptureProxyService : Service() {
         options = PROXY_OPTIONS,
         onGameHostConnected = { ts -> CaptureProxyStatus.recordGameHostConnected(ts) },
         onUpstreamFailure = { _ -> CaptureProxyStatus.incrementUpstreamFailure() },
-        supportListCriteria = { supportFilterCriteria(prefs) },
+        supportListCriteria = SupportListFilterState::criteria,
     )
 
     private fun turnReadingOn() {

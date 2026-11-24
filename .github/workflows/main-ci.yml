@@ -90,6 +90,10 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # Where the Robolectric android-all jars live. Fixed, because actions/cache needs the same path
+      # in the step and the tests read it through robolectric-offline.init.gradle (issue #658).
+      ROBOLECTRIC_OFFLINE_DIR: /home/runner/.cache/robolectric-android-all
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
@@ -97,8 +101,23 @@ jobs:
           java-version: 21
           distribution: temurin
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+      - name: Restore the Robolectric jars
+        # setup-gradle caches only the Gradle home; Robolectric fetched its android-all jars itself at test
+        # time, and a failed fetch failed dozens of unrelated tests. Restore only: a pull request never saves
+        # (each save is about 0.85 GB under its own ref and evicts main's Gradle and NDK caches).
+        # robolectric-cache.yml saves the entry from main. The key is the jar list (Robolectric version and
+        # SDK levels, kept equal to the build by test_robolectric_offline.py).
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ROBOLECTRIC_OFFLINE_DIR }}
+          key: robolectric-android-all-${{ hashFiles('tools/ci/robolectric_android_all.json') }}
+      - name: Fill the Robolectric jars
+        # A hit finds every jar present and downloads nothing; a miss (a pull request that changes the manifest,
+        # before main has saved its entry) downloads with retries and a checksum, and saves nothing.
+        run: python3 tools/ci/robolectric_offline.py prefetch "$ROBOLECTRIC_OFFLINE_DIR"
       - name: Run unit tests
-        run: ./gradlew :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
+        # The init script switches Robolectric to offline mode, so a test never downloads a jar itself.
+        run: ./gradlew -I tools/ci/robolectric-offline.init.gradle :app:testCiUnitTest :prefs:testCiUnitTest :scripts:test :libautomata:test
       - name: Build CI APK
         run: ./gradlew :app:assembleCi
       - name: The APK holds no Rust library and no support score scan

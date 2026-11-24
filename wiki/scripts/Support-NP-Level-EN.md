@@ -29,3 +29,5 @@ Score +62 and NP level checks run before Append Skill checks.
 - The confirmed `Lv.1`–`Lv.5` is compared against the configured minimum level. If it remains uncertain, FGA moves on to the next support.
 
 Existing KR and English reference images are used, and the JP server uses the English defaults.
+
+To have the support list itself show only matching supports while log collection runs, see [Support list filter](Support-List-Filter-EN.md).
