@@ -301,8 +301,8 @@ class DroidCvPattern(
     override fun featureMatches(scene: Pattern, sceneRegion: Region): List<io.github.lib_automata.ImageFeatureMatch> {
         if (scene !is DroidCvPattern || mat.channels() != 1 || scene.mat.channels() != 1) return emptyList()
         require(sceneRegion.x >= 0 && sceneRegion.y >= 0 && sceneRegion.right <= scene.width && sceneRegion.bottom <= scene.height)
-        val sift = org.opencv.features2d.SIFT.create(5000, 3, 0.025)
-        val matcher = org.opencv.features2d.BFMatcher.create(Core.NORM_L2, false)
+        val sift = org.opencv.features.SIFT.create(5000, 3, 0.025)
+        val matcher = org.opencv.features.BFMatcher.create(Core.NORM_L2, false)
         val mapKeys = org.opencv.core.MatOfKeyPoint()
         val sceneKeys = org.opencv.core.MatOfKeyPoint()
         val mapDescriptors = Mat()

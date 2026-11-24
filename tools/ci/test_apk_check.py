@@ -11,7 +11,7 @@ import apk_check as a
 
 SCRIPT = os.path.join(os.path.dirname(__file__), 'apk_check.py')
 
-BASE = ['AndroidManifest.xml', 'classes.dex', 'lib/arm64-v8a/libopencv_java4.so', 'resources.arsc']
+BASE = ['AndroidManifest.xml', 'classes.dex', 'lib/arm64-v8a/libopencv_java5.so', 'resources.arsc']
 MODEL = a.pinned_model()
 ENGINE = [
     'lib/armeabi-v7a/libfga_ffi.so',

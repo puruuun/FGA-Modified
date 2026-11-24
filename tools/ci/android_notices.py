@@ -18,7 +18,7 @@ from. This check only keeps the file from going stale, in three ways:
      `implementation`, `api` or `runtimeOnly`, or a variant form of them (`betaImplementation`,
      `debugImplementation`, `ciRuntimeOnly`, ...), unless the variant part contains "test" in any case
      (`testImplementation`, `androidTestImplementation`, `debugAndroidTestImplementation`).
-     `ksp`, `kapt`, `compileOnly`, `lintChecks`, custom configurations such as `alignedLibCxx` and
+     `ksp`, `kapt`, `compileOnly`, `lintChecks`, custom configurations such as `onnxRuntimeAar` and
      everything else are build-only and are not read.
    - Its argument is read across lines. Accepted: `libs.<alias>`, `platform(...)` / `enforcedPlatform(...)`
      around one, a local `val` that holds one of those, `project(...)` (our own modules, under the app's
@@ -27,7 +27,7 @@ from. This check only keeps the file from going stale, in three ways:
      `implementation "g:a:v"`, an unknown alias, a form this parser does not know) is an error that names
      the file and line: it fails closed instead of being skipped.
 
-What it cannot see: what is statically inside a native library. The third-party list of libopencv_java4.so
+What it cannot see: what is statically inside a native library. The third-party list of libopencv_java5.so
 (libjpeg-turbo, libwebp, protobuf, KleidiCV, ...) and of Tesseract4Android's libraries changes with the
 version of OpenCV or Tesseract4Android, and the check cannot read it; those components carry fixed
 versions that are compared with the catalog only where a catalog key exists (docs/agents/dependencies.md

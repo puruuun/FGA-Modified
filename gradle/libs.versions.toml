@@ -30,11 +30,9 @@ core_remoteviews_version = "1.1.0"
 work_version = "2.12.0"
 mockk_version = "1.14.12"
 
-opencv_version = "4.11.0"
+opencv_version = "5.1.0"
 # JVM-only fixture tests; never packaged in Android builds.
 opencv_jvm_version = "4.9.0-0"
-# Only used for its 16 KB aligned libc++_shared.so, see app/build.gradle.kts
-opencv_aligned_libcxx_version = "4.14.0"
 # Resolved only with -Pfga.native=true -Pfga.native.ort=true (issue #535): its libonnxruntime.so
 # is what native/fga-ffi links against, and it is then packaged in every variant built, as
 # libfga_ffi.so is with fga.native. -Pfga.native.ort is never set for a release build. The same
@@ -118,7 +116,6 @@ androidx-documentfile = { module = "androidx.documentfile:documentfile", version
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout_version" }
 
 opencv = { group = "org.opencv", name = "opencv", version.ref = "opencv_version" }
-opencv-aligned-libcxx = { group = "org.opencv", name = "opencv", version.ref = "opencv_aligned_libcxx_version" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime_android_version" }
 tesseract4android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tesseract4android_version" }
 
