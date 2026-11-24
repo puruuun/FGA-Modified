@@ -32,7 +32,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name || github.run_id }}
+  # A pull request is keyed by its number, not its head branch: a fork branch named main must not share a group with the push run on main.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.ref }}
   # A cancelled run on main would lose the cache save it exists for.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -62,6 +63,9 @@ jobs:
         with:
           # The action's own default, written out so that it is visible and tested: only main saves.
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # Lint's task outputs are not worth a copy of several hundred MB in a repository cache that is near its limit.
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
 
       - name: Run Android Lint
         run: ./gradlew :app:lintCi :prefs:lintCi

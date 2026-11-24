@@ -453,6 +453,17 @@ class LintCacheTest(unittest.TestCase):
         self.assertIn('app/**', pull_request)
         self.assertIn('workflow_dispatch:', self.text)
 
+    def test_the_lint_entry_leaves_out_the_build_cache(self):
+        self.assertRegex(self.job, r'gradle-home-cache-excludes: \|\n\s+caches/build-cache-1\n')
+
+    def test_a_pull_request_never_shares_a_concurrency_group_with_a_push(self):
+        group = [l for l in top_level_block(self.raw, 'concurrency') if l.startswith('group:')]
+        self.assertEqual(len(group), 1)
+        # A fork branch named main gives head.ref == main, which is the ref of the push run.
+        self.assertNotIn('head.ref', group[0])
+        self.assertIn('github.event.pull_request.number', group[0])
+        self.assertIn('github.ref', group[0])
+
     def test_the_main_run_is_never_cancelled(self):
         block = top_level_block(self.raw, 'concurrency')
         self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", block)
