@@ -44,7 +44,7 @@ OpenCV and what is built into it (libopencv_java4.so)
   Copyright (c) 1991-1997 Silicon Graphics, Inc.
   Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libtiff/COPYRIGHT.
 
-* OpenEXR (IlmImf) as bundled in OpenCV 4.11.0
+* OpenEXR (IlmImf) 2.3.0
   Licence: BSD-3-Clause
   Copyright (c) 2006, Industrial Light & Magic, a division of Lucasfilm Entertainment Company Ltd.
   Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/openexr/LICENSE.
@@ -65,15 +65,10 @@ OpenCV and what is built into it (libopencv_java4.so)
   Copyright (C) 2016 The Android Open Source Project
   Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/cpufeatures/LICENSE.
 
-* libpng (in OpenCV) as bundled in OpenCV 4.11.0
+* libpng (in OpenCV) 1.6.43
   Licence: PNG Reference Library License version 2
   Copyright (c) 1995-2024 The PNG Reference Library Authors.
   Source: Built into libopencv_java4.so; OpenCV 4.11.0 3rdparty/libpng/LICENSE. Acknowledgement is appreciated by the authors, not required.
-
-* zlib as bundled in OpenCV 4.11.0
-  Licence: zlib License
-  (C) 1995-2022 Jean-loup Gailly and Mark Adler
-  Source: OpenCV 4.11.0 3rdparty/zlib/LICENSE.
 
 * carotene as bundled in OpenCV 4.11.0
   Licence: BSD-3-Clause (OpenCV 3-clause BSD License)
@@ -92,6 +87,10 @@ OpenCV and what is built into it (libopencv_java4.so)
 * ADE 0.1.2e
   Licence: Apache-2.0
   Source: Built into libopencv_java4.so; https://github.com/opencv/ade at tag v0.1.2e (LICENSE). No copyright line in the licence file.
+
+* FlatBuffers 23.5.9
+  Licence: Apache-2.0
+  Source: Built into libopencv_java4.so (build information: "Flatbuffers: builtin/3rdparty (23.5.9)"); OpenCV 4.11.0 3rdparty/flatbuffers/LICENSE.txt. No copyright line in the licence file.
 
 * KleidiCV 0.3.0
   Licence: Apache-2.0
@@ -149,6 +148,10 @@ Java and Kotlin libraries
 * AndroidX and Jetpack Compose libraries various
   Licence: Apache-2.0
   Source: androidx.* artifacts (AppCompat, Core, Activity, Lifecycle, Navigation 3, Hilt extensions, Work, Glance, Compose and the others of the runtime classpath), https://developer.android.com/jetpack. No copyright line is given by the licence files.
+
+* Annotation-only and interface-only artifacts jsr305 3.0.2, jspecify 1.0.0, JetBrains annotations 13.0 / 20.1.0 / 23.0.0, listenablefuture 1.0
+  Licence: Apache-2.0
+  Source: Transitive dependencies of AndroidX and Kotlin (com.google.code.findbugs:jsr305, org.jspecify:jspecify, org.jetbrains:annotations, com.google.guava:listenablefuture). Each licence is the one its POM declares (listenablefuture: its parent POM guava-parent).
 
 * Kotlin standard library 2.4.21
   Licence: Apache-2.0
@@ -222,8 +225,12 @@ This software is based in part on the work of the Independent JPEG Group.
 ITT Notify (ittnotify) in OpenCV is offered under a dual BSD/GPLv2 licence. This app
 uses it under the BSD licence, whose text is in part 3.
 
-libpng and zlib: the authors appreciate an acknowledgement but do not require one. This
-app uses libpng (in OpenCV and in Tesseract4Android) and zlib.
+libpng: the authors appreciate an acknowledgement but do not require one. This app uses libpng
+(in OpenCV and in Tesseract4Android).
+
+zlib: libopencv_java4.so links the zlib of the device (its build information says "ZLib: z (ver
+1.2.13)" and lists "z" under the extra dependencies; libz.so is a library of the system). The app does
+not contain or redistribute zlib.
 
 OkHttp public suffix data (okhttp3/internal/publicsuffix, in the APK as part of OkHttp
 4.12.0), the NOTICE file of that folder:
@@ -1051,31 +1058,6 @@ to supporting the PNG file format in commercial products.  If you use
 this source code in a product, acknowledgment is not required but would
 be appreciated.
 
-zlib: 3rdparty/zlib/LICENSE
-
-Copyright notice:
-
- (C) 1995-2022 Jean-loup Gailly and Mark Adler
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-
-  Jean-loup Gailly        Mark Adler
-  jloup@gzip.org          madler@alumni.caltech.edu
-
 carotene: licence comment at the top of 3rdparty/carotene/src/absdiff.cpp
 
 /*
@@ -1108,6 +1090,14 @@ carotene: licence comment at the top of 3rdparty/carotene/src/absdiff.cpp
  * This software is provided by the copyright holders and contributors "as is" and
  * any express or implied warranties, including, but not limited to, the implied
  * warranties of merchantability and fitness for a particular purpose are disclaimed.
+ * In no event shall copyright holders or contributors be liable for any direct,
+ * indirect, incidental, special, exemplary, or consequential damages
+ * (including, but not limited to, procurement of substitute goods or services;
+ * loss of use, data, or profits; or business interruption) however caused
+ * and on any theory of liability, whether in contract, strict liability,
+ * or tort (including negligence or otherwise) arising in any way out of
+ * the use of this software, even if advised of the possibility of such damage.
+ */
 
 ITT Notify: the BSD LICENSE part of the header comment of 3rdparty/ittnotify/src/ittnotify/ittnotify_config.h
 

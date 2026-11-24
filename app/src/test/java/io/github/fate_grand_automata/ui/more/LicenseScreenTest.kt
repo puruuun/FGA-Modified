@@ -10,15 +10,17 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.BuildConfig
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.screenshotRules
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [32], qualifiers = "w400dp-h800dp")
@@ -74,18 +76,47 @@ class LicenseScreenTest {
         }
     }
 
-    @Test fun `a cancellation while reading an asset is not swallowed`() {
+    /**
+     * Leaving the screen cancels the load while an asset is being read. The caller is cancelled from the
+     * test thread, as `produceState` does on leaving, and the read is released afterwards.
+     */
+    private fun cancelWhileReading(names: List<String>, onLoaded: (List<String>) -> Unit): List<String> {
+        val reading = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val reads = CopyOnWriteArrayList<String>()
         runBlocking {
-            assertFailsWith<CancellationException> {
-                loadNoticeAssets(NOTICE_ASSETS) { throw CancellationException("left the screen") }
+            val job = launch(Dispatchers.Default) {
+                onLoaded(loadNoticesOrEmpty {
+                    loadNoticeAssets(names) {
+                        reads += it
+                        reading.countDown()
+                        release.await()
+                        "paragraph of $it"
+                    }
+                })
             }
+            reading.await()
+            job.cancel()
+            release.countDown()
+            job.join()
         }
+        return reads
     }
 
-    @Test fun `a failed load shows no paragraphs and a cancelled one stays cancelled`() {
+    @Test fun `cancelling the caller while an asset is read stops the remaining reads`() {
+        val reads = cancelWhileReading(NOTICE_ASSETS) {}
+        assertEquals(listOf(NOTICE_ASSETS.first()), reads)
+    }
+
+    @Test fun `cancelling the caller while an asset is read delivers no result`() {
+        var delivered: List<String>? = null
+        cancelWhileReading(listOf(ANDROID_NOTICES_ASSET)) { delivered = it }
+        assertEquals(null, delivered)
+    }
+
+    @Test fun `a failed load shows no paragraphs`() {
         runBlocking {
             assertEquals(emptyList(), loadNoticesOrEmpty { throw java.io.IOException("unreadable") })
-            assertFailsWith<CancellationException> { loadNoticesOrEmpty { throw CancellationException("left the screen") } }
         }
     }
 

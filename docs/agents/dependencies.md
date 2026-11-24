@@ -59,26 +59,44 @@ never from memory. `tools/ci/android_notices.py check` runs in Main CI through
 `tools/ci/test_android_notices.py` and fails when
 
 - a component's `version_ref` differs from `gradle/libs.versions.toml`, or `<name> <version>` is not in
-  the notices file;
+  the notices file as whole tokens (a notices file that says "Shizuku API 13.1.5" does not mention 13.1);
 - a `*.traineddata` file under `assets/` has no `data_files` entry (name and SHA-256) or is not named in
   the notices file;
-- an `implementation` / `api` / `runtimeOnly` dependency of `app`, `prefs`, `scripts` or `libautomata`
-  declared through the catalog matches no component's `covers` pattern (`group:artifact`, `*` allowed).
-  Only declared dependencies are looked at, so a new transitive dependency of a covered library raises
-  no alarm: add its component by hand when a bump brings one.
+- a runtime dependency of `app`, `prefs`, `scripts` or `libautomata` matches no component's `covers`
+  pattern (`group:artifact`, `*` allowed), or cannot be read. Runtime means `implementation`, `api`,
+  `runtimeOnly` and their variant forms (`betaImplementation`, `ciRuntimeOnly`, quoted
+  `"rustImplementation"(...)`), except variants containing "test"; `ksp`, `kapt`, `compileOnly`, `lintChecks`
+  and custom configurations are build-only. The argument may span lines and be `libs.x`, `platform(libs.x)`,
+  a local `val` holding one of them, `project(...)` or a `fileTree` whose folder has no jar. Anything else
+  (string coordinates, `add("implementation", ...)`, a Groovy-style call) is an error that names file and
+  line: the check fails closed.
 
-It cannot see what is statically inside a native library. The third-party list of `libopencv_java4.so`
-and of Tesseract4Android's libraries changes with their versions, and the check compares versions only
-where the catalog has a key.
+What the check cannot see, so a reviewer must:
+
+- **What is statically inside a native library.** The third-party list of `libopencv_java4.so` and of
+  Tesseract4Android's libraries changes with their versions; the check compares versions only where the
+  catalog has a key.
+- **Transitive dependencies.** A new transitive dependency of a covered library raises no alarm; add its
+  component by hand when a bump brings one (read `:app:dependencies --configuration ciRuntimeClasspath`).
+- **The `androidx.*` pattern is broad by design.** A new AndroidX artifact that bundles third-party code
+  (as glance does with protobuf) raises no alarm.
+- **Custom configurations** (`alignedLibCxx`, `onnxRuntimeAar`) feed packaged native libraries and are not
+  read; their components (libc++, and `libonnxruntime.so` in engine builds) are kept by hand.
+- Whether a copied text still equals its upstream file: the manifest has the SHA-256 for a reviewer.
 
 - **A bump of OpenCV or Tesseract4Android: redo the bundled list from the library's build string and
-  `3rdparty/` at that tag.** For OpenCV, read `cv::getBuildInformation()` ("3rdparty dependencies"), then
-  for each entry the licence file and version under `3rdparty/<dir>` at the tag, and the oneTBB, ADE and
-  KleidiCV versions the build downloads. For Tesseract4Android, read its README (Tesseract, Leptonica,
-  libjpeg, libpng versions) and the vendored `cpp/*/src` licence files at the tag. Update the
-  notices file and the manifest (components, source URLs, SHA-256) together. The `opencv_aligned_libcxx_version`
-  component (libc++) moves with its own pin. A new runtime dependency or a new `*.traineddata` file
-  needs its entry in the same PR.
+  `3rdparty/` at that tag.** For OpenCV, read the **whole** `cv::getBuildInformation()` text of the new
+  `libopencv_java4.so` (for example `strings` on it): the "3rdparty dependencies" line, the "Extra
+  dependencies" line (a library the binary links from the device, such as `z`, is not redistributed and
+  gets no entry), the per-library version lines ("ZLib", "JPEG", "WEBP", "PNG", "TIFF", "OpenEXR",
+  "Parallel framework") and the "Other third-party libraries" block (Custom HAL, Protobuf, Flatbuffers).
+  For each library that is built in, take its licence file and version from `3rdparty/<dir>` at the tag,
+  plus the oneTBB, ADE and KleidiCV versions the build downloads. For Tesseract4Android, read its README
+  (Tesseract, Leptonica, libjpeg, libpng versions) and the vendored `cpp/*/src` licence files at the tag.
+  Update the notices file and the manifest (components, source URLs, SHA-256) together. The
+  `opencv_aligned_libcxx_version` component (libc++) moves with its own pin. A new runtime dependency or a
+  new `*.traineddata` file needs its entry in the same PR. Copy a header comment or a section whole: check
+  the end of the excerpt in the source, not only the start.
 
 ## Bump order
 

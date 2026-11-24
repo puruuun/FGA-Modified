@@ -7,20 +7,34 @@ The notices file is written by hand; tools/ci/android_notices_manifest.json says
 from. This check only keeps the file from going stale, in three ways:
 
 1. Versions. Every component of the manifest that names a `version_ref` must have that version in
-   gradle/libs.versions.toml, and every component's "<name> <version>" must stand in the notices file.
+   gradle/libs.versions.toml, and every component's "<name> <version>" must stand in the notices file
+   as whole tokens ("Shizuku API 13.1.5" does not mention version 13.1).
 2. Data files. Every `*.traineddata` under app/src/main/assets/ must be in the manifest's `data_files`
    (file name and SHA-256) and be named in the notices file; an entry without a file also fails.
-3. Declared dependencies. Every `implementation(libs.x)` / `api(libs.x)` / `runtimeOnly(libs.x)` of the
-   modules' build files must match the `covers` patterns ("group:artifact", fnmatch) of a component.
-   Only declared dependencies are looked at, so a new transitive dependency of a covered library
-   raises no alarm; test, ksp and build-only configurations are not looked at.
+3. Declared dependencies. Every runtime dependency declared in a `dependencies { }` block of the build
+   files of app, prefs, scripts and libautomata must resolve to a catalog library that the `covers`
+   patterns ("group:artifact", fnmatch) of a component match. The rule, exactly:
+   - A configuration is a runtime one when its name (also quoted, `"implementation"(...)`) is
+     `implementation`, `api` or `runtimeOnly`, or a variant form of them (`betaImplementation`,
+     `debugImplementation`, `ciRuntimeOnly`, ...), unless the variant part contains "test" in any case
+     (`testImplementation`, `androidTestImplementation`, `debugAndroidTestImplementation`).
+     `ksp`, `kapt`, `compileOnly`, `lintChecks`, custom configurations such as `alignedLibCxx` and
+     everything else are build-only and are not read.
+   - Its argument is read across lines. Accepted: `libs.<alias>`, `platform(...)` / `enforcedPlatform(...)`
+     around one, a local `val` that holds one of those, `project(...)` (our own modules, under the app's
+     own licence) and `fileTree(...)` whose `dir` has no `.jar` file.
+   - Any other runtime declaration (string coordinates, `add("implementation", ...)`, Groovy-style
+     `implementation "g:a:v"`, an unknown alias, a form this parser does not know) is an error that names
+     the file and line: it fails closed instead of being skipped.
 
 What it cannot see: what is statically inside a native library. The third-party list of libopencv_java4.so
 (libjpeg-turbo, libwebp, protobuf, KleidiCV, ...) and of Tesseract4Android's libraries changes with the
 version of OpenCV or Tesseract4Android, and the check cannot read it; those components carry fixed
 versions that are compared with the catalog only where a catalog key exists (docs/agents/dependencies.md
-says to redo the list on a bump). Nor can it see transitive libraries, nor whether a copied text still
-equals the upstream file (the manifest holds SHA-256 values for a reviewer to compare).
+says to redo the list on a bump). Nor can it see transitive libraries (a new transitive dependency of a
+covered library raises no alarm), what a broad `covers` pattern such as `androidx.*` lets through, the
+custom configurations that feed packaged native libraries, nor whether a copied text still equals the
+upstream file (the manifest holds SHA-256 values for a reviewer to compare).
 
 Standard library only.
 """
@@ -38,7 +52,15 @@ REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
 MANIFEST = os.path.join('tools', 'ci', 'android_notices_manifest.json')
 CATALOG = os.path.join('gradle', 'libs.versions.toml')
 MODULES = ['app', 'prefs', 'scripts', 'libautomata']
-DEP_LINE = re.compile(r'^\s*(?:implementation|api|runtimeOnly)\(\s*libs\.([A-Za-z0-9_.\-]+)\s*\)')
+
+RUNTIME_CONFIG = re.compile(r'^(?P<variant>[a-z][A-Za-z0-9]*?)?(?P<kind>[Ii]mplementation|[Aa]pi|[Rr]untimeOnly)$')
+CONFIG_CALL = re.compile(r'(?<![\w.$])(?:"(?P<q>[A-Za-z][A-Za-z0-9]*)"|(?P<n>[A-Za-z][A-Za-z0-9]*))\s*(?P<open>\(?)')
+ADD_CALL = re.compile(r'(?<![\w.$])(?:add|dependencies\.add)\s*\(\s*"(?P<name>[A-Za-z][A-Za-z0-9]*)"')
+GROOVY_CALL = re.compile(r'''(?<![\w.$])(?P<name>[A-Za-z][A-Za-z0-9]*)[ \t]+["'`]''')
+LOCAL_VAL = re.compile(r'(?m)^[ \t]*val[ \t]+(\w+)[ \t]*=[ \t]*(.+)$')
+CATALOG_REF = re.compile(r'^libs\.([A-Za-z0-9_.\-]+)$')
+PLATFORM_REF = re.compile(r'^(?:platform|enforcedPlatform)\(\s*(libs\.[A-Za-z0-9_.\-]+)\s*\)$')
+PROJECT_REF = re.compile(r'^project\(\s*":[A-Za-z0-9_:\-]+"\s*\)$')
 
 
 def sha256(path):
@@ -73,18 +95,118 @@ def catalog_modules(catalog):
     return result
 
 
+def is_runtime_config(name):
+    m = RUNTIME_CONFIG.match(name)
+    return bool(m) and 'test' not in (m.group('variant') or '').lower()
+
+
+def blank_comments(text):
+    """The text with comments replaced by spaces, so that offsets and line numbers stay."""
+    return re.sub(r'//[^\n]*|/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S)
+
+
+def balanced(text, start, open_char, close_char):
+    """The index after the bracket that closes the one at text[start]; -1 when it never closes."""
+    depth = 0
+    in_string = False
+    i = start
+    while i < len(text):
+        c = text[i]
+        if in_string:
+            if c == '\\':
+                i += 1
+            elif c == '"':
+                in_string = False
+        elif c == '"':
+            in_string = True
+        elif c == open_char:
+            depth += 1
+        elif c == close_char:
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return -1
+
+
+def dependency_blocks(text):
+    """(start, end) of the body of every `dependencies { }` block."""
+    blocks = []
+    for m in re.finditer(r'(?<![\w.])dependencies\s*\{', text):
+        end = balanced(text, m.end() - 1, '{', '}')
+        blocks.append((m.end(), end - 1 if end > 0 else len(text)))
+    return blocks
+
+
+def resolve_argument(arg, local_vals, module_dir):
+    """('lib', accessor), ('ok', None) or ('error', reason) for the argument of a runtime declaration."""
+    arg = arg.strip()
+    for _ in range(4):
+        if arg in local_vals:
+            arg = local_vals[arg].strip()
+    m = CATALOG_REF.match(arg)
+    if m:
+        return 'lib', accessor(m.group(1))
+    m = PLATFORM_REF.match(arg)
+    if m:
+        return 'lib', accessor(CATALOG_REF.match(m.group(1)).group(1))
+    if PROJECT_REF.match(arg):
+        return 'ok', None
+    if arg.startswith('fileTree('):
+        d = re.search(r'"dir"\s+to\s+"([^"]+)"|\bdir\s*=\s*"([^"]+)"', arg)
+        if not d:
+            return 'error', 'fileTree without a readable dir'
+        folder = os.path.join(module_dir, d.group(1) or d.group(2))
+        jars = [f for f in os.listdir(folder) if f.endswith('.jar')] if os.path.isdir(folder) else []
+        return ('error', 'fileTree dir holds jar files: ' + ', '.join(jars)) if jars else ('ok', None)
+    return 'error', 'not resolvable to a catalog library by this check: ' + re.sub(r'\s+', ' ', arg)[:80]
+
+
 def declared_dependencies(repo):
-    """(build file, accessor) for each runtime dependency declared through the catalog."""
-    found = []
+    """([(build file, line, accessor)], [(build file, line, reason)]) of the runtime dependencies."""
+    found, errors = [], []
     for module in MODULES:
         path = os.path.join(repo, module, 'build.gradle.kts')
         if not os.path.isfile(path):
             continue
-        for line in read(path).split('\n'):
-            m = DEP_LINE.match(line)
-            if m:
-                found.append((module + '/build.gradle.kts', accessor(m.group(1))))
-    return found
+        rel = module + '/build.gradle.kts'
+        text = blank_comments(read(path))
+        local_vals = {m.group(1): m.group(2) for m in LOCAL_VAL.finditer(text)}
+
+        def line_of(offset):
+            return text.count('\n', 0, offset) + 1
+
+        for start, end in dependency_blocks(text):
+            body = text[start:end]
+            for m in CONFIG_CALL.finditer(body):
+                name = m.group('q') or m.group('n')
+                if not is_runtime_config(name) or not m.group('open'):
+                    continue
+                line = line_of(start + m.start())
+                close = balanced(body, m.end() - 1, '(', ')')
+                if close < 0:
+                    errors.append((rel, line, 'unbalanced parentheses in the declaration of ' + name))
+                    continue
+                kind, value = resolve_argument(body[m.end():close - 1], local_vals, os.path.join(repo, module))
+                if kind == 'lib':
+                    found.append((rel, line, value))
+                elif kind == 'error':
+                    errors.append((rel, line, name + ': ' + value))
+            for m in ADD_CALL.finditer(body):
+                if is_runtime_config(m.group('name')):
+                    errors.append((rel, line_of(start + m.start()),
+                                   'add("%s", ...) cannot be read by this check' % m.group('name')))
+            for m in GROOVY_CALL.finditer(body):
+                if is_runtime_config(m.group('name')):
+                    errors.append((rel, line_of(start + m.start()),
+                                   '%s "..." (Groovy style) cannot be read by this check' % m.group('name')))
+    return found, errors
+
+
+def mentions(notices, name, version):
+    """`<name> <version>` as whole tokens: "Shizuku API 13.1.5" does not mention version 13.1."""
+    pattern = r'(?<![\w.\-])' + re.escape(name) + ' ' + re.escape(version) + r'(?![\w\-+]|\.\w)'
+    return re.search(pattern, notices) is not None
 
 
 def check_versions(manifest, catalog, notices):
@@ -99,7 +221,7 @@ def check_versions(manifest, catalog, notices):
                 problems.append('%s: the manifest says %s, %s has %s = %s; update the component (and read '
                                 'the bump step in docs/agents/dependencies.md)'
                                 % (c['name'], c['version'], CATALOG, ref, versions[ref]))
-        if '%s %s' % (c['name'], c['version']) not in notices:
+        if not mentions(notices, c['name'], c['version']):
             problems.append('%s %s: not found in the notices file as "<name> <version>"' % (c['name'], c['version']))
     return problems
 
@@ -132,13 +254,16 @@ def check_dependencies(repo, manifest, catalog):
     problems = []
     modules = catalog_modules(catalog)
     patterns = [p for c in manifest['components'] for p in c.get('covers', [])]
-    for build_file, alias in declared_dependencies(repo):
+    found, errors = declared_dependencies(repo)
+    for build_file, line, reason in errors:
+        problems.append('%s:%d: %s' % (build_file, line, reason))
+    for build_file, line, alias in found:
         module = modules.get(alias)
         if module is None:
-            problems.append('%s: libs.%s is not a library of %s' % (build_file, alias, CATALOG))
+            problems.append('%s:%d: libs.%s is not a library of %s' % (build_file, line, alias, CATALOG))
         elif not any(fnmatch.fnmatchcase(module, p) for p in patterns):
-            problems.append('%s: %s (libs.%s) is in no component\'s "covers" in the manifest; add its notice'
-                            % (build_file, module, alias))
+            problems.append('%s:%d: %s (libs.%s) is in no component\'s "covers" in the manifest; add its notice'
+                            % (build_file, line, module, alias))
     return problems
 
 

@@ -33,6 +33,7 @@ import io.github.fate_grand_automata.ui.CappedWidth
 import io.github.fate_grand_automata.ui.Heading
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 /** Name of the repository LICENSE as bundled into the APK assets by the `copyLicenseAsset` task. */
@@ -135,16 +136,16 @@ fun LicenseScreenContent(licenseText: String, notices: (suspend () -> List<Strin
 }
 
 /**
- * An asset that cannot be read adds nothing and does not hide the others; leaving the screen cancels the load,
- * which must stay a cancellation.
+ * An asset that cannot be read adds nothing and does not hide the others. A blocking read cannot throw a
+ * cancellation itself, so leaving the screen is noticed between the assets by [ensureActive]: the remaining
+ * assets are not read, and the cancellation reaches the caller through [withContext].
  */
 internal suspend fun loadNoticeAssets(names: List<String>, read: (String) -> String): List<String> =
     withContext(Dispatchers.IO) {
         names.flatMap { name ->
+            ensureActive()
             try {
                 noticeParagraphs(read(name))
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
                 emptyList()
             }

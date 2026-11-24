@@ -80,18 +80,11 @@
       "use": "whole file"
     },
     {
-      "id": "zlib-license",
-      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/zlib/LICENSE",
-      "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243",
-      "bytes": 1002,
-      "use": "whole file"
-    },
-    {
       "id": "carotene-license",
       "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/carotene/src/absdiff.cpp",
       "sha256": "ca2a588dae6315200c13c05db17c3fc50f7cf8a264f8b3f48ca8e0659102fbf1",
       "bytes": 7832,
-      "use": "excerpt: the licence comment at the top of the file, lines 1-30"
+      "use": "excerpt: the whole licence comment at the top of the file, lines 1-38 (from \"/*\" to \" */\")"
     },
     {
       "id": "ittnotify-license",
@@ -113,6 +106,62 @@
       "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
       "bytes": 11358,
       "use": "not reproduced: the Apache-2.0 text of part 3; read to confirm the licence"
+    },
+    {
+      "id": "flatbuffers-license",
+      "url": "https://raw.githubusercontent.com/opencv/opencv/4.11.0/3rdparty/flatbuffers/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358,
+      "use": "not reproduced: the Apache-2.0 text of part 3 (identical to it); read to confirm the licence"
+    },
+    {
+      "id": "tesseract4android-readme",
+      "url": "https://raw.githubusercontent.com/adaptech-cz/Tesseract4Android/4.9.0/README.md",
+      "sha256": "6c88b5458deb45c9f994e7bcc115b07c2f884b5086d7bb0bcd0a00591e55aa7e",
+      "bytes": 6982,
+      "use": "copyright line (License section, line 149)"
+    },
+    {
+      "id": "pom-jsr305",
+      "url": "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.pom",
+      "sha256": "19889dbdf1b254b2601a5ee645b8147a974644882297684c798afe5d63d78dfe",
+      "bytes": 4286,
+      "use": "licence as declared in the POM: The Apache Software License, Version 2.0"
+    },
+    {
+      "id": "pom-jspecify",
+      "url": "https://repo1.maven.org/maven2/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.pom",
+      "sha256": "cdab929a3b95211f43d2090c5e2d0dfe8465960e378bc32b35841dab324433a6",
+      "bytes": 1511,
+      "use": "licence as declared in the POM: The Apache License, Version 2.0"
+    },
+    {
+      "id": "pom-jetbrains-annotations-23",
+      "url": "https://repo1.maven.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.pom",
+      "sha256": "c9490f655132328df2cfbcfdf743f53fc3916d6c1d10437175a6ca6e3a67771c",
+      "bytes": 1354,
+      "use": "licence as declared in the POM: The Apache Software License, Version 2.0"
+    },
+    {
+      "id": "pom-jetbrains-annotations-20",
+      "url": "https://repo1.maven.org/maven2/org/jetbrains/annotations/20.1.0/annotations-20.1.0.pom",
+      "sha256": "44aa0cd24578eca07c76031d42c42ffbcae61cec3130575e2319696ab0548104",
+      "bytes": 1354,
+      "use": "licence as declared in the POM: The Apache Software License, Version 2.0"
+    },
+    {
+      "id": "pom-jetbrains-annotations-13",
+      "url": "https://repo1.maven.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.pom",
+      "sha256": "965aeb2bedff369819bdde1bf7a0b3b89b8247dd69c88b86375d76163bb8c397",
+      "bytes": 4930,
+      "use": "licence as declared in the POM: The Apache Software License, Version 2.0"
+    },
+    {
+      "id": "pom-listenablefuture-parent",
+      "url": "https://repo1.maven.org/maven2/com/google/guava/guava-parent/26.0-android/guava-parent-26.0-android.pom",
+      "sha256": "f8698ab46ca996ce889c1afc8ca4f25eb8ac6b034dc898d4583742360016cc04",
+      "bytes": 10180,
+      "use": "licence declared in the parent POM of listenablefuture 1.0: The Apache Software License, Version 2.0"
     },
     {
       "id": "kleidicv-readme",
@@ -301,7 +350,7 @@
     {
       "id": "openexr",
       "name": "OpenEXR (IlmImf)",
-      "version": "as bundled in OpenCV 4.11.0",
+      "version": "2.3.0",
       "licence": "BSD-3-Clause",
       "sources": [
         "openexr-license"
@@ -337,19 +386,10 @@
     {
       "id": "opencv-libpng",
       "name": "libpng (in OpenCV)",
-      "version": "as bundled in OpenCV 4.11.0",
+      "version": "1.6.43",
       "licence": "PNG Reference Library License version 2",
       "sources": [
         "libpng-license"
-      ]
-    },
-    {
-      "id": "zlib",
-      "name": "zlib",
-      "version": "as bundled in OpenCV 4.11.0",
-      "licence": "zlib License",
-      "sources": [
-        "zlib-license"
       ]
     },
     {
@@ -389,6 +429,15 @@
       ]
     },
     {
+      "id": "flatbuffers",
+      "name": "FlatBuffers",
+      "version": "23.5.9",
+      "licence": "Apache-2.0",
+      "sources": [
+        "flatbuffers-license"
+      ]
+    },
+    {
       "id": "kleidicv",
       "name": "KleidiCV",
       "version": "0.3.0",
@@ -414,7 +463,8 @@
       "version": "4.9.0",
       "licence": "Apache-2.0",
       "sources": [
-        "tesseract4android-license"
+        "tesseract4android-license",
+        "tesseract4android-readme"
       ],
       "version_ref": "tesseract4android_version",
       "covers": [
@@ -481,6 +531,20 @@
       "sources": [],
       "covers": [
         "androidx.*"
+      ]
+    },
+    {
+      "id": "annotation-artifacts",
+      "name": "Annotation-only and interface-only artifacts",
+      "version": "jsr305 3.0.2, jspecify 1.0.0, JetBrains annotations 13.0 / 20.1.0 / 23.0.0, listenablefuture 1.0",
+      "licence": "Apache-2.0",
+      "sources": [
+        "pom-jsr305",
+        "pom-jspecify",
+        "pom-jetbrains-annotations-23",
+        "pom-jetbrains-annotations-20",
+        "pom-jetbrains-annotations-13",
+        "pom-listenablefuture-parent"
       ]
     },
     {
