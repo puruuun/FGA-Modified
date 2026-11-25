@@ -64,7 +64,7 @@ class SupportListFilterTest {
 
     @Test fun followerMatchingInOneDeckClassOrOtherHashStaysWhole() {
         val inEvent = friend("ev", event = hit(200, deck = 3, cls = 8))
-        val grandOnly = friend("gr", grand = listOf("""{"grandGraphId":1,"svtId":100,"equipTarget1":{"svtId":0},"equipTarget3":{"svtId":0}}"""))
+        val grandOnly = friend("gr", grand = listOf(realGrand(100)))
         val oneClass = friend("cl", main = hit(100, deck = 3, cls = 0))
         val r = run(body(friend("none"), inEvent, grandOnly, oneClass))!!
         assertEquals(listOf("ev", "gr", "cl"), ids(r))
@@ -113,8 +113,7 @@ class SupportListFilterTest {
     }
 
     @Test fun grandSlotsUseCe1AndCe3WhileBondCeStaysOut() {
-        fun grand(svt: Long, e1: Long, e2: Long, e3: Long) =
-            """{"grandGraphId":1,"svtId":$svt,"equipTarget1":{"svtId":$e1},"equipTarget2":{"svtId":$e2},"equipTarget3":{"svtId":$e3}}"""
+        fun grand(svt: Long, e1: Long, e2: Long, e3: Long) = realGrand(svt, ce1 = e1, bond = e2, ce3 = e3)
         val c = SupportListCriteria(setOf(100L), setOf(7L))
         val r = run(body(friend("ce1", grand = listOf(grand(100, 7, 0, 0))), friend("ce3", grand = listOf(grand(100, 0, 0, 7))),
             friend("bond", grand = listOf(grand(100, 0, 7, 0))), friend("svt", grand = listOf(grand(999, 7, 0, 0)))), c)!!
@@ -254,8 +253,8 @@ class SupportListFilterTest {
     /** The five keys the server sets to 1 in a slot with no servant. */
     private val limitKeys = listOf("dispLimitCount", "imageLimitCount", "commandCardLimitCount", "iconLimitCount", "portraitLimitCount")
 
-    /** A filled slot in the real key order; JP adds transformVal and grand adds the extra keys. */
-    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0, jp: Boolean = false, grand: Boolean = false, user: Long = 555, at: Long = 1708036772, rich: Boolean = false): String {
+    /** A filled slot of userSvtLeaderHash in the real key order; JP adds transformVal. */
+    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0, jp: Boolean = false, user: Long = 555, at: Long = 1708036772, rich: Boolean = false): String {
         val parts = mutableListOf<String>()
         parts += if (rich) """"afterTransformSvtInfo":{"svtId":5,"lv":3,"addSkills":[1]}""" else """"afterTransformSvtInfo":null"""
         parts += limitKeys.map { """"$it":4""" }
@@ -263,33 +262,49 @@ class SupportListFilterTest {
         if (jp) parts += """"transformVal":5"""
         parts += """"randomLimitCountTargets":[1,2],"classPassive":[{"id":3}]"""
         parts += """"equipTarget1":{"userId":9,"userSvtId":8,"svtId":$ce,"limitCount":4,"lv":100,"exp":7,"hp":1,"atk":2,"skillId1":3,"skillLv1":4,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[1],"updatedAt":12}"""
-        if (grand) {
-            parts += """"equipTarget2":{"userId":9,"svtId":77,"lv":1,"addSkills":[],"updatedAt":5}"""
-            parts += """"equipTarget3":{"userId":9,"svtId":78,"lv":1,"addSkills":[],"updatedAt":5}"""
-        }
         parts += """"commandCode":[{"id":1}],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1}],"script":${if (rich) """{"a":"b","n":1}""" else "{}"},"eventSvtPoint":5,"imagePartsGroupInfo":[1]"""
-        if (grand) parts += """"grandGraphId":7,"isSetClassBoardBaseIds":[1,2]"""
         parts += """"userId":$user,"supportDeckId":$deck,"classId":$cls,"userSvtId":42,"svtId":$svt,"limitCount":4,"lv":90,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
         parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":$at"""
         return "{" + parts.joinToString(",") + "}"
     }
 
+    /** One CE as the server sends it in a slot; svtId 0 is no CE, which the server sends with zero values. */
+    private fun equip(ce: Long, limit: Int = 4, lv: Int = 100) = if (ce == 0L) {
+        """{"userId":0,"userSvtId":0,"svtId":0,"limitCount":0,"lv":0,"exp":0,"hp":0,"atk":0,"skillId1":0,"skillLv1":0,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":0}"""
+    } else {
+        """{"userId":9,"userSvtId":8,"svtId":$ce,"limitCount":$limit,"lv":$lv,"exp":7,"hp":1,"atk":2,"skillId1":3,"skillLv1":4,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":12}"""
+    }
+
+    /**
+     * One entry of userSvtGrandHash with the keys of a real JP entry (read 2026-11-25, structure only): no supportDeckId
+     * and no classId, but grandGraphId, three CEs (equipTarget2 is the bond CE at level 80), isSetClassBoardBaseIds and
+     * script.equipTarget2SkillChange. Every real entry has grandSvt 1, limitCount 4 and skill levels 10.
+     */
+    private fun realGrand(svt: Long, ce1: Long = 0, bond: Long = 0, ce3: Long = 0, graph: Long = 10001, npCharge: Boolean = false): String {
+        val parts = mutableListOf<String>()
+        parts += """"afterTransformSvtInfo":null"""
+        parts += limitKeys.map { """"$it":4""" }
+        parts += """"battleVoice":2,"grandSvt":1,"transformVal":0"""
+        parts += """"randomLimitCountTargets":[],"classPassive":[3,4]"""
+        parts += """"equipTarget1":${equip(ce1)},"equipTarget2":${equip(bond, lv = 80)},"equipTarget3":${equip(ce3)}"""
+        parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}]"""
+        parts += """"script":${if (npCharge) """{"equipTarget2SkillChange":1}""" else "{}"},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
+        parts += """"grandGraphId":$graph,"isSetClassBoardBaseIds":[]"""
+        parts += """"userId":555,"userSvtId":43,"svtId":$svt,"limitCount":4,"lv":120,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
+        parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
+        return "{" + parts.joinToString(",") + "}"
+    }
+
     /** What the server sends for a slot with nobody in it, with the same optional keys as [realSlot]. */
-    private fun serverEmptySlot(deck: Int, cls: Int, jp: Boolean = false, grand: Boolean = false, user: Long = 555, at: Long = 1708036772): String {
-        val zeroEquip = """{"userId":0,"userSvtId":0,"svtId":0,"limitCount":0,"lv":0,"exp":0,"hp":0,"atk":0,"skillId1":0,"skillLv1":0,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":0}"""
+    private fun serverEmptySlot(deck: Int, cls: Int, jp: Boolean = false, user: Long = 555, at: Long = 1708036772): String {
         val parts = mutableListOf<String>()
         parts += """"afterTransformSvtInfo":null"""
         parts += limitKeys.map { """"$it":1""" }
         parts += """"battleVoice":0,"grandSvt":0"""
         if (jp) parts += """"transformVal":0"""
         parts += """"randomLimitCountTargets":[],"classPassive":[]"""
-        parts += """"equipTarget1":$zeroEquip"""
-        if (grand) {
-            parts += """"equipTarget2":{"userId":0,"svtId":0,"lv":0,"addSkills":[],"updatedAt":0}"""
-            parts += """"equipTarget3":{"userId":0,"svtId":0,"lv":0,"addSkills":[],"updatedAt":0}"""
-        }
+        parts += """"equipTarget1":${equip(0)}"""
         parts += """"commandCode":[],"commandCardParam":[0,0,0,0,0],"appendPassiveSkill":[],"script":{},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
-        if (grand) parts += """"grandGraphId":0,"isSetClassBoardBaseIds":[]"""
         parts += """"userId":$user,"supportDeckId":$deck,"classId":$cls,"userSvtId":0,"svtId":0,"limitCount":0,"lv":0,"exp":0,"hp":0,"atk":0,"adjustHp":0,"adjustAtk":0"""
         parts += """"skillId1":0,"skillId2":0,"skillId3":0,"skillLv1":0,"skillLv2":0,"skillLv3":0,"treasureDeviceId":0,"treasureDeviceLv":0,"exceedCount":0,"updatedAt":$at"""
         return "{" + parts.joinToString(",") + "}"
@@ -322,21 +337,69 @@ class SupportListFilterTest {
         assertEquals(canonical(serverEmptySlot(2, 3)), blanked.toString())
     }
 
-    @Test fun jpAndGrandOnlyKeysAreBlankedByTheTypeRule() {
+    @Test fun jpOnlyKeysAreBlankedByTheTypeRule() {
         val keep = realSlot(100, 1, 1, jp = true)
         val jpOther = realSlot(999, 1, 2, jp = true, user = 77, at = 5)
-        val grandOther = realSlot(999, 2, 3, grand = true, user = 88, at = 6)
-        val grandKeep = realSlot(100, 1, 0, grand = true)
-        val f = realFollower("a", main = mapOf((1 to 1) to keep, (1 to 2) to jpOther), grand = listOf(grandKeep, grandOther))
+        val f = realFollower("a", main = mapOf((1 to 1) to keep, (1 to 2) to jpOther))
         val out = infos(run(body(f))!!)[0]
         assertEquals(canonical(serverEmptySlot(1, 2, jp = true, user = 77, at = 5)), slotsOf(out, "userSvtLeaderHash")[2].toString())
-        val grand = slotsOf(out, "userSvtGrandHash")
-        assertEquals(canonical(grandKeep), grand[0].toString())
-        assertEquals(canonical(serverEmptySlot(2, 3, grand = true, user = 88, at = 6)), grand[1].toString())
-        val g = grand[1].jsonObject
-        assertEquals("""{"userId":0,"svtId":0,"lv":0,"addSkills":[],"updatedAt":0}""", g["equipTarget2"].toString())
-        assertEquals("""{"userId":0,"svtId":0,"lv":0,"addSkills":[],"updatedAt":0}""", g["equipTarget3"].toString())
         assertEquals("0", slotsOf(out, "userSvtLeaderHash")[2].jsonObject["transformVal"].toString())
+    }
+
+    private fun firstFollower(r: kotlinx.serialization.json.JsonObject) =
+        r["cache"]!!.jsonObject["updated"]!!.jsonObject["userFollower"]!!.jsonArray[0].jsonObject["followerInfo"]!!.jsonArray[0].jsonObject
+
+    @Test fun aKeptFollowersGrandListIsTheOriginalElement() {
+        val grand = listOf(realGrand(100, ce1 = 7), realGrand(999, ce3 = 8, bond = 9, graph = 10002, npCharge = true), realGrand(998, graph = 10003))
+        val f = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1), (1 to 2) to realSlot(999, 1, 2)), grand = grand)
+        val root = Json.parseToJsonElement(body(f, realFollower("b"))).jsonObject
+        val before = firstFollower(root)
+        val out = firstFollower(SupportListFilter.filter(root, criteria)!!.first)
+        assertSame(before["userSvtGrandHash"], out["userSvtGrandHash"])
+        // The follower itself was rebuilt: its non-matching normal slot is blanked.
+        assertEquals("0", out["userSvtLeaderHash"]!!.jsonArray[2].jsonObject["svtId"]!!.toString())
+    }
+
+    @Test fun aKeptFollowersGrandListKeyedBySeatIsTheOriginalElementToo() {
+        val keyed = """{"type":1,"userId":"a","userSvtLeaderHash":[${realSlot(100, 1, 1)},${realSlot(999, 1, 2)}],"userSvtGrandHash":{"1":${realGrand(999)},"2":${realGrand(100)}}}"""
+        val root = Json.parseToJsonElement(body(keyed, realFollower("b"))).jsonObject
+        val out = firstFollower(SupportListFilter.filter(root, criteria)!!.first)
+        assertSame(firstFollower(root)["userSvtGrandHash"], out["userSvtGrandHash"])
+    }
+
+    @Test fun nonMatchingGrandEntriesAloneChangeNothing() {
+        val a = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(999), realGrand(998, ce1 = 7)))
+        val b = realFollower("b", type = 2, main = mapOf((2 to 3) to realSlot(200, 2, 3)), grand = listOf(realGrand(997)))
+        assertNull(run(body(a, b)))
+    }
+
+    @Test fun aFollowerWhoseOnlyMatchIsAGrandEntryStaysWithItsNormalSlotsBlankedAndItsGrandListAsReceived() {
+        val grand = listOf(realGrand(999), realGrand(100))
+        val f = realFollower("a", main = mapOf((1 to 1) to realSlot(999, 1, 1)), event = mapOf((2 to 2) to realSlot(998, 2, 2)), grand = grand)
+        val root = Json.parseToJsonElement(body(f, realFollower("b"))).jsonObject
+        val (filtered, counts) = SupportListFilter.filter(root, criteria)!!
+        val out = firstFollower(filtered)
+        assertEquals(canonical(serverEmptySlot(1, 1)), out["userSvtLeaderHash"]!!.jsonArray[1].toString())
+        assertEquals(canonical(serverEmptySlot(2, 2)), out["eventUserSvtLeaderHash"]!!.jsonArray[9 + 2].toString())
+        assertSame(firstFollower(root)["userSvtGrandHash"], out["userSvtGrandHash"])
+        assertEquals(SupportListCounts(2, 1, 4, 2), counts)
+    }
+
+    @Test fun aFollowerWithNoMatchAnywhereIsRemovedGrandEntriesAndAll() {
+        val gone = realFollower("gone", main = mapOf((1 to 1) to realSlot(999, 1, 1)), grand = listOf(realGrand(998), realGrand(997)))
+        val stays = realFollower("stays", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(996)))
+        val r = run(body(gone, stays))!!
+        assertEquals(listOf("stays"), ids(r))
+        // Before: 3 + 2 filled; after: the kept follower's normal match and its grand entry.
+        assertEquals(SupportListCounts(2, 1, 5, 2), r.counts)
+    }
+
+    @Test fun grandEntriesOfAFriendOnlyListsNonFriendLeaveWithIt() {
+        val c = SupportListCriteria(friendsOnly = true)
+        val friend = realFollower("f", grand = listOf(realGrand(999)))
+        val other = realFollower("o", type = 2, grand = listOf(realGrand(100)))
+        val r = run(body(friend, other), c)!!
+        assertEquals(listOf("f"), ids(r))
     }
 
     @Test fun matchingAndAlreadyEmptySlotsStayTheOriginalObjects() {

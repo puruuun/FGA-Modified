@@ -59,6 +59,8 @@ As in the script, final ascension, skills and appends apply only with at least o
 
 **Screen reading only** conditions (friend names, ascension by servant name + NP, the support class tab, grand servant, grand score +16, bond CE effect) are not applied by the filter. Conditions taken from a battle config with the grand servant condition on are filtered by the other conditions only.
 
+Grand servants (JP) are not filtered yet. In a friend who stays in the list, the grand servants are shown as received, even the ones that do not match. A grand servant that matches keeps its friend in the list; in that friend only the normal servant slots that do not match become empty.
+
 ## What stops the filter
 
 With the toggle on, the filter still does not run in these cases, and the panel shows the reason in red.
