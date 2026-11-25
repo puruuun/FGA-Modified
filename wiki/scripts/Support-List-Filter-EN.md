@@ -67,7 +67,11 @@ As in the script, final ascension, skills and appends apply only with at least o
 
 A person with a grand servant that matches stays, and **that person's other grand servants that do not match are not shown**. Someone with a grand servant in every class keeps only the matching ones, so the other class tabs do not show that person's other grand servants. The same holds without any grand condition: with only a preferred servant, for example, the grand servants of the people who stay that are not that servant are not shown. Grand servant slots are never emptied; a grand servant that does not match is left out of the list. One exception: a grand servant that the same person also shows in a normal support slot that matches stays in the grand list. With grand servant on, normal support slots do not match, so the normal servant slots of the people who stay become empty; the script does not pick a row without the grand label either.
 
-**KR has no grand servants yet.** The KR support list carries no grand slots, so with grand servant on nobody stays on KR. When grand servants come to KR, the same rules apply.
+**Grand conditions apply only when the received list has grand servants.** The four grand conditions (grand servant, grand score +16, bond CE effect, both CE slots) are not applied to a support list in which nobody has a grand servant; that list is judged by the other conditions only, and the panel shows "This list has no grand servants, so the grand conditions were not applied." under the result line. The KR support list carries no grand slots yet, so today the grand conditions are not applied on KR. The choice follows the received list, not the server name, so the same rules apply on KR once grand servants arrive there.
+
+### When nobody matches
+
+When nobody in the list matches, the first person in the list stays without servants (every slot empty, no grand servants), because the game's support screen stops reacting to its buttons when the list is completely empty. The result line still says "0 of N shown". That person has no servant to pick, so refresh the list or change the conditions.
 
 ## What stops the filter
 

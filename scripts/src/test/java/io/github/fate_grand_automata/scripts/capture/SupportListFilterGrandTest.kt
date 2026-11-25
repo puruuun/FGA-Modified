@@ -141,13 +141,13 @@ class SupportListFilterGrandTest {
         assertEquals(SupportListCounts(1, 1, 2, 1), r.counts)
     }
 
-    @Test fun aKrShapedListWithAnEmptyGrandListMatchesNothingWithGrandServantOn() {
+    @Test fun aKrShapedListWithAnEmptyGrandListIsJudgedWithoutTheGrandConditions() {
         val text = body(
             follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
             follower("b", type = 2, main = mapOf((2 to 3) to realSlot(100, 2, 3))),
         )
-        assertEquals(emptyList(), kept(text, grandOn))
-        // Off: both match and nothing changes.
+        // No grand data (#740): as without the grand options, both match and nothing changes.
+        assertNull(kept(text, grandOn))
         assertNull(kept(text, grandOn.copy(grandServant = false)))
     }
 
@@ -203,7 +203,10 @@ class SupportListFilterGrandTest {
         assertEquals(listOf("foreigner"), kept(text, c))
         // A board that lists the class elsewhere does not move it.
         val moved = JP_RELEASED + (1 to listOf(1, 25)) + (9 to listOf(10))
-        assertEquals(emptyList(), kept(body(follower("moved", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(1 to 16), released = moved))), c))
+        // Nobody matches: the follower stays without servants (#740).
+        assertEquals(listOf("moved"), kept(body(follower("moved", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(1 to 16), released = moved))), c))
+        val r = assertNotNull(SupportListFilter.apply(body(follower("moved", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(1 to 16), released = moved))).toByteArray(), null, c))
+        assertEquals(SupportListCounts(1, 0, 1, 0, placeholderKept = true), r.counts)
     }
 
     @Test fun grandScoreDoesNotReadTheClassBoards() {
@@ -637,6 +640,152 @@ class SupportListFilterGrandTest {
             val matching = realGrand(100, ce1 = 7, user = user).replace(""""userSvtId":MISSING,""", "")
             assertGrandEntries(body(follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7, user = "501")), grand = listOf(matching)), gone), ceOnly, mapOf("a" to listOf(0)))
         }
+    }
+
+    // #740 A: the grand conditions apply only to a response with grand data.
+
+    private val strictGrand = SupportListCriteria(
+        setOf(100L), setOf(7L), grandServant = true, bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true,
+    )
+
+    /** Same bytes as the criteria without grand options, and the counts say the grand conditions were skipped. */
+    private fun assertJudgedWithoutGrand(text: String, criteria: SupportListCriteria) {
+        val with = SupportListFilter.apply(text.toByteArray(), null, criteria)
+        val without = SupportListFilter.apply(text.toByteArray(), null, criteria.withoutGrandConditions())
+        if (without == null) {
+            assertNull(with)
+            return
+        }
+        assertNotNull(with)
+        assertEquals(String(without.wire), String(with.wire))
+        assertEquals(without.counts.copy(grandConditionsSkipped = true), with.counts)
+    }
+
+    @Test fun aKrShapedListIsJudgedByTheOtherConditionsAndSaysSo() {
+        val text = body(
+            follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7))),
+            follower("b", main = mapOf((1 to 1) to realSlot(999, 1, 1, ce = 7))),
+            follower("c", type = 2, main = mapOf((2 to 3) to realSlot(100, 2, 3, ce = 7), (1 to 2) to realSlot(998, 1, 2))),
+        )
+        assertEquals(listOf("a", "c"), kept(text, strictGrand))
+        val r = assertNotNull(SupportListFilter.apply(text.toByteArray(), null, strictGrand))
+        assertEquals(SupportListCounts(3, 2, 4, 2, grandConditionsSkipped = true), r.counts)
+        assertJudgedWithoutGrand(text, strictGrand)
+        assertJudgedWithoutGrand(text, grandOn.copy(grandScore16 = true, servantClassIds = mapOf(100L to 1)))
+    }
+
+    @Test fun oneFilledGrandEntryAnywhereKeepsTheGrandConditions() {
+        val text = body(
+            follower("normal", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
+            follower("grand", grand = listOf(realGrand(100))),
+        )
+        assertEquals(listOf("grand"), kept(text, grandOn))
+        assertEquals(false, SupportListFilter.apply(text.toByteArray(), null, grandOn)!!.counts.grandConditionsSkipped)
+    }
+
+    @Test fun emptyMissingAndMixedGrandContainersAreNoGrandData() {
+        val main = mapOf((1 to 1) to realSlot(100, 1, 1))
+        val other = mapOf((1 to 1) to realSlot(999, 1, 1))
+        val missing = follower("m", main = other).replace(""","userSvtGrandHash":[]""", "")
+        val keyedEmpty = follower("k", main = main).replace(""""userSvtGrandHash":[]""", """"userSvtGrandHash":{}""")
+        val emptyEntry = follower("e", main = other, grand = listOf(realGrand(0)))
+        for (text in listOf(
+            body(follower("a", main = main), follower("b", main = other)),
+            body(missing, follower("a", main = main).replace(""","userSvtGrandHash":[]""", "")),
+            body(follower("a", main = main), missing, keyedEmpty, emptyEntry),
+        )) {
+            assertJudgedWithoutGrand(text, grandOn)
+            assertEquals(true, SupportListFilter.apply(text.toByteArray(), null, grandOn)!!.counts.grandConditionsSkipped, text)
+        }
+    }
+
+    @Test fun anOddGrandContainerStillPassesTheResponseUnchanged() {
+        for (odd in listOf("null", "7", "\"x\"", "[1]", """[{"svtId":"1"}]""")) {
+            val text = body(
+                follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
+                follower("b", main = mapOf((1 to 1) to realSlot(999, 1, 1))).replace(""""userSvtGrandHash":[]""", """"userSvtGrandHash":$odd"""),
+            )
+            assertNull(SupportListFilter.apply(text.toByteArray(), null, grandOn), odd)
+        }
+    }
+
+    // #740 B: never an empty follower list.
+
+    private fun onlyFollower(text: String, criteria: SupportListCriteria): Pair<JsonObject, SupportListCounts> {
+        val r = assertNotNull(SupportListFilter.apply(text.toByteArray(), null, criteria))
+        val root = Json.parseToJsonElement(String(r.wire)).jsonObject
+        assertEquals(Json.parseToJsonElement(text).jsonObject.keys, root.keys)
+        val judged = infos(root).map { it.jsonObject }.filter { it["type"]!!.jsonPrimitive.content in setOf("1", "2") }
+        return judged.single() to r.counts
+    }
+
+    private fun assertWithoutServants(follower: JsonObject, received: String) {
+        val original = Json.parseToJsonElement(received).jsonObject
+        for (key in listOf("userSvtLeaderHash", "eventUserSvtLeaderHash")) {
+            val slots = follower[key]!!.jsonArray
+            val before = original[key]!!.jsonArray
+            slots.forEachIndexed { i, s ->
+                val o = before[i].jsonObject
+                val filled = o["svtId"]!!.jsonPrimitive.content != "0"
+                assertEquals(if (filled) SupportListFilter.blankSlot(o) else o, s, "$key[$i]")
+            }
+        }
+        val keep = setOf("userSvtLeaderHash", "eventUserSvtLeaderHash", "userSvtGrandHash")
+        assertEquals(original.filterKeys { it !in keep }, follower.filterKeys { it !in keep })
+    }
+
+    @Test fun aServantNobodyHasKeepsTheFirstFollowerWithoutServants() {
+        val npc = """{"type":3,"userId":"npc","userSvtLeaderHash":[${realSlot(500, 1, 1)}]}"""
+        val first = follower("a", main = mapOf((1 to 1) to realSlot(300, 1, 1)), grand = listOf(realGrand(300), realGrand(0)),
+            event = mapOf((1 to 2) to realSlot(301, 1, 2)))
+        val text = body(npc, first, follower("b", type = 2, main = mapOf((1 to 1) to realSlot(400, 1, 1))))
+        val (kept, counts) = onlyFollower(text, SupportListCriteria(setOf(100L)))
+        assertEquals("a", kept["userId"]!!.jsonPrimitive.content)
+        assertWithoutServants(kept, first)
+        // The empty entry stays; the filled one goes.
+        assertEquals(Json.parseToJsonElement("[${realGrand(0)}]"), kept["userSvtGrandHash"])
+        assertEquals(SupportListCounts(3, 1, 4, 0, placeholderKept = true), counts)
+        val r = SupportListFilter.apply(text.toByteArray(), null, SupportListCriteria(setOf(100L)))!!
+        val out = infos(Json.parseToJsonElement(String(r.wire)).jsonObject)
+        assertEquals(Json.parseToJsonElement(npc), out[0])
+        assertEquals(listOf("npc", "a"), out.map { it.jsonObject["userId"]!!.jsonPrimitive.content })
+    }
+
+    @Test fun friendsOnlyWithNoMatchingFriendKeepsTheFirstJudgedFollower() {
+        val first = follower("n", type = 2, main = mapOf((1 to 1) to realSlot(100, 1, 1)))
+        val text = body(first, follower("f", main = mapOf((1 to 1) to realSlot(999, 1, 1))))
+        val (kept, counts) = onlyFollower(text, SupportListCriteria(setOf(100L), friendsOnly = true))
+        assertEquals("n", kept["userId"]!!.jsonPrimitive.content)
+        assertWithoutServants(kept, first)
+        assertEquals(0, counts.followersAfter)
+        assertTrue(counts.placeholderKept)
+    }
+
+    @Test fun aGrandConfigThatMatchesNobodyOnJpKeepsTheFirstFollowerWithAnEmptyGrandContainer() {
+        val first = follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(999)))
+        val keyed = first.replace(""""userSvtGrandHash":[${realGrand(999)}]""", """"userSvtGrandHash":{"1":${realGrand(999)}}""")
+        for ((received, empty) in listOf(first to "[]", keyed to "{}")) {
+            val text = body(received, follower("b", grand = listOf(realGrand(998))))
+            val (kept, counts) = onlyFollower(text, grandOn)
+            assertWithoutServants(kept, received)
+            assertEquals(Json.parseToJsonElement(empty), kept["userSvtGrandHash"])
+            assertEquals(SupportListCounts(2, 0, 3, 0, placeholderKept = true), counts)
+        }
+    }
+
+    @Test fun oneMatchingFollowerKeepsTheRulesOfToday() {
+        val text = body(follower("a", main = mapOf((1 to 1) to realSlot(999, 1, 1))), follower("b", main = mapOf((1 to 1) to realSlot(100, 1, 1))))
+        assertEquals(listOf("b"), kept(text, SupportListCriteria(setOf(100L))))
+        assertEquals(false, SupportListFilter.apply(text.toByteArray(), null, SupportListCriteria(setOf(100L)))!!.counts.placeholderKept)
+    }
+
+    @Test fun aFirstFollowerThatCannotBeBlankedSafelyPassesTheResponseUnchanged() {
+        // An event hash that is JSON null is skipped by the judging, but the blank form has nothing to build it from.
+        val odd = follower("a", main = mapOf((1 to 1) to realSlot(999, 1, 1))).replace(""""eventUserSvtLeaderHash":[]""", """"eventUserSvtLeaderHash":null""")
+        assertNull(SupportListFilter.apply(body(odd, follower("b", main = mapOf((1 to 1) to realSlot(998, 1, 1)))).toByteArray(), null, SupportListCriteria(setOf(100L))))
+        // An unseen shape in the first follower: unchanged as before.
+        val unseen = follower("a", main = mapOf((1 to 1) to realSlot(999, 1, 1))).replace(""""svtId":999""", """"svtId":"999"""")
+        assertNull(SupportListFilter.apply(body(unseen, follower("b")).toByteArray(), null, SupportListCriteria(setOf(100L))))
     }
 
     private companion object {

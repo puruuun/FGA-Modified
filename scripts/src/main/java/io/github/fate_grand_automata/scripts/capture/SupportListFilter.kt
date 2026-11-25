@@ -63,6 +63,14 @@ data class SupportListCriteria(
         get() = servantIds.isNotEmpty() || ceIds.isNotEmpty() || maxAscended || displayedAscensions.isNotEmpty() ||
             skillsMax.any { it } || appendsMax.any { it } || minimumNpLevel > 0 || classScore62 || friendsOnly ||
             grandServant || grandScore16 || bondCeEffect != BondCEEffectEnum.Ignore || bothCeSlots
+
+    /** One of the four grand conditions (#704) is set. */
+    val hasGrandConditions: Boolean
+        get() = grandServant || grandScore16 || bondCeEffect != BondCEEffectEnum.Ignore || bothCeSlots
+
+    /** These criteria as a config without grand options, for a response without grand data (#740). */
+    fun withoutGrandConditions() =
+        copy(grandServant = false, grandScore16 = false, bondCeEffect = BondCEEffectEnum.Ignore, bothCeSlots = false)
 }
 
 /**
@@ -111,6 +119,16 @@ data class SupportListCounts(
     val followersAfter: Int,
     val slotsBefore: Int = 0,
     val slotsAfter: Int = 0,
+    /**
+     * The criteria had grand conditions, but no judged follower of this response had a filled grand entry, so the
+     * four grand conditions were not applied to it (#740). KR sends no grand entries at all.
+     */
+    val grandConditionsSkipped: Boolean = false,
+    /**
+     * Nobody matched, so one follower was kept with every servant blanked: an empty `followerInfo` makes the game's
+     * support screen stop reacting to its buttons (owner's device, #740). It is not counted in [followersAfter].
+     */
+    val placeholderKept: Boolean = false,
 )
 
 /** [wire] is the body as it goes to the game: filtered and encoded like the original. */
@@ -124,6 +142,8 @@ class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
  * are removed and the matching ones stay the received objects, in their order or under their keys (#720), which is
  * the server's own way of sending fewer. A non-matching entry whose userSvtId is that of a kept leader or event slot
  * stays as well. A matching grand entry keeps its follower like any other matching slot.
+ * The grand conditions apply only to a response in which some judged follower has a filled grand entry (#740); and
+ * when no judged follower of a `followerInfo` matches, its first judged follower stays with no servant (#740).
  * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
  * nothing is thrown.
  *
@@ -179,35 +199,45 @@ object SupportListFilter {
         val cache = root["cache"] as? JsonObject ?: return null
         val updated = cache["updated"] as? JsonObject ?: return null
         val followers = updated["userFollower"] as? JsonArray ?: return null
+        val skipGrand = criteria.hasGrandConditions && grandData(followers) == GrandData.None
+        val applied = if (skipGrand) criteria.withoutGrandConditions() else criteria
+        // Grand conditions alone: without them every filled slot matches and nothing would change.
+        if (!applied.hasConditions) return null
         var before = 0
         var after = 0
         var slotsBefore = 0
         var slotsAfter = 0
         var changed = false
+        var placeholder = false
         // A follower or slot of a shape this code has not seen must not be counted as empty, removed or blanked.
         var unknownShape = false
         val newFollowers = followers.map { follower ->
             val entry = follower as? JsonObject ?: return@map follower
             val infos = entry["followerInfo"] as? JsonArray ?: return@map follower
             var entryChanged = false
-            val kept = ArrayList<JsonElement>(infos.size)
-            for (info in infos) {
+            // Received position and element of everything that stays.
+            val kept = ArrayList<Pair<Int, JsonElement>>(infos.size)
+            var firstJudged = -1
+            var judgedKept = 0
+            for ((index, info) in infos.withIndex()) {
                 val candidate = info as? JsonObject
                 if (candidate == null) {
-                    kept += info
+                    kept += index to info
                     continue
                 }
                 before++
                 // Story quests may send other kinds (NPC, fixed support) that the game needs; only friends and non-friends are filtered.
                 if (!isFilterable(candidate)) {
                     after++
-                    kept += candidate
+                    kept += index to candidate
                     continue
                 }
-                val result = reduce(candidate, criteria, excluded = criteria.friendsOnly && !isFriend(candidate))
+                if (firstJudged < 0) firstJudged = index
+                val result = reduce(candidate, applied, excluded = applied.friendsOnly && !isFriend(candidate))
                 if (result == null) {
                     unknownShape = true
-                    kept += candidate
+                    kept += index to candidate
+                    judgedKept++
                     continue
                 }
                 slotsBefore += result.filledBefore
@@ -217,19 +247,92 @@ object SupportListFilter {
                     continue
                 }
                 after++
+                judgedKept++
                 slotsAfter += result.filledAfter
                 if (result.follower !== candidate) {
                     entryChanged = true
                     changed = true
                 }
-                kept += result.follower
+                kept += index to result.follower
             }
-            if (entryChanged) JsonObject(entry + ("followerInfo" to JsonArray(kept))) else entry
+            if (firstJudged >= 0 && judgedKept == 0) {
+                // The game stops reacting to an empty list (#740): the first judged follower stays, with no servant.
+                val blank = blankFollower(infos[firstJudged] as JsonObject) ?: return null
+                kept += firstJudged to blank
+                kept.sortBy { it.first }
+                placeholder = true
+            }
+            if (entryChanged) JsonObject(entry + ("followerInfo" to JsonArray(kept.map { it.second }))) else entry
         }
         if (unknownShape || !changed) return null
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
-        return JsonObject(root + ("cache" to newCache)) to SupportListCounts(before, after, slotsBefore, slotsAfter)
+        return JsonObject(root + ("cache" to newCache)) to
+            SupportListCounts(before, after, slotsBefore, slotsAfter, grandConditionsSkipped = skipGrand, placeholderKept = placeholder)
+    }
+
+    private enum class GrandData { Some, None, NotSure }
+
+    /**
+     * Whether any judged follower holds a filled grand entry (#740). An absent key or an empty container is no grand data;
+     * a container of another kind, or an entry that is not an object with an integer svtId, is a shape this code has not
+     * seen, so the grand conditions stay on and the filter meets that shape as before.
+     */
+    private fun grandData(followers: JsonArray): GrandData {
+        var result = GrandData.None
+        for (follower in followers) {
+            val infos = (follower as? JsonObject)?.get("followerInfo") as? JsonArray ?: continue
+            for (info in infos) {
+                val candidate = info as? JsonObject ?: continue
+                if (!isFilterable(candidate)) continue
+                val entries = when (val hash = candidate[GRAND_HASH]) {
+                    null -> continue
+                    is JsonArray -> hash
+                    is JsonObject -> hash.values
+                    else -> return GrandData.NotSure
+                }
+                for (e in entries) {
+                    val svtId = (e as? JsonObject)?.long("svtId") ?: return GrandData.NotSure
+                    if (svtId > 0L) result = GrandData.Some
+                }
+            }
+        }
+        return result
+    }
+
+    /**
+     * [follower] with every filled leader and event slot in the server's blank form ([blankSlot]) and its grand container
+     * emptied to the same kind, an empty entry kept as it is: the shape the server sends for a follower without grand
+     * servants. Null for any shape this code has not seen.
+     */
+    private fun blankFollower(follower: JsonObject): JsonObject? {
+        fun slot(element: JsonElement): JsonElement? {
+            val row = element as? JsonObject ?: return null
+            val svtId = row.long("svtId") ?: return null
+            return if (svtId > 0L) blankSlot(row) else row
+        }
+        fun empty(element: JsonElement): Boolean? {
+            val svtId = (element as? JsonObject)?.long("svtId") ?: return null
+            return svtId <= 0L
+        }
+        val entries = LinkedHashMap<String, JsonElement>(follower)
+        for (key in SLOT_HASHES) {
+            val hash = follower[key] ?: continue
+            entries[key] = if (key == GRAND_HASH) {
+                when (hash) {
+                    is JsonArray -> JsonArray(hash.filter { empty(it) ?: return null })
+                    is JsonObject -> JsonObject(hash.filter { empty(it.value) ?: return null })
+                    else -> return null
+                }
+            } else {
+                when (hash) {
+                    is JsonArray -> JsonArray(hash.map { slot(it) ?: return null })
+                    is JsonObject -> JsonObject(hash.mapValues { slot(it.value) ?: return null })
+                    else -> return null
+                }
+            }
+        }
+        return JsonObject(entries)
     }
 
     /** type 1 (friend) and 2 (not a friend) as a JSON integer; a string "1" or a missing type is not. */

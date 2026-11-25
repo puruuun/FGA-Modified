@@ -412,6 +412,31 @@ class ProxySupportListFilterTest {
         assertEquals(SupportListLastResult.Result.Unchanged, SupportListLastResult.last.value)
     }
 
+    @Test(timeout = 20000)
+    fun aListWithNoMatchReachesTheGameWithOneFollowerAndTheLastResultSaysSo() {
+        SupportListLastResult.resetForTesting()
+        val nobody = SupportListCriteria(setOf(999L))
+        val e = exchange(response(listJson.toByteArray()), nobody)
+        val expected = SupportListFilter.apply(listJson.toByteArray(), null, nobody)!!
+        assertContentEquals(expected.wire, e.body)
+        assertEquals(1, kept(e.body).size)
+        assertEquals(SupportListLastResult.Result.Filtered(expected.counts), SupportListLastResult.last.value)
+        assertEquals(SupportListCounts(3, 0, 1, 0, placeholderKept = true), expected.counts)
+        assertContentEquals(request, e.upstreamReceived)
+    }
+
+    @Test(timeout = 20000)
+    fun aGrandConditionOnAListWithoutGrandDataReachesTheLastResult() {
+        SupportListLastResult.resetForTesting()
+        val grand = SupportListCriteria(setOf(100L), grandServant = true)
+        val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), grand)
+        val expected = SupportListFilter.apply(gzip(listJson), "gzip", grand)!!
+        assertContentEquals(expected.wire, e.body)
+        assertEquals(1, kept(e.body, "gzip").size)
+        assertEquals(SupportListLastResult.Result.Filtered(expected.counts), SupportListLastResult.last.value)
+        assertTrue(expected.counts.grandConditionsSkipped)
+    }
+
     @Test
     fun readingTurnedOffClearsTheLastResult() {
         val proxy = ProxyServer(

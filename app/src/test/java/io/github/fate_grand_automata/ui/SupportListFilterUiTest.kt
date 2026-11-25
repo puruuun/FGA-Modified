@@ -109,6 +109,23 @@ class SupportListFilterUiTest {
         compose.setContent { FGATheme { SupportListLastResultLine() } }
         compose.onNodeWithText(lastText).assertExists()
         compose.onNodeWithText(context.getString(R.string.capture_support_filter_last, 12, 20)).assertExists()
+        compose.onNodeWithText(grandSkipped).assertDoesNotExist()
+    }
+
+    private val grandSkipped = "이 목록에는 관위 서번트가 없어 관위 조건은 적용하지 않았습니다"
+
+    @Test fun saysWhenTheGrandConditionsWereNotAppliedToTheLastList() {
+        SupportListLastResult.filtered(SupportListCounts(20, 3, 40, 3, grandConditionsSkipped = true))
+        compose.setContent { FGATheme { SupportListLastResultLine() } }
+        compose.onNodeWithText("필터 결과: 20명 중 3명 표시").assertExists()
+        compose.onNodeWithText(grandSkipped).assertExists()
+    }
+
+    @Test fun aListKeptWithOneFollowerWithoutServantsStillShowsZero() {
+        SupportListLastResult.filtered(SupportListCounts(20, 0, 40, 0, placeholderKept = true))
+        compose.setContent { FGATheme { SupportListLastResultLine() } }
+        compose.onNodeWithText("필터 결과: 20명 중 0명 표시").assertExists()
+        compose.onNodeWithText(grandSkipped).assertDoesNotExist()
     }
 
     @Test fun showsNotChangedAfterAPassThrough() {
@@ -116,6 +133,7 @@ class SupportListFilterUiTest {
         SupportListLastResult.unchanged()
         compose.setContent { FGATheme { SupportListLastResultLine() } }
         compose.onNodeWithText("필터 결과: 바꾸지 않음").assertExists()
+        compose.onNodeWithText(grandSkipped).assertDoesNotExist()
     }
 
     private fun prefs(): PrefsCore {
