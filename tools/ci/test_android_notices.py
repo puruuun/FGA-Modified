@@ -209,6 +209,85 @@ class CheckTest(unittest.TestCase):
             '    alignedLibCxx("org.x:y:1@aar")', '    // implementation(libs.newlib)', '    /* api("org.x:y:1") */'])
         self.assertEqual(self.uncovered(declaration), [])
 
+    def test_a_comment_marker_inside_a_string_is_not_a_comment(self):
+        for before in ('    include("jni/*/libc++_shared.so")\n', '    val url = "http://x"\n',
+                       '    val raw = """/* not a comment"""\n', '    val t = "${"/*"}"\n', "    val c = '\"'\n"):
+            problems = self.uncovered(before + '    implementation(libs.newlib)\n    val after = "*/"')
+            self.assertEqual(len(problems), 1, (before, problems))
+            self.assertIn('org.example:newlib', problems[0])
+        problems = self.uncovered('    val s = "a // b"; implementation(libs.newlib)')
+        self.assertEqual(len(problems), 1, problems)
+
+    def test_real_comments_are_still_blanked_and_unterminated_input_fails_closed(self):
+        text = 'a /* x\n y */ b // c\nd "// e" /* nested /* in */ out */ f'
+        blank = a.blank_comments(text)
+        self.assertEqual(len(blank), len(text))
+        self.assertEqual(blank.split(), ['a', 'b', 'd', '"//', 'e"', 'f'])
+        for bad in ('val s = "open', '/* open', 'x {', 'x }', 'val s = "${ "a" '):
+            with self.assertRaises(a.BuildFileError, msg=bad):
+                a.scan(bad)
+        problems = self.uncovered('    implementation(libs.newlib)\n    val s = "open')
+        self.assertTrue(any(p.startswith('app/build.gradle.kts:') and 'reliably' in p for p in problems), problems)
+
+    def test_a_dependencies_block_does_not_end_early_at_a_brace_in_a_literal(self):
+        for literal in ("    val c = '}'", '    val s = "${a("}")}"', '    val r = """${"}"}"""', '    val q = "}"'):
+            problems = self.uncovered(literal + '\n    implementation(libs.newlib)')
+            self.assertEqual(len(problems), 1, (literal, problems))
+            self.assertIn('org.example:newlib', problems[0])
+
+    def test_a_val_line_inside_a_string_is_no_definition(self):
+        body = ('    val x = libs.newlib\n    if (f) {\n        val s = """\nval x = libs.timber\n"""\n'
+                '        implementation(x)\n    }')
+        problems = self.uncovered(body)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn('org.example:newlib', problems[0])
+
+    def test_an_unterminated_raw_string_is_reported_where_it_opens(self):
+        with self.assertRaises(a.BuildFileError) as ctx:
+            a.scan('a\nval r = """open\n\n\nmore')
+        self.assertEqual(ctx.exception.line, 2)
+
+    def test_a_configuration_is_a_test_one_by_the_structure_of_its_name(self):
+        for name in ('implementation', 'api', 'runtimeOnly', 'latestImplementation', 'contestApi', 'attestRuntimeOnly',
+                     'betaImplementation', 'ciRuntimeOnly', 'testerImplementation'):
+            self.assertTrue(a.is_runtime_config(name), name)
+        for name in ('testImplementation', 'testApi', 'testRuntimeOnly', 'testFixturesImplementation',
+                     'androidTestImplementation', 'debugAndroidTestImplementation', 'fooTestRuntimeOnly',
+                     'deviceTestImplementation', 'ksp', 'compileOnly', 'onnxRuntimeAar'):
+            self.assertFalse(a.is_runtime_config(name), name)
+        problems = self.uncovered('    latestImplementation(libs.newlib)')
+        self.assertEqual(len(problems), 1, problems)
+        self.assertEqual(self.uncovered('    deviceTestImplementation(libs.newlib)'), [])
+
+    def test_a_local_val_resolves_to_the_nearest_preceding_definition_in_scope(self):
+        other = 'other = { module = "org.example:other", version = "1" }\n'
+
+        def run(body):
+            t = Tree(self)
+            t.write('gradle/libs.versions.toml', CATALOG + 'newlib = { module = "org.example:newlib", version = "1" }\n' + other)
+            t.write('app/build.gradle.kts', BUILD + body)
+            return t.problems()
+
+        # A later definition elsewhere does not win.
+        problems = run('dependencies {\n    val x = libs.newlib\n    implementation(x)\n}\nval x = libs.other\n')
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn('org.example:newlib', problems[0])
+        # A definition in a block that has been left is not visible; the enclosing one is.
+        problems = run('val x = libs.newlib\ndependencies {\n    if (f) {\n        val x = libs.other\n    }\n    implementation(x)\n}\n')
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn('org.example:newlib', problems[0])
+        # The nearest enclosing definition shadows an outer one.
+        problems = run('val x = libs.other\ndependencies {\n    val x = libs.newlib\n    implementation(x)\n}\n')
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn('org.example:newlib', problems[0])
+        # A definition after the use does not count: the argument cannot be resolved.
+        problems = run('dependencies {\n    implementation(x)\n    val x = libs.newlib\n}\n')
+        self.assertTrue(any('not resolvable' in p for p in problems), problems)
+        # Two definitions in one block cannot be ordered: fail closed with file and line.
+        problems = run('dependencies {\n    val x = libs.newlib\n    val x = libs.other\n    implementation(x)\n}\n')
+        line = BUILD.count('\n') + 4
+        self.assertTrue(any(p.startswith('app/build.gradle.kts:%d:' % line) and 'more than once' in p for p in problems), problems)
+
     def test_a_version_must_match_as_a_whole_token(self):
         t = Tree(self)
         t.write('gradle/libs.versions.toml', CATALOG.replace('timber_version = "5.0.1"', 'timber_version = "5.0"'))
