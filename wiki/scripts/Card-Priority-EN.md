@@ -96,7 +96,7 @@ Turn on **Use Chain Priority** in the entry settings card of the card priority s
 - Tap a tile to turn that chain on or off. A grey tile is never tried.
 - Hold and drag to reorder.
 - A new entry copies the switch and the order of the previous entry.
-- The default is off. Existing settings are read as off.
+- The default is off. Existing settings made in this app are read as off. A config imported from original FGA keeps what the original stored (an imported config with Chain Priority on now really uses it).
 
 The card priority summary on the auto skill config screen marks an entry with it on as `Chain Mighty>Buster>Arts>Quick`.
 
@@ -109,7 +109,7 @@ The card priority summary on the auto skill config screen marks an entry with it
 
 ### Brave Chains "Always"
 
-On an entry with Chain Priority on, Brave Chains gets an **Always** option: also on a turn without an NP, a Brave Chain of one Servant's three cards is picked when the hand has one. With `With NP` or `Always`, a Brave Chain the hand can make on its own wins over a color chain. With Chain Priority off, a saved `Always` acts as `With NP` and is shown as such.
+On an entry with Chain Priority on, Brave Chains gets an **Always** option: also on a turn without an NP, a Brave Chain of one Servant's three cards is picked when the hand has one. With `With NP` or `Always`, a Brave Chain the hand can make on its own wins over a color chain. With Chain Priority off, a saved `Always` acts as `With NP` and is shown as such, and the servant face-card check turns on because of it (this holds for an imported config and also for `Always` chosen in this app and Chain Priority turned off afterwards).
 
 ### Reading the NP card type
 
