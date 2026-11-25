@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,16 +34,18 @@ private val shopTexts = RecordTexts(
 )
 
 @Composable
-internal fun ShopRecordsBlock(source: ShopRecordsSource, now: Long) {
+internal fun ShopRecordsBlock(source: ShopRecordsSource) {
     val flow = remember(source) { source.records() }
     val state by flow.collectAsStateWithLifecycle(ShopRecordsState())
-    DashboardBlock(DashboardBlockId.ShopRecords, stringResource(R.string.dashboard_shop_records)) {
-        ShopRecordsContent(state, now, source.retry)
+    val search = rememberRecordsSearch()
+    val actions: (@Composable RowScope.() -> Unit)? = if (state.records != null) { { RecordsSearchButton(search, shopTexts) } } else null
+    DashboardBlock(DashboardBlockId.ShopRecords, stringResource(R.string.dashboard_shop_records), actions = actions) {
+        ShopRecordsContent(state, source.retry, search)
     }
 }
 
 @Composable
-internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, now: Long, onRetry: () -> Unit) {
+internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, onRetry: () -> Unit, search: RecordsSearch) {
     val records = state.records
     if (records == null) {
         RecordsLoading(shopTexts)
@@ -53,28 +54,19 @@ internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, now: Long, 
     var chosen by rememberSaveable { mutableStateOf<ShopFilter?>(null) }
     val filter = shopFilterFor(chosen, state.names)
     var sort by rememberSaveable { mutableStateOf(ShopSort.LastPurchase) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var buyableOnly by rememberSaveable { mutableStateOf(false) }
-    // A new filter, search, toggle or sort starts again from the first rows.
-    var shown by rememberSaveable(filter, query, sort, buyableOnly) { mutableIntStateOf(RECORDS_FIRST_ROWS) }
+    val query = search.query
+    // A new filter, search or sort starts again from the first rows.
+    var shown by rememberSaveable(filter, query, sort) { mutableIntStateOf(RECORDS_FIRST_ROWS) }
     var expanded by rememberSaveable { mutableStateOf(emptyList<Long>()) }
     var rows by remember { mutableStateOf<List<ShopRow>?>(null) }
-    LaunchedEffect(records, filter, query, sort, buyableOnly, now) {
-        rows = withContext(Dispatchers.Default) { shopView(records, filter, query, sort, buyableOnly, now) }
+    LaunchedEffect(records, filter, query, sort) {
+        rows = withContext(Dispatchers.Default) { shopView(records, filter, query, sort) }
     }
 
     RecordNotices(state, shopTexts, onRetry)
     PrismSummary(records.prisms)
-    RecordsSearchField(query, shopTexts) { query = it }
+    if (search.visible) RecordsSearchField(search, shopTexts)
     ChoiceChips(ShopFilter.entries, filter, { "shop-filter:${it.name}" }, { stringResource(it.label()) }, { chosen = it })
-    Row(
-        Modifier.clickable(role = Role.Switch) { buyableOnly = !buyableOnly }.testTag("shop-buyable"),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Switch(checked = buyableOnly, onCheckedChange = null)
-        Text(stringResource(R.string.dashboard_shop_buyable), style = MaterialTheme.typography.bodyMedium)
-    }
     ChoiceChips(ShopSort.entries, sort, { "shop-sort:${it.name}" }, { stringResource(it.label()) }, { sort = it })
     val current = rows ?: return
     if (current.isEmpty()) {

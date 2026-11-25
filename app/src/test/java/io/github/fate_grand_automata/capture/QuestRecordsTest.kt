@@ -106,21 +106,24 @@ class QuestRecordsTest {
         assertTrue(consumed < total / 10, "read $consumed of $total bytes for the first row")
     }
 
-    @Test fun storyQuestsAreHiddenUnlessTheirChipIsChosen() {
-        assertFalse(1000000L in ids(QuestFilter.All))
-        assertFalse(94010102L in ids(QuestFilter.All))
-        assertFalse(94010102L in ids(QuestFilter.Event))
-        assertEquals(setOf(1000000L, 94010102L), ids(QuestFilter.Story).toSet())
+    @Test fun storyQuestsAreListedAndCountedUnderAll() {
+        // 1000000 is a main story quest, 94010102 an event quest without a battle.
+        assertTrue(1000000L in ids(QuestFilter.All))
+        assertTrue(94010102L in ids(QuestFilter.All))
+        assertTrue(94010102L in ids(QuestFilter.Event))
         val all = questView(records, QuestFilter.All, "", QuestSort.Clears)
-        assertEquals(687L + 1 + 30 + 1 + 120 + 55 + 4, all.totalClears)
-        assertEquals(7, all.clearedQuests)
+        assertEquals(1L + 687 + 1 + 30 + 1 + 120 + 1 + 55 + 4, all.totalClears)
+        assertEquals(9, all.clearedQuests)
+        assertEquals(records.size, all.rows.size)
     }
 
     @Test fun eachChipIsDecidedFromThePublicData() {
         assertEquals(listOf(93000001L), ids(QuestFilter.Free))
-        assertEquals(setOf(94010101L, 94010103L), ids(QuestFilter.Event).toSet())
-        assertEquals(setOf(93000001L, 94010101L), ids(QuestFilter.HighLevel).toSet())
-        assertEquals(setOf(94002501L, 91000101L), ids(QuestFilter.InterludeRankUp).toSet())
+        assertEquals(setOf(94010101L, 94010102L, 94010103L), ids(QuestFilter.Event).toSet())
+        assertEquals(listOf(QuestFilter.All, QuestFilter.Free, QuestFilter.Event, QuestFilter.Daily, QuestFilter.Raid), QuestFilter.entries)
+        // Interlude (war 1003) and rank-up (war 1001) quests have no chip of their own any more.
+        assertEquals(emptySet(), records.single { it.id == 91000101L }.kinds)
+        assertEquals(emptySet(), records.single { it.id == 94002501L }.kinds)
         assertEquals(listOf(94006801L), ids(QuestFilter.Daily))
         assertEquals(listOf(94010101L), ids(QuestFilter.Raid))
     }
@@ -137,22 +140,20 @@ class QuestRecordsTest {
 
     @Test fun searchFindsQuestSpotWarAndEventNames() {
         assertEquals(listOf(93000001L), ids(QuestFilter.All, "교회"))
-        assertEquals(setOf(94010101L, 94010103L), ids(QuestFilter.All, "오행산").toSet())
-        assertEquals(setOf(93000001L), ids(QuestFilter.All, "후유키").toSet())
-        assertEquals(setOf(94010101L, 94010103L), ids(QuestFilter.All, "서유기 이벤트").toSet())
+        assertEquals(setOf(94010101L, 94010102L, 94010103L), ids(QuestFilter.All, "오행산").toSet())
+        assertEquals(setOf(1000000L, 93000001L), ids(QuestFilter.All, "후유키").toSet())
+        assertEquals(setOf(94010101L, 94010102L, 94010103L), ids(QuestFilter.All, "서유기 이벤트").toSet())
         assertEquals(listOf(94010101L), ids(QuestFilter.Raid, " 오행산 "))
         assertEquals(emptyList(), ids(QuestFilter.Free, "오행산"))
     }
 
-    @Test fun rowsCarryTheWarOrEventNameTheSpotAndOnlyHighLevels() {
+    @Test fun rowsCarryTheWarOrEventNameAndTheSpot() {
         val free = records.single { it.id == 93000001L }
         assertEquals("특이점F 염상오염도시 후유키", free.war)
         assertEquals("교회 터", free.spot)
-        assertEquals("90++", free.level)
         assertEquals(690, free.challenges)
         assertEquals(1_763_600_000, free.lastStartedAt)
         assertEquals("서유기 이벤트", records.single { it.id == 94010101L }.war)
-        assertEquals(null, records.single { it.id == 94010103L }.level)
     }
 
     @Test fun sortingByClearsLastRunAndName() {

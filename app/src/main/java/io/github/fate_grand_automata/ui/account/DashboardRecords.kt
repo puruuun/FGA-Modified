@@ -15,7 +15,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -79,23 +83,53 @@ internal fun RecordNotices(state: RecordsState<*>, texts: RecordTexts, onRetry: 
     if (state.damaged) notice(texts.damaged, "$t-records-damaged")
 }
 
+/**
+ * The search of a records block, opened from an icon in the block's heading (owner, 2026-11-26). The field shows while
+ * it is open or a query is set; closing it clears the query.
+ */
+@Stable
+internal class RecordsSearch(query: MutableState<String>, open: MutableState<Boolean>) {
+    var query by query
+    private var open by open
+    val visible get() = open || query.isNotEmpty()
+    fun show() { open = true }
+    fun close() { query = ""; open = false }
+}
+
 @Composable
-internal fun RecordsSearchField(query: String, texts: RecordTexts, onChange: (String) -> Unit) {
+internal fun rememberRecordsSearch(): RecordsSearch {
+    val query = rememberSaveable { mutableStateOf("") }
+    val open = rememberSaveable { mutableStateOf(false) }
+    return remember { RecordsSearch(query, open) }
+}
+
+/** The heading's search icon; with the field shown it closes it. */
+@Composable
+internal fun RecordsSearchButton(search: RecordsSearch, texts: RecordTexts) {
+    IconButton(onClick = { if (search.visible) search.close() else search.show() }, modifier = Modifier.testTag("${texts.tag}-search-open")) {
+        Icon(Icons.Default.Search, stringResource(R.string.dashboard_records_search))
+    }
+}
+
+/** Focused with the keyboard up when it appears; the button at its end clears the query and hides it. */
+@Composable
+internal fun RecordsSearchField(search: RecordsSearch, texts: RecordTexts) {
     val focus = LocalFocusManager.current
+    val requester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) { requester.requestFocus(); keyboard?.show() }
     OutlinedTextField(
-        value = query, onValueChange = onChange, singleLine = true,
+        value = search.query, onValueChange = { search.query = it }, singleLine = true,
         placeholder = { Text(stringResource(texts.search), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        trailingIcon = if (query.isEmpty()) null else {
-            {
-                IconButton(onClick = { onChange("") }, modifier = Modifier.testTag("${texts.tag}-search-clear")) {
-                    Icon(Icons.Default.Clear, stringResource(R.string.dashboard_items_search_clear))
-                }
+        trailingIcon = {
+            IconButton(onClick = { search.close() }, modifier = Modifier.testTag("${texts.tag}-search-clear")) {
+                Icon(Icons.Default.Clear, stringResource(R.string.dashboard_items_search_clear))
             }
         },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
-        modifier = Modifier.fillMaxWidth().testTag("${texts.tag}-search"),
+        modifier = Modifier.fillMaxWidth().focusRequester(requester).testTag("${texts.tag}-search"),
     )
 }
 

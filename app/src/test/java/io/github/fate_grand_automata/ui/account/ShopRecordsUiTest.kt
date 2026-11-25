@@ -46,7 +46,7 @@ class ShopRecordsUiTest {
         show(shopSource(ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready)))
         compose.onNodeWithTag("dashboard-nav:PresentBox").assertTextContains("선물함·상점")
         waitFor("shop-event:80001")
-        compose.onNodeWithText("상점 기록").assertExists()
+        compose.onNodeWithText("상점").assertExists()
         compose.onNodeWithTag("shop-records-summary").assertTextEquals("마나 프리즘 ≈ 340 · 레어 프리즘 ≈ 0 · 퓨어 프리즘 ≈ 5")
         compose.onNodeWithTag("shop-records-excluded").assertTextEquals("구매 수가 초기화된 적이 있는 1종은 추정에서 뺐습니다.")
         compose.onNodeWithTag("shop-event-progress:80001", useUnmergedTree = true).assertTextEquals("1종 완료 / 2종")
@@ -86,14 +86,6 @@ class ShopRecordsUiTest {
         compose.onNodeWithTag("shop-count:99999999").assertTextEquals("2")
     }
 
-    @Test fun buyableOnlyHidesAClosedEventShop() {
-        show(shopSource(ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready)))
-        waitFor("shop-event:80001")
-        compose.onNodeWithTag("shop-buyable").performScrollTo().performClick()
-        waitGone("shop-event:80001")
-        compose.onNodeWithTag("shop-event:80003").assertExists()
-    }
-
     @Test fun missingNamesShowNumbersAndARetry() {
         var retries = 0
         show(shopSource(ShopRecordsState(shopRecordsFixture(names = false), RecordNameStatus.Missing)) { retries++ })
@@ -127,6 +119,19 @@ class ShopRecordsUiTest {
         waitFor("shop:11000101")
         compose.onNodeWithTag("shop-filter:Mana").assertIsSelected()
         compose.onNodeWithTag("shop-event:80001").assertDoesNotExist()
+    }
+
+    @Test fun theShopSearchAlsoOpensFromTheHeadingIcon() {
+        show(shopSource(ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready)))
+        waitFor("shop-event:80001")
+        compose.onNodeWithTag("shop-search").assertDoesNotExist()
+        compose.onNodeWithTag("shop-search-open").performScrollTo().performClick()
+        waitFor("shop-search")
+        compose.onNodeWithTag("shop-search").performTextInput("열린")
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("shop-event:80001").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("shop-search-clear").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("shop-search").fetchSemanticsNodes().isEmpty() }
+        waitFor("shop-event:80001")
     }
 
     @Test fun loadingThenRecords() {

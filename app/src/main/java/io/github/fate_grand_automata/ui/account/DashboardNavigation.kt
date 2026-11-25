@@ -139,7 +139,7 @@ private fun SectionPane(
                 DashboardSection.Collection -> DashboardCollectionSection(data, names, questRecords)
                 DashboardSection.PresentBox -> {
                     data.presentBox?.let { DashboardPresentBoxSection(it, names) }
-                    if (data.hasShopRecords && shopRecords != null) ShopRecordsBlock(shopRecords, now)
+                    if (data.hasShopRecords && shopRecords != null) ShopRecordsBlock(shopRecords)
                 }
             }
         }

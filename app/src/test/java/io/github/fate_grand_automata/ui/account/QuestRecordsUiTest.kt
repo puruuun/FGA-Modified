@@ -68,35 +68,53 @@ class QuestRecordsUiTest {
         waitFor("quest:93000001")
         compose.onNodeWithTag("dashboard-section:${DashboardBlockId.QuestRecords}").assertExists()
         compose.onNodeWithText("퀘스트 기록").assertExists()
-        // Story quests (1000000, 94010102) are not counted under 전체.
-        compose.onNodeWithTag("quest-records-summary").assertTextEquals("클리어 1,982회 · 클리어한 퀘스트 7개")
+        // Story quests (1000000, 94010102) count under 전체.
+        compose.onNodeWithTag("quest-records-summary").assertTextEquals("클리어 1,984회 · 클리어한 퀘스트 9개")
         compose.onNodeWithTag("quest-clears:93000001").assertTextEquals("687회")
         compose.onNodeWithTag("quest-challenges:93000001").assertTextEquals("도전 690")
         compose.onNodeWithTag("quest-challenges:94010101").assertDoesNotExist()
-        compose.onNodeWithTag("quest-level:93000001", useUnmergedTree = true).assertExists()
+        compose.onAllNodesWithText("90++").assertCountEquals(0)
         compose.onNodeWithText("교회 터").assertExists()
         compose.onNodeWithText("특이점F 염상오염도시 후유키 · 교회 터").assertExists()
-        assertEquals(2, compose.onAllNodesWithText("서유기 이벤트 · 오행산").fetchSemanticsNodes().size)
+        assertEquals(3, compose.onAllNodesWithText("서유기 이벤트 · 오행산").fetchSemanticsNodes().size)
         compose.onNodeWithText("#94061234").assertExists()
         compose.onNodeWithText("2025-11-20").assertExists()
     }
 
-    @Test fun storyQuestsAppearOnlyUnderTheirChip() {
+    @Test fun storyQuestsAreListedUnderAllAndTheRemovedChipsAreGone() {
         show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
-        waitFor("quest:93000001")
-        compose.onNodeWithTag("quest:1000000").assertDoesNotExist()
-        compose.onNodeWithTag("quest-filter:Story").performScrollTo().performClick()
         waitFor("quest:1000000")
-        compose.onNodeWithTag("quest:93000001").assertDoesNotExist()
-        compose.onNodeWithTag("quest-records-summary").assertTextEquals("클리어 2회 · 클리어한 퀘스트 2개")
+        compose.onNodeWithTag("quest:94010102").assertExists()
+        for (chip in listOf("All", "Free", "Event", "Daily", "Raid")) compose.onNodeWithTag("quest-filter:$chip").assertExists()
+        for (chip in listOf("HighLevel", "InterludeRankUp", "Story")) compose.onNodeWithTag("quest-filter:$chip").assertDoesNotExist()
     }
 
-    @Test fun searchFindsAnUnnamedQuestByItsNumber() {
+    @Test fun theSearchFieldOpensFromTheHeadingIconAndClosingClearsIt() {
         show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
         waitFor("quest:93000001")
+        compose.onNodeWithTag("quest-search").assertDoesNotExist()
+        compose.onNodeWithContentDescription("검색").assertExists()
+        compose.onNodeWithTag("quest-search-open").performScrollTo().performClick()
+        waitFor("quest-search")
+        compose.onNodeWithTag("quest-search").assertIsFocused()
         compose.onNodeWithTag("quest-search").performTextInput("94061234")
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("quest:93000001").fetchSemanticsNodes().isEmpty() }
         compose.onNodeWithTag("quest:94061234").assertExists()
+        compose.onNodeWithTag("quest-search-clear").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("quest-search").fetchSemanticsNodes().isEmpty() }
+        waitFor("quest:93000001")
+    }
+
+    @Test fun theSearchFieldStaysWhileAQueryIsSet() {
+        show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
+        waitFor("quest:93000001")
+        compose.onNodeWithTag("quest-search-open").performScrollTo().performClick()
+        waitFor("quest-search")
+        compose.onNodeWithTag("quest-search").performTextInput("교회")
+        compose.onNodeWithTag("quest-filter:Free").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("quest:94010101").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("quest-search").assertExists()
+        compose.onNodeWithTag("quest:93000001").assertExists()
     }
 
     @Test fun theListGrowsAPageAtATimeAndAFilterStartsAgain() {
