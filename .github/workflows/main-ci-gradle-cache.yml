@@ -1,0 +1,75 @@
+# The name is Main CI's on purpose. setup-gradle's cache key is
+# `gradle-home-v2|<os>|<job id>[md5(workflow name + matrix)]-<sha>` (checked against the keys of the
+# Main CI, Android Lint and Engine APK entries), and a pull request restores the newest entry whose
+# key starts with its own `test-and-build[<hash>]-`. An entry saved here under another workflow name
+# would lose to the entry that Main CI itself wrote on 2026-11-19, because that prefix is tried first.
+# test_ci_workflows.py keeps the name, the job id and the absence of a matrix equal to main-ci.yml.
+name: Main CI
+
+# run-name only changes how a run is listed; the name above is what the cache key uses.
+run-name: Gradle cache for test-and-build (${{ github.sha }})
+
+# Keeps the Gradle cache entry of Main CI's test-and-build current from main (issue #701; the same
+# problem as #658 for Robolectric's jars and #698 for lint). Main CI does not run on a push to main,
+# so without this the entry that pull requests restore is the last one a full run on main wrote, and
+# everything added since is downloaded from Maven Central, Google and the Plugin Portal on every run.
+# This workflow is not a required check and nothing needs it: a missing entry only makes the pull
+# request job download what it lacks. Pull requests never save (each save evicts main's other caches).
+#
+# It resolves what the pull request job resolves and runs one small test class per test task, which
+# is the cheapest way to resolve the unit-test runtime classpaths (a compile task does not).
+# The test classes are named in test_ci_workflows.py, which fails when one is renamed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - '**/build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/main-ci-gradle-cache.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-ci-gradle-cache-${{ github.ref }}
+  # A cancelled run would lose the cache save it exists for.
+  cancel-in-progress: false
+
+env:
+  GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC"'
+
+jobs:
+  # The job id is part of the cache key: it must stay equal to the job of main-ci.yml that restores it.
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: 21
+          distribution: temurin
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Only main saves; a manual run on another branch must not.
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # As in android-lint.yml: task outputs are not worth several hundred MB in a cache that is near its limit.
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
+      - name: Resolve what the unit tests need
+        # One plain JVM test class per test task: the task compiles its module and resolves its test runtime
+        # classpath, which is what Main CI's "Run unit tests" step downloads. No Robolectric class is chosen,
+        # so no android-all jar is needed here.
+        run: >-
+          ./gradlew
+          :app:testCiUnitTest --tests '*AppThemeTest'
+          :prefs:testCiUnitTest --tests '*ExecutionProfileCoreTest'
+          :scripts:test --tests '*SupportSelectionTest'
+          :libautomata:test
