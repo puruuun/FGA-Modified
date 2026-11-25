@@ -230,7 +230,8 @@ internal class QuestRecordsLoader(
         return combine(keys.distinctUntilChanged(), scriptRunning.distinctUntilChanged(), retries) { key, running, retry -> Triple(key, running, retry) }
             .transformLatest { (key, running, retry) ->
                 val previous = last
-                if (previous != null && running) {
+                // The flag is read as well as the flow: an account update can arrive before the flow's own value does.
+                if (previous != null && (running || isScriptRunning())) {
                     val paused = previous.copy(paused = key != builtKey)
                     if (paused != previous) { last = paused; emit(paused) }
                     return@transformLatest
