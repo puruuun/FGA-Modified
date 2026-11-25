@@ -102,8 +102,7 @@ object DisplayedAscension {
 /**
  * Counts only, for the debug log and the settings line: no ids and no names. Slots are the filled ones
  * (svtId > 0) of the followers that are filtered (type 1 and 2), grand entries included. [slotsAfter] is the filled
- * slots left in the kept followers: their matching slots, and the non-matching grand entries that stay because a kept
- * leader or event slot holds the same user servant. Any other non-matching slot is blanked and any other non-matching
+ * slots left in the kept followers, which are their matching slots: a non-matching slot is blanked and a non-matching
  * grand entry is removed (#720).
  */
 data class SupportListCounts(
@@ -122,8 +121,7 @@ class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
  * form (see [blankSlot]). A slot that matches, a slot that is already empty and every other key stay as received.
  * A grand entry (`userSvtGrandHash`) is never blanked or rewritten (#706): in a kept follower the non-matching entries
  * are removed and the matching ones stay the received objects, in their order or under their keys (#720), which is
- * the server's own way of sending fewer. A non-matching entry whose userSvtId is that of a kept leader or event slot
- * stays as well. A matching grand entry keeps its follower like any other matching slot.
+ * the server's own way of sending fewer. A matching grand entry keeps its follower like any other matching slot.
  * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
  * nothing is thrown.
  *
@@ -283,17 +281,8 @@ object SupportListFilter {
             return matches
         }
 
-        // The userSvtIds of the leader and event slots that match and stay, and whether one of them had none readable.
-        val keptUserSvtIds = HashSet<Long>()
-        var keptSlotWithoutUserSvtId = false
-
         fun reduceSlot(slot: JsonElement): JsonElement {
-            val matches = matchOf(slot, grand = false)
-            if (matches == true) {
-                val id = (slot as JsonObject).long("userSvtId")
-                if (id == null) keptSlotWithoutUserSvtId = true else keptUserSvtIds += id
-            }
-            if (matches != false) return slot
+            if (matchOf(slot, grand = false) != false) return slot
             changed = true
             return blankSlot(slot as JsonObject)
         }
@@ -301,29 +290,13 @@ object SupportListFilter {
         /**
          * Whether a grand entry stays. The server never sends a blank grand entry, it sends fewer (#706, #720), so a
          * non-matching entry is removed rather than blanked. An empty one (svtId 0) stays as received, like an empty slot.
-         * A non-matching entry of the same user servant as a kept leader or event slot stays too (planner, #720): nobody
-         * can show that the server ever sends such a slot without its grand entry, or that the client does not look it up.
-         * It does not keep its follower and counts as left in [Reduced.filledAfter].
          */
         fun keepGrand(entry: JsonElement): Boolean {
             if (matchOf(entry, grand = true) != false) return true
-            if (keptUserSvtIds.isNotEmpty() || keptSlotWithoutUserSvtId) {
-                val id = (entry as JsonObject).long("userSvtId")
-                if (id == null || keptSlotWithoutUserSvtId) {
-                    failed = true
-                    return true
-                }
-                if (id in keptUserSvtIds) {
-                    filledAfter++
-                    return true
-                }
-            }
             changed = true
             return false
         }
 
-        // SLOT_HASHES ends with the grand hash, so every leader and event slot is decided before any grand entry, whatever
-        // the key order of the follower; [entries] keeps the received key order.
         for (key in SLOT_HASHES) {
             val hash = follower[key]
             if (key == GRAND_HASH) {

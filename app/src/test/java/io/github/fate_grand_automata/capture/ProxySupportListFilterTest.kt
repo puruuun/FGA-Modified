@@ -38,8 +38,7 @@ import kotlin.test.assertTrue
 class ProxySupportListFilterTest {
     private val gameHost = CaptureNames.JP_HOST
 
-    private fun slot(svt: Long, deck: Int, cls: Int) =
-        """{"supportDeckId":$deck,"classId":$cls,"svtId":$svt,"userSvtId":${if (svt == 0L) 0 else 7000 + svt},"equipTarget1":{"svtId":0}}"""
+    private fun slot(svt: Long, deck: Int, cls: Int) = """{"supportDeckId":$deck,"classId":$cls,"svtId":$svt,"equipTarget1":{"svtId":0}}"""
 
     private fun hash(svt: Long = 0) = (1..3).flatMap { d -> (0..8).map { c -> slot(if (d == 1 && c == 1) svt else 0, d, c) } }.joinToString(",")
 

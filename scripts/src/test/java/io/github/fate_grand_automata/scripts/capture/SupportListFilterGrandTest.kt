@@ -28,7 +28,7 @@ class SupportListFilterGrandTest {
     }
 
     /** A filled slot of userSvtLeaderHash in the real key order. */
-    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0, user: String = "42"): String {
+    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0): String {
         val parts = mutableListOf<String>()
         parts += """"afterTransformSvtInfo":null"""
         parts += limitKeys.map { """"$it":4""" }
@@ -36,7 +36,7 @@ class SupportListFilterGrandTest {
         parts += """"randomLimitCountTargets":[1,2],"classPassive":[3]"""
         parts += """"equipTarget1":${equip(ce)}"""
         parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}],"script":{},"eventSvtPoint":5,"imagePartsGroupInfo":[]"""
-        parts += """"userId":555,"supportDeckId":$deck,"classId":$cls,"userSvtId":$user,"svtId":$svt,"limitCount":4,"lv":90,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
+        parts += """"userId":555,"supportDeckId":$deck,"classId":$cls,"userSvtId":42,"svtId":$svt,"limitCount":4,"lv":90,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
         parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
         return "{" + parts.joinToString(",") + "}"
     }
@@ -60,7 +60,7 @@ class SupportListFilterGrandTest {
      */
     private fun realGrand(
         svt: Long, ce1: Long = 0, bond: Long = 0, ce3: Long = 0, change: Int? = null,
-        ce1Limit: Int = 4, ce3Limit: Int = 4, graph: Long = 10001, user: String = "43",
+        ce1Limit: Int = 4, ce3Limit: Int = 4, graph: Long = 10001,
     ): String {
         val parts = mutableListOf<String>()
         parts += """"afterTransformSvtInfo":null"""
@@ -71,7 +71,7 @@ class SupportListFilterGrandTest {
         parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}]"""
         parts += """"script":{${change?.let { """"equipTarget2SkillChange":$it,""" } ?: ""}"isSetClassBoardBaseIds":[]},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
         parts += """"grandGraphId":$graph,"isSetClassBoardBaseIds":[]"""
-        parts += """"userId":555,"userSvtId":$user,"svtId":$svt,"limitCount":4,"lv":120,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
+        parts += """"userId":555,"userSvtId":43,"svtId":$svt,"limitCount":4,"lv":120,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
         parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
         return "{" + parts.joinToString(",") + "}"
     }
@@ -81,10 +81,8 @@ class SupportListFilterGrandTest {
 
     private fun follower(
         id: String, type: Int = 1, main: Map<Pair<Int, Int>, String> = emptyMap(), grand: List<String> = emptyList(), boards: String? = null,
-        event: Map<Pair<Int, Int>, String> = emptyMap(),
     ) = """{"type":$type,"userId":"$id","mainSupportDeckIds":[1,2,3],"eventSupportDeckIds":[4],"userSvtLeaderHash":[${realHash(main).joinToString(",")}],""" +
-        """"eventUserSvtLeaderHash":[${if (event.isEmpty()) "" else realHash(event).joinToString(",")}],""" +
-        """"userSvtGrandHash":[${grand.joinToString(",")}]${boards?.let { ""","userClassBoardInfo":$it""" }.orEmpty()}}"""
+        """"eventUserSvtLeaderHash":[],"userSvtGrandHash":[${grand.joinToString(",")}]${boards?.let { ""","userClassBoardInfo":$it""" }.orEmpty()}}"""
 
     private fun body(vararg followers: String) =
         """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"userId":"me","followerInfo":[${followers.joinToString(",")}]}]},"serverTime":1}}"""
@@ -551,92 +549,6 @@ class SupportListFilterGrandTest {
         assertEquals(Json.parseToJsonElement(serverEmptySlot(2, 2)), after["userSvtLeaderHash"]!!.jsonArray[9 + 2])
         assertEquals(SupportListCounts(2, 1, 3, 1), counts)
         assertNull(kept(body(follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1)))), c))
-    }
-
-    // #720, planner decision: a grand entry of the same user servant as a kept leader or event slot is not removed.
-
-    private val ceOnly = SupportListCriteria(setOf(100L), setOf(7L))
-
-    @Test fun aGrandEntryOfTheUserServantOfAMatchingLeaderSlotStaysWhileOtherNonMatchingEntriesGo() {
-        val text = body(
-            follower(
-                "a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7, user = "501")),
-                grand = listOf(
-                    realGrand(100, ce1 = 9, user = "501"), realGrand(999, user = "502", graph = 10002),
-                    realGrand(100, ce1 = 7, user = "503", graph = 10003), realGrand(100, ce1 = 9, user = "504", graph = 10004),
-                ),
-            ),
-            follower("gone", main = mapOf((1 to 1) to realSlot(999, 1, 1))),
-        )
-        assertGrandEntries(text, ceOnly, mapOf("a" to listOf(0, 2)))
-        // Before: 5 + 1 filled; after: the leader slot, the matching entry and the one it protects.
-        assertEquals(SupportListCounts(2, 1, 6, 3), assertNotNull(SupportListFilter.apply(text.toByteArray(), null, ceOnly)).counts)
-    }
-
-    @Test fun aLeaderSlotThatDoesNotMatchProtectsNothing() {
-        val text = body(
-            follower(
-                "a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 8, user = "501")),
-                grand = listOf(realGrand(100, ce1 = 9, user = "501"), realGrand(100, ce1 = 7, user = "503", graph = 10002)),
-            ),
-        )
-        assertGrandEntries(text, ceOnly, mapOf("a" to listOf(1)))
-    }
-
-    @Test fun withGrandOnlyCriteriaTheBlankedLeaderSlotProtectsNothing() {
-        val text = body(
-            follower(
-                "a", main = mapOf((1 to 1) to realSlot(100, 1, 1, user = "501")),
-                grand = listOf(realGrand(999, user = "501"), realGrand(100, user = "502", graph = 10002)),
-            ),
-        )
-        assertGrandEntries(text, grandOn, mapOf("a" to listOf(1)))
-    }
-
-    @Test fun aMatchingEventSlotProtectsTheGrandEntryOfItsUserServantToo() {
-        val text = body(
-            follower("a", event = mapOf((1 to 1) to realSlot(100, 1, 1, user = "601")), grand = listOf(realGrand(999, user = "601"), realGrand(998, user = "602", graph = 10002))),
-            follower("b", event = mapOf((1 to 1) to realSlot(100, 1, 1, user = "701")), grand = listOf(realGrand(999, user = "701"))),
-            follower("gone", grand = listOf(realGrand(999, user = "601"))),
-        )
-        assertGrandEntries(text, SupportListCriteria(setOf(100L)), mapOf("a" to listOf(0), "b" to listOf(0)))
-    }
-
-    @Test fun leaderSlotsAreDecidedBeforeTheGrandHashWhateverTheKeyOrder() {
-        val grandFirst = """{"type":1,"userId":"o","userSvtGrandHash":[${realGrand(999, user = "501")},${realGrand(998, user = "502", graph = 10002)}],""" +
-            """"userSvtLeaderHash":[${realSlot(100, 1, 1, user = "501")},${realSlot(997, 1, 2, user = "503")}],"eventUserSvtLeaderHash":[]}"""
-        val text = body(grandFirst)
-        assertGrandEntries(text, SupportListCriteria(setOf(100L)), mapOf("o" to listOf(0)))
-        val (before, after) = firstOut(text, SupportListCriteria(setOf(100L)))
-        assertEquals(before.keys.toList(), after.keys.toList())
-    }
-
-    @Test fun aMatchingLeaderSlotWithoutAnIntegerUserSvtIdLeavesTheResponseUnchangedOnlyWhenAGrandEntryWouldGo() {
-        for (user in listOf("MISSING", "\"501\"", "1.5", "null", "{}")) {
-            val slot = realSlot(100, 1, 1, ce = 7, user = user).replace(""""userSvtId":MISSING,""", "")
-            val gone = follower("gone", main = mapOf((1 to 1) to realSlot(999, 1, 1)))
-            val removing = follower("a", main = mapOf((1 to 1) to slot), grand = listOf(realGrand(100, ce1 = 9, user = "501")))
-            assertNull(SupportListFilter.apply(body(removing, gone).toByteArray(), null, ceOnly), user)
-            // Nothing to remove from the grand list: the filter runs.
-            val keeping = follower("a", main = mapOf((1 to 1) to slot), grand = listOf(realGrand(100, ce1 = 7, user = "501")))
-            assertEquals(listOf("a"), kept(body(keeping, gone), ceOnly), user)
-            assertEquals(listOf("a"), kept(body(follower("a", main = mapOf((1 to 1) to slot)), gone), ceOnly), user)
-        }
-    }
-
-    @Test fun aGrandEntryWithoutAnIntegerUserSvtIdLeavesTheResponseUnchangedOnlyWhenAKeptSlotCouldProtectIt() {
-        for (user in listOf("MISSING", "\"501\"", "1.5", "null", "[]")) {
-            val entry = realGrand(100, ce1 = 9, user = user).replace(""""userSvtId":MISSING,""", "")
-            val gone = follower("gone", main = mapOf((1 to 1) to realSlot(999, 1, 1)))
-            val withLeader = follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7, user = "501")), grand = listOf(entry))
-            assertNull(SupportListFilter.apply(body(withLeader, gone).toByteArray(), null, ceOnly), user)
-            // Kept by a grand entry only: no slot can protect it, so it goes.
-            val grandOnly = follower("a", grand = listOf(entry, realGrand(100, ce1 = 7, user = "503", graph = 10002)))
-            assertGrandEntries(body(grandOnly, gone), ceOnly, mapOf("a" to listOf(1)))
-            // A matching entry is never looked at for its userSvtId.
-            val matching = realGrand(100, ce1 = 7, user = user).replace(""""userSvtId":MISSING,""", "")
-            assertGrandEntries(body(follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7, user = "501")), grand = listOf(matching)), gone), ceOnly, mapOf("a" to listOf(0)))
-        }
     }
 
     private companion object {
