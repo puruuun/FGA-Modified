@@ -244,13 +244,7 @@ class AccountState(
                 if (table in OTHER_PLAYER_TABLES) return@forEach
                 val existing = tables[table]
                 val current = existing?.let(::parseArray)?.toMutableList() ?: mutableListOf()
-                var changed = existing == null
-                for (row in rows) {
-                    val key = rowKey(table, row) ?: continue
-                    val index = current.indexOfFirst { rowKey(table, it) == key }
-                    if (index < 0) { current += row; changed = true }
-                    else if (current[index] != row) { current[index] = row; changed = true }
-                }
+                val changed = mergeUpdatedRows(current, rows) { rowKey(table, it) } || existing == null
                 if (changed) tables[table] = JsonArray(current).toString()
             }
             sections.deleted.forEach { (table, rows) ->
@@ -265,6 +259,32 @@ class AccountState(
             val time = sections.serverTime ?: base.serverTime
             if (!login && tables == base.rawTables && time == base.serverTime) return base
             return AccountState(tables, base.rawLoginResponse, time, base.snapshotTime, now)
+        }
+
+        /**
+         * Merges [rows] into [current] in place and returns whether anything changed. A row with a stored key replaces
+         * the first stored row with that key in its place; a row with a new key is appended in arrival order, so a
+         * second row with the same key in one response replaces the first. Rows without a key are skipped.
+         *
+         * Issue #733: a login carries whole tables in `cache.updated` (KR `userShop`, 4,687 rows), so each key is
+         * computed once and looked up instead of scanning [current] per row. The index lives only for this call.
+         */
+        internal fun mergeUpdatedRows(
+            current: MutableList<JsonElement>,
+            rows: List<JsonElement>,
+            key: (JsonElement) -> List<Pair<String, String>>?,
+        ): Boolean {
+            if (rows.isEmpty()) return false
+            val firstIndex = HashMap<List<Pair<String, String>>, Int>(maxOf(16, (current.size + rows.size) * 4 / 3 + 1))
+            current.forEachIndexed { i, row -> key(row)?.let { firstIndex.putIfAbsent(it, i) } }
+            var changed = false
+            for (row in rows) {
+                val rowKey = key(row) ?: continue
+                val index = firstIndex[rowKey]
+                if (index == null) { firstIndex[rowKey] = current.size; current += row; changed = true }
+                else if (current[index] != row) { current[index] = row; changed = true }
+            }
+            return changed
         }
 
         /** Composite fallback is sorted and excludes userId so table-wide updates remain stable. */
