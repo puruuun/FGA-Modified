@@ -93,6 +93,10 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         minimumNpLevel.set(3)
         npLevelCheck.set(true)
         score62Check.set(true)
+        grandServant.set(true)
+        grandScore16Check.set(true)
+        bondCEEffect.set(io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum.NP)
+        requireBothNormalAndRewardMatch.set(true)
         friendsOnly.set(true)
     }
 
@@ -154,8 +158,10 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         val prefs = prefs()
         val profile = prefs.addSupportFilterProfile("주회용 필터", "a")
         profile.support.preferredServants.set(setOf("Arcueid"))
+        profile.support.preferredCEs.set(setOf("Black Grail.png"))
+        profile.support.grandServant.set(true)
         val vm = SupportViewModel(StorageProvider(prefs, context))
-        shoot("ProfileScreen", 360, 1400) {
+        shoot("ProfileScreen", 360, 1800) {
             SupportFilterProfile(
                 prefs, profile, vm,
                 filter = SupportListFilterUi(

@@ -36,6 +36,8 @@ class SupportListFilterPrefsTest {
         source.friendNames.set(setOf("friend.png"))
         source.grandServant.set(true)
         source.bondCEEffect.set(BondCEEffectEnum.NP)
+        source.grandScore16Check.set(true)
+        source.requireBothNormalAndRewardMatch.set(true)
 
         val (_, target) = core()
         target.copyConditionsFrom(source)
@@ -56,6 +58,27 @@ class SupportListFilterPrefsTest {
         assertThat(target.friendNames.get()).isEqualTo(setOf("friend.png"))
         assertThat(target.grandServant.get()).isTrue()
         assertThat(target.bondCEEffect.get()).isEqualTo(BondCEEffectEnum.NP)
+        assertThat(target.grandScore16Check.get()).isTrue()
+        assertThat(target.requireBothNormalAndRewardMatch.get()).isTrue()
+    }
+
+    @Test
+    fun `the grand conditions survive a profile save and load`() {
+        val (_, config) = core()
+        config.preferredServants.set(setOf("Arcueid"))
+        config.grandServant.set(true)
+        config.grandScore16Check.set(true)
+        config.bondCEEffect.set(BondCEEffectEnum.Default)
+        config.requireBothNormalAndRewardMatch.set(true)
+        val profileFile = InMemorySharedPreferences()
+        SupportFilterProfileCore("p", profileFile).support.copyConditionsFrom(config)
+        val (_, active) = core()
+        // A new reader of the same file, as after an app restart.
+        active.copyConditionsFrom(SupportFilterProfileCore("p", profileFile).support)
+        assertThat(active.grandServant.get()).isTrue()
+        assertThat(active.grandScore16Check.get()).isTrue()
+        assertThat(active.bondCEEffect.get()).isEqualTo(BondCEEffectEnum.Default)
+        assertThat(active.requireBothNormalAndRewardMatch.get()).isTrue()
     }
 
     @Test

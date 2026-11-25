@@ -1613,8 +1613,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_list_filter_screen_only">"Screen reading only"</string>
     <string name="support_list_filter_capture_off">"Log collection is off, so the filter does nothing. Turn on log collection under More > Additional features."</string>
     <string name="support_list_filter_unmapped">"The filter does not run: these could not be matched to a game ID: %1$s"</string>
-    <string name="support_list_filter_no_class_list">"The filter does not run: the class score condition needs the servant list, which is not on this device yet. The friend manager, the account dashboard and the image download get it."</string>
-    <string name="support_list_filter_unknown_class">"The filter does not run: the class score condition needs the class of these servants, which is not known yet: %1$s"</string>
+    <string name="support_list_filter_no_class_list">"The filter does not run: the class score or grand score condition needs the servant list, which is not on this device yet. The friend manager, the account dashboard and the image download get it."</string>
+    <string name="support_list_filter_unknown_class">"The filter does not run: the class score or grand score condition needs the class of these servants, which is not known yet: %1$s"</string>
     <string name="support_list_filter_ascension">"Displayed ascension"</string>
     <string name="support_list_filter_ascension_any">"Any"</string>
     <string name="support_list_filter_ascension_set">"Set for %1$d servants"</string>
@@ -1638,6 +1638,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_list_filter_part_score">"class score +62"</string>
     <string name="support_list_filter_part_friends">"friends only"</string>
     <string name="support_list_filter_part_final">"final ascension"</string>
+    <string name="support_list_filter_part_grand_score">"grand score +16"</string>
+    <string name="support_list_filter_part_bond_ce">"bond CE: %1$s"</string>
+    <string name="support_list_filter_part_both_ces">"both CE slots match"</string>
     <string name="support_list_filter_summary_profile">"Copied into the support list filter when you load this profile in the play button menu or choose \"Use as active filter\". Only the conditions marked \"Filtered\" are applied. Changing the profile later does not change the active filter: load it again."</string>
     <string name="support_filter_feature">"Use this feature"</string>
     <string name="support_filter_feature_summary">"Off: the play button menu shows no support filter and nothing is filtered. On: the play button menu gets a \"Support filter\" button with the toggle and the conditions. Needs log collection."</string>

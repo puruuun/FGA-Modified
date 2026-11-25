@@ -1,5 +1,6 @@
 package io.github.fate_grand_automata.scripts.capture
 
+import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -39,11 +40,29 @@ data class SupportListCriteria(
     val servantClassIds: Map<Long, Int> = emptyMap(),
     /** Followers that are not friends (type 2) are left out. */
     val friendsOnly: Boolean = false,
+    /** Only entries of `userSvtGrandHash` match (#704); a slot of the other hashes never does. */
+    val grandServant: Boolean = false,
+    /**
+     * The grand board of the servant's class is complete, which the support screen shows as "+16" (#704). Read from
+     * [servantClassIds] like [classScore62]; a slot that is not a grand entry never matches it.
+     */
+    val grandScore16: Boolean = false,
+    /**
+     * Only with [ceIds]: the effect of a grand entry's bond CE (`equipTarget2`). Anything but Ignore is a condition that
+     * a slot that is not a grand entry never matches.
+     */
+    val bondCeEffect: BondCEEffectEnum = BondCEEffectEnum.Ignore,
+    /**
+     * Only with [ceIds]: both CE slots of a grand entry (`equipTarget1` and `equipTarget3`) hold a chosen CE. A slot
+     * that is not a grand entry never matches it.
+     */
+    val bothCeSlots: Boolean = false,
 ) {
     /** False when nothing is set: the proxy then relays the list untouched. */
     val hasConditions: Boolean
         get() = servantIds.isNotEmpty() || ceIds.isNotEmpty() || maxAscended || displayedAscensions.isNotEmpty() ||
-            skillsMax.any { it } || appendsMax.any { it } || minimumNpLevel > 0 || classScore62 || friendsOnly
+            skillsMax.any { it } || appendsMax.any { it } || minimumNpLevel > 0 || classScore62 || friendsOnly ||
+            grandServant || grandScore16 || bondCeEffect != BondCEEffectEnum.Ignore || bothCeSlots
 }
 
 /**
@@ -100,7 +119,8 @@ class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
  * in the followers that stay, replaces every filled slot that does not match with the server's own empty-slot
  * form (see [blankSlot]). A slot that matches, a slot that is already empty and every other key stay as received.
  * `userSvtGrandHash` is never rewritten (#706): a matching grand entry keeps its follower like any other matching
- * slot, but the grand list of a kept follower is the element as received, matching entries or not.
+ * slot, but the grand list of a kept follower is the element as received, matching entries or not. The grand
+ * conditions (#704) only decide which slots match, so they decide which followers stay, never what a grand entry holds.
  * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
  * nothing is thrown.
  *
@@ -234,6 +254,8 @@ object SupportListFilter {
         // Read once per follower, and only when a condition needs it.
         val boards = if (criteria.classScore62 && !excluded) classBoards(follower) else Boards.Missing
         if (boards == Boards.Odd) return null
+        val grandBoards = if (criteria.grandScore16 && !excluded) grandBoards(follower) else GrandBoards.Missing
+        if (grandBoards == GrandBoards.Odd) return null
 
         fun reduceSlot(slot: JsonElement, grand: Boolean): JsonElement {
             val row = slot as? JsonObject
@@ -244,7 +266,7 @@ object SupportListFilter {
             }
             if (svtId <= 0L) return slot
             filledBefore++
-            val matches = if (excluded) false else passes(row, grand, criteria, boards)
+            val matches = if (excluded) false else passes(row, grand, criteria, boards, grandBoards)
             if (matches == null) {
                 failed = true
                 return slot
@@ -287,29 +309,41 @@ object SupportListFilter {
 
     /**
      * A filled slot matches when every condition that is set holds. Null when a field a set condition reads has a shape
-     * this code has not seen, so the caller passes the response through. [boards] is the follower's class boards;
-     * without them a slot that needs the class score does not match.
+     * this code has not seen, so the caller passes the response through. [boards] is the follower's class boards and
+     * [grandBoards] its grand boards; without them a slot that needs the class score or the grand score does not match.
      */
-    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Boards): Boolean? {
+    private fun passes(
+        row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Boards, grandBoards: GrandBoards,
+    ): Boolean? {
         val svtId = row.long("svtId")
         if (svtId == null || svtId <= 0L) return false
         if (criteria.servantIds.isNotEmpty() && svtId !in criteria.servantIds) return false
+        // The script's screen reading drops a row without the grand label, and only a grand entry carries it (#704).
+        if (criteria.grandServant && !grand) return false
+        // The script reads the bond CE and the two CE slots only with a preferred CE.
         if (criteria.ceIds.isNotEmpty()) {
+            // As the script: a normal row fails the grand CE conditions, which only a grand row can meet.
+            if (!grand && (criteria.bothCeSlots || criteria.bondCeEffect != BondCEEffectEnum.Ignore)) return false
             // Grand slots hold their CEs in equipTarget1 and equipTarget3; equipTarget2 is the bond CE and stays out of the match.
             val ceKeys = if (grand) listOf("equipTarget1", "equipTarget3") else listOf("equipTarget1", "equipTarget2")
-            var matched = false
+            var matchedSlots = 0
             for (key in ceKeys) {
                 val ce = ceId(row, key)
                 if (ce == UNKNOWN_CE) return null
                 if (ce == null || ce !in criteria.ceIds) continue
                 if (!criteria.ceMlb) {
-                    matched = true
+                    matchedSlots++
                     continue
                 }
                 val limit = (row[key] as JsonObject).long("limitCount") ?: return null
-                if (limit == 4L) matched = true
+                if (limit == 4L) matchedSlots++
             }
-            if (!matched) return false
+            val required = if (grand && criteria.bothCeSlots) ceKeys.size else 1
+            if (matchedSlots < required) return false
+            if (grand && criteria.bondCeEffect != BondCEEffectEnum.Ignore) {
+                val shown = bondEffect(row) ?: return null
+                if (shown != criteria.bondCeEffect) return false
+            }
         }
         if (criteria.maxAscended && (row.long("limitCount") ?: return null) != 4L) return false
         criteria.displayedAscensions[svtId]?.let { accepted ->
@@ -330,11 +364,40 @@ object SupportListFilter {
             val classId = criteria.servantClassIds[svtId] ?: return false
             if (boards !is Boards.Read || boards.full[classId] != true) return false
         }
+        if (criteria.grandScore16) {
+            if (!grand) return false
+            val classId = criteria.servantClassIds[svtId] ?: return false
+            val board = grandBoardOf(classId) ?: return false
+            if (grandBoards !is GrandBoards.Read || grandBoards.squares[GRAND_BOARD_OFFSET + board] != GRAND_SCORE_SQUARES) return false
+        }
         return true
+    }
+
+    /**
+     * What the support screen shows on a grand entry's bond CE: [BondCEEffectEnum.NP] when the effect was switched to NP
+     * charge (`script.equipTarget2SkillChange` 1), [BondCEEffectEnum.Default] when that key is absent, and
+     * [BondCEEffectEnum.Ignore] for no bond CE (no icon, which matches neither). Null for a shape this code has not seen,
+     * including any other value of the key: real responses only ever had 1 there (#704).
+     */
+    private fun bondEffect(row: JsonObject): BondCEEffectEnum? {
+        val ce = ceId(row, "equipTarget2")
+        if (ce == UNKNOWN_CE) return null
+        if (ce == null || ce <= 0L) return BondCEEffectEnum.Ignore
+        val script = when (val value = row["script"]) {
+            null, is JsonNull -> return BondCEEffectEnum.Default
+            is JsonObject -> value
+            else -> return null
+        }
+        val change = script["equipTarget2SkillChange"] ?: return BondCEEffectEnum.Default
+        return if (integer(change) == 1L) BondCEEffectEnum.NP else null
     }
 
     /** The number of squares of a full class board, which the support screen shows as "+62". */
     private const val CLASS_SCORE_SQUARES = 62
+
+    /** The number of squares of a full grand board, which the support screen shows as "+16". */
+    private const val GRAND_SCORE_SQUARES = 16
+    private const val GRAND_BOARD_OFFSET = 10000L
 
     /** Append slot (1..5) to level. Null when the array or one of its entries has a shape this code has not seen. */
     private fun appendLevels(row: JsonObject): Map<Int, Long>? {
@@ -391,6 +454,53 @@ object SupportListFilter {
             }
         }
         return Boards.Read(full)
+    }
+
+    /** A follower's grand boards as the grand score condition reads them; the same three cases as [Boards]. */
+    private sealed interface GrandBoards {
+        data object Missing : GrandBoards
+
+        data object Odd : GrandBoards
+
+        /** Grand board base id (10001..10009) to its number of squares. */
+        class Read(val squares: Map<Long, Int>) : GrandBoards
+    }
+
+    /**
+     * The grand boards of "+16" (#704): Atlas Academy's JP class board data has 10001 to 10009, each the grand board of
+     * class board 1 to 9 (`parentClassBoardBaseId`) with 16 squares. Another base id outside 1..9 is one this code has
+     * not seen.
+     */
+    private val GRAND_BOARD_BASE_IDS = 10001L..10009L
+
+    /**
+     * Class id to the class board (1..9) whose grand board "+16" is about, from Atlas's JP class board data (#704):
+     * board n of the seven standard classes is the class itself, Extra I (8) covers shielder, ruler, avenger and moon
+     * cancer, Extra II (9) alter ego, foreigner, pretender, beast, beastEresh and unBeastOlgaMarie. Fixed, not read from
+     * the follower's `releasedClassIds`: on JP a board 9 often lists only alter ego although its grand board is complete.
+     */
+    private val GRAND_BOARD_OF_CLASS: Map<Int, Int> = (1..7).associateWith { it } +
+        listOf(8, 9, 11, 23).associateWith { 8 } + listOf(10, 25, 28, 33, 38, 40).associateWith { 9 }
+
+    /** The class board (1..9) whose grand board holds [classId]'s "+16", or null for a class this code does not know. */
+    fun grandBoardOf(classId: Int): Int? = GRAND_BOARD_OF_CLASS[classId]
+
+    /** Only the grand boards are read: boards 1..9 are skipped unread, so they never affect "+16". */
+    private fun grandBoards(follower: JsonObject): GrandBoards {
+        val value = follower["userClassBoardInfo"]
+        if (value == null || value is JsonNull) return GrandBoards.Missing
+        val boards = value as? JsonArray ?: return GrandBoards.Odd
+        val squares = HashMap<Long, Int>()
+        for (board in boards) {
+            val entry = board as? JsonObject ?: return GrandBoards.Odd
+            val base = integer(entry["classBoardBaseId"] ?: return GrandBoards.Odd) ?: return GrandBoards.Odd
+            if (base in CLASS_BOARD_BASE_IDS) continue
+            if (base !in GRAND_BOARD_BASE_IDS) return GrandBoards.Odd
+            val ids = entry["squareIds"] as? JsonArray ?: return GrandBoards.Odd
+            if (ids.any { integer(it) == null }) return GrandBoards.Odd
+            squares[base] = maxOf(squares[base] ?: 0, ids.size)
+        }
+        return GrandBoards.Read(squares)
     }
 
     /** An integer as a JSON number; the string "100" is not one. */

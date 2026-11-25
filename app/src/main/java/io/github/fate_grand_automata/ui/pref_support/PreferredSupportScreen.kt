@@ -262,12 +262,10 @@ internal fun PreferredSupport(
                             )
                             scope(applied = true)
 
-                            if (script) {
-                                config.grandServant.SwitchPreference(
-                                    title = stringResource(R.string.p_battle_config_support_grand_servant)
-                                )
-                                scope(applied = false)
-                            }
+                            config.grandServant.SwitchPreference(
+                                title = stringResource(R.string.p_battle_config_support_grand_servant)
+                            )
+                            scope(applied = true)
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -305,11 +303,11 @@ internal fun PreferredSupport(
                             )
                             scope(applied = true)
                             // The game shows +16 only for Grand servants.
-                            if (script && grandServant) {
+                            if (grandServant) {
                                 config.grandScore16Check.SwitchPreference(
                                     title = stringResource(R.string.p_grand_score_16_check)
                                 )
-                                scope(applied = false)
+                                scope(applied = true)
                             }
                             config.appendSkillCheck.SwitchPreference(
                                 title = stringResource(R.string.p_append_skill_check)
@@ -363,7 +361,7 @@ internal fun PreferredSupport(
                             scope(applied = true)
 
                             // These options only apply to Grand Servants
-                            AnimatedVisibility(script && grandServant) {
+                            AnimatedVisibility(grandServant) {
                                 Column {
                                     config.bondCEEffect.ListPreference(
                                         title = stringResource(R.string.p_battle_config_support_bond_ce_effect_preference),
@@ -374,7 +372,8 @@ internal fun PreferredSupport(
                                     config.requireBothNormalAndRewardMatch.SwitchPreference(
                                         title = stringResource(R.string.p_battle_config_support_require_both_normal_and_reward_match)
                                     )
-                                    scope(applied = false)
+                                    // The filter applies these two only with a preferred servant as well (#704).
+                                    if (prefServants.isNotEmpty()) scope(applied = true)
                                 }
                             }
                         }

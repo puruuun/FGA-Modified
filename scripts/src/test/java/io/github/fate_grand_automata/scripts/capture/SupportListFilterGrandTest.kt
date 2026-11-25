@@ -1,0 +1,395 @@
+package io.github.fate_grand_automata.scripts.capture
+
+import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+
+/**
+ * The grand conditions of #704 on fictional data in the shape of a real JP follower/list (structure read 2026-11-25):
+ * `userSvtGrandHash` entries without supportDeckId and classId, `equipTarget1..3`, `script.equipTarget2SkillChange`,
+ * and `userClassBoardInfo` with boards 1 to 9 and the grand boards 10001 to 10009.
+ */
+class SupportListFilterGrandTest {
+    private val limitKeys = listOf("dispLimitCount", "imageLimitCount", "commandCardLimitCount", "iconLimitCount", "portraitLimitCount")
+
+    private fun equip(ce: Long, limit: Int = 4, lv: Int = 100) = if (ce == 0L) {
+        """{"userId":0,"userSvtId":0,"svtId":0,"limitCount":0,"lv":0,"exp":0,"hp":0,"atk":0,"skillId1":0,"skillLv1":0,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":0}"""
+    } else {
+        """{"userId":9,"userSvtId":8,"svtId":$ce,"limitCount":$limit,"lv":$lv,"exp":7,"hp":1,"atk":2,"skillId1":3,"skillLv1":4,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":12}"""
+    }
+
+    /** A filled slot of userSvtLeaderHash in the real key order. */
+    private fun realSlot(svt: Long, deck: Int, cls: Int, ce: Long = 0): String {
+        val parts = mutableListOf<String>()
+        parts += """"afterTransformSvtInfo":null"""
+        parts += limitKeys.map { """"$it":4""" }
+        parts += """"battleVoice":2,"grandSvt":1,"transformVal":0"""
+        parts += """"randomLimitCountTargets":[1,2],"classPassive":[3]"""
+        parts += """"equipTarget1":${equip(ce)}"""
+        parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}],"script":{},"eventSvtPoint":5,"imagePartsGroupInfo":[]"""
+        parts += """"userId":555,"supportDeckId":$deck,"classId":$cls,"userSvtId":42,"svtId":$svt,"limitCount":4,"lv":90,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
+        parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
+        return "{" + parts.joinToString(",") + "}"
+    }
+
+    private fun serverEmptySlot(deck: Int, cls: Int): String {
+        val parts = mutableListOf<String>()
+        parts += """"afterTransformSvtInfo":null"""
+        parts += limitKeys.map { """"$it":1""" }
+        parts += """"battleVoice":0,"grandSvt":0,"transformVal":0"""
+        parts += """"randomLimitCountTargets":[],"classPassive":[]"""
+        parts += """"equipTarget1":${equip(0)}"""
+        parts += """"commandCode":[],"commandCardParam":[0,0,0,0,0],"appendPassiveSkill":[],"script":{},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
+        parts += """"userId":555,"supportDeckId":$deck,"classId":$cls,"userSvtId":0,"svtId":0,"limitCount":0,"lv":0,"exp":0,"hp":0,"atk":0,"adjustHp":0,"adjustAtk":0"""
+        parts += """"skillId1":0,"skillId2":0,"skillId3":0,"skillLv1":0,"skillLv2":0,"skillLv3":0,"treasureDeviceId":0,"treasureDeviceLv":0,"exceedCount":0,"updatedAt":1708036772"""
+        return "{" + parts.joinToString(",") + "}"
+    }
+
+    /**
+     * One entry of userSvtGrandHash with the keys of a real JP entry. [change] is `script.equipTarget2SkillChange`
+     * (null: the key is absent, as in 102 of 172 real entries); the real responses only ever had 1 there.
+     */
+    private fun realGrand(
+        svt: Long, ce1: Long = 0, bond: Long = 0, ce3: Long = 0, change: Int? = null,
+        ce1Limit: Int = 4, ce3Limit: Int = 4, graph: Long = 10001,
+    ): String {
+        val parts = mutableListOf<String>()
+        parts += """"afterTransformSvtInfo":null"""
+        parts += limitKeys.map { """"$it":4""" }
+        parts += """"battleVoice":0,"grandSvt":1,"transformVal":0"""
+        parts += """"randomLimitCountTargets":[],"classPassive":[3,4]"""
+        parts += """"equipTarget1":${equip(ce1, ce1Limit)},"equipTarget2":${equip(bond, lv = 80)},"equipTarget3":${equip(ce3, ce3Limit)}"""
+        parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}]"""
+        parts += """"script":{${change?.let { """"equipTarget2SkillChange":$it,""" } ?: ""}"isSetClassBoardBaseIds":[]},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
+        parts += """"grandGraphId":$graph,"isSetClassBoardBaseIds":[]"""
+        parts += """"userId":555,"userSvtId":43,"svtId":$svt,"limitCount":4,"lv":120,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
+        parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
+        return "{" + parts.joinToString(",") + "}"
+    }
+
+    private fun realHash(set: Map<Pair<Int, Int>, String>) =
+        (1..3).flatMap { d -> (0..8).map { c -> set[d to c] ?: serverEmptySlot(d, c) } }
+
+    private fun follower(
+        id: String, type: Int = 1, main: Map<Pair<Int, Int>, String> = emptyMap(), grand: List<String> = emptyList(), boards: String? = null,
+    ) = """{"type":$type,"userId":"$id","mainSupportDeckIds":[1,2,3],"eventSupportDeckIds":[4],"userSvtLeaderHash":[${realHash(main).joinToString(",")}],""" +
+        """"eventUserSvtLeaderHash":[],"userSvtGrandHash":[${grand.joinToString(",")}]${boards?.let { ""","userClassBoardInfo":$it""" }.orEmpty()}}"""
+
+    private fun body(vararg followers: String) =
+        """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"userId":"me","followerInfo":[${followers.joinToString(",")}]}]},"serverTime":1}}"""
+
+    private fun kept(text: String, criteria: SupportListCriteria): List<String>? {
+        val r = SupportListFilter.apply(text.toByteArray(), null, criteria) ?: return null
+        val root = Json.parseToJsonElement(String(r.wire)).jsonObject
+        return infos(root).map { it.jsonObject["userId"]!!.jsonPrimitive.content }
+    }
+
+    private fun infos(root: JsonObject) =
+        root["cache"]!!.jsonObject["updated"]!!.jsonObject["userFollower"]!!.jsonArray[0].jsonObject["followerInfo"]!!.jsonArray
+
+    /** Every kept follower's grand list is the very element that was parsed, matching entries or not (#706). */
+    private fun assertGrandListsAsReceived(text: String, criteria: SupportListCriteria) {
+        val root = Json.parseToJsonElement(text).jsonObject
+        val (filtered, _) = assertNotNull(SupportListFilter.filter(root, criteria))
+        val before = infos(root).associateBy { it.jsonObject["userId"]!!.jsonPrimitive.content }
+        val after = infos(filtered)
+        assertTrue(after.isNotEmpty())
+        for (info in after) {
+            val id = info.jsonObject["userId"]!!.jsonPrimitive.content
+            assertSame(before[id]!!.jsonObject["userSvtGrandHash"], info.jsonObject["userSvtGrandHash"], id)
+        }
+    }
+
+    private val grandOn = SupportListCriteria(setOf(100L), grandServant = true)
+
+    @Test fun grandServantMatchesOnlyGrandEntries() {
+        val text = body(
+            follower("normalOnly", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
+            follower("grand", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(999), realGrand(100))),
+            follower("otherGrand", grand = listOf(realGrand(999))),
+        )
+        assertEquals(listOf("grand"), kept(text, grandOn))
+        // Off: the normal slots match as before.
+        assertEquals(listOf("normalOnly", "grand"), kept(text, grandOn.copy(grandServant = false)))
+        assertGrandListsAsReceived(text, grandOn)
+    }
+
+    @Test fun withGrandServantOnTheNormalSlotsOfAKeptFollowerAreBlankedEvenForTheChosenServant() {
+        val text = body(follower("grand", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(100))))
+        val r = assertNotNull(SupportListFilter.apply(text.toByteArray(), null, grandOn))
+        val out = infos(Json.parseToJsonElement(String(r.wire)).jsonObject)[0].jsonObject
+        assertEquals(Json.parseToJsonElement(serverEmptySlot(1, 1)), out["userSvtLeaderHash"]!!.jsonArray[1])
+        assertEquals(SupportListCounts(1, 1, 2, 1), r.counts)
+    }
+
+    @Test fun aKrShapedListWithAnEmptyGrandListMatchesNothingWithGrandServantOn() {
+        val text = body(
+            follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
+            follower("b", type = 2, main = mapOf((2 to 3) to realSlot(100, 2, 3))),
+        )
+        assertEquals(emptyList(), kept(text, grandOn))
+        // Off: both match and nothing changes.
+        assertNull(kept(text, grandOn.copy(grandServant = false)))
+    }
+
+    /** Boards 1 to 9 with the classes they release on JP, and the grand boards 10001..10009 with [grandSquares] each. */
+    private fun jpBoards(grandSquares: Map<Int, Int>, omitGrand: Set<Int> = emptySet(), released: Map<Int, List<Int>> = JP_RELEASED): String {
+        val normal = released.map { (base, classes) ->
+            """{"classBoardBaseId":$base,"squareIds":[${(1..62).joinToString(",")}],"releasedClassIds":[${classes.joinToString(",")}]}"""
+        }
+        val grand = (1..9).filter { it !in omitGrand }.map { n ->
+            val squares = grandSquares[n] ?: 0
+            """{"classBoardBaseId":${10000 + n},"squareIds":[${(1..squares).joinToString(",") { "${n * 100 + it}" }}],"releasedClassIds":[${released[n].orEmpty().joinToString(",") { "${10000 + it}" }}]}"""
+        }
+        return (normal + grand).joinToString(",", "[", "]")
+    }
+
+    private fun grand16(classes: Map<Long, Int>) = SupportListCriteria(classes.keys, grandServant = true, grandScore16 = true, servantClassIds = classes)
+
+    @Test fun grandScoreNeedsTheCompleteGrandBoardOfTheServantsClassBoard() {
+        // Class to the board that releases it: saber..berserker 1..7, Extra I 8 and Extra II 9 (Atlas, #704).
+        val boardOf = (1..7).associateWith { it } + listOf(8, 9, 11, 23).associateWith { 8 } + listOf(10, 25, 28, 33, 38, 40).associateWith { 9 }
+        for ((cls, board) in boardOf) {
+            val svt = 1000L + cls
+            val c = grand16(mapOf(svt to cls))
+            val text = body(
+                follower("complete", grand = listOf(realGrand(svt)), boards = jpBoards(mapOf(board to 16))),
+                follower("otherBoardsComplete", grand = listOf(realGrand(svt)), boards = jpBoards((1..9).filter { it != board }.associateWith { 16 } + (board to 12))),
+                follower("fifteen", grand = listOf(realGrand(svt)), boards = jpBoards(mapOf(board to 15))),
+                follower("missing", grand = listOf(realGrand(svt)), boards = jpBoards((1..9).associateWith { 16 }, omitGrand = setOf(board))),
+                follower("normalSlot", main = mapOf((1 to 1) to realSlot(svt, 1, 1)), boards = jpBoards(mapOf(board to 16))),
+            )
+            assertEquals(listOf("complete"), kept(text, c), "class $cls")
+        }
+    }
+
+    @Test fun grandScoreWithoutBoardsMatchesNothing() {
+        val c = grand16(mapOf(125L to 25))
+        val text = body(
+            follower("complete", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 16))),
+            follower("noBoards", grand = listOf(realGrand(125))),
+            follower("nullBoards", grand = listOf(realGrand(125)), boards = "null"),
+        )
+        assertEquals(listOf("complete"), kept(text, c))
+    }
+
+    @Test fun grandScoreFindsTheGrandBoardByTheFixedTableNotByReleasedClassIds() {
+        // As 5 of 18 JP followers: board 9 lists only alter ego, while the grand board 10009 is complete.
+        val onlyAlterEgo = JP_RELEASED + (9 to listOf(10))
+        val c = grand16(mapOf(125L to 25))
+        val text = body(
+            follower("foreigner", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 16), released = onlyAlterEgo)),
+            follower("incomplete", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 15), released = onlyAlterEgo)),
+        )
+        assertEquals(listOf("foreigner"), kept(text, c))
+        // A board that lists the class elsewhere does not move it.
+        val moved = JP_RELEASED + (1 to listOf(1, 25)) + (9 to listOf(10))
+        assertEquals(emptyList(), kept(body(follower("moved", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(1 to 16), released = moved))), c))
+    }
+
+    @Test fun grandScoreDoesNotReadTheClassBoards() {
+        val c = grand16(mapOf(100L to 1))
+        val grandOnly = """[{"classBoardBaseId":10001,"squareIds":[${(1..16).joinToString(",")}],"releasedClassIds":[10001]}]"""
+        val oddNormal = """[{"classBoardBaseId":1,"squareIds":"odd","releasedClassIds":null},""" + grandOnly.removePrefix("[")
+        val text = body(
+            follower("noNormalBoards", grand = listOf(realGrand(100)), boards = grandOnly),
+            follower("oddNormalBoard", grand = listOf(realGrand(100)), boards = oddNormal),
+            follower("gone", grand = listOf(realGrand(999)), boards = grandOnly),
+        )
+        assertEquals(listOf("noNormalBoards", "oddNormalBoard"), kept(text, c))
+        // With +62 on as well, the odd normal board is read again and the response passes unchanged.
+        assertNull(kept(text, c.copy(classScore62 = true)))
+    }
+
+    @Test fun theGrandBoardTableCoversEveryClassTheFilterKnows() {
+        val expected = (1..7).associateWith { it } + listOf(8, 9, 11, 23).associateWith { 8 } + listOf(10, 25, 28, 33, 38, 40).associateWith { 9 }
+        for ((cls, board) in expected) assertEquals(board, SupportListFilter.grandBoardOf(cls), "class $cls")
+        assertNull(SupportListFilter.grandBoardOf(39))
+        assertNull(SupportListFilter.grandBoardOf(0))
+    }
+
+    @Test fun grandScoreForAServantWithoutAKnownClassMatchesNothing() {
+        val c = SupportListCriteria(setOf(100L, 200L), grandServant = true, grandScore16 = true, servantClassIds = mapOf(100L to 1))
+        val text = body(
+            follower("known", grand = listOf(realGrand(100)), boards = jpBoards(mapOf(1 to 16))),
+            follower("unknown", grand = listOf(realGrand(200)), boards = jpBoards((1..9).associateWith { 16 })),
+        )
+        assertEquals(listOf("known"), kept(text, c))
+    }
+
+    @Test fun grandBoardsOfAnOddShapeLeaveTheWholeResponseUnchanged() {
+        val c = grand16(mapOf(100L to 1))
+        val good = jpBoards(mapOf(1 to 16))
+        val odd = listOf(
+            "squareIdsNotAnArray" to good.replace(""""classBoardBaseId":10002,"squareIds":[]""", """"classBoardBaseId":10002,"squareIds":3"""),
+            "squareIdAString" to good.replace(""""classBoardBaseId":10002,"squareIds":[]""", """"classBoardBaseId":10002,"squareIds":["1"]"""),
+            "baseIdOutsideTheGrandRange" to good.replace(""""classBoardBaseId":10002,""", """"classBoardBaseId":10010,"""),
+            "anotherLargeBaseId" to good.replace(""""classBoardBaseId":10002,""", """"classBoardBaseId":1700000002,"""),
+            "baseIdAString" to good.replace(""""classBoardBaseId":10002,""", """"classBoardBaseId":"10002","""),
+        )
+        val base = arrayOf(
+            follower("ok", grand = listOf(realGrand(100)), boards = good),
+            follower("gone", grand = listOf(realGrand(999)), boards = good),
+        )
+        assertNotNull(kept(body(*base), c))
+        for ((name, boards) in odd) {
+            assertTrue(boards != good, name)
+            assertNull(kept(body(*base, follower("odd", grand = listOf(realGrand(100)), boards = boards)), c), name)
+            // Without the grand score the large boards are not looked at, as before.
+            assertEquals(listOf("ok", "odd"), kept(body(*base, follower("odd", grand = listOf(realGrand(100)), boards = boards)), c.copy(grandScore16 = false)), name)
+        }
+    }
+
+    @Test fun grandScoreAndClassScoreTogether() {
+        val c = grand16(mapOf(100L to 1)).copy(classScore62 = true)
+        val partialSaber = JP_RELEASED.map { (base, classes) ->
+            val squares = if (base == 1) 30 else 62
+            """{"classBoardBaseId":$base,"squareIds":[${(1..squares).joinToString(",")}],"releasedClassIds":[${classes.joinToString(",")}]}"""
+        } + """{"classBoardBaseId":10001,"squareIds":[${(1..16).joinToString(",")}],"releasedClassIds":[10001]}"""
+        val text = body(
+            follower("both", grand = listOf(realGrand(100)), boards = jpBoards(mapOf(1 to 16))),
+            follower("only16", grand = listOf(realGrand(100)), boards = partialSaber.joinToString(",", "[", "]")),
+        )
+        assertEquals(listOf("both"), kept(text, c))
+    }
+
+    private val ceCriteria = SupportListCriteria(setOf(100L), setOf(7L, 8L), grandServant = true)
+
+    @Test fun bondCeEffectReadsEquipTarget2AndItsSkillChange() {
+        val text = body(
+            follower("np", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 1))),
+            follower("default", grand = listOf(realGrand(100, ce1 = 7, bond = 50))),
+            follower("noBondCe", grand = listOf(realGrand(100, ce1 = 7, bond = 0, change = 1))),
+            follower("noBondCeNoChange", grand = listOf(realGrand(100, ce1 = 7))),
+            follower("otherCe", grand = listOf(realGrand(100, ce1 = 9, bond = 50, change = 1))),
+            follower("normal", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7))),
+        )
+        assertEquals(listOf("np"), kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)))
+        assertEquals(listOf("default"), kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.Default)))
+        assertEquals(listOf("np", "default", "noBondCe", "noBondCeNoChange"), kept(text, ceCriteria))
+        assertGrandListsAsReceived(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP))
+    }
+
+    @Test fun aSkillChangeValueOtherThanOneLeavesTheWholeResponseUnchangedWhenTheEffectIsAsked() {
+        val base = arrayOf(
+            follower("np", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 1))),
+            follower("default", grand = listOf(realGrand(100, ce1 = 7, bond = 50))),
+        )
+        for (value in listOf(0, 2)) {
+            val text = body(*base, follower("odd", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = value))))
+            assertNull(kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)), "value $value")
+            assertNull(kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.Default)), "value $value")
+            // Ignore does not read it; the follower whose CE does not match is still left out.
+            assertEquals(listOf("np", "default"), kept(body(*base, follower("odd", grand = listOf(realGrand(100, ce1 = 9, bond = 50, change = value)))), ceCriteria), "value $value")
+        }
+        assertEquals(listOf("np"), kept(body(*base), ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)))
+    }
+
+    @Test fun aNormalSlotNeverMeetsTheGrandCeConditions() {
+        // As the script's screen reading: a row without the grand label fails the bond and both-slot conditions.
+        val c = SupportListCriteria(ceIds = setOf(7L))
+        val text = body(
+            follower("normal", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7))),
+            follower("grand", grand = listOf(realGrand(100, ce1 = 7, ce3 = 7, bond = 50, change = 1))),
+            follower("gone", grand = listOf(realGrand(100, ce1 = 9))),
+        )
+        assertEquals(listOf("normal", "grand"), kept(text, c))
+        assertEquals(listOf("grand"), kept(text, c.copy(bothCeSlots = true)))
+        assertEquals(listOf("grand"), kept(text, c.copy(bondCeEffect = BondCEEffectEnum.NP)))
+    }
+
+    @Test fun withoutAPreferredCeTheGrandCeConditionsAreNotRead() {
+        val c = SupportListCriteria(setOf(100L), grandServant = true, bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true)
+        val text = body(
+            follower("a", grand = listOf(realGrand(100))),
+            follower("b", grand = listOf(realGrand(999))),
+        )
+        assertEquals(listOf("a"), kept(text, c))
+    }
+
+    @Test fun anOddBondCeShapeLeavesTheWholeResponseUnchangedOnlyWhenTheEffectIsAsked() {
+        val ok = realGrand(100, ce1 = 7, bond = 50, change = 1)
+        val odd = listOf(
+            "bondNotAnObject" to ok.replace(""""equipTarget2":${equip(50, lv = 80)}""", """"equipTarget2":"x""""),
+            "bondSvtIdAString" to ok.replace(""""equipTarget2":${equip(50, lv = 80)}""", """"equipTarget2":{"svtId":"50"}"""),
+            "scriptNotAnObject" to ok.replace(""""script":{"equipTarget2SkillChange":1,"isSetClassBoardBaseIds":[]}""", """"script":"x""""),
+            "changeAString" to ok.replace(""""equipTarget2SkillChange":1""", """"equipTarget2SkillChange":"1""""),
+            "changeNotAnInteger" to ok.replace(""""equipTarget2SkillChange":1""", """"equipTarget2SkillChange":1.5"""),
+        )
+        val base = arrayOf(follower("ok", grand = listOf(ok)), follower("gone", grand = listOf(realGrand(999))))
+        val np = ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)
+        assertEquals(listOf("ok"), kept(body(*base), np))
+        for ((name, entry) in odd) {
+            assertTrue(entry != ok, name)
+            assertNull(kept(body(*base, follower("odd", grand = listOf(entry))), np), name)
+            assertNull(kept(body(*base, follower("odd", grand = listOf(entry))), np.copy(bondCeEffect = BondCEEffectEnum.Default)), name)
+        }
+        // Ignore does not look at the bond CE.
+        assertEquals(listOf("ok", "odd"), kept(body(*base, follower("odd", grand = listOf(odd[2].second))), ceCriteria))
+    }
+
+    @Test fun bothCeSlotsNeedAChosenCeInEquipTarget1AndEquipTarget3() {
+        val c = ceCriteria.copy(bothCeSlots = true)
+        val text = body(
+            follower("both", grand = listOf(realGrand(100, ce1 = 7, ce3 = 8))),
+            follower("sameTwice", grand = listOf(realGrand(100, ce1 = 7, ce3 = 7))),
+            follower("only1", grand = listOf(realGrand(100, ce1 = 7, ce3 = 9))),
+            follower("only3", grand = listOf(realGrand(100, ce1 = 9, ce3 = 8))),
+            // The bond CE is never one of the two slots.
+            follower("bondAndOne", grand = listOf(realGrand(100, ce1 = 7, bond = 8))),
+            follower("gone", grand = listOf(realGrand(999, ce1 = 7, ce3 = 8))),
+        )
+        assertEquals(listOf("both", "sameTwice"), kept(text, c))
+        assertEquals(listOf("both", "sameTwice", "only1", "only3", "bondAndOne"), kept(text, ceCriteria))
+        assertGrandListsAsReceived(text, c)
+    }
+
+    @Test fun bothCeSlotsWithMlbNeedEachMatchedCeAtLimitCount4() {
+        val c = ceCriteria.copy(bothCeSlots = true, ceMlb = true)
+        val text = body(
+            follower("bothMlb", grand = listOf(realGrand(100, ce1 = 7, ce3 = 8))),
+            follower("oneNotMlb", grand = listOf(realGrand(100, ce1 = 7, ce3 = 8, ce3Limit = 3))),
+            follower("gone", grand = listOf(realGrand(999))),
+        )
+        assertEquals(listOf("bothMlb"), kept(text, c))
+        assertEquals(listOf("bothMlb", "oneNotMlb"), kept(text, c.copy(bothCeSlots = false)))
+    }
+
+    @Test fun everyGrandConditionTogetherKeepsOnlyAFollowerWithOneEntryMeetingAll() {
+        val c = SupportListCriteria(
+            setOf(100L), setOf(7L), ceMlb = true, grandServant = true, grandScore16 = true,
+            bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true, servantClassIds = mapOf(100L to 2),
+        )
+        val boards = jpBoards(mapOf(2 to 16))
+        val all = realGrand(100, ce1 = 7, ce3 = 7, bond = 50, change = 1)
+        val text = body(
+            follower("all", grand = listOf(realGrand(999), all), boards = boards),
+            follower("noNp", grand = listOf(realGrand(100, ce1 = 7, ce3 = 7, bond = 50)), boards = boards),
+            follower("split", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 1), realGrand(100, ce3 = 7)), boards = boards),
+            follower("no16", grand = listOf(all), boards = jpBoards(mapOf(2 to 15))),
+        )
+        assertEquals(listOf("all"), kept(text, c))
+        assertGrandListsAsReceived(text, c)
+    }
+
+    @Test fun grandConditionsCountAsConditions() {
+        assertTrue(SupportListCriteria(grandServant = true).hasConditions)
+        assertTrue(SupportListCriteria(grandScore16 = true).hasConditions)
+        assertTrue(SupportListCriteria(bondCeEffect = BondCEEffectEnum.Default).hasConditions)
+        assertTrue(SupportListCriteria(bothCeSlots = true).hasConditions)
+    }
+
+    private companion object {
+        /** `releasedClassIds` of boards 1 to 9 in a real JP response (2026-11-25). */
+        val JP_RELEASED = (1..7).associateWith { listOf(it) } + mapOf(8 to listOf(8, 9, 11, 23), 9 to listOf(10, 25, 28, 33, 38, 40))
+    }
+}
