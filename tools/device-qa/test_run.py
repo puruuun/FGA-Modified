@@ -2,6 +2,7 @@
 
 import os
 import sys
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -122,6 +123,115 @@ class GradleCommandTest(unittest.TestCase):
     def test_model_without_native_stops(self):
         with self.assertRaises(SystemExit):
             self.command(native=False, ocr_model=Path("m.onnx"))
+
+
+class Completed:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
+
+
+UNREACHABLE = "adb: error: failed to get feature set: cannot connect to daemon at tcp:5037: timed out (10060)\n"
+
+
+class AdbRetryTest(unittest.TestCase):
+    def setUp(self):
+        self.calls, self.pauses, self.script = [], [], []
+        self.saved = (run.run, run.sleep, sys.stderr)
+        run.run = self.fake_run
+        run.sleep = self.pauses.append
+        sys.stderr = self.err = io.StringIO()
+
+    def tearDown(self):
+        run.run, run.sleep, sys.stderr = self.saved
+
+    def fake_run(self, cmd, **kwargs):
+        self.calls.append(cmd)
+        return self.script.pop(0) if len(self.script) > 1 else self.script[0]
+
+    def test_unreachable_once_then_ok_is_retried(self):
+        self.script = [Completed(1, "", UNREACHABLE), Completed(0, "done")]
+        self.assertEqual(run.adb("adb", "s", "push", "a", "b", retry=True), "done")
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.pauses, [5])
+        self.assertIn("adb push", self.err.getvalue())
+        self.assertNotIn("a b", self.err.getvalue())
+
+    def test_unreachable_always_fails_after_four_attempts_with_the_original_message(self):
+        self.script = [Completed(1, "", UNREACHABLE)]
+        with self.assertRaises(SystemExit) as stop:
+            run.adb("adb", "s", "push", "a", "b", retry=True)
+        self.assertEqual(len(self.calls), 4)
+        self.assertEqual(self.pauses, [5, 15, 30])
+        self.assertIn("cannot connect to daemon", str(stop.exception))
+
+    def test_every_unreachable_message_counts(self):
+        for message in run.SERVER_UNREACHABLE:
+            self.assertTrue(run.server_unreachable(f"* {message} *"), message)
+
+    def test_unrelated_failure_is_not_retried(self):
+        self.script = [Completed(1, "", "adb: error: device offline\n")]
+        with self.assertRaises(SystemExit):
+            run.adb("adb", "s", "push", "a", "b", retry=True)
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.pauses, [])
+
+    def test_call_not_marked_safe_is_not_retried(self):
+        self.script = [Completed(1, "", UNREACHABLE)]
+        with self.assertRaises(SystemExit):
+            run.adb("adb", "s", "shell", "am", "instrument", "-w")
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.pauses, [])
+
+    def test_instrument_is_never_retried(self):
+        self.script = [Completed(1, "", UNREACHABLE)]
+        with self.assertRaises(SystemExit):
+            run.instrument("adb", "s", "pkg", "/sdcard/x.json")
+        self.assertEqual(len(self.calls), 1)
+
+    def test_no_server_command_is_issued(self):
+        self.script = [Completed(1, "", UNREACHABLE)]
+        with self.assertRaises(SystemExit):
+            run.adb("adb", "s", "version", retry=True)
+        for cmd in self.calls:
+            self.assertFalse({"start-server", "kill-server", "reconnect", "connect"} & set(cmd))
+
+
+class RunSuitesTest(unittest.TestCase):
+    def run_suites(self, outcomes):
+        """outcomes: suite -> True/False (summary written), or None (stops with an error before any summary)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+
+            def run_suite(suite):
+                if outcomes[suite] is None:
+                    sys.exit("adb push failed")
+                (out / f"summary-{suite}.md").write_text("x", encoding="utf-8")
+                return outcomes[suite]
+
+            saved = sys.stderr
+            sys.stderr = io.StringIO()
+            try:
+                return run.run_suites(list(outcomes), run_suite, out)
+            finally:
+                sys.stderr = saved
+
+    def test_all_suites_ran_and_passed(self):
+        overall, not_run = self.run_suites({"support": True, "bond": True})
+        self.assertEqual((overall, not_run), (True, []))
+        self.assertEqual(run.exit_code(overall, not_run), 0)
+
+    def test_failed_suite_keeps_exit_code_one(self):
+        overall, not_run = self.run_suites({"support": False, "bond": True})
+        self.assertEqual(not_run, [])
+        self.assertEqual(run.exit_code(overall, not_run), 1)
+
+    def test_suite_that_stopped_is_named_and_later_suites_still_run(self):
+        overall, not_run = self.run_suites({"support": True, "bond": None, "fpSell": True})
+        self.assertEqual(not_run, ["bond"])
+        self.assertNotEqual(run.exit_code(overall, not_run), 0)
+
+    def test_not_run_beats_a_pass(self):
+        self.assertEqual(run.exit_code(True, ["bond"]), 2)
 
 
 if __name__ == "__main__":
