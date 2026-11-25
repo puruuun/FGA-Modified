@@ -33,7 +33,7 @@ class SupportListShapeTest {
         "extraStats":{"a":3},"secretCode":{"b":4}$extra}"""
 
     private fun grandSlot() =
-        """{"userId":"PRIVATE-USER-ID","supportDeckId":1,"classId":1,"svtId":7654,"grandSvt":1,"lv":120,
+        """{"userId":"PRIVATE-USER-ID","userSvtId":1700000123,"supportDeckId":1,"classId":1,"svtId":7654,"grandSvt":1,"lv":120,
         "afterTransformSvtInfo":{"svtId":778,"lv":3},
         "equipTarget1":{"svtId":7655,"limitCount":4,"lv":100},"equipTarget2":{"svtId":0,"limitCount":0,"lv":1},
         "equipTarget3":{"svtId":779,"limitCount":3,"lv":90},
