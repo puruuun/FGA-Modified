@@ -655,7 +655,7 @@ class SupportListFilterUiTest {
             val layout = layouts.single()
             assertEquals(1, layout.lineCount, "$label is on one line")
             assertFalse(layout.isLineEllipsized(0), "$label is not ellipsized")
-            assertTrue(layout.getLineRight(0) <= layout.size.width, "$label fits its box")
+            assertTrue(layout.getLineRight(0) <= layout.size.width, "$label fits its box ${layout.getLineRight(0)} ${layout.size.width}")
         }
     }
 
@@ -678,19 +678,68 @@ class SupportListFilterUiTest {
         compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).assertExists()
     }
 
+    // #719: the two import buttons are the size of "모두 초기화", measured in one composition.
+    private fun assertImportButtonsAreAsHighAsResetAll() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        launcher(fixture, initial = LauncherPanel.SupportFilter)
+        val settings = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherSettingsListTag)
+        settings.performScrollToNode(hasTestTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag))
+        compose.waitForIdle()
+        val reset = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).getUnclippedBoundsInRoot()
+        val script = compose.onNodeWithTag(SupportFilterTakeConfigTag).getUnclippedBoundsInRoot()
+        val profile = compose.onNodeWithTag(SupportFilterLoadProfileTag).getUnclippedBoundsInRoot()
+        assertEquals(reset.height, script.height, "reset $reset script $script")
+        assertEquals(reset.height, profile.height, "reset $reset profile $profile")
+        // Each is as wide as its own label, not stretched over the panel.
+        val panelWidth = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot().width
+        assertTrue(script.width < panelWidth / 2 && profile.width < panelWidth / 2, "$script $profile $panelWidth")
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h900dp-hdpi")
+    fun theImportButtonsAreAsHighAsResetAll() = assertImportButtonsAreAsHighAsResetAll()
+
     @Test @Config(qualifiers = "ja-w1280dp-h720dp-hdpi")
     fun theFilterPanelIsAsWideAsTheConfigListAt1280() = assertPanelAsWideAsTheConfigList()
 
-    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
-    fun theChipIsOfferedOutsideTheBattleLauncherTooWithNothingToTake() {
+    // #719: only the battle launcher offers the filter, even with the feature on and the open state stored as true.
+    private fun assertNoFilterInLauncher(mode: ScriptModeEnum) {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
         fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterOn.set(true)
-        launcher(fixture, mode = ScriptModeEnum.Lottery)
-        compose.onNodeWithText("서포트 필터 · 켜짐").performClick()
+        fixture.core.supportFilterPanelOpen.set(true)
+        fixture.core.captureTrackerEnabled.set(true)
+        context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        val asked = mutableListOf<Float>()
+        compose.setContent { FGATheme { ScriptLauncher(mode, {}, fixture.prefs, fixture.core, onSidePanelExpanded = { asked += it }) } }
         compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterChipTag).assertDoesNotExist()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        compose.onNodeWithText("서포트 필터 · 켜짐").assertDoesNotExist()
+        // The window is never asked to widen, so its width is the one without the feature.
+        assertEquals(emptyList(), asked)
+        // The stored state stays for the battle launcher.
+        assertTrue(fixture.core.supportFilterPanelOpen.get())
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theFpLauncherHasNoFilterChipNorPanel() = assertNoFilterInLauncher(ScriptModeEnum.FP)
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theLotteryLauncherHasNoFilterChipNorPanel() = assertNoFilterInLauncher(ScriptModeEnum.Lottery)
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theBattleLauncherStillRestoresTheStoredPanelAndWidens() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        fixture.core.supportFilterPanelOpen.set(true)
+        fixture.core.captureTrackerEnabled.set(true)
+        val asked = mutableListOf<Float>()
+        compose.setContent { FGATheme { ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, onSidePanelExpanded = { asked += it }) } }
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterChipTag).assertExists()
         compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
-        compose.onNodeWithTag(SupportFilterTakeConfigTag).assertIsNotEnabled()
+        assertEquals(listOf(LauncherPanel.SupportFilter.widen), asked)
     }
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
