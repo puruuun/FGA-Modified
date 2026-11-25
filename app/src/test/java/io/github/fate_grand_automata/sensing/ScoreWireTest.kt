@@ -130,6 +130,16 @@ class ScoreWireTest {
         )
         val texts = table.filter { it[0] == "text" }.associate { it[1] to it[2] }
         assertEquals(mapOf("already_loaded" to ScoreWire.ALREADY_LOADED), texts)
+        fun number(text: String) = if (text.startsWith("0x")) text.removePrefix("0x").toLong(16).toInt() else text.toInt()
+        val layout = table.filter { it[0] == "layout" }.associate { it[1] to number(it[2]) }
+        assertEquals(
+            mapOf("magic" to ScoreWire.MAGIC, "header_len" to ScoreWire.HEADER_LEN, "flags_index" to ScoreWire.FLAGS_INDEX),
+            layout,
+        )
+        val flags = table.filter { it[0] == "flag" }.associate { it[1] to number(it[2]) }
+        assertEquals(mapOf("sign_corrected" to ScoreWire.FLAG_SIGN_CORRECTED), flags)
+        assertEquals(ScoreWire.MAGIC, GOLDEN_SIGN_CORRECTED[0])
+        assertEquals(ScoreWire.FLAG_SIGN_CORRECTED, GOLDEN_SIGN_CORRECTED[ScoreWire.FLAGS_INDEX])
     }
 
     @Test fun `infinite confidences count as absent`() {

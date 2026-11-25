@@ -77,6 +77,13 @@ mod model {
             "{file}"
         );
         assert_eq!(text(reply), probe["text"].as_str().unwrap(), "{file}");
+        let flags = reply[wire::FLAGS_INDEX];
+        assert_eq!(flags & !wire::FLAG_SIGN_CORRECTED, 0, "{file} flags");
+        assert_eq!(
+            flags & wire::FLAG_SIGN_CORRECTED != 0,
+            probe["signCorrected"].as_bool().unwrap(),
+            "{file} signCorrected: {probe}"
+        );
     }
 
     #[test]

@@ -30,6 +30,8 @@ use fga_sensing::readers::support_score::{Display, Reason, Score, SupportScore};
 
 pub const MAGIC: i32 = 0x4653_4332;
 pub const HEADER_LEN: usize = 12;
+/// Where the flags word sits in a reply.
+pub const FLAGS_INDEX: usize = 10;
 pub const STATUS_READ: i32 = 0;
 pub const STATUS_ERROR: i32 = 1;
 pub const NO_VALUE: i32 = -1;
@@ -279,6 +281,8 @@ mod tests {
         let mut displays = Vec::new();
         let mut answers = Vec::new();
         let mut texts = Vec::new();
+        let mut layout = Vec::new();
+        let mut flags = Vec::new();
         for line in table
             .lines()
             .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
@@ -289,11 +293,17 @@ mod tests {
                 texts.push((fields[1].to_owned(), fields[2].to_owned()));
                 continue;
             }
-            let code: i32 = fields[2].trim().parse().unwrap();
+            let value = fields[2].trim();
+            let code: i32 = match value.strip_prefix("0x") {
+                Some(hex) => i32::from_str_radix(hex, 16).unwrap(),
+                None => value.parse().unwrap(),
+            };
             match fields[0] {
                 "reason" => reasons.push((fields[1].to_owned(), code)),
                 "display" => displays.push((fields[1].to_owned(), code)),
                 "answer" => answers.push((fields[1].to_owned(), code)),
+                "layout" => layout.push((fields[1].to_owned(), code)),
+                "flag" => flags.push((fields[1].to_owned(), code)),
                 other => panic!("unknown kind {other}"),
             }
         }
@@ -325,6 +335,29 @@ mod tests {
             texts,
             vec![("already_loaded".to_owned(), ALREADY_LOADED.to_owned())]
         );
+        assert_eq!(
+            layout,
+            vec![
+                ("magic".to_owned(), MAGIC),
+                ("header_len".to_owned(), HEADER_LEN as i32),
+                ("flags_index".to_owned(), FLAGS_INDEX as i32),
+            ]
+        );
+        assert_eq!(
+            flags,
+            vec![("sign_corrected".to_owned(), FLAG_SIGN_CORRECTED)]
+        );
+        let mut corrected = score(
+            Score::Value(62),
+            Score::Value(16),
+            Display::Compound,
+            "+62/-16",
+        );
+        corrected.sign_corrected = true;
+        let wire = encode_score(&corrected, 0);
+        assert_eq!(wire[0], MAGIC);
+        assert_eq!(wire[FLAGS_INDEX], FLAG_SIGN_CORRECTED);
+        assert_eq!(wire.len(), HEADER_LEN + 7);
     }
 
     #[test]
@@ -447,8 +480,8 @@ mod tests {
 
     #[test]
     fn unknown_and_error_replies_carry_no_flag() {
-        assert_eq!(encode_unknown(Reason::CropSize)[10], 0);
-        assert_eq!(encode_error("no")[10], 0);
+        assert_eq!(encode_unknown(Reason::CropSize)[FLAGS_INDEX], 0);
+        assert_eq!(encode_error("no")[FLAGS_INDEX], 0);
     }
 
     #[test]

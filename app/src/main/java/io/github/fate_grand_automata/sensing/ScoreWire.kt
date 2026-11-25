@@ -18,6 +18,9 @@ object ScoreWire {
     /** `FSC2`: the layout with the flags at index 10 (the sign correction, QA 0025 section 4.19). */
     const val MAGIC = 0x46534332
     const val HEADER_LEN = 12
+
+    /** Where the flags word sits in a reply. */
+    const val FLAGS_INDEX = 10
     const val STATUS_READ = 0
     const val STATUS_ERROR = 1
     const val NO_VALUE = -1
@@ -88,7 +91,7 @@ object ScoreWire {
         val grandScore = field("grand", reply[3], reply[6], MAX_GRAND)
         val display = DISPLAYS.getOrNull(reply[4]) ?: throw Malformed("display ${reply[4]}")
         if (reply[9] < 0) throw Malformed("engine time ${reply[9]}")
-        if (reply[10] and FLAG_SIGN_CORRECTED.inv() != 0) throw Malformed("flags ${reply[10]}")
+        if (reply[FLAGS_INDEX] and FLAG_SIGN_CORRECTED.inv() != 0) throw Malformed("flags ${reply[FLAGS_INDEX]}")
         return EngineScore(
             classScore = classScore,
             grandScore = grandScore,
@@ -98,7 +101,7 @@ object ScoreWire {
             minCharConfidence = confidence(reply[8]),
             duration = duration,
             engineTime = reply[9].microseconds,
-            signCorrected = reply[10] and FLAG_SIGN_CORRECTED != 0,
+            signCorrected = reply[FLAGS_INDEX] and FLAG_SIGN_CORRECTED != 0,
         )
     }
 

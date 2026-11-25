@@ -24,6 +24,11 @@ pub use format::{Format, Parsed, SIGN_LOOKALIKES, correct_signs, parse};
 pub const MAX_CLASS_SCORE: u8 = 62;
 pub const MAX_GRAND_SCORE: u8 = 16;
 
+/// The only Grand part a corrected text may have. The owner's rule (2026-11-25): on the support
+/// list the Grand part of a field is always `+16`, so a corrected `+62/-6` or `+62/-1` is a
+/// misread of something else, not a Grand score. The strict path keeps 0..=16.
+pub const CORRECTED_GRAND_SCORE: u8 = 16;
+
 /// The only characters a score field holds.
 pub const SCORE_CHARACTERS: &str = "+/0123456789";
 
@@ -229,8 +234,8 @@ pub struct SupportScore {
     pub class: Score,
     pub grand: Score,
     pub display: Display,
-    /// The decision was made on the text with a misread sign read as `+` ([`correct_signs`]);
-    /// `observation.text` keeps what the recogniser read.
+    /// This answer was read from the text with a misread sign read as `+` ([`correct_signs`]);
+    /// false whenever no field has a value. `observation.text` keeps what the recogniser read.
     pub sign_corrected: bool,
     pub observation: Observation,
 }
@@ -337,8 +342,9 @@ pub fn read_with<B: Backend>(
 /// Where the confidence or the format rule refuses, the sign correction (when on) gets one try: the
 /// text with its misread signs read as `+` ([`correct_signs`]) goes on through the format, range
 /// and clipping rules as if read so, when the whole text keeps the confidence floor and every
-/// other character keeps the character floor ([`sign_corrected_parse`]). Otherwise the refusal
-/// stands. A text the strict rules accept has no sign to correct, so its answer never changes.
+/// other character keeps the character floor ([`sign_corrected_parse`]); its Grand part, if any,
+/// must be exactly [`CORRECTED_GRAND_SCORE`] (else both fields are unknown for `Range`). Otherwise
+/// the refusal stands. A text the strict rules accept has no sign to correct, so its answer never changes.
 pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     let unknown = |reason: Reason, observation: Observation| SupportScore {
         class: Score::Unknown(reason),
@@ -361,7 +367,8 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     let (parsed, sign_corrected) = match strict {
         Ok(parsed) => (parsed, false),
         Err(reason) => match sign_corrected_parse(&observation, config) {
-            Some(parsed) => (parsed, true),
+            Some(Ok(parsed)) => (parsed, true),
+            Some(Err(refusal)) => return unknown(refusal, observation),
             None => return unknown(reason, observation),
         },
     };
@@ -387,6 +394,10 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     if config.check_clipping {
         apply_clipping(&mut score);
     }
+    // The mark says that an answer was read with a corrected sign; a text the later rules refused
+    // gave no answer to mark.
+    score.sign_corrected =
+        sign_corrected && (score.class.value().is_some() || score.grand.value().is_some());
     score
 }
 
@@ -409,7 +420,13 @@ fn is_confident(observation: &Observation, config: &ScoreConfig) -> bool {
 /// under the separator line is what lowers it (0.61 to 0.81 on the tablet's five crops); every
 /// digit, the `/` and a plus that was read as one keep it. The text confidence stays the one the
 /// recogniser reported, sign included.
-fn sign_corrected_parse(observation: &Observation, config: &ScoreConfig) -> Option<Parsed> {
+///
+/// `None` when no correction applies (the strict refusal stands), `Some(Err(Range))` when the
+/// corrected text has a Grand part other than [`CORRECTED_GRAND_SCORE`].
+fn sign_corrected_parse(
+    observation: &Observation,
+    config: &ScoreConfig,
+) -> Option<Result<Parsed, Reason>> {
     // Written so that a NaN confidence fails, as in `is_confident`.
     let text_confident = observation.confidence >= config.min_confidence;
     if !config.sign_correction || !text_confident {
@@ -428,7 +445,14 @@ fn sign_corrected_parse(observation: &Observation, config: &ScoreConfig) -> Opti
     if !others_confident {
         return None;
     }
-    parse(&text, config.format)
+    let parsed = parse(&text, config.format)?;
+    if parsed
+        .grand
+        .is_some_and(|grand| grand != CORRECTED_GRAND_SCORE)
+    {
+        return Some(Err(Reason::Range));
+    }
+    Some(Ok(parsed))
 }
 
 fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {

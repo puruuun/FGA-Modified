@@ -2,7 +2,9 @@
 # mod.rs, the already-loaded text), shared by the Rust test
 # (wire.rs, codes_match_the_shared_table) and the Kotlin test (ScoreWireTest), so a change on one
 # side fails on the other. One entry per line: kind, the name as fga-sensing writes it, the code;
-# for `text`, the rest of the line is the text.
+# for `text`, the rest of the line is the text. `layout` is the reply's shape (wire.rs's table:
+# the magic, in hex, the header length and the index of the flags word) and `flag` a bit of that
+# word.
 reason blank 1
 reason low_confidence 2
 reason format 3
@@ -19,3 +21,7 @@ answer busy 2
 answer error -1
 answer pending_exception -2
 text already_loaded the support-score engine is already loaded; unload it before loading again
+layout magic 0x46534332
+layout header_len 12
+layout flags_index 10
+flag sign_corrected 1

@@ -5,14 +5,15 @@ use crate::charset::CharacterList;
 use crate::ctc::Probabilities;
 use crate::preprocess::InputTensor;
 
-/// Classes: 0 blank, 1 "+", 2 "/", 3..=12 "0".."9", 13 "A", 14 space.
-const CHARACTERS: &str = "+\n/\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nA";
+/// Classes: 0 blank, 1 "+", 2 "/", 3..=12 "0".."9", 13 "A", 14 "-", 15 space.
+const CHARACTERS: &str = "+\n/\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9\nA\n-";
 
 fn class_of(c: char) -> usize {
     match c {
         '+' => 1,
         '/' => 2,
         '0'..='9' => 3 + (c as usize - '0' as usize),
+        '-' => 14,
         _ => 13,
     }
 }
@@ -876,11 +877,47 @@ fn a_slash_read_as_a_digit_stays_unknown() {
 
 #[test]
 fn a_corrected_text_out_of_range_is_unknown() {
-    for text in ["+63/-16", "+62/-17", "-63/+16", "-99"] {
+    for text in ["+63/-16", "+62/-17", "-63/+16", "-99", "-63"] {
         let confidences = vec![0.999; text.chars().count()];
         let score = read_as(text, &confidences, 0.99);
         assert!(refused(&score), "{text}: {score:?}");
         assert_eq!(score.class, Score::Unknown(Reason::Range), "{text}");
+        assert!(!score.sign_corrected, "{text}");
+    }
+}
+
+#[test]
+fn a_corrected_grand_part_must_be_sixteen() {
+    for text in ["+62/-6", "+62/-1", "+62/-0", "-62/+6", "-0/-0", "+58/-15"] {
+        let confidences = vec![0.999; text.chars().count()];
+        let score = read_as(text, &confidences, 0.99);
+        assert!(refused(&score), "{text}: {score:?}");
+        assert_eq!(score.class, Score::Unknown(Reason::Range), "{text}");
+        assert_eq!(score.grand, Score::Unknown(Reason::Range), "{text}");
+        assert!(!score.sign_corrected, "{text}");
+    }
+    let independent = ScoreConfig {
+        range_policy: RangePolicy::Independent,
+        ..ScoreConfig::default()
+    };
+    let score = decide(sign_observation("+62/-6", &[0.999; 6], 0.99), &independent);
+    assert!(refused(&score), "{score:?}");
+}
+
+#[test]
+fn the_strict_path_keeps_every_grand_score() {
+    for (text, grand) in [("+62/+6", 6), ("+62/+1", 1), ("+62/+0", 0), ("+58/+15", 15)] {
+        let confidences = vec![0.999; text.chars().count()];
+        assert_eq!(
+            answer(&read_as(text, &confidences, 0.99)),
+            (
+                text[1..3].parse().ok(),
+                Some(grand),
+                Display::Compound,
+                false
+            ),
+            "{text}"
+        );
     }
 }
 
@@ -891,6 +928,7 @@ fn a_cut_corrected_text_is_unknown() {
     let score = decide(cut, &ScoreConfig::default());
     assert!(refused(&score));
     assert_eq!(score.class, Score::Unknown(Reason::Clipped));
+    assert!(!score.sign_corrected);
     let mut blank = sign_observation("+62/-16", &COMPOUND, 0.944);
     blank.featureless = true;
     assert_eq!(
@@ -952,4 +990,53 @@ fn strict_answers_are_unchanged_and_not_marked() {
         let observation = sign_observation(text, &confidences, 0.999);
         assert_eq!(answer(&decide(observation, &off)), expected, "{text}");
     }
+}
+
+#[test]
+fn a_nan_in_another_character_keeps_a_corrected_text_unknown() {
+    for at in [0, 1, 3, 6] {
+        let mut confidences = COMPOUND;
+        confidences[at] = f32::NAN;
+        let score = read_as("+62/-16", &confidences, 0.95);
+        assert!(refused(&score), "{at}: {score:?}");
+        assert!(!score.sign_corrected);
+    }
+}
+
+#[test]
+fn a_weak_kept_plus_after_a_corrected_class_sign_is_unknown() {
+    let confidences = [0.61, 0.999, 0.999, 0.999, 0.49, 0.999, 0.999];
+    let score = read_as("-62/+16", &confidences, 0.9);
+    assert!(refused(&score), "{score:?}");
+    assert!(!score.sign_corrected);
+}
+
+#[test]
+fn a_weak_real_plus_is_not_exempt() {
+    let confidences = [0.999, 0.999, 0.999, 0.999, 0.3, 0.999, 0.999];
+    let score = read_as("+62/+16", &confidences, 0.9);
+    assert!(refused(&score), "{score:?}");
+    assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
+    assert!(!score.sign_corrected);
+}
+
+#[test]
+fn the_reader_corrects_a_sign_from_the_recogniser() {
+    let script = Scripted::new(vec![
+        vec![('+', 0.999)],
+        vec![('6', 0.999)],
+        vec![('2', 0.999)],
+        vec![('/', 0.99)],
+        vec![('-', 0.61)],
+        vec![('1', 0.999)],
+        vec![('6', 0.999)],
+    ]);
+    let mut reader = reader(script, ScoreConfig::default());
+    let score = reader.read(&crop(panel())).unwrap();
+    assert_eq!(score.observation.text, "+62/-16");
+    assert_eq!(score.observation.char_confidences.len(), 7);
+    assert_eq!(
+        answer(&score),
+        (Some(62), Some(16), Display::Compound, true)
+    );
 }
