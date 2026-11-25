@@ -232,7 +232,7 @@ class FineTuneSettingsViewModel @Inject constructor(
         }
 }
 /**
- * Upstream's four Chain Priority settings (#654) stay hidden with the feature. The two waits still apply while
+ * Upstream's four Chain Priority settings (#654) follow ChainPriorityAvailability. The two waits still apply while
  * hidden, at their defaults, which are the fixed values they replace.
  */
 private fun chainPriorityItems(vararg items: FineTuneItem): List<FineTuneItem> =

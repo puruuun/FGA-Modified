@@ -8,6 +8,7 @@ import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
 import io.github.fate_grand_automata.scripts.enums.CardPriorityStyle
 import io.github.fate_grand_automata.scripts.models.ServantCardKey
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.scripts.models.TeamSlot
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
@@ -31,7 +32,14 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
     @get:Rule
     val rules = screenshotRules(composeRule)
 
-    private fun shot(waves: Int, width: Int, chainShown: Boolean = false, name: String = "Waves$waves") {
+    private fun shot(
+        waves: Int,
+        width: Int,
+        chainOn: Boolean = false,
+        name: String = "Waves$waves",
+        locale: String = "ko"
+    ) {
+        val chainShown = ChainPriorityAvailability.SHOWN
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val config = BattleConfigCore("cp611_$waves", context)
         val items = List(waves) { config.cardPriority.get().first() }.map { scores ->
@@ -43,13 +51,13 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
                 braveChains = mutableStateOf(BraveChainEnum.None),
                 style = mutableStateOf(CardPriorityStyle.Affinity),
                 useServantPriority = mutableStateOf(true),
-                useChainPriority = mutableStateOf(chainShown)
+                useChainPriority = mutableStateOf(chainOn)
             )
         }.toMutableStateList()
 
         composeRule.shoot(
             "cardpriority611", name, width, 800,
-            dark = dark, locale = "ko"
+            dark = dark, locale = locale
         ) {
             CardPriorityView(items, config.cardPrioritySplit, config.cardSwapDetection, chainShown = chainShown)
         }
@@ -60,9 +68,10 @@ class CardPriority611ScreenshotTest(private val dark: Boolean) {
     @Test fun threeWaves360() = shot(3, 360)
     @Test fun threeWaves1280() = shot(3, 1280)
     @Test fun fiveWaves360() = shot(5, 360)
-    // #654: Chain Priority shown and on; the switch, the order panel and the Always option are hidden while not shown.
-    @Test fun chainPriority360() = shot(2, 360, chainShown = true, name = "ChainPriority")
-    @Test fun chainPriority1280() = shot(2, 1280, chainShown = true, name = "ChainPriority")
+    // #721: Chain Priority is shown, so the plain shots above carry the off switch; these have it on.
+    @Test fun chainPriority360() = shot(2, 360, chainOn = true, name = "ChainPriority")
+    @Test fun chainPriority1280() = shot(2, 1280, chainOn = true, name = "ChainPriority")
+    @Test fun chainPriority360Ja() = shot(2, 360, chainOn = true, name = "ChainPriorityJa", locale = "ja")
 
     companion object {
         @JvmStatic
