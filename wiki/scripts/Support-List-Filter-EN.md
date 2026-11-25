@@ -8,17 +8,17 @@ There is one filter, and you switch it yourself. Starting or ending a script doe
 
 Use **Use this feature** at the top of **More options → Additional features → Support list filter**. It is off by default. The menu entry shows only while log collection is on.
 
-- Off: the play button menu shows no support filter and nothing is filtered. The support list reaches the game as received.
-- On: the button row at the bottom of the play button menu gets a **Support filter · On/Off** button.
+- Off: the battle menu shows no support filter and nothing is filtered. The support list reaches the game as received.
+- On: the button row at the bottom of the battle menu (the play button menu where you pick a battle config and start a battle) gets a **Support filter · On/Off** button. The menus of the other scripts (FP gacha, lottery, gift box and so on) show neither the button nor the panel and look as they did before the feature.
 
 ## Using it from the play button menu
 
-**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The filter panel is as wide as the battle config list on the left. It comes back open the next time the menu opens if it was open when it last closed (opening the weekly mission panel counts as closing it). The **Weekly mission clear** and **Support filter** buttons at the bottom look the same, and the button of the open panel is highlighted. While it is open, the run limits (runs, materials, CEs) stay visible in the middle. With the weekly mission panel open the limits are hidden as before, because the weekly route does not use them. The button is in every script menu, and the panel shows:
+**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The filter panel is as wide as the battle config list on the left. It comes back open the next time the menu opens if it was open when it last closed (opening the weekly mission panel counts as closing it). The **Weekly mission clear** and **Support filter** buttons at the bottom look the same, and the button of the open panel is highlighted. While it is open, the run limits (runs, materials, CEs) stay visible in the middle. With the weekly mission panel open the limits are hidden as before, because the weekly route does not use them. The button is only in the battle menu, and the panel shows:
 
 - **The Support list filter checkbox**: the same kind of checkbox as the options in the middle column; the whole row is tappable. Checked, the filter applies from that moment; unchecked, it stops at once. The state survives an app restart.
 - **Conditions from**: where the current conditions came from (a battle config name or a profile name).
 - **Every active condition**: servants (with the chosen ascension looks), CEs and MLB, skills, appends, NP level, final ascension, class score +62, the grand conditions (grand servant, grand score +16, bond CE effect, both CE slots match), friends only. Each condition is one line, shown only when it is set.
-- **Script** button in the **Take from** row: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available when no config is selected or in menus without a battle config list. A displayed ascension stored in the config is not copied.
+- **Script** button in the **Take from** row: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available when no config is selected. A displayed ascension stored in the config is not copied.
 - **Profile** button in the **Take from** row: copies the conditions of a saved profile (displayed ascensions included). Not available while there is no profile.
 - The **Filter result** line: what the filter did to the last support list (for example "Filter result: 6 of 20 shown"), or "not changed".
 
