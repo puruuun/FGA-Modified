@@ -101,9 +101,8 @@ object DisplayedAscension {
 
 /**
  * Counts only, for the debug log and the settings line: no ids and no names. Slots are the filled ones
- * (svtId > 0) of the followers that are filtered (type 1 and 2), grand entries included. [slotsAfter] is the filled
- * slots left in the kept followers, which are their matching slots: a non-matching slot is blanked and a non-matching
- * grand entry is removed (#720).
+ * (svtId > 0) of the followers that are filtered (type 1 and 2), grand entries included. A kept follower's grand
+ * entries all count in [slotsAfter], because they are never blanked (#706); they leave only with their follower.
  */
 data class SupportListCounts(
     val followersBefore: Int,
@@ -119,9 +118,9 @@ class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
  * In a follower/list response (#636, #685), leaves out the followers that have no matching support and,
  * in the followers that stay, replaces every filled slot that does not match with the server's own empty-slot
  * form (see [blankSlot]). A slot that matches, a slot that is already empty and every other key stay as received.
- * A grand entry (`userSvtGrandHash`) is never blanked or rewritten (#706): in a kept follower the non-matching entries
- * are removed and the matching ones stay the received objects, in their order or under their keys (#720), which is
- * the server's own way of sending fewer. A matching grand entry keeps its follower like any other matching slot.
+ * `userSvtGrandHash` is never rewritten (#706): a matching grand entry keeps its follower like any other matching
+ * slot, but the grand list of a kept follower is the element as received, matching entries or not. The grand
+ * conditions (#704) only decide which slots match, so they decide which followers stay, never what a grand entry holds.
  * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
  * nothing is thrown.
  *
@@ -241,9 +240,8 @@ object SupportListFilter {
     private class Reduced(val follower: JsonObject, val anyMatch: Boolean, val filledBefore: Int, val filledAfter: Int)
 
     /**
-     * The follower with its non-matching filled slots blanked and its non-matching grand entries removed, or null when no
-     * slot hash is readable or a slot has an unexpected shape. When nothing in it changes, [Reduced.follower] is the same
-     * object that came in.
+     * The follower with its non-matching filled slots blanked (grand entries excepted), or null when no slot hash is readable or a slot
+     * has an unexpected shape. When nothing in it changes, [Reduced.follower] is the same object that came in.
      */
     private fun reduce(follower: JsonObject, criteria: SupportListCriteria, excluded: Boolean): Reduced? {
         var readable = false
@@ -259,75 +257,53 @@ object SupportListFilter {
         val grandBoards = if (criteria.grandScore16 && !excluded) grandBoards(follower) else GrandBoards.Missing
         if (grandBoards == GrandBoards.Odd) return null
 
-        /** True or false for a filled slot, null for an empty one or when [failed] was set. */
-        fun matchOf(slot: JsonElement, grand: Boolean): Boolean? {
+        fun reduceSlot(slot: JsonElement, grand: Boolean): JsonElement {
             val row = slot as? JsonObject
             val svtId = row?.long("svtId")
             if (row == null || svtId == null) {
                 failed = true
-                return null
+                return slot
             }
-            if (svtId <= 0L) return null
+            if (svtId <= 0L) return slot
             filledBefore++
             val matches = if (excluded) false else passes(row, grand, criteria, boards, grandBoards)
             if (matches == null) {
                 failed = true
-                return null
+                return slot
             }
-            if (matches) {
-                anyMatch = true
+            if (matches) anyMatch = true
+            // A grand entry stays as received whether it matches or not (#706), so a kept follower keeps all of them.
+            if (matches || grand) {
                 filledAfter++
+                return slot
             }
-            return matches
-        }
-
-        fun reduceSlot(slot: JsonElement): JsonElement {
-            if (matchOf(slot, grand = false) != false) return slot
             changed = true
-            return blankSlot(slot as JsonObject)
-        }
-
-        /**
-         * Whether a grand entry stays. The server never sends a blank grand entry, it sends fewer (#706, #720), so a
-         * non-matching entry is removed rather than blanked. An empty one (svtId 0) stays as received, like an empty slot.
-         */
-        fun keepGrand(entry: JsonElement): Boolean {
-            if (matchOf(entry, grand = true) != false) return true
-            changed = true
-            return false
+            return blankSlot(row)
         }
 
         for (key in SLOT_HASHES) {
             val hash = follower[key]
             if (key == GRAND_HASH) {
-                // The entries that stay are the received objects; a container with nothing removed is the received element.
+                // Read for the match only; the entry keeps the original element. The server never sends a blank grand
+                // entry (it sends fewer), so the blank form of the other hashes would be a shape the game has never seen.
                 when (hash) {
-                    is JsonArray -> {
-                        val kept = hash.filter { keepGrand(it) }
-                        if (kept.size != hash.size) entries[key] = JsonArray(kept)
-                    }
-                    is JsonObject -> {
-                        val kept = hash.filter { keepGrand(it.value) }
-                        if (kept.size != hash.size) entries[key] = JsonObject(kept)
-                    }
-                    // The key is absent.
-                    null -> continue
-                    // JSON null, a number or a string: a shape the server has not sent, so the response passes unchanged.
-                    else -> return null
+                    is JsonArray -> hash.forEach { reduceSlot(it, grand = true) }
+                    is JsonObject -> hash.values.forEach { reduceSlot(it, grand = true) }
+                    else -> continue
                 }
                 readable = true
                 continue
             }
             entries[key] = when (hash) {
-                is JsonArray -> JsonArray(hash.map { reduceSlot(it) })
+                is JsonArray -> JsonArray(hash.map { reduceSlot(it, grand = false) })
                 // A hash keyed by deck or seat.
-                is JsonObject -> JsonObject(hash.mapValues { reduceSlot(it.value) })
+                is JsonObject -> JsonObject(hash.mapValues { reduceSlot(it.value, grand = false) })
                 else -> continue
             }
             readable = true
         }
         if (!readable || failed) return null
-        // The rebuilt copy is only needed when a slot was blanked or a grand entry removed in a follower that stays.
+        // The rebuilt copy is only needed when a slot was blanked in a follower that stays.
         return Reduced(if (changed && anyMatch) JsonObject(entries) else follower, anyMatch, filledBefore, filledAfter)
     }
 

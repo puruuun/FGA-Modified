@@ -65,7 +65,7 @@ As in the script, final ascension, skills and appends apply only with at least o
 
 ### How grand servants show
 
-A person with a grand servant that matches stays, and **that person's other grand servants that do not match are not shown**. Someone with a grand servant in every class keeps only the matching one, so the other class tabs do not show that person's grand servants. The same holds without any grand condition: with only a preferred servant, for example, the grand servants of the people who stay that are not that servant are not shown. Grand servant slots are never emptied; a grand servant that does not match is left out of the list. With grand servant on, normal support slots do not match, so the normal servant slots of the people who stay become empty; the script does not pick a row without the grand label either.
+The grand conditions only decide which people stay in the list. A person with a grand servant that matches stays, and **that person's other grand servants are shown as received, even the ones that do not match**. Grand servant slots are never emptied or removed. With grand servant on, normal support slots do not match, so the normal servant slots of the people who stay become empty; the script does not pick a row without the grand label either.
 
 **KR has no grand servants yet.** The KR support list carries no grand slots, so with grand servant on nobody stays on KR. When grand servants come to KR, the same rules apply.
 
