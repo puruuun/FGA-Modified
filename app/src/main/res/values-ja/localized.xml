@@ -1360,10 +1360,9 @@
     <string name="clear_all">"すべて解除"</string>
     <string name="p_open_source_notices">オープンソースライセンス</string>
     <string name="open_source_notices_summary">このアプリにはオープンソースのコンポーネントも含まれています。そのライセンスと著作権表示:</string>
-    <string name="capture_support_filter_last">"前回の一覧: %1$d人中%2$d人、サーヴァント枠%3$d件中%4$d件"</string>
-    <string name="capture_support_filter_last_unchanged">"前回の一覧: 変更なし"</string>
+    <string name="capture_support_filter_last">"フィルター結果: %2$d人中%1$d人を表示"</string>
+    <string name="capture_support_filter_last_unchanged">"フィルター結果: 変更なし"</string>
     <string name="support_list_filter">"サポート一覧フィルター"</string>
-    <string name="support_list_filter_summary_config">"サポート一覧フィルターがこの戦闘設定の条件を取り込むと（再生ボタンのメニューの「選択中の設定から取り込む」）、「フィルター適用」の付いた条件を適用します。スクリプト自体はこれまでどおりすべての条件を画面で判定します。"</string>
     <string name="support_list_filter_applied">"フィルター適用"</string>
     <string name="support_list_filter_screen_only">"画面判定のみ"</string>
     <string name="support_list_filter_capture_off">"ログ収集がオフのため、フィルターは動作しません。追加機能でログ収集をオンにしてください。"</string>
@@ -1414,7 +1413,9 @@
     <string name="support_filter_from_profile">"プロファイル %1$s"</string>
     <string name="support_filter_take_config">"選択中の設定から取り込む"</string>
     <string name="support_filter_load_profile">"プロファイルを読み込む"</string>
-    <string name="support_filter_refresh_hint">"ゲームはサポート一覧を持っていないときだけ一覧を要求します。切り替えや読み込みの後は、ゲームでサポート一覧を更新してください。"</string>
+    <string name="support_filter_take_from">"取り込み"</string>
+    <string name="support_filter_take_script">"スクリプト"</string>
+    <string name="support_filter_take_profile">"プロファイル"</string>
     <string name="support_filter_line_servants">"サーヴァント: %1$s"</string>
     <string name="support_filter_line_ces">"礼装: %1$s"</string>
 </resources>

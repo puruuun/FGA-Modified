@@ -7,12 +7,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.width
+import androidx.compose.ui.unit.height
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -92,25 +98,25 @@ class SupportListFilterUiTest {
 
     @Before fun reset() = SupportListLastResult.resetForTesting()
 
-    private val lastText = "마지막 목록: 20명 중 12명, 서번트 칸 498개 중 15개"
+    private val lastText = "필터 결과: 20명 중 12명 표시"
 
     @Test fun showsNothingBeforeTheFirstList() {
         compose.setContent { FGATheme { SupportListLastResultLine() } }
-        compose.onNodeWithText("마지막 목록", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("필터 결과", substring = true).assertDoesNotExist()
     }
 
     @Test fun showsTheCountsAfterAFilteredList() {
         SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
         compose.setContent { FGATheme { SupportListLastResultLine() } }
         compose.onNodeWithText(lastText).assertExists()
-        compose.onNodeWithText(context.getString(R.string.capture_support_filter_last, 20, 12, 498, 15)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.capture_support_filter_last, 12, 20)).assertExists()
     }
 
     @Test fun showsNotChangedAfterAPassThrough() {
         SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
         SupportListLastResult.unchanged()
         compose.setContent { FGATheme { SupportListLastResultLine() } }
-        compose.onNodeWithText("마지막 목록: 바꾸지 않음").assertExists()
+        compose.onNodeWithText("필터 결과: 바꾸지 않음").assertExists()
     }
 
     private fun prefs(): PrefsCore {
@@ -121,83 +127,76 @@ class SupportListFilterUiTest {
         return PrefsCore(PrefMaker(store), context).also { it.captureTrackerEnabled.set(true) }
     }
 
-    private fun battleConfig(
+    /** The filter's own editor: where the labels and the displayed ascension item live since #708. */
+    private fun profileEditor(
         prefs: PrefsCore,
         build: SupportFilterBuild? = SupportFilterBuild.Off,
         captureAvailable: Boolean = true,
-    ) {
+    ): io.github.fate_grand_automata.prefs.core.SupportFilterProfileCore {
+        val profile = prefs.addSupportFilterProfile("Farming", "p1")
+        profileScreen(prefs, profile, build, captureAvailable)
+        return profile
+    }
+
+    private fun battleConfigScreen(prefs: PrefsCore) {
         val vm = SupportViewModel(StorageProvider(prefs, context))
-        compose.setContent {
-            FGATheme {
-                PreferredSupport(
-                    prefs.forBattleConfig("t").support, vm,
-                    filter = SupportListFilterUi(R.string.support_list_filter_summary_config, build = { build }),
-                    captureAvailable = captureAvailable,
-                )
-            }
-        }
+        compose.setContent { FGATheme { PreferredSupport(prefs.forBattleConfig("t").support, vm) } }
         compose.waitForIdle()
     }
 
-    @Test fun theBattleConfigScreenHasNoSwitchOfItsOwn() {
-        battleConfig(prefs())
+    @Test fun theProfileEditorHasNoSwitchOfItsOwn() {
+        profileEditor(prefs())
         compose.onNodeWithTag(SupportListFilterHeaderTag).assertExists()
-        compose.onNodeWithText(context.getString(R.string.support_list_filter_summary_config)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.support_list_filter_summary_profile)).assertExists()
         compose.onAllNodes(isToggleable() and hasAnyAncestor(hasTestTag(SupportListFilterHeaderTag))).assertCountEquals(0)
     }
 
-    @Test fun eachConditionSaysWhetherTheFilterAppliesIt() {
-        battleConfig(prefs())
+    @Test fun eachConditionOfAProfileSaysWhetherTheFilterAppliesIt() {
+        profileEditor(prefs())
         compose.onAllNodesWithText("필터 적용").onFirst().assertExists()
-        compose.onAllNodesWithText("화면 판독만").onFirst().assertExists()
     }
 
     @Test fun noticeWhenCaptureIsOff() {
-        battleConfig(prefs(), captureAvailable = false)
+        profileEditor(prefs(), captureAvailable = false)
         compose.onNodeWithTag(SupportListFilterNoticeTag).assertExists()
         compose.onNodeWithText(context.getString(R.string.support_list_filter_capture_off)).assertExists()
     }
 
     @Test fun noticesNameWhatStopsTheFilter() {
-        battleConfig(prefs(), build = SupportFilterBuild.Unmapped(listOf("My image"), listOf("My CE.png")))
+        profileEditor(prefs(), build = SupportFilterBuild.Unmapped(listOf("My image"), listOf("My CE.png")))
         compose.onNodeWithText(context.getString(R.string.support_list_filter_unmapped, "My image, My CE.png")).assertExists()
     }
 
-    @Test fun theBattleConfigScreenKeepsTheScriptOnlyItems() {
+    @Test fun displayedAscensionChipsAreStoredPerServantInAProfile() {
         val prefs = prefs()
-        prefs.forBattleConfig("t").support.preferredServants.set(setOf("Arcueid"))
-        battleConfig(prefs)
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(autoFriendRequest))
-        compose.onNodeWithText(autoFriendRequest).assertExists()
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(npImages))
-        compose.onNodeWithText(npImages).assertExists()
-    }
-
-    @Test fun displayedAscensionChipsAreStoredPerServant() {
-        val prefs = prefs()
-        val support = prefs.forBattleConfig("t").support
-        support.preferredServants.set(setOf("Arcueid"))
-        battleConfig(prefs)
+        val profile = prefs.addSupportFilterProfile("Farming", "p1")
+        profile.support.preferredServants.set(setOf("Arcueid"))
+        profileScreen(prefs, profile)
         compose.onNode(hasScrollAction()).performScrollToNode(hasTestTag(DisplayedAscensionTag))
         compose.onNodeWithTag(DisplayedAscensionTag).performClick()
         compose.onNodeWithTag("${DisplayedAscensionChipTag}s4:Arcueid").performClick()
         compose.onNodeWithTag("${DisplayedAscensionChipTag}c2:Arcueid").performClick()
         compose.waitForIdle()
-        assertEquals(setOf("s4|Arcueid", "c2|Arcueid"), support.displayedAscensions.get())
+        assertEquals(setOf("s4|Arcueid", "c2|Arcueid"), profile.support.displayedAscensions.get())
         compose.onNodeWithTag("${DisplayedAscensionChipTag}s4:Arcueid").performClick()
         compose.waitForIdle()
-        assertEquals(setOf("c2|Arcueid"), support.displayedAscensions.get())
+        assertEquals(setOf("c2|Arcueid"), profile.support.displayedAscensions.get())
     }
 
-    @Test fun withoutTheFilterTheSupportScreenIsAsBefore() {
+    // The battle config's own screen is the one from before #685, with the feature on as well (#708).
+    @Test fun theBattleConfigSupportScreenHasNoFilterElementsWithTheFeatureOn() {
         val prefs = prefs()
+        prefs.supportFilterFeature.set(true)
         prefs.forBattleConfig("t").support.preferredServants.set(setOf("Arcueid"))
-        val vm = SupportViewModel(StorageProvider(prefs, context))
-        compose.setContent { FGATheme { PreferredSupport(prefs.forBattleConfig("t").support, vm) } }
-        compose.waitForIdle()
+        battleConfigScreen(prefs)
         compose.onNodeWithTag(DisplayedAscensionTag).assertDoesNotExist()
         compose.onNodeWithTag(SupportListFilterHeaderTag).assertDoesNotExist()
-        compose.onAllNodesWithText("필터 적용").onFirst().assertDoesNotExist()
+        compose.onAllNodesWithText("필터 적용").assertCountEquals(0)
+        compose.onAllNodesWithText("화면 판독만").assertCountEquals(0)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(autoFriendRequest))
+        compose.onNodeWithText(autoFriendRequest).assertExists()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(npImages))
+        compose.onNodeWithText(npImages).assertExists()
     }
 
     private val autoFriendRequest get() = context.getString(R.string.p_battle_config_support_auto_friend_request)
@@ -205,18 +204,23 @@ class SupportListFilterUiTest {
     private val npImages get() = context.getString(R.string.p_battle_config_support_pref_nps)
     private val grandServant get() = context.getString(R.string.p_battle_config_support_grand_servant)
 
-    private fun profileScreen(prefs: PrefsCore, profile: io.github.fate_grand_automata.prefs.core.SupportFilterProfileCore) {
+    private fun profileScreen(
+        prefs: PrefsCore,
+        profile: io.github.fate_grand_automata.prefs.core.SupportFilterProfileCore,
+        build: SupportFilterBuild? = SupportFilterBuild.Off,
+        captureAvailable: Boolean = true,
+    ) {
         val vm = SupportViewModel(StorageProvider(prefs, context))
         compose.setContent {
             FGATheme {
                 SupportFilterProfile(
                     prefs, profile, vm,
                     filter = SupportListFilterUi(
-                        R.string.support_list_filter_summary_profile, build = { SupportFilterBuild.Off },
+                        R.string.support_list_filter_summary_profile, build = { build },
                         extra = { io.github.fate_grand_automata.ui.more.ImportFromBattleConfig(prefs, profile) },
                         script = false,
                     ),
-                    captureAvailable = true,
+                    captureAvailable = captureAvailable,
                 )
             }
         }
@@ -245,6 +249,7 @@ class SupportListFilterUiTest {
         source.name.set("Farming")
         source.support.preferredServants.set(setOf("Arcueid"))
         source.support.friendsOnly.set(true)
+        source.support.displayedAscensions.set(setOf("s4|Arcueid"))
         val profile = prefs.addSupportFilterProfile("P", "p2")
         profileScreen(prefs, profile)
         compose.onNodeWithTag(ImportFromBattleConfigTag).performClick()
@@ -252,6 +257,7 @@ class SupportListFilterUiTest {
         compose.waitForIdle()
         assertEquals(setOf("Arcueid"), profile.support.preferredServants.get())
         assertTrue(profile.support.friendsOnly.get())
+        assertEquals(emptySet(), profile.support.displayedAscensions.get())
         // A profile is not the active filter.
         assertEquals(emptySet(), prefs.activeSupportFilter.preferredServants.get())
     }
@@ -287,22 +293,51 @@ class SupportListFilterUiTest {
             compose.onNodeWithText(line).assertExists()
         }
         compose.onNodeWithText("조건 출처: 프로필 주회용").assertExists()
-        compose.onNodeWithText(context.getString(R.string.support_filter_refresh_hint)).assertExists()
+        compose.onNodeWithText("가져오기").assertExists()
     }
 
-    @Test fun thePanelsToggleSwitchesTheFilterAndOffClearsTheLastResult() {
+    @Test fun thePanelsCheckboxSwitchesTheFilterAndOffClearsTheLastResult() {
         val prefs = prefs()
         SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
         prefs.supportFilterOn.set(true)
         panel(prefs)
         compose.onNodeWithText(lastText).assertExists()
-        compose.onNodeWithTag(SupportFilterToggleTag).assertIsOn().performClick()
+        compose.onNodeWithTag(SupportFilterToggleTag, useUnmergedTree = true).assertIsOn().performClick()
         compose.waitForIdle()
         assertFalse(prefs.supportFilterOn.get())
         assertNull(SupportListLastResult.last.value)
-        compose.onNodeWithTag(SupportFilterToggleTag).assertIsOff().performClick()
+        compose.onNodeWithTag(SupportFilterToggleTag, useUnmergedTree = true).assertIsOff().performClick()
         compose.waitForIdle()
         assertTrue(prefs.supportFilterOn.get())
+    }
+
+    // The whole row is the target, as in the middle column, not just the box.
+    @Test fun tappingTheLabelTogglesTheFilter() {
+        val prefs = prefs()
+        panel(prefs)
+        compose.onNodeWithText("서포트 목록 필터", useUnmergedTree = true).performClick()
+        compose.waitForIdle()
+        assertTrue(prefs.supportFilterOn.get())
+    }
+
+    @Test fun thePanelHasNoHintAndTheLabelSitsAboveTheTwoButtons() {
+        val prefs = prefs()
+        SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
+        panel(prefs, selected = "src")
+        compose.onNodeWithText("서포트 목록은 없을 때만", substring = true).assertDoesNotExist()
+        val result = compose.onNodeWithText(lastText).getUnclippedBoundsInRoot()
+        val label = compose.onNodeWithText("가져오기").getUnclippedBoundsInRoot()
+        val script = compose.onNodeWithTag(SupportFilterTakeConfigTag).getUnclippedBoundsInRoot()
+        assertTrue(result.bottom <= label.top && label.bottom <= script.top, "$result $label $script")
+    }
+
+    @Test fun theButtonsKeepTheirFullActionForAccessibility() {
+        val prefs = prefs()
+        panel(prefs, selected = "src")
+        compose.onNodeWithTag(SupportFilterTakeConfigTag)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(context.getString(R.string.support_filter_take_config))))
+        compose.onNodeWithTag(SupportFilterLoadProfileTag)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(context.getString(R.string.support_filter_load_profile))))
     }
 
     @Test fun theStopReasonShowsInsteadOfFilteringOnlyWhileTheToggleIsOn() {
@@ -330,6 +365,34 @@ class SupportListFilterUiTest {
         // A copy: the config changing later leaves the active filter alone.
         source.support.preferredServants.set(setOf("Other"))
         assertEquals(setOf("Arcueid"), prefs.activeSupportFilter.preferredServants.get())
+    }
+
+    @Test fun takingFromAConfigLeavesItsDisplayedAscensionsBehind() {
+        val prefs = prefs()
+        val source = prefs.forBattleConfig("src")
+        source.name.set("Daily")
+        source.support.preferredServants.set(setOf("Arcueid"))
+        source.support.displayedAscensions.set(setOf("s4|Arcueid"))
+        prefs.activeSupportFilter.displayedAscensions.set(setOf("c1|Other"))
+        panel(prefs, selected = "src")
+        compose.onNodeWithTag(SupportFilterTakeConfigTag).performClick()
+        compose.waitForIdle()
+        assertEquals(setOf("Arcueid"), prefs.activeSupportFilter.preferredServants.get())
+        assertEquals(emptySet(), prefs.activeSupportFilter.displayedAscensions.get())
+        // The config's stored value itself is not touched.
+        assertEquals(setOf("s4|Arcueid"), source.support.displayedAscensions.get())
+    }
+
+    @Test fun aProfileKeepsItsDisplayedAscensionsWhenLoaded() {
+        val prefs = prefs()
+        val profile = prefs.addSupportFilterProfile("P", "p9")
+        profile.support.preferredServants.set(setOf("Arcueid"))
+        profile.support.displayedAscensions.set(setOf("s4|Arcueid"))
+        panel(prefs)
+        compose.onNodeWithTag(SupportFilterLoadProfileTag).performClick()
+        compose.onNodeWithTag("${SupportFilterProfileItemTag}p9").performClick()
+        compose.waitForIdle()
+        assertEquals(setOf("s4|Arcueid"), prefs.activeSupportFilter.displayedAscensions.get())
     }
 
     @Test fun withoutASelectedConfigOrAProfileTheButtonsAreOff() {
@@ -473,6 +536,7 @@ class SupportListFilterUiTest {
         compose.onNodeWithTag(SupportFilterChipTag).performClick()
         compose.waitForIdle()
         compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        assertFalse(fixture.core.supportFilterPanelOpen.get())
     }
 
     private fun assertPanelAsWideAsTheConfigList() {
@@ -483,10 +547,22 @@ class SupportListFilterUiTest {
         val panel = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot()
         // Equal weights in one row; the row hands out leftover pixels one at a time, so they may differ by one pixel.
         assertEquals(list.width.value, panel.width.value, 1f / 1.5f + 0.01f)
-        // The buttons are never clipped: stacked or side by side, each lies inside the panel.
-        for (tag in listOf(SupportFilterTakeConfigTag, SupportFilterLoadProfileTag)) {
-            val button = compose.onNodeWithTag(tag).getUnclippedBoundsInRoot()
-            assertTrue(button.left >= panel.left && button.right <= panel.right, "$tag $button in $panel")
+        // The two buttons sit side by side inside the panel, each with its short label whole on one line.
+        val script = compose.onNodeWithTag(SupportFilterTakeConfigTag).getUnclippedBoundsInRoot()
+        val profile = compose.onNodeWithTag(SupportFilterLoadProfileTag).getUnclippedBoundsInRoot()
+        assertTrue(script.left >= panel.left && profile.right <= panel.right, "$script $profile in $panel")
+        assertTrue(script.right <= profile.left, "$script is left of $profile")
+        assertEquals(script.top.value, profile.top.value, 0.5f)
+        val labels = if (context.resources.configuration.locales[0].language == "ja") listOf("スクリプト", "プロファイル") else listOf("스크립트", "프로필")
+        for ((tag, label) in listOf(SupportFilterTakeConfigTag to labels[0], SupportFilterLoadProfileTag to labels[1])) {
+            val text = compose.onNode(hasText(label) and hasAnyAncestor(hasTestTag(tag)), useUnmergedTree = true)
+            text.assertExists()
+            val layouts = mutableListOf<TextLayoutResult>()
+            text.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+            val layout = layouts.single()
+            assertEquals(1, layout.lineCount, "$label is on one line")
+            assertFalse(layout.isLineEllipsized(0), "$label is not ellipsized")
+            assertTrue(layout.getLineRight(0) <= layout.size.width, "$label fits its box")
         }
     }
 
@@ -522,5 +598,90 @@ class SupportListFilterUiTest {
         compose.waitForIdle()
         compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
         compose.onNodeWithTag(SupportFilterTakeConfigTag).assertIsNotEnabled()
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theOpenStateIsRememberedAcrossTwoLaunchers() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        fixture.core.captureTrackerEnabled.set(true)
+        var show by androidx.compose.runtime.mutableStateOf(true)
+        compose.setContent {
+            FGATheme { if (show) ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core) }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        compose.onNodeWithTag(SupportFilterChipTag).performClick()
+        compose.waitForIdle()
+        show = false
+        compose.waitForIdle()
+        show = true
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
+        compose.onNodeWithTag(SupportFilterChipTag).performClick()
+        compose.waitForIdle()
+        show = false
+        compose.waitForIdle()
+        show = true
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theWeeklyPanelClosingTheFilterPanelIsRemembered() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        fixture.core.supportFilterPanelOpen.set(true)
+        launcher(fixture)
+        compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
+        compose.onNodeWithText(context.getString(R.string.weekly_route_title)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        assertFalse(fixture.core.supportFilterPanelOpen.get())
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun aRememberedOpenPanelIsIgnoredWithTheFeatureOff() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterPanelOpen.set(true)
+        launcher(fixture)
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        compose.onNodeWithTag(SupportFilterChipTag).assertDoesNotExist()
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun aRestoredOpenPanelAsksTheWindowToWiden() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        fixture.core.supportFilterPanelOpen.set(true)
+        fixture.core.captureTrackerEnabled.set(true)
+        val asked = mutableListOf<Float>()
+        compose.setContent { FGATheme { ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, onSidePanelExpanded = { asked += it }) } }
+        compose.waitForIdle()
+        assertEquals(listOf(LauncherPanel.SupportFilter.widen), asked)
+    }
+
+    // Both buttons use one style and show the open panel the same way.
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theTwoPanelButtonsShowTheOpenPanelTheSameWay() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        launcher(fixture)
+        val weekly = compose.onNode(hasText(context.getString(R.string.weekly_route_title)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected))
+        val filter = compose.onNodeWithTag(SupportFilterChipTag)
+        val selected = SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
+        val notSelected = SemanticsMatcher.expectValue(SemanticsProperties.Selected, false)
+        weekly.assert(notSelected)
+        filter.assert(notSelected)
+        filter.performClick()
+        compose.waitForIdle()
+        filter.assert(selected)
+        weekly.assert(notSelected)
+        weekly.performClick()
+        compose.waitForIdle()
+        weekly.assert(selected)
+        filter.assert(notSelected)
+        // One style: the same height, since both are text buttons.
+        assertEquals(weekly.getUnclippedBoundsInRoot().height.value, filter.getUnclippedBoundsInRoot().height.value, 0.5f)
     }
 }

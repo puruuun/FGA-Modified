@@ -711,7 +711,8 @@ class ScriptManager @Inject constructor(
                     ownerTests = ownerTestScripts.scripts,
                     onSidePanelExpanded = { widen ->
                         val window = (dialog as? androidx.appcompat.app.AlertDialog)?.window
-                        val base = launcherBaseWidth ?: window?.decorView?.width?.takeIf { it > 0 }
+                        val decor = window?.decorView
+                        val base = launcherBaseWidth ?: decor?.width?.takeIf { it > 0 }
                         if (base != null) {
                             launcherBaseWidth = base
                             val available = service.resources.displayMetrics.widthPixels
@@ -719,6 +720,24 @@ class ScriptManager @Inject constructor(
                                 if (widen > 1f) minOf(available - 24, (base * widen).toInt()) else base,
                                 android.view.WindowManager.LayoutParams.WRAP_CONTENT
                             )
+                        } else if (decor != null && widen > 1f) {
+                            // A panel restored open (#708) asks before the window has its first layout: the width it
+                            // has then is the unwidened one, which later widening and closing need as the base.
+                            decor.addOnLayoutChangeListener(object : android.view.View.OnLayoutChangeListener {
+                                override fun onLayoutChange(
+                                    v: android.view.View, l: Int, t: Int, r: Int, b: Int,
+                                    ol: Int, ot: Int, or: Int, ob: Int
+                                ) {
+                                    if (v.width <= 0) return
+                                    v.removeOnLayoutChangeListener(this)
+                                    launcherBaseWidth = v.width
+                                    val available = service.resources.displayMetrics.widthPixels
+                                    window.setLayout(
+                                        minOf(available - 24, (v.width * widen).toInt()),
+                                        android.view.WindowManager.LayoutParams.WRAP_CONTENT
+                                    )
+                                }
+                            })
                         }
                     }
                 )
