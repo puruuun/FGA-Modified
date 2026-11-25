@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -512,6 +513,8 @@ private val CardScore.color: Color
         return colorResource(getColorRes())
     }
 
+internal const val ChainSummaryTag = "chainSummary"
+
 /**
  * One row per wave or turn entry. Each row shows the list that matches the entry's own style,
  * and a marker when the entry has servant priority on. It observes the prefs, so it updates when
@@ -557,73 +560,80 @@ private fun CardPrioritySummary(profile: ExecutionProfileCore) {
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    val priorityString = buildAnnotatedString {
-                        priorities.forEachIndexed { index, it ->
-                            if (index != 0) {
-                                withStyle(
-                                    style = SpanStyle(
-                                        fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
-                                        fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                                        letterSpacing = MaterialTheme.typography.bodyMedium.letterSpacing,
-                                    )
-                                ) {
-                                    append(",")
-                                }
-                                withStyle(
-                                    style = SpanStyle(
-                                        letterSpacing = 4.dp.toSp()
-                                    )
-                                ) {
-                                    append(" ")
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            val priorityString = buildAnnotatedString {
+                                priorities.forEachIndexed { index, it ->
+                                    if (index != 0) {
+                                        withStyle(
+                                            style = SpanStyle(
+                                                fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
+                                                fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                                                letterSpacing = MaterialTheme.typography.bodyMedium.letterSpacing,
+                                            )
+                                        ) {
+                                            append(",")
+                                        }
+                                        withStyle(
+                                            style = SpanStyle(
+                                                letterSpacing = 4.dp.toSp()
+                                            )
+                                        ) {
+                                            append(" ")
+                                        }
+                                    }
+                                    withStyle(
+                                        style = SpanStyle(
+                                            fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
+                                            fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
+                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                                            letterSpacing = MaterialTheme.typography.bodyMedium.letterSpacing,
+                                            color = it.second.color,
+                                            shadow = Shadow(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                offset = Offset(1f, 1f),
+                                                blurRadius = 0f
+                                            )
+                                        )
+                                    ) {
+                                        append(it.first)
+                                    }
                                 }
                             }
-                            withStyle(
-                                style = SpanStyle(
-                                    fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
-                                    fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                                    letterSpacing = MaterialTheme.typography.bodyMedium.letterSpacing,
-                                    color = it.second.color,
-                                    shadow = Shadow(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        offset = Offset(1f, 1f),
-                                        blurRadius = 0f
-                                    )
-                                )
-                            ) {
-                                append(it.first)
-                            }
+                            Text(
+                                text = priorityString,
+                                modifier = Modifier.padding(horizontal = 5.dp),
+                                textAlign = TextAlign.Justify
+                            )
+                        }
+
+                        if (servantPriorityOn) {
+                            Text(
+                                stringResource(R.string.card_priority_summary_servant_priority),
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
-                    Text(
-                        text = priorityString,
-                        modifier = Modifier.padding(horizontal = 5.dp),
-                        textAlign = TextAlign.Justify
-                    )
-                }
 
-                if (servantPriorityOn) {
-                    Text(
-                        stringResource(R.string.card_priority_summary_servant_priority),
-                        modifier = Modifier.padding(start = 8.dp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                if (chainPriorityOn) {
-                    val order = chainOrder.enabledAtWave(wave).map { stringResource(it.stringRes) }
-                    Text(
-                        stringResource(R.string.card_priority_summary_chain_priority, order.joinToString(">")),
-                        modifier = Modifier.padding(start = 8.dp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    // Own line under the card list: beside it, a phone-width row left this text one character wide.
+                    if (chainPriorityOn) {
+                        val order = chainOrder.enabledAtWave(wave).map { stringResource(it.stringRes) }
+                        Text(
+                            stringResource(R.string.card_priority_summary_chain_priority, order.joinToString(">")),
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .testTag(ChainSummaryTag),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }

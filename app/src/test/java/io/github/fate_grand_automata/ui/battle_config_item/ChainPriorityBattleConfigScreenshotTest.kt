@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.core.app.ApplicationProvider
 import io.github.fate_grand_automata.prefs.core.BattleConfigCore
 import io.github.fate_grand_automata.scripts.enums.BraveChainEnum
+import io.github.fate_grand_automata.scripts.models.CardPriorityPerWave
 import io.github.fate_grand_automata.ui.screenshotRules
 import io.github.fate_grand_automata.ui.shoot
 import org.junit.Rule
@@ -15,14 +16,18 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Records the battle config with Chain Priority on in the first entry (#721), in Korean light and dark and in
- * Japanese. Images land in `build/outputs/roborazzi/chain-priority-battle-config/`. Recorded by
+ * Records the battle config with Chain Priority on for the last of one or three waves (#721), in Korean light and
+ * dark and in Japanese, at phone and tablet width. Images land in `build/outputs/roborazzi/chain-priority-battle-config/`. Recorded by
  * `:app:recordRoborazziCi`.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])
-class ChainPriorityBattleConfigScreenshotTest(private val dark: Boolean, private val locale: String) {
+class ChainPriorityBattleConfigScreenshotTest(
+    private val dark: Boolean,
+    private val locale: String,
+    private val widthDp: Int
+) {
     private val composeRule = createComposeRule()
 
     @get:Rule
@@ -30,18 +35,19 @@ class ChainPriorityBattleConfigScreenshotTest(private val dark: Boolean, private
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
-    @Test
-    fun chainPriorityOn() {
-        val config = BattleConfigCore("chain_shot_${dark}_$locale", context).apply {
+    // Chain Priority is on for the last wave only.
+    private fun shot(waves: Int) {
+        val config = BattleConfigCore("chain_shot_${dark}_${locale}_${widthDp}_$waves", context).apply {
             name.set("Sample farming config")
-            useChainPriorities.set(listOf(true))
+            cardPriority.set(CardPriorityPerWave.of(List(waves) { "A, B, Q, WA, WB, WQ, RA, RB, RQ" }.joinToString("\n")))
+            useChainPriorities.set(List(waves) { it == waves - 1 })
             braveChains.set(listOf(BraveChainEnum.Always))
         }
         composeRule.shoot(
             folder = "chain-priority-battle-config",
-            name = "chain_on",
-            widthDp = 360,
-            heightDp = 2000,
+            name = "chain_on_${waves}wave",
+            widthDp = widthDp,
+            heightDp = 1400,
             dark = dark,
             locale = locale
         ) {
@@ -49,13 +55,15 @@ class ChainPriorityBattleConfigScreenshotTest(private val dark: Boolean, private
         }
     }
 
+    @Test fun oneWave() = shot(1)
+
+    @Test fun threeWaves() = shot(3)
+
     companion object {
         @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "dark={0} {1}")
-        fun params(): List<Array<Any?>> = listOf(
-            arrayOf<Any?>(false, "ko"),
-            arrayOf<Any?>(true, "ko"),
-            arrayOf<Any?>(false, "ja")
-        )
+        @ParameterizedRobolectricTestRunner.Parameters(name = "dark={0} {1} {2}dp")
+        fun params(): List<Array<Any?>> = listOf(360, 1280).flatMap { w ->
+            listOf(arrayOf<Any?>(false, "ko", w), arrayOf<Any?>(true, "ko", w), arrayOf<Any?>(false, "ja", w))
+        }
     }
 }

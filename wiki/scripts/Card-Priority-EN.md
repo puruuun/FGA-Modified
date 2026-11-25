@@ -56,6 +56,7 @@ The Servant face-card check identifies which Servant owns each command card by m
 - Any Affinity-style entry has **Use Servant Priority** enabled.
 - Any Affinity-style entry has **Use Chain Priority** enabled.
 - Any Affinity-style entry has **Brave Chains** set to `With NP` or `Avoid`. Brave Chains on Servant-style entries are ignored and do not enable it.
+- A Brave Chains `Always` imported from original FGA, on an entry with Chain Priority off, acts as `With NP` and turns the face-card check on.
 - **Shuffle cards** is set to **No cards matching NP**.
 - The skill command contains a Hakuno Shuffle.
 - **Command card count mode** is enabled. When a second or third start setting is enabled, its entries and command are checked as well.
