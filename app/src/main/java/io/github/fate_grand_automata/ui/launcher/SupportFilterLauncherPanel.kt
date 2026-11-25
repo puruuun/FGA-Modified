@@ -147,7 +147,7 @@ internal fun SupportFilterLauncherPanel(
         val configName = remember(selectedConfigId) { selectedConfigId?.let { prefs.forBattleConfig(it).name.get() } }
         val takeConfigDescription = stringResource(R.string.support_filter_take_config)
         val loadProfileDescription = stringResource(R.string.support_filter_load_profile)
-        // The size of "모두 초기화", each as wide as its own label; a long label ellipsizes on one line (#718).
+        // The size of "모두 초기화", each as wide as its own label; a long label ellipsizes on one line (#719).
         Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = {

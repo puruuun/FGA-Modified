@@ -21,7 +21,7 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The support filter panel beside the limits, so the import buttons and "모두 초기화" are in one image (#718). */
+/** The support filter panel beside the limits, so the import buttons and "모두 초기화" are in one image (#719). */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])

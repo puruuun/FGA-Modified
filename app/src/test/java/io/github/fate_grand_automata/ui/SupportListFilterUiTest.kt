@@ -678,7 +678,7 @@ class SupportListFilterUiTest {
         compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).assertExists()
     }
 
-    // #718: the two import buttons are the size of "모두 초기화", measured in one composition.
+    // #719: the two import buttons are the size of "모두 초기화", measured in one composition.
     private fun assertImportButtonsAreAsHighAsResetAll() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
         fixture.core.supportFilterFeature.set(true)
