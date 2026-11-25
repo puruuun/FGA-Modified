@@ -422,6 +422,68 @@ class RobolectricCacheTest(unittest.TestCase):
         self.assertNotIn('robolectric-cache', strip_comments(read(MAIN_CI)))
 
 
+ANDROID_LINT = os.path.join(WORKFLOWS, 'android-lint.yml')
+ALL_WORKFLOWS = sorted(
+    os.path.join(WORKFLOWS, n) for n in os.listdir(WORKFLOWS) if n.endswith('.yml'))
+
+
+class LintCacheTest(unittest.TestCase):
+    """Issue #698: the lint job's dependencies come from a Gradle cache that main fills; a pull request never saves."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = read(ANDROID_LINT)
+        cls.text = strip_comments(cls.raw)
+        cls.job = job_block(cls.raw, 'lint')
+
+    def test_the_gradle_cache_is_read_only_everywhere_but_on_main(self):
+        self.assertRegex(
+            self.job,
+            r"uses: gradle/actions/setup-gradle@[0-9a-f]{40}\n\s+with:\n\s+cache-read-only: \$\{\{ github\.ref != 'refs/heads/main' \}\}")
+        self.assertNotRegex(self.job, r'actions/cache(/save)?@')
+
+    def test_a_push_to_main_runs_lint_when_dependencies_change(self):
+        self.assertRegex(self.text, r'(?m)^  push:\n    branches: \[main\]\n    paths:\n')
+        pull_request, push = parse_paths_filters(self.raw)
+        for needed in ('gradle/**', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties',
+                       '.github/workflows/android-lint.yml'):
+            self.assertIn(needed, push)
+        # Not every app change: each push saves several hundred MB and the repository cache is nearly full.
+        self.assertNotIn('app/**', push)
+        self.assertIn('app/**', pull_request)
+        self.assertIn('workflow_dispatch:', self.text)
+
+    def test_the_lint_entry_leaves_out_the_build_cache(self):
+        self.assertRegex(self.job, r'gradle-home-cache-excludes: \|\n\s+caches/build-cache-1\n')
+
+    def test_a_pull_request_never_shares_a_concurrency_group_with_a_push(self):
+        group = [l for l in top_level_block(self.raw, 'concurrency') if l.startswith('group:')]
+        self.assertEqual(len(group), 1)
+        # A fork branch named main gives head.ref == main, which is the ref of the push run.
+        self.assertNotIn('head.ref', group[0])
+        self.assertIn('github.event.pull_request.number', group[0])
+        self.assertIn('github.ref', group[0])
+
+    def test_the_main_run_is_never_cancelled(self):
+        block = top_level_block(self.raw, 'concurrency')
+        self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", block)
+
+    def test_lint_keeps_its_command_and_adds_no_permission(self):
+        self.assertIn('./gradlew :app:lintCi :prefs:lintCi', self.job)
+        self.assertEqual(top_level_block(self.raw, 'permissions'), ['contents: read'])
+        self.assertNotIn('permissions:', self.job)
+
+    def test_every_action_is_pinned_to_a_commit(self):
+        for path in ALL_WORKFLOWS:
+            for line in strip_comments(read(path)).split('\n'):
+                m = re.match(r'^\s*(?:-\s+)?uses:\s*(\S+)', line)
+                if m and not m.group(1).startswith('./'):
+                    self.assertRegex(m.group(1), r'@[0-9a-f]{40}$', (path, line))
+
+    def test_lint_is_not_part_of_the_gate(self):
+        self.assertNotIn('android-lint', strip_comments(read(MAIN_CI)))
+
+
 class WorkflowWiringTest(unittest.TestCase):
     def setUp(self):
         self.text = read(MAIN_CI)

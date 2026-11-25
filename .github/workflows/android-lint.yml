@@ -1,5 +1,12 @@
 name: Android Lint
 
+# Pull requests run lint with a read-only Gradle cache; main fills it (issue #698). The lint job resolves
+# the unit-test classpaths and lint's own tools, which no other job on main resolves: without a lint entry
+# the restore falls back to the newest entry of any job (engine-apk), which lacks them, and every pull
+# request downloaded them from Maven Central, where a 429 failed the job. The push below runs the same
+# lint command on main only when something that changes dependencies changes, so setup-gradle saves a
+# lint entry; the workflow file is in that list, so the push that merges this change creates the first entry.
+# Pull requests never save (each save evicts main's other caches, issue #658).
 on:
   pull_request:
     paths:
@@ -10,14 +17,25 @@ on:
       - 'settings.gradle.kts'
       - 'gradle.properties'
       - '.github/workflows/android-lint.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - '**/build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/android-lint.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name || github.run_id }}
-  cancel-in-progress: true
+  # A pull request is keyed by its number, not its head branch: a fork branch named main must not share a group with the push run on main.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  # A cancelled run on main would lose the cache save it exists for.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   JAVA_VERSION: 21
@@ -42,6 +60,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # The action's own default, written out so that it is visible and tested: only main saves.
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+          # Lint's task outputs are not worth a copy of several hundred MB in a repository cache that is near its limit.
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
 
       - name: Run Android Lint
         run: ./gradlew :app:lintCi :prefs:lintCi
