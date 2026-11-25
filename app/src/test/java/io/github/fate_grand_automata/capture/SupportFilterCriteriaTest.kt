@@ -1,11 +1,13 @@
 package io.github.fate_grand_automata.capture
 
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -142,5 +144,43 @@ class SupportFilterCriteriaTest {
         ).applied!!
         assertEquals(List(5) { false }, c.appendsMax)
         assertEquals(0, c.minimumNpLevel)
+    }
+
+    private val grandAll = on.copy(
+        servants = setOf("No.2 a"), ces = setOf("Black Grail.png"), grandServant = true, grandScore16 = true,
+        bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true,
+    )
+
+    @Test fun theGrandConditionsAreCarriedOverWithAPreferredServantAndCe() {
+        val c = buildSupportFilter(grandAll, full).applied!!
+        assertTrue(c.grandServant)
+        assertTrue(c.grandScore16)
+        assertEquals(BondCEEffectEnum.NP, c.bondCeEffect)
+        assertTrue(c.bothCeSlots)
+        assertEquals(full.servantClassIds, c.servantClassIds)
+        assertFalse(c.classScore62)
+    }
+
+    @Test fun theGrandConditionsApplyOnTheScriptsTerms() {
+        // Without a preferred servant: none of them.
+        val noServant = buildSupportFilter(grandAll.copy(servants = emptySet()), full).applied!!
+        assertEquals(SupportListCriteria(ceIds = setOf(9400480)), noServant)
+        // Without a preferred CE: the bond CE effect and both CE slots are left out.
+        val noCe = buildSupportFilter(grandAll.copy(ces = emptySet()), full).applied!!
+        assertTrue(noCe.grandServant)
+        assertTrue(noCe.grandScore16)
+        assertEquals(BondCEEffectEnum.Ignore, noCe.bondCeEffect)
+        assertFalse(noCe.bothCeSlots)
+        // Without grand servant: none of them, whatever else is stored.
+        val off = buildSupportFilter(grandAll.copy(grandServant = false), full).applied!!
+        assertEquals(SupportListCriteria(servantIds = setOf(100100), ceIds = setOf(9400480)), off)
+    }
+
+    @Test fun grandScoreStopsTheFilterOnAnUnknownClassLikeTheClassScore() {
+        assertEquals(SupportFilterBuild.NoClassList, buildSupportFilter(grandAll.copy(servants = setOf("Arcueid")), lookup()))
+        val build = buildSupportFilter(grandAll.copy(servants = setOf("No.2 a", "No.900 beast")), full)
+        assertEquals(SupportFilterBuild.UnknownClass(listOf("No.900 beast")), build)
+        // Without +16 the class is not needed.
+        assertTrue(buildSupportFilter(grandAll.copy(servants = setOf("No.900 beast"), grandScore16 = false), full).applied!!.grandServant)
     }
 }

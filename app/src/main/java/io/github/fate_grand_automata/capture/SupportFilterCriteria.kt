@@ -4,6 +4,7 @@ import android.content.Context
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.util.chaldea.BuiltinSupportIds
 import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import io.github.fate_grand_automata.util.portraits.SupportCatalogKind
@@ -152,6 +153,10 @@ data class SupportFilterSettings(
     val minimumNp: Int = 0,
     val score62: Boolean = false,
     val friendsOnly: Boolean = false,
+    val grandServant: Boolean = false,
+    val grandScore16: Boolean = false,
+    val bondCeEffect: BondCEEffectEnum = BondCEEffectEnum.Ignore,
+    val bothCeSlots: Boolean = false,
 ) {
     companion object {
         /**
@@ -171,6 +176,10 @@ data class SupportFilterSettings(
             minimumNp = core.minimumNpLevel.get(),
             score62 = core.score62Check.get(),
             friendsOnly = core.friendsOnly.get(),
+            grandServant = core.grandServant.get(),
+            grandScore16 = core.grandScore16Check.get(),
+            bondCeEffect = core.bondCEEffect.get(),
+            bothCeSlots = core.requireBothNormalAndRewardMatch.get(),
         )
 
         /** Emits once at once and again whenever a value [of] reads changes. */
@@ -179,6 +188,8 @@ data class SupportFilterSettings(
             core.maxAscended.asFlow(), core.displayedAscensions.asFlow(), core.skill1Max.asFlow(), core.skill2Max.asFlow(),
             core.skill3Max.asFlow(), core.appendSkillCheck.asFlow(), *core.appendSkillsMax.map { it.asFlow() }.toTypedArray(),
             core.npLevelCheck.asFlow(), core.minimumNpLevel.asFlow(), core.score62Check.asFlow(), core.friendsOnly.asFlow(),
+            core.grandServant.asFlow(), core.grandScore16Check.asFlow(), core.bondCEEffect.asFlow(),
+            core.requireBothNormalAndRewardMatch.asFlow(),
         ).map { }.onStart { emit(Unit) }
     }
 }
@@ -213,8 +224,9 @@ sealed interface SupportFilterBuild {
  * The criteria for [settings]. Conditions the script applies only together with a preferred servant (final ascension,
  * skills, appends) are applied by the filter on the same terms, so the filter never hides a support the script would
  * take. NP level and the class score are applied as stored; the support screen shows them only with a preferred servant
- * and clears them when the last one is removed. Friend names, NP images, the class tab and the grand conditions are
- * left to the script's screen reading.
+ * and clears them when the last one is removed. The grand conditions (#704) apply on the script's terms too: "grand
+ * servant" only with a preferred servant, "+16" only with it, and the bond CE effect and "both CE slots" only with it and
+ * a preferred CE. Friend names, NP images and the class tab are left to the script's screen reading.
  */
 fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup): SupportFilterBuild {
     val servantIds = settings.servants.associateWith(lookup::servantId)
@@ -225,8 +237,13 @@ fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup)
         return SupportFilterBuild.Unmapped(unmappedServants, unmappedCes)
     }
     val hasServants = servantIds.isNotEmpty()
-    if (settings.score62 && lookup.servantClassIds.isEmpty()) return SupportFilterBuild.NoClassList
-    if (settings.score62) {
+    val grand = settings.grandServant && hasServants
+    val grandScore16 = grand && settings.grandScore16
+    val grandCes = grand && ceIds.isNotEmpty()
+    // "+16" reads the servant's class like "+62" and stops the filter on the same terms.
+    val needsClass = settings.score62 || grandScore16
+    if (needsClass && lookup.servantClassIds.isEmpty()) return SupportFilterBuild.NoClassList
+    if (needsClass) {
         val unknown = servantIds.filterValues { it !in lookup.servantClassIds }.keys.sorted()
         if (unknown.isNotEmpty()) return SupportFilterBuild.UnknownClass(unknown)
     }
@@ -249,8 +266,12 @@ fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup)
             appendsMax = if (hasServants && settings.appendCheck) settings.appends else List(5) { false },
             minimumNpLevel = if (settings.npCheck && settings.minimumNp > 1) settings.minimumNp else 0,
             classScore62 = settings.score62,
-            servantClassIds = if (settings.score62) lookup.servantClassIds else emptyMap(),
+            servantClassIds = if (needsClass) lookup.servantClassIds else emptyMap(),
             friendsOnly = settings.friendsOnly,
+            grandServant = grand,
+            grandScore16 = grandScore16,
+            bondCeEffect = if (grandCes) settings.bondCeEffect else BondCEEffectEnum.Ignore,
+            bothCeSlots = grandCes && settings.bothCeSlots,
         )
     )
 }

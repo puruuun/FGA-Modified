@@ -234,8 +234,32 @@ class SupportListFilterUiTest {
         compose.onNodeWithText(friendsOnlyTitle).assertExists()
         compose.onNodeWithText(autoFriendRequest).assertDoesNotExist()
         compose.onNodeWithText(npImages).assertDoesNotExist()
-        compose.onNodeWithText(grandServant).assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.p_battle_config_support_friend_names)).assertDoesNotExist()
+    }
+
+    @Test fun aProfileShowsTheGrandItemsTheFilterNowApplies() {
+        val prefs = prefs()
+        val profile = prefs.addSupportFilterProfile("Grand", "p3")
+        profile.support.preferredServants.set(setOf("Arcueid"))
+        profile.support.preferredCEs.set(setOf("Black Grail.png"))
+        profileScreen(prefs, profile)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(grandServant))
+        compose.onNodeWithText(grandServant).performClick()
+        compose.waitForIdle()
+        assertTrue(profile.support.grandServant.get())
+        val grand16 = context.getString(R.string.p_grand_score_16_check)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(grand16))
+        compose.onNodeWithText(grand16).performClick()
+        compose.waitForIdle()
+        assertTrue(profile.support.grandScore16Check.get())
+        val both = context.getString(R.string.p_battle_config_support_require_both_normal_and_reward_match)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(both))
+        compose.onNodeWithText(context.getString(R.string.p_battle_config_support_bond_ce_effect_preference)).assertExists()
+        compose.onNodeWithText(both).performClick()
+        compose.waitForIdle()
+        assertTrue(profile.support.requireBothNormalAndRewardMatch.get())
+        // Every item the profile shows is one the filter applies.
+        compose.onAllNodesWithText("화면 판독만").assertCountEquals(0)
     }
 
     @Test fun aProfileImportsABattleConfigsConditions() {
@@ -288,6 +312,49 @@ class SupportListFilterUiTest {
         }
         compose.onNodeWithText("조건 출처: 프로필 주회용").assertExists()
         compose.onNodeWithText(context.getString(R.string.support_filter_refresh_hint)).assertExists()
+    }
+
+    @Test fun thePanelListsTheGrandConditionsOnTheBuildersTerms() {
+        val prefs = prefs()
+        val active = prefs.activeSupportFilter
+        active.preferredServants.set(setOf("Arcueid"))
+        active.preferredCEs.set(setOf("Black Grail.png"))
+        active.grandServant.set(true)
+        active.grandScore16Check.set(true)
+        active.bondCEEffect.set(io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum.NP)
+        active.requireBothNormalAndRewardMatch.set(true)
+        panel(prefs)
+        val lines = listOf("관위 서번트", "그랜드 스코어 +16", "인연예장: NP 충전", "일반·보상 예장 모두 일치")
+        for (line in lines) compose.onNodeWithText(line).assertExists()
+        // Without a preferred CE the two CE conditions do not apply, and the panel does not list them.
+        compose.runOnIdle { active.preferredCEs.set(emptySet()) }
+        compose.waitForIdle()
+        compose.onNodeWithText("관위 서번트").assertExists()
+        compose.onNodeWithText("인연예장: NP 충전").assertDoesNotExist()
+        compose.onNodeWithText("일반·보상 예장 모두 일치").assertDoesNotExist()
+        // Without a preferred servant none of them applies.
+        compose.runOnIdle { active.preferredServants.set(emptySet()) }
+        compose.waitForIdle()
+        for (line in lines) compose.onNodeWithText(line).assertDoesNotExist()
+    }
+
+    @Test fun takingFromTheSelectedConfigCopiesTheGrandConditions() {
+        val prefs = prefs()
+        val source = prefs.forBattleConfig("src").support
+        source.preferredServants.set(setOf("Arcueid"))
+        source.preferredCEs.set(setOf("Black Grail.png"))
+        source.grandServant.set(true)
+        source.grandScore16Check.set(true)
+        source.bondCEEffect.set(io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum.Default)
+        source.requireBothNormalAndRewardMatch.set(true)
+        panel(prefs, selected = "src")
+        compose.onNodeWithTag(SupportFilterTakeConfigTag).performClick()
+        compose.waitForIdle()
+        val active = prefs.activeSupportFilter
+        assertTrue(active.grandServant.get())
+        assertTrue(active.grandScore16Check.get())
+        assertEquals(io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum.Default, active.bondCEEffect.get())
+        assertTrue(active.requireBothNormalAndRewardMatch.get())
     }
 
     @Test fun thePanelsToggleSwitchesTheFilterAndOffClearsTheLastResult() {

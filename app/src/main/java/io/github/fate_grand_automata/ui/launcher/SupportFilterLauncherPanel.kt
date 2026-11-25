@@ -40,6 +40,8 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.SupportFilterSource
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
+import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
+import io.github.fate_grand_automata.util.stringRes
 import io.github.fate_grand_automata.ui.FGASwitchColors
 import io.github.fate_grand_automata.ui.more.SupportListLastResultLine
 import io.github.fate_grand_automata.ui.pref_support.ascensionLabel
@@ -221,7 +223,7 @@ private fun sourceLabel(source: SupportFilterSource, name: String): String = whe
 
 /**
  * Every condition the filter applies, one line each and only when set, on the same terms as the criteria builder:
- * final ascension, skills and appends count only with a preferred servant.
+ * final ascension, skills, appends and the grand conditions count only with a preferred servant.
  */
 @Composable
 internal fun supportFilterLines(settings: SupportFilterSettings): List<String> {
@@ -253,9 +255,28 @@ internal fun supportFilterLines(settings: SupportFilterSettings): List<String> {
     }
     if (settings.npCheck && settings.minimumNp > 1) lines += stringResource(R.string.support_list_filter_part_np, settings.minimumNp)
     if (settings.score62) lines += stringResource(R.string.support_list_filter_part_score)
+    lines += grandParts(settings)
     if (settings.friendsOnly) lines += stringResource(R.string.support_list_filter_part_friends)
     if (lines.isEmpty()) lines += stringResource(R.string.support_list_filter_none)
     return lines
+}
+
+/**
+ * The grand conditions (#704) on the criteria builder's terms: grand servant and +16 only with a preferred servant, the
+ * bond CE effect and both CE slots only with it and a preferred CE.
+ */
+@Composable
+private fun grandParts(settings: SupportFilterSettings): List<String> {
+    if (!settings.grandServant || settings.servants.isEmpty()) return emptyList()
+    val parts = mutableListOf(stringResource(R.string.p_battle_config_support_grand_servant))
+    if (settings.grandScore16) parts += stringResource(R.string.support_list_filter_part_grand_score)
+    if (settings.ces.isNotEmpty()) {
+        if (settings.bondCeEffect != BondCEEffectEnum.Ignore) {
+            parts += stringResource(R.string.support_list_filter_part_bond_ce, stringResource(settings.bondCeEffect.stringRes))
+        }
+        if (settings.bothCeSlots) parts += stringResource(R.string.support_list_filter_part_both_ces)
+    }
+    return parts
 }
 
 /** One line of the conditions, for a profile in the profile list. */
@@ -281,6 +302,7 @@ internal fun supportFilterSummary(settings: SupportFilterSettings): String {
     }
     if (settings.npCheck && settings.minimumNp > 1) parts += stringResource(R.string.support_list_filter_part_np, settings.minimumNp)
     if (settings.score62) parts += stringResource(R.string.support_list_filter_part_score)
+    parts += grandParts(settings)
     if (settings.friendsOnly) parts += stringResource(R.string.support_list_filter_part_friends)
     return if (parts.isEmpty()) stringResource(R.string.support_list_filter_none) else parts.joinToString(" · ")
 }

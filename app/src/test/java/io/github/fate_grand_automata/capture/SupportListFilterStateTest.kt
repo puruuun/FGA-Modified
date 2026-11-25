@@ -557,16 +557,25 @@ class SupportListFilterStateTest {
         }
     }
 
-    @Test fun grandConditionsAreLeftToTheScript() {
+    @Test fun grandConditionsAreReadFromTheStoredSettings() {
         val prefs = prefs()
         val support = prefs.forBattleConfig("grand").support
         support.preferredServants.set(setOf("Arcueid"))
-        val plain = buildSupportFilter(SupportFilterSettings.of(support), lookup)
         support.grandServant.set(true)
         support.grandScore16Check.set(true)
         support.bondCEEffect.set(BondCEEffectEnum.NP)
         support.requireBothNormalAndRewardMatch.set(true)
-        assertEquals(plain, buildSupportFilter(SupportFilterSettings.of(support), lookup))
-        assertEquals(SupportListCriteria(setOf(2300500L)), plain.applied)
+        val settings = SupportFilterSettings.of(support)
+        assertTrue(settings.grandServant)
+        assertTrue(settings.grandScore16)
+        assertEquals(BondCEEffectEnum.NP, settings.bondCeEffect)
+        assertTrue(settings.bothCeSlots)
+        // +16 needs the servant's class, which this lookup does not know.
+        assertEquals(SupportFilterBuild.UnknownClass(listOf("Arcueid")), buildSupportFilter(settings, lookup))
+        support.grandScore16Check.set(false)
+        assertEquals(
+            SupportListCriteria(setOf(2300500L), grandServant = true),
+            buildSupportFilter(SupportFilterSettings.of(support), lookup).applied,
+        )
     }
 }

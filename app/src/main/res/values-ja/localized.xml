@@ -235,6 +235,7 @@
     <string name="p_battle_config_support_friend_names">"フレンド名"</string>
     <string name="p_battle_config_support_friends_only">"フレンドのみ"</string>
     <string name="p_battle_config_support_grand_servant">"グランドサーヴァント"</string>
+    <string name="p_grand_score_16_check">"グランドスコア+16を判定"</string>
     <string name="p_battle_config_support_max_ascended">"最終再臨"</string>
     <string name="p_battle_config_support_mlb">"最大進化"</string>
     <string name="p_battle_config_support_pref_ces">"選択する概念礼装"</string>
@@ -1393,6 +1394,9 @@
     <string name="support_list_filter_part_score">"クラススコア+62"</string>
     <string name="support_list_filter_part_friends">"フレンドのみ"</string>
     <string name="support_list_filter_part_final">"最終再臨"</string>
+    <string name="support_list_filter_part_grand_score">"グランドスコア+16"</string>
+    <string name="support_list_filter_part_bond_ce">"絆礼装: %1$s"</string>
+    <string name="support_list_filter_part_both_ces">"通常・報酬礼装の両方に一致"</string>
     <string name="support_list_filter_summary_profile">"再生ボタンのメニューでこのプロファイルを読み込むか「有効なフィルターにする」を押すと、サポート一覧フィルターにコピーされます。「フィルター適用」の付いた条件だけが適用されます。後でプロファイルを変えても有効なフィルターは変わらないので、もう一度読み込んでください。"</string>
     <string name="support_filter_feature">"この機能を使う"</string>
     <string name="support_filter_feature_summary">"オフ: 再生ボタンのメニューにサポートフィルターは表示されず、何も絞り込みません。オン: 再生ボタンのメニューに、切り替えと条件を持つ「サポートフィルター」ボタンが加わります。ログ収集が必要です。"</string>

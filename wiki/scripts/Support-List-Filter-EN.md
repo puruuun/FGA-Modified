@@ -17,7 +17,7 @@ Use **Use this feature** at the top of **More options → Additional features �
 
 - **The toggle**: on, the filter applies from that moment; off, it stops at once. The toggle survives an app restart.
 - **Conditions from**: where the current conditions came from (a battle config name or a profile name).
-- **Every active condition**: servants (with the chosen ascension looks), CEs and MLB, skills, appends, NP level, final ascension, class score +62, friends only. Each condition is one line, shown only when it is set.
+- **Every active condition**: servants (with the chosen ascension looks), CEs and MLB, skills, appends, NP level, final ascension, class score +62, the grand conditions (grand servant, grand score +16, bond CE effect, both CE slots match), friends only. Each condition is one line, shown only when it is set.
 - **Take from the selected config**: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available in menus without a battle config list.
 - **Load profile**: copies the conditions of a saved profile. Not available while there is no profile.
 - The **Last list** line: what the filter did to the last support list (people left, servant slots left), or "not changed".
@@ -33,7 +33,7 @@ The game asks the server for the support list only when it does not hold one yet
 Under **Profiles** in **More options → Additional features → Support list filter** you can keep sets of conditions. Profiles are stored apart from battle configs and are not part of a battle config export (.fga).
 
 - **Add profile**: names a new, empty profile and opens it for editing.
-- Tapping a profile opens its editor: the same items as a battle config's preferred support screen, without the items only a script uses (NP images, grand servant, grand score +16, bond CE effect, friend names, friend requests). **Import conditions from a battle config** copies a battle config's conditions into the profile.
+- Tapping a profile opens its editor: the same items as a battle config's preferred support screen, without the items only a script uses (NP images, friend names, friend requests). The grand items (grand servant, grand score +16, bond CE effect preference, both normal and bonus-up CE slots match) are applied by the filter, so a profile has them too. **Import conditions from a battle config** copies a battle config's conditions into the profile.
 - **Use as active filter** copies the profile's conditions into the active filter (the same as **Load profile** in the play button menu).
 - The menu on the right has **Rename** and **Delete**. Deleting a profile leaves the conditions already copied into the active filter.
 
@@ -53,21 +53,29 @@ Only servant slots that meet **all** set conditions stay.
 | NP level | At least the set level |
 | Class score +62 | The class score board (boards 1 to 9) of that servant's class is fully open. A servant whose class is unknown does not match |
 | Preferred CEs / MLB | One of the chosen CEs (with MLB on, that CE is MLB) |
+| Grand servant | Only grand servant slots match. A normal support slot does not, even with the same servant |
+| Grand score +16 | The grand board (16 squares) of that servant's class is fully open. Extra classes use the grand board of Extra I or II. A servant whose class is unknown does not match |
+| Bond CE effect preference | NP charge: a bond CE whose effect was switched to NP charge. Default effects: a bond CE whose effect was not switched. Ignore: not looked at |
+| Both CE slots match | The grand servant's normal CE slot and its bonus-up CE slot both hold a chosen CE (with MLB on, each MLB). Off: either one |
 | Friends only | People who are not friends are left out |
 
-As in the script, final ascension, skills and appends apply only with at least one preferred servant. NP level and class score +62 show only with a preferred servant and switch off when the last one is removed.
+As in the script, final ascension, skills and appends apply only with at least one preferred servant. NP level and class score +62 show only with a preferred servant and switch off when the last one is removed. The grand conditions apply on the script's terms too: grand servant and grand score +16 only with a preferred servant, the bond CE effect and both CE slots only with a preferred servant and a preferred CE.
 
-**Screen reading only** conditions (friend names, ascension by servant name + NP, the support class tab, grand servant, grand score +16, bond CE effect) are not applied by the filter. Conditions taken from a battle config with the grand servant condition on are filtered by the other conditions only.
+**Screen reading only** conditions (friend names, ascension by servant name + NP, the support class tab) are not applied by the filter.
 
-Grand servants (JP) are not filtered yet. For people who stay in the list, the grand servants are shown as received, even the ones that do not match. A grand servant that matches keeps that person in the list; of that person's normal servant slots, only the ones that do not match become empty.
+### How grand servants show
+
+The grand conditions only decide which people stay in the list. A person with a grand servant that matches stays, and **that person's other grand servants are shown as received, even the ones that do not match**. Grand servant slots are never emptied or removed. With grand servant on, normal support slots do not match, so the normal servant slots of the people who stay become empty; the script does not pick a row without the grand label either.
+
+**KR has no grand servants yet.** The KR support list carries no grand slots, so with grand servant on nobody stays on KR. When grand servants come to KR, the same rules apply.
 
 ## What stops the filter
 
 With the toggle on, the filter still does not run in these cases, and the panel shows the reason in red.
 
 - **An entry that cannot be matched to a game ID**: an image of your own, for which the servant or CE is unknown, could hide the supports you want, so the filter does not run. The entry is named. Built-in images and images from **Download images** can be matched.
-- **Class score on with a chosen servant of unknown class**: the classes that can be matched to a class score board are saber, archer, lancer, rider, caster, assassin, berserker, shielder, ruler, alter ego, avenger, moon cancer, foreigner, pretender, beast and the two beast classes in JP's board 9 (Atlas's beastEresh and unBeastOlgaMarie). With a servant of another class chosen and class score +62 on, every support of that servant would be hidden, so the filter does not run and the servant is named.
-- **No servant list for the class score**: telling a servant's class needs the servant list on the device. The friend manager, the account dashboard and the image download get it. The filter never downloads it.
+- **Class score +62 or grand score +16 on with a chosen servant of unknown class**: the classes that can be matched to a class score board are saber, archer, lancer, rider, caster, assassin, berserker, shielder, ruler, alter ego, avenger, moon cancer, foreigner, pretender, beast and the two beast classes in JP's board 9 (Atlas's beastEresh and unBeastOlgaMarie). With a servant of another class chosen and class score +62 on, every support of that servant would be hidden, so the filter does not run and the servant is named.
+- **No servant list for the class score or the grand score**: telling a servant's class needs the servant list on the device. The friend manager, the account dashboard and the image download get it. The filter never downloads it.
 - A support list in a shape the filter does not expect reaches the game as received.
 - With log collection off, the filter does nothing.
 
