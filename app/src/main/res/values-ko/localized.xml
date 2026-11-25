@@ -1626,7 +1626,6 @@
     <string name="clear_all">"모두 해제"</string>
     <string name="capture_support_filter_last">"필터 결과: %2$d명 중 %1$d명 표시"</string>
     <string name="capture_support_filter_last_unchanged">"필터 결과: 바꾸지 않음"</string>
-    <string name="capture_support_filter_grand_skipped">"이 목록에는 관위 서번트가 없어 관위 조건은 적용하지 않았습니다"</string>
     <string name="support_list_filter">"서포트 목록 필터"</string>
     <string name="support_list_filter_applied">"필터 적용"</string>
     <string name="support_list_filter_screen_only">"화면 판독만"</string>

@@ -1655,7 +1655,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_col_card_boost">Card boost</string>
     <string name="capture_support_filter_last">"Filter result: %1$d of %2$d shown"</string>
     <string name="capture_support_filter_last_unchanged">"Filter result: not changed"</string>
-    <string name="capture_support_filter_grand_skipped">"This list has no grand servants, so the grand conditions were not applied."</string>
     <string name="support_list_filter">"Support list filter"</string>
     <string name="support_list_filter_applied">"Filtered"</string>
     <string name="support_list_filter_screen_only">"Screen reading only"</string>

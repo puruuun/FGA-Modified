@@ -73,18 +73,14 @@ class SupportListFilterViewModel @Inject constructor(val prefsCore: PrefsCore) :
 @Composable
 internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
     val last by SupportListLastResult.last.collectAsStateWithLifecycle()
-    val result = last ?: return
-    val text = when (result) {
+    val text = when (val result = last) {
+        null -> return
         is SupportListLastResult.Result.Filtered -> result.counts.let {
             stringResource(R.string.capture_support_filter_last, it.followersAfter, it.followersBefore)
         }
         SupportListLastResult.Result.Unchanged -> stringResource(R.string.capture_support_filter_last_unchanged)
     }
-    val skipped = (result as? SupportListLastResult.Result.Filtered)?.counts?.grandConditionsSkipped == true
-    Column(modifier) {
-        Text(text, style = MaterialTheme.typography.bodySmall)
-        if (skipped) Text(stringResource(R.string.capture_support_filter_grand_skipped), style = MaterialTheme.typography.bodySmall)
-    }
+    Text(text, modifier, style = MaterialTheme.typography.bodySmall)
 }
 
 /**

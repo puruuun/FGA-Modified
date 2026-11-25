@@ -141,13 +141,14 @@ class SupportListFilterGrandTest {
         assertEquals(SupportListCounts(1, 1, 2, 1), r.counts)
     }
 
-    @Test fun aKrShapedListWithAnEmptyGrandListIsJudgedWithoutTheGrandConditions() {
+    @Test fun aKrShapedListWithAnEmptyGrandListMatchesNothingWithGrandServantOn() {
         val text = body(
             follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
             follower("b", type = 2, main = mapOf((2 to 3) to realSlot(100, 2, 3))),
         )
-        // No grand data (#740): as without the grand options, both match and nothing changes.
-        assertNull(kept(text, grandOn))
+        // Nobody matches, so only the first stays, with no servant to show (#740).
+        assertEquals(listOf("a"), kept(text, grandOn))
+        // Off: both match and nothing changes.
         assertNull(kept(text, grandOn.copy(grandServant = false)))
     }
 
@@ -642,75 +643,23 @@ class SupportListFilterGrandTest {
         }
     }
 
-    // #740 A: the grand conditions apply only to a response with grand data.
+    // #740: never an empty follower list.
 
-    private val strictGrand = SupportListCriteria(
-        setOf(100L), setOf(7L), grandServant = true, bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true,
-    )
-
-    /** Same bytes as the criteria without grand options, and the counts say the grand conditions were skipped. */
-    private fun assertJudgedWithoutGrand(text: String, criteria: SupportListCriteria) {
-        val with = SupportListFilter.apply(text.toByteArray(), null, criteria)
-        val without = SupportListFilter.apply(text.toByteArray(), null, criteria.withoutGrandConditions())
-        if (without == null) {
-            assertNull(with)
-            return
-        }
-        assertNotNull(with)
-        assertEquals(String(without.wire), String(with.wire))
-        assertEquals(without.counts.copy(grandConditionsSkipped = true), with.counts)
-    }
-
-    @Test fun aKrShapedListIsJudgedByTheOtherConditionsAndSaysSo() {
+    @Test fun aStrictGrandConfigOnAKrShapedListKeepsTheFirstFollowerWithoutServants() {
+        val strictGrand = SupportListCriteria(setOf(100L), setOf(7L), grandServant = true, bondCeEffect = BondCEEffectEnum.NP, bothCeSlots = true)
+        val first = follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7)))
         val text = body(
-            follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7))),
+            first,
             follower("b", main = mapOf((1 to 1) to realSlot(999, 1, 1, ce = 7))),
             follower("c", type = 2, main = mapOf((2 to 3) to realSlot(100, 2, 3, ce = 7), (1 to 2) to realSlot(998, 1, 2))),
         )
-        assertEquals(listOf("a", "c"), kept(text, strictGrand))
-        val r = assertNotNull(SupportListFilter.apply(text.toByteArray(), null, strictGrand))
-        assertEquals(SupportListCounts(3, 2, 4, 2, grandConditionsSkipped = true), r.counts)
-        assertJudgedWithoutGrand(text, strictGrand)
-        assertJudgedWithoutGrand(text, grandOn.copy(grandScore16 = true, servantClassIds = mapOf(100L to 1)))
-    }
-
-    @Test fun oneFilledGrandEntryAnywhereKeepsTheGrandConditions() {
-        val text = body(
-            follower("normal", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
-            follower("grand", grand = listOf(realGrand(100))),
-        )
-        assertEquals(listOf("grand"), kept(text, grandOn))
-        assertEquals(false, SupportListFilter.apply(text.toByteArray(), null, grandOn)!!.counts.grandConditionsSkipped)
-    }
-
-    @Test fun emptyMissingAndMixedGrandContainersAreNoGrandData() {
-        val main = mapOf((1 to 1) to realSlot(100, 1, 1))
-        val other = mapOf((1 to 1) to realSlot(999, 1, 1))
-        val missing = follower("m", main = other).replace(""","userSvtGrandHash":[]""", "")
-        val keyedEmpty = follower("k", main = main).replace(""""userSvtGrandHash":[]""", """"userSvtGrandHash":{}""")
-        val emptyEntry = follower("e", main = other, grand = listOf(realGrand(0)))
-        for (text in listOf(
-            body(follower("a", main = main), follower("b", main = other)),
-            body(missing, follower("a", main = main).replace(""","userSvtGrandHash":[]""", "")),
-            body(follower("a", main = main), missing, keyedEmpty, emptyEntry),
-        )) {
-            assertJudgedWithoutGrand(text, grandOn)
-            assertEquals(true, SupportListFilter.apply(text.toByteArray(), null, grandOn)!!.counts.grandConditionsSkipped, text)
+        for (c in listOf(strictGrand, grandOn, grandOn.copy(grandScore16 = true, servantClassIds = mapOf(100L to 1)))) {
+            val (kept, counts) = onlyFollower(text, c)
+            assertEquals("a", kept["userId"]!!.jsonPrimitive.content)
+            assertWithoutServants(kept, first)
+            assertEquals(SupportListCounts(3, 0, 4, 0, placeholderKept = true), counts)
         }
     }
-
-    @Test fun anOddGrandContainerStillPassesTheResponseUnchanged() {
-        for (odd in listOf("null", "7", "\"x\"", "[1]", """[{"svtId":"1"}]""")) {
-            val text = body(
-                follower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1))),
-                follower("b", main = mapOf((1 to 1) to realSlot(999, 1, 1))).replace(""""userSvtGrandHash":[]""", """"userSvtGrandHash":$odd"""),
-            )
-            assertNull(SupportListFilter.apply(text.toByteArray(), null, grandOn), odd)
-        }
-    }
-
-    // #740 B: never an empty follower list.
-
     private fun onlyFollower(text: String, criteria: SupportListCriteria): Pair<JsonObject, SupportListCounts> {
         val r = assertNotNull(SupportListFilter.apply(text.toByteArray(), null, criteria))
         val root = Json.parseToJsonElement(String(r.wire)).jsonObject

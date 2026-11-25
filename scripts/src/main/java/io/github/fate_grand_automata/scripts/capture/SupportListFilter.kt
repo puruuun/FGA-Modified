@@ -63,14 +63,6 @@ data class SupportListCriteria(
         get() = servantIds.isNotEmpty() || ceIds.isNotEmpty() || maxAscended || displayedAscensions.isNotEmpty() ||
             skillsMax.any { it } || appendsMax.any { it } || minimumNpLevel > 0 || classScore62 || friendsOnly ||
             grandServant || grandScore16 || bondCeEffect != BondCEEffectEnum.Ignore || bothCeSlots
-
-    /** One of the four grand conditions (#704) is set. */
-    val hasGrandConditions: Boolean
-        get() = grandServant || grandScore16 || bondCeEffect != BondCEEffectEnum.Ignore || bothCeSlots
-
-    /** These criteria as a config without grand options, for a response without grand data (#740). */
-    fun withoutGrandConditions() =
-        copy(grandServant = false, grandScore16 = false, bondCeEffect = BondCEEffectEnum.Ignore, bothCeSlots = false)
 }
 
 /**
@@ -120,11 +112,6 @@ data class SupportListCounts(
     val slotsBefore: Int = 0,
     val slotsAfter: Int = 0,
     /**
-     * The criteria had grand conditions, but no judged follower of this response had a filled grand entry, so the
-     * four grand conditions were not applied to it (#740). KR sends no grand entries at all.
-     */
-    val grandConditionsSkipped: Boolean = false,
-    /**
      * Nobody matched, so one follower was kept with every servant blanked: an empty `followerInfo` makes the game's
      * support screen stop reacting to its buttons (owner's device, #740). It is not counted in [followersAfter].
      */
@@ -142,8 +129,7 @@ class SupportListFiltered(val wire: ByteArray, val counts: SupportListCounts)
  * are removed and the matching ones stay the received objects, in their order or under their keys (#720), which is
  * the server's own way of sending fewer. A non-matching entry whose userSvtId is that of a kept leader or event slot
  * stays as well. A matching grand entry keeps its follower like any other matching slot.
- * The grand conditions apply only to a response in which some judged follower has a filled grand entry (#740); and
- * when no judged follower of a `followerInfo` matches, its first judged follower stays with no servant (#740).
+ * When no judged follower of a `followerInfo` matches, its first judged follower stays with no servant (#740).
  * Every call returns null ("unchanged") on anything unexpected, so the caller forwards the original bytes;
  * nothing is thrown.
  *
@@ -199,10 +185,6 @@ object SupportListFilter {
         val cache = root["cache"] as? JsonObject ?: return null
         val updated = cache["updated"] as? JsonObject ?: return null
         val followers = updated["userFollower"] as? JsonArray ?: return null
-        val skipGrand = criteria.hasGrandConditions && grandData(followers) == GrandData.None
-        val applied = if (skipGrand) criteria.withoutGrandConditions() else criteria
-        // Grand conditions alone: without them every filled slot matches and nothing would change.
-        if (!applied.hasConditions) return null
         var before = 0
         var after = 0
         var slotsBefore = 0
@@ -233,7 +215,7 @@ object SupportListFilter {
                     continue
                 }
                 if (firstJudged < 0) firstJudged = index
-                val result = reduce(candidate, applied, excluded = applied.friendsOnly && !isFriend(candidate))
+                val result = reduce(candidate, criteria, excluded = criteria.friendsOnly && !isFriend(candidate))
                 if (result == null) {
                     unknownShape = true
                     kept += index to candidate
@@ -268,36 +250,7 @@ object SupportListFilter {
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
         return JsonObject(root + ("cache" to newCache)) to
-            SupportListCounts(before, after, slotsBefore, slotsAfter, grandConditionsSkipped = skipGrand, placeholderKept = placeholder)
-    }
-
-    private enum class GrandData { Some, None, NotSure }
-
-    /**
-     * Whether any judged follower holds a filled grand entry (#740). An absent key or an empty container is no grand data;
-     * a container of another kind, or an entry that is not an object with an integer svtId, is a shape this code has not
-     * seen, so the grand conditions stay on and the filter meets that shape as before.
-     */
-    private fun grandData(followers: JsonArray): GrandData {
-        var result = GrandData.None
-        for (follower in followers) {
-            val infos = (follower as? JsonObject)?.get("followerInfo") as? JsonArray ?: continue
-            for (info in infos) {
-                val candidate = info as? JsonObject ?: continue
-                if (!isFilterable(candidate)) continue
-                val entries = when (val hash = candidate[GRAND_HASH]) {
-                    null -> continue
-                    is JsonArray -> hash
-                    is JsonObject -> hash.values
-                    else -> return GrandData.NotSure
-                }
-                for (e in entries) {
-                    val svtId = (e as? JsonObject)?.long("svtId") ?: return GrandData.NotSure
-                    if (svtId > 0L) result = GrandData.Some
-                }
-            }
-        }
-        return result
+            SupportListCounts(before, after, slotsBefore, slotsAfter, placeholderKept = placeholder)
     }
 
     /**

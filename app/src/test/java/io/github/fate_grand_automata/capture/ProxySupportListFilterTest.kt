@@ -426,15 +426,16 @@ class ProxySupportListFilterTest {
     }
 
     @Test(timeout = 20000)
-    fun aGrandConditionOnAListWithoutGrandDataReachesTheLastResult() {
+    fun aGrandConditionOnAListWithoutGrandEntriesKeepsOneFollowerWithoutServants() {
         SupportListLastResult.resetForTesting()
         val grand = SupportListCriteria(setOf(100L), grandServant = true)
         val e = exchange(response(gzip(listJson), "Content-Encoding: gzip\r\n"), grand)
         val expected = SupportListFilter.apply(gzip(listJson), "gzip", grand)!!
         assertContentEquals(expected.wire, e.body)
-        assertEquals(1, kept(e.body, "gzip").size)
+        val only = kept(e.body, "gzip").single().jsonObject
+        assertTrue(only["userSvtLeaderHash"]!!.jsonArray.all { it.jsonObject["svtId"].toString() == "0" })
         assertEquals(SupportListLastResult.Result.Filtered(expected.counts), SupportListLastResult.last.value)
-        assertTrue(expected.counts.grandConditionsSkipped)
+        assertEquals(SupportListCounts(3, 0, 1, 0, placeholderKept = true), expected.counts)
     }
 
     @Test

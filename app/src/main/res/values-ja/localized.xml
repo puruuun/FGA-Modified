@@ -1410,7 +1410,6 @@
     <string name="open_source_notices_summary">このアプリにはオープンソースのコンポーネントも含まれています。そのライセンスと著作権表示:</string>
     <string name="capture_support_filter_last">"フィルター結果: %2$d人中%1$d人を表示"</string>
     <string name="capture_support_filter_last_unchanged">"フィルター結果: 変更なし"</string>
-    <string name="capture_support_filter_grand_skipped">"この一覧にはグランドサーヴァントがいないため、グランドの条件は適用しませんでした"</string>
     <string name="support_list_filter">"サポート一覧フィルター"</string>
     <string name="support_list_filter_applied">"フィルター適用"</string>
     <string name="support_list_filter_screen_only">"画面判定のみ"</string>
