@@ -655,7 +655,7 @@ class SupportListFilterUiTest {
             val layout = layouts.single()
             assertEquals(1, layout.lineCount, "$label is on one line")
             assertFalse(layout.isLineEllipsized(0), "$label is not ellipsized")
-            assertTrue(layout.getLineRight(0) <= layout.size.width, "$label fits its box")
+            assertTrue(layout.getLineRight(0) <= layout.size.width, "$label fits its box ${layout.getLineRight(0)} ${layout.size.width}")
         }
     }
 
@@ -677,6 +677,27 @@ class SupportListFilterUiTest {
         settings.performScrollToNode(hasTestTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag))
         compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).assertExists()
     }
+
+    // #718: the two import buttons are the size of "모두 초기화", measured in one composition.
+    private fun assertImportButtonsAreAsHighAsResetAll() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        fixture.core.supportFilterFeature.set(true)
+        launcher(fixture, initial = LauncherPanel.SupportFilter)
+        val settings = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherSettingsListTag)
+        settings.performScrollToNode(hasTestTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag))
+        compose.waitForIdle()
+        val reset = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag).getUnclippedBoundsInRoot()
+        val script = compose.onNodeWithTag(SupportFilterTakeConfigTag).getUnclippedBoundsInRoot()
+        val profile = compose.onNodeWithTag(SupportFilterLoadProfileTag).getUnclippedBoundsInRoot()
+        assertEquals(reset.height, script.height, "reset $reset script $script")
+        assertEquals(reset.height, profile.height, "reset $reset profile $profile")
+        // Each is as wide as its own label, not stretched over the panel.
+        val panelWidth = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot().width
+        assertTrue(script.width < panelWidth / 2 && profile.width < panelWidth / 2, "$script $profile $panelWidth")
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h900dp-hdpi")
+    fun theImportButtonsAreAsHighAsResetAll() = assertImportButtonsAreAsHighAsResetAll()
 
     @Test @Config(qualifiers = "ja-w1280dp-h720dp-hdpi")
     fun theFilterPanelIsAsWideAsTheConfigListAt1280() = assertPanelAsWideAsTheConfigList()

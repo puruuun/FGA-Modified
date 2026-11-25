@@ -3,10 +3,10 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
@@ -146,7 +147,7 @@ internal fun SupportFilterLauncherPanel(
         val configName = remember(selectedConfigId) { selectedConfigId?.let { prefs.forBattleConfig(it).name.get() } }
         val takeConfigDescription = stringResource(R.string.support_filter_take_config)
         val loadProfileDescription = stringResource(R.string.support_filter_load_profile)
-        // Two equal halves, never measured by their text: a long label can neither squeeze nor stack them (#708).
+        // The size of "모두 초기화", each as wide as its own label; a long label ellipsizes on one line (#718).
         Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = {
@@ -154,13 +155,13 @@ internal fun SupportFilterLauncherPanel(
                     loadConfigConditions(prefs, prefs.forBattleConfig(id).support, configName.orEmpty())
                 },
                 enabled = selectedConfigId != null,
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                contentPadding = LauncherCompactButtonPadding,
                 modifier = Modifier
-                    .weight(1f)
+                    .height(LauncherCompactButtonHeight)
                     .testTag(SupportFilterTakeConfigTag)
                     .semantics { contentDescription = takeConfigDescription },
-            ) { Text(stringResource(R.string.support_filter_take_script), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            LoadProfileButton(prefs, profileIds, loadProfileDescription, Modifier.weight(1f))
+            ) { LauncherCompactButtonLabel(stringResource(R.string.support_filter_take_script), textAlign = TextAlign.Start, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            LoadProfileButton(prefs, profileIds, loadProfileDescription)
         }
     }
 }
@@ -176,19 +177,19 @@ internal fun loadConfigConditions(prefs: PrefsCore, from: SupportPrefsCore, name
 }
 
 @Composable
-private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>, description: String, modifier: Modifier) {
+private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>, description: String) {
     var open by remember { mutableStateOf(false) }
     val profiles = remember(profileIds) { prefs.supportFilterProfilesToShow(profileIds) }
-    Box(modifier) {
+    Box {
         OutlinedButton(
             onClick = { open = true },
             enabled = profiles.isNotEmpty(),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+            contentPadding = LauncherCompactButtonPadding,
             modifier = Modifier
-                .fillMaxWidth()
+                .height(LauncherCompactButtonHeight)
                 .testTag(SupportFilterLoadProfileTag)
                 .semantics { contentDescription = description },
-        ) { Text(stringResource(R.string.support_filter_take_profile), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        ) { LauncherCompactButtonLabel(stringResource(R.string.support_filter_take_profile), textAlign = TextAlign.Start, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             for (profile in profiles) {
                 val name = profile.name.get()
