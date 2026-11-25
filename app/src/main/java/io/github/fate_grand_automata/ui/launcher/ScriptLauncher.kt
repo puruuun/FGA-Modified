@@ -49,7 +49,10 @@ fun ScriptLauncher(
     initialPanel: LauncherPanel = LauncherPanel.None,
 ) {
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
-    val filterOffered = rememberSupportFilterOffered(prefsCore)
+    // Only the launcher that chooses a battle config and starts a battle offers the filter; every other launcher looks as it
+    // did before the filter existed, whatever open state is stored (#719).
+    val featureOffered = rememberSupportFilterOffered(prefsCore)
+    val filterOffered = featureOffered && scriptMode == ScriptModeEnum.Battle
     // The filter panel comes back open when it was open the last time; only read with the feature on (#708).
     var openPanel by remember {
         mutableStateOf(

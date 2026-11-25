@@ -525,18 +525,12 @@ fun battleLauncher(
                                     shouldLimitMats = false
                                     limitMats = 1
                                 },
-                                // The text stays labelSmall; only the button shrinks. The 48dp touch target is kept, as the
-                                // button keeps its minimum interactive size.
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                contentPadding = LauncherCompactButtonPadding,
                                 modifier = Modifier
-                                    .height(32.dp)
+                                    .height(LauncherCompactButtonHeight)
                                     .testTag(LauncherResetAllTag)
                             ) {
-                                Text(
-                                    text = stringResource(R.string.reset_all).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    textAlign = TextAlign.Center
-                                )
+                                LauncherCompactButtonLabel(stringResource(R.string.reset_all).uppercase())
                             }
                         }
 
@@ -609,6 +603,27 @@ private fun LauncherColumnDivider() {
             .width(1.dp)
     ) { }
 }
+
+/**
+ * The size of the launcher's small buttons ("모두 초기화", the support filter panel's import buttons). The text stays
+ * labelSmall; only the button shrinks. The 48dp touch target is kept, as the button keeps its minimum interactive size.
+ */
+internal val LauncherCompactButtonHeight = 32.dp
+internal val LauncherCompactButtonPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+
+@Composable
+internal fun LauncherCompactButtonLabel(
+    text: String,
+    textAlign: TextAlign = TextAlign.Center,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip
+) = Text(
+    text = text,
+    style = MaterialTheme.typography.labelSmall,
+    textAlign = textAlign,
+    maxLines = maxLines,
+    overflow = overflow
+)
 
 internal const val LauncherResetAllTag = "launcher-reset-all"
 internal const val LauncherBondIgnoreTagPrefix = "launcher-bond-ignore:"
