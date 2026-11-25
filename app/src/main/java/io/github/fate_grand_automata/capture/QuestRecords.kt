@@ -2,7 +2,6 @@ package io.github.fate_grand_automata.capture
 
 import kotlinx.serialization.Serializable
 import java.io.InputStream
-
 import java.util.Locale
 
 /** One war of the public `nice_war` export, reduced to what the quest records block shows. Never holds user state. */

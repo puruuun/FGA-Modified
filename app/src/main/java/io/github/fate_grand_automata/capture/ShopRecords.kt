@@ -55,8 +55,18 @@ internal const val RARE_PRISM = 18L
 internal const val PURE_PRISM = 46L
 internal val PRISMS = listOf(MANA_PRISM, RARE_PRISM, PURE_PRISM)
 
-/** Single choice; [Event] is the default. */
+/** Single choice; [Event] is the default, see [shopFilterFor]. */
 enum class ShopFilter { Event, Mana, Rare, Pure, Other }
+
+/**
+ * The chip shown: the user's [chosen] one, otherwise [ShopFilter.Event], except while the name lists are missing or
+ * waiting for a script to end: event shops cannot be told apart then, every item is a number under [ShopFilter.Other],
+ * so the block starts there and goes back to the default once the names arrive.
+ */
+internal fun shopFilterFor(chosen: ShopFilter?, names: RecordNameStatus): ShopFilter = chosen ?: when (names) {
+    RecordNameStatus.Missing, RecordNameStatus.Waiting -> ShopFilter.Other
+    else -> ShopFilter.Event
+}
 enum class ShopSort { LastPurchase, Amount, Name }
 
 /**
@@ -108,10 +118,12 @@ data class ShopEvent(
 }
 
 /**
- * [amount] is purchases × price over the items paid with [itemId]. An item whose total was reset (`resetNum` > 0) is
- * left out and counted in [excluded]: what its total means after a reset is not verified, so it is not guessed.
+ * [amount] is purchases × price over every item paid with [itemId], event shop items included ([includesEvents] says
+ * whether any of them adds to it; the prism chips list only the other shops). An item whose total was reset
+ * (`resetNum` > 0) is left out and counted in [excluded]: what its total means after a reset is not verified, so it is
+ * not guessed.
  */
-data class PrismTotal(val itemId: Long, val amount: Long, val excluded: Int)
+data class PrismTotal(val itemId: Long, val amount: Long, val excluded: Int, val includesEvents: Boolean = false)
 
 /** [prisms] is empty when the `nice_shop` list, which holds the prism shops, is not available: the totals would read as 0. */
 data class ShopRecords(val items: List<ShopItem>, val events: List<ShopEvent>, val prisms: List<PrismTotal>)
@@ -168,7 +180,9 @@ internal fun shopRecords(read: TableRead<UserShopRow>, names: ShopNames): ShopRe
     }
     val prisms = if (names.shops.isEmpty()) emptyList() else PRISMS.map { prism ->
         val paid = items.filter { it.costItem == prism }
-        PrismTotal(prism, paid.filter { it.resetNum <= 0 }.sumOf { it.num * it.cost }, paid.count { it.resetNum > 0 })
+        val counted = paid.filter { it.resetNum <= 0 }
+        PrismTotal(prism, counted.sumOf { it.num * it.cost }, paid.count { it.resetNum > 0 },
+            includesEvents = counted.any { it.eventId != null && it.num > 0 })
     }
     return ShopRecords(items.filter { it.eventId == null }, events, prisms)
 }

@@ -108,6 +108,30 @@ class ShopRecordsTest {
         assertEquals(PrismTotal(PURE_PRISM, 5, 0), byItem[PURE_PRISM])
     }
 
+    @Test fun aPrismTotalCountsEventShopItemsAndSaysSo() {
+        assertFalse(records.prisms.any { it.includesEvents })
+        val base = shopFixtureNames()
+        val prismEvent = EventShopSummary(80009, "마나 프리즘 이벤트", 1_700_000_000, 1_790_000_000,
+            listOf(ShopSummary(80009001, "이벤트 예장", MANA_PRISM, "마나 프리즘", 100, 1, 1_700_000_000, 1_800_000_000)))
+        val table = SHOP_TABLE.dropLast(1) + "," + """{"shopId":80009001,"num":1,"resetNum":0,"updatedAt":1750000000}""" + "]"
+        val withEvent = shopRecords(readUserShop(table), base.copy(events = base.events + prismEvent))
+        val mana = withEvent.prisms.single { it.itemId == MANA_PRISM }
+        assertEquals(340L + 100L, mana.amount)
+        assertTrue(mana.includesEvents)
+        assertFalse(withEvent.prisms.single { it.itemId == RARE_PRISM }.includesEvents)
+        val manaChip = shopView(withEvent, ShopFilter.Mana, "", ShopSort.LastPurchase, false, now).map { (it as ShopRow.Item).item.id }
+        assertEquals(listOf(11000102L, 11000101L), manaChip)
+    }
+
+    @Test fun theBlockStartsOnOtherWhileTheNamesAreMissingOrWaiting() {
+        assertEquals(ShopFilter.Other, shopFilterFor(null, RecordNameStatus.Missing))
+        assertEquals(ShopFilter.Other, shopFilterFor(null, RecordNameStatus.Waiting))
+        assertEquals(ShopFilter.Event, shopFilterFor(null, RecordNameStatus.Ready))
+        assertEquals(ShopFilter.Event, shopFilterFor(null, RecordNameStatus.Loading))
+        assertEquals(ShopFilter.Mana, shopFilterFor(ShopFilter.Mana, RecordNameStatus.Missing))
+        assertEquals(ShopFilter.Event, shopFilterFor(ShopFilter.Event, RecordNameStatus.Waiting))
+    }
+
     @Test fun withoutTheShopListThereAreNoPrismTotals() {
         assertEquals(emptyList(), shopRecords(readUserShop(SHOP_TABLE), ShopNames(events = shopFixtureNames().events)).prisms)
     }

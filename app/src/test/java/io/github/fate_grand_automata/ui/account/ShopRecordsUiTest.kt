@@ -98,12 +98,35 @@ class ShopRecordsUiTest {
         var retries = 0
         show(shopSource(ShopRecordsState(shopRecordsFixture(names = false), RecordNameStatus.Missing)) { retries++ })
         waitFor("shop-names-missing")
-        compose.onNodeWithTag("shop-records-empty").assertExists()
+        compose.onNodeWithTag("shop-names-missing").assertTextEquals("상점 이름을 받지 못해 기타에 번호로 표시합니다.")
         compose.onNodeWithTag("shop-names-retry").performScrollTo().performClick()
         assertEquals(1, retries)
-        compose.onNodeWithTag("shop-filter:Other").performScrollTo().performClick()
         waitFor("shop:80001001")
+        compose.onNodeWithTag("shop-filter:Other").assertIsSelected()
         compose.onNodeWithText("#80001001").assertExists()
+    }
+
+    @Test fun withoutNamesTheBlockStartsOnOtherAndReturnsToEventShops() {
+        val flow = MutableStateFlow(ShopRecordsState(shopRecordsFixture(names = false), RecordNameStatus.Waiting))
+        show(ShopRecordsSource({ flow }, {}))
+        waitFor("shop:99999999")
+        compose.onNodeWithTag("shop-filter:Other").assertIsSelected()
+        compose.onNodeWithTag("shop-names-waiting").assertTextEquals("스크립트가 끝나면 상점 이름을 받습니다. 그때까지는 기타에 번호로 표시합니다.")
+        flow.value = ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready)
+        waitFor("shop-event:80001")
+        compose.onNodeWithTag("shop-filter:Event").assertIsSelected()
+    }
+
+    @Test fun aChipChosenBeforeTheNamesArriveIsKept() {
+        val flow = MutableStateFlow(ShopRecordsState(shopRecordsFixture(names = false), RecordNameStatus.Missing))
+        show(ShopRecordsSource({ flow }, {}))
+        waitFor("shop:99999999")
+        compose.onNodeWithTag("shop-filter:Mana").performScrollTo().performClick()
+        waitFor("shop-records-empty")
+        flow.value = ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready)
+        waitFor("shop:11000101")
+        compose.onNodeWithTag("shop-filter:Mana").assertIsSelected()
+        compose.onNodeWithTag("shop-event:80001").assertDoesNotExist()
     }
 
     @Test fun loadingThenRecords() {

@@ -1494,6 +1494,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_quest_none">No matching quests.</string>
     <string name="dashboard_shop_records">Shop records</string>
     <string name="dashboard_shop_prism_total">%1$s ≈ %2$s</string>
+    <string name="dashboard_shop_prism_total_events">%1$s ≈ %2$s (event shops included)</string>
     <string name="dashboard_shop_prism_excluded">%1$d items with a reset total are left out of the estimates.</string>
     <string name="dashboard_shop_filter_event">Event shops</string>
     <string name="dashboard_shop_filter_mana">Mana prism</string>
@@ -1510,8 +1511,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_shop_complete">Done</string>
     <string name="dashboard_shop_loading">Reading shop records…</string>
     <string name="dashboard_shop_names_loading">Downloading shop names…</string>
-    <string name="dashboard_shop_names_waiting">Shop names download after the script ends. Numbers are shown until then.</string>
-    <string name="dashboard_shop_names_missing">Shop names could not be downloaded, so numbers are shown.</string>
+    <string name="dashboard_shop_names_waiting">Shop names download after the script ends. Until then, items show as numbers under Other.</string>
+    <string name="dashboard_shop_names_missing">Shop names could not be downloaded, so items show as numbers under Other.</string>
     <string name="dashboard_shop_damaged">Part of the stored shop records could not be read.</string>
     <string name="dashboard_shop_none">Nothing matches.</string>
     <string name="dashboard_records_more">Show %1$d more (%2$d left)</string>

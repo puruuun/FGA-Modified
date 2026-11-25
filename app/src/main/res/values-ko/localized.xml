@@ -1468,6 +1468,7 @@
     <string name="dashboard_quest_none">해당하는 퀘스트가 없습니다.</string>
     <string name="dashboard_shop_records">상점 기록</string>
     <string name="dashboard_shop_prism_total">%1$s ≈ %2$s</string>
+    <string name="dashboard_shop_prism_total_events">%1$s ≈ %2$s (이벤트 상점 포함)</string>
     <string name="dashboard_shop_prism_excluded">구매 수가 초기화된 적이 있는 %1$d종은 추정에서 뺐습니다.</string>
     <string name="dashboard_shop_filter_event">이벤트 상점</string>
     <string name="dashboard_shop_filter_mana">마나 프리즘</string>
@@ -1484,8 +1485,8 @@
     <string name="dashboard_shop_complete">완료</string>
     <string name="dashboard_shop_loading">상점 기록을 읽는 중…</string>
     <string name="dashboard_shop_names_loading">상점 이름을 받는 중…</string>
-    <string name="dashboard_shop_names_waiting">스크립트가 끝나면 상점 이름을 받습니다. 그때까지 번호로 표시합니다.</string>
-    <string name="dashboard_shop_names_missing">상점 이름을 받지 못해 번호로 표시합니다.</string>
+    <string name="dashboard_shop_names_waiting">스크립트가 끝나면 상점 이름을 받습니다. 그때까지는 기타에 번호로 표시합니다.</string>
+    <string name="dashboard_shop_names_missing">상점 이름을 받지 못해 기타에 번호로 표시합니다.</string>
     <string name="dashboard_shop_damaged">저장된 상점 기록 일부를 읽지 못했습니다.</string>
     <string name="dashboard_shop_none">해당하는 항목이 없습니다.</string>
     <string name="dashboard_records_more">%1$d개 더 보기 (남은 %2$d개)</string>
