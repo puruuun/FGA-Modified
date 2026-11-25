@@ -484,6 +484,93 @@ class LintCacheTest(unittest.TestCase):
         self.assertNotIn('android-lint', strip_comments(read(MAIN_CI)))
 
 
+GRADLE_CACHE = os.path.join(WORKFLOWS, 'main-ci-gradle-cache.yml')
+
+
+def top_level_name(text):
+    m = re.search(r'(?m)^name: (.+?)\s*$', text)
+    if not m:
+        raise AssertionError('no top-level name')
+    return m.group(1)
+
+
+class MainCiGradleCacheTest(unittest.TestCase):
+    """Issue #701: main keeps test-and-build's Gradle cache entry current; a pull request never saves."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.main_raw = read(MAIN_CI)
+        cls.raw = read(GRADLE_CACHE)
+        cls.text = strip_comments(cls.raw)
+        cls.pr_job = job_block(cls.main_raw, 'test-and-build')
+        cls.job = job_block(cls.raw, 'test-and-build')
+
+    def test_the_key_parts_equal_the_pull_request_job(self):
+        # setup-gradle's key is job id + md5(workflow name + matrix): all three must be equal or the entry is never restored.
+        self.assertEqual(top_level_name(self.raw), top_level_name(self.main_raw))
+        self.assertNotRegex(self.pr_job, r'matrix|workflow-job-context')
+        self.assertNotRegex(self.job, r'matrix|workflow-job-context')
+
+    def test_the_pull_request_job_never_saves(self):
+        setup = re.search(r'uses: gradle/actions/setup-gradle@[0-9a-f]{40}[^\n]*(?:\n\s+with:(?:\n\s{10,}[^\n]*)*)?', self.pr_job)
+        self.assertIsNotNone(setup)
+        self.assertNotRegex(setup.group(0), r'cache-read-only|cache-write-only|cache-overwrite')
+        self.assertNotRegex(self.pr_job, r'actions/cache@|actions/cache/save@')
+
+    def test_setup_gradle_is_the_same_commit_in_both(self):
+        pin = r'gradle/actions/setup-gradle@([0-9a-f]{40})'
+        self.assertEqual(re.search(pin, self.pr_job).group(1), re.search(pin, self.job).group(1))
+
+    def test_main_saves_only_on_main_and_leaves_out_the_build_cache(self):
+        self.assertRegex(
+            self.job,
+            r"uses: gradle/actions/setup-gradle@[0-9a-f]{40}\n\s+with:\n\s+cache-read-only: \$\{\{ github\.ref != 'refs/heads/main' \}\}\n\s+gradle-home-cache-excludes: \|\n\s+caches/build-cache-1\n")
+
+    def test_it_runs_on_a_push_to_main_for_dependency_paths_and_on_demand_only(self):
+        self.assertRegex(self.text, r'(?m)^  push:\n    branches: \[main\]\n    paths:\n')
+        self.assertNotIn('pull_request', self.text)
+        self.assertIn('workflow_dispatch:', self.text)
+        (push,) = parse_paths_filters(self.raw)
+        (_, lint_push) = parse_paths_filters(read(ANDROID_LINT))
+        self.assertEqual(sorted(p for p in push if not p.startswith('.github/')),
+                         sorted(p for p in lint_push if not p.startswith('.github/')))
+        self.assertIn('.github/workflows/main-ci-gradle-cache.yml', push)
+        self.assertNotIn('app/**', push)
+
+    def test_the_run_is_never_cancelled_and_needs_only_read_permission(self):
+        self.assertIn('cancel-in-progress: false', top_level_block(self.raw, 'concurrency'))
+        self.assertEqual(top_level_block(self.raw, 'permissions'), ['contents: read'])
+        self.assertNotIn('permissions:', self.job)
+
+    def test_it_resolves_every_test_task_but_does_not_run_the_suite(self):
+        run = re.search(r'run: >-\n((?:\s{10,}\S[^\n]*\n?)+)', self.job)
+        self.assertIsNotNone(run)
+        words = run.group(1).split()
+        self.assertEqual(words[0], './gradlew')
+        tasks = [w for w in words[1:] if w.startswith(':')]
+        # The tasks of Main CI's "Run unit tests" step, so the same classpaths are resolved.
+        pr_tasks = re.search(r'\./gradlew -I \S+ ((?::\S+ ?)+)', self.pr_job).group(1).split()
+        self.assertEqual(tasks, pr_tasks)
+        # Every task that has tests is limited to one class, and that class exists.
+        modules = {':app:testCiUnitTest': 'app', ':prefs:testCiUnitTest': 'prefs', ':scripts:test': 'scripts'}
+        for task, module in modules.items():
+            i = words.index(task)
+            self.assertEqual(words[i + 1], '--tests', task)
+            cls = words[i + 2].strip("'").lstrip('*')
+            found = [f for _, _, fs in os.walk(os.path.join(REPO, module, 'src', 'test'))
+                     for f in fs if f == cls + '.kt']
+            self.assertTrue(found, 'test class %s of %s does not exist' % (cls, module))
+        self.assertNotIn('assembleCi', self.job)
+
+    def test_it_is_not_part_of_the_gate_and_main_ci_still_has_no_push_to_main(self):
+        main = strip_comments(self.main_raw)
+        self.assertNotIn('gradle-cache', main)
+        self.assertRegex(main, r'(?m)^  push:\n    branches: \[rust\]\n')
+        lines = [l.strip() for l in self.pr_job.split('\n')]
+        self.assertIn('needs: changes', lines)
+        self.assertIn("if: needs.changes.outputs.code == 'true'", lines)
+
+
 class WorkflowWiringTest(unittest.TestCase):
     def setUp(self):
         self.text = read(MAIN_CI)
