@@ -341,6 +341,56 @@ class ProxySupportListFilterTest {
         assertContentEquals(listWithOtherServant.toByteArray(), e.captured[0])
     }
 
+    private fun equip(ce: Long, lv: Int = 100) =
+        """{"userId":9,"userSvtId":${if (ce == 0L) 0 else 8},"svtId":$ce,"limitCount":${if (ce == 0L) 0 else 4},"lv":${if (ce == 0L) 0 else lv},"exp":0,"hp":0,"atk":0,""" +
+            """"skillId1":0,"skillLv1":0,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":0}"""
+
+    /**
+     * One userSvtGrandHash entry with the keys of a real JP entry: no supportDeckId or classId, three CEs, grandGraphId,
+     * and a script with isSetClassBoardBaseIds (present in every real entry) and equipTarget2SkillChange.
+     */
+    private fun grandEntry(svt: Long, graph: Long) =
+        """{"afterTransformSvtInfo":null,"dispLimitCount":4,"imageLimitCount":4,"commandCardLimitCount":4,"iconLimitCount":4,"portraitLimitCount":4,""" +
+            """"battleVoice":0,"grandSvt":1,"transformVal":0,"randomLimitCountTargets":[],"classPassive":[3],""" +
+            """"equipTarget1":${equip(7)},"equipTarget2":${equip(9, lv = 80)},"equipTarget3":${equip(0)},""" +
+            """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}],"script":{"equipTarget2SkillChange":1,"isSetClassBoardBaseIds":[]},""" +
+            """"eventSvtPoint":0,"imagePartsGroupInfo":[],"grandGraphId":$graph,"isSetClassBoardBaseIds":[],"userId":555,"userSvtId":43,"svtId":$svt,""" +
+            """"limitCount":4,"lv":120,"exp":1,"hp":1,"atk":1,"adjustHp":0,"adjustAtk":0,"skillId1":1,"skillId2":2,"skillId3":3,""" +
+            """"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772}"""
+
+    private fun grandList(vararg svts: Long) = svts.mapIndexed { i, svt -> grandEntry(svt, 10001L + i) }.joinToString(",", "[", "]")
+
+    private fun jpFollower(id: String, type: Int, svt: Long, grand: String, other: Long = 0) = follower(id, type, svt)
+        .replace(""""userSvtGrandHash":[]""", """"userSvtGrandHash":$grand""")
+        .let { if (other == 0L) it else it.replaceFirst("""{"supportDeckId":1,"classId":2,"svtId":0,""", """{"supportDeckId":1,"classId":2,"svtId":$other,""") }
+
+    private fun jpList(vararg followers: String) =
+        """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[${followers.joinToString(",")}]}]},"serverTime":1}}"""
+
+    @Test(timeout = 20000)
+    fun aJpListWhoseOnlyNonMatchingEntriesAreGrandOnesReachesTheGameByteForByte() {
+        val list = jpList(jpFollower("a", 1, 100, grandList(999, 998, 100)), jpFollower("b", 2, 100, grandList(997)))
+        for (chunked in listOf(false, true)) {
+            val upstream = response(list.toByteArray(), chunked = chunked)
+            assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
+        }
+        val gz = response(gzip(list), "Content-Encoding: gzip\r\n")
+        assertContentEquals(gz, exchange(gz, criteria).clientWire)
+    }
+
+    @Test(timeout = 20000)
+    fun aFilteredJpListCarriesTheKeptFollowersGrandListAsReceived() {
+        val grand = grandList(999, 100, 998)
+        val list = jpList(jpFollower("a", 1, 100, grand, other = 996), jpFollower("b", 1, 0, grandList(995)))
+        val e = exchange(response(list.toByteArray()), criteria)
+        val follower = kept(e.body).single().jsonObject
+        assertEquals("0", follower["userSvtLeaderHash"]!!.jsonArray[2].jsonObject["svtId"]!!.toString())
+        assertEquals(Json.parseToJsonElement(grand), follower["userSvtGrandHash"])
+        assertTrue(String(e.body).contains(""""userSvtGrandHash":$grand"""))
+        assertContentEquals(list.toByteArray(), e.captured[0])
+        assertContentEquals(request, e.upstreamReceived)
+    }
+
     @Test(timeout = 20000)
     fun lastResultHoldsTheCountsAfterAFilteredListAndUnchangedAfterAPassThrough() {
         SupportListLastResult.resetForTesting()
