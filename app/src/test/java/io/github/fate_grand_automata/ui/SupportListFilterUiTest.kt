@@ -98,25 +98,25 @@ class SupportListFilterUiTest {
 
     @Before fun reset() = SupportListLastResult.resetForTesting()
 
-    private val lastText = "마지막 목록: 20명 중 12명, 서번트 칸 498개 중 15개"
+    private val lastText = "필터 결과: 20명 중 12명 표시"
 
     @Test fun showsNothingBeforeTheFirstList() {
         compose.setContent { FGATheme { SupportListLastResultLine() } }
-        compose.onNodeWithText("마지막 목록", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("필터 결과", substring = true).assertDoesNotExist()
     }
 
     @Test fun showsTheCountsAfterAFilteredList() {
         SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
         compose.setContent { FGATheme { SupportListLastResultLine() } }
         compose.onNodeWithText(lastText).assertExists()
-        compose.onNodeWithText(context.getString(R.string.capture_support_filter_last, 20, 12, 498, 15)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.capture_support_filter_last, 12, 20)).assertExists()
     }
 
     @Test fun showsNotChangedAfterAPassThrough() {
         SupportListLastResult.filtered(SupportListCounts(20, 12, 498, 15))
         SupportListLastResult.unchanged()
         compose.setContent { FGATheme { SupportListLastResultLine() } }
-        compose.onNodeWithText("마지막 목록: 바꾸지 않음").assertExists()
+        compose.onNodeWithText("필터 결과: 바꾸지 않음").assertExists()
     }
 
     private fun prefs(): PrefsCore {

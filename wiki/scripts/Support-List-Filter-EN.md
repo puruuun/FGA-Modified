@@ -20,7 +20,7 @@ Use **Use this feature** at the top of **More options â†’ Additional features â†
 - **Every active condition**: servants (with the chosen ascension looks), CEs and MLB, skills, appends, NP level, final ascension, class score +62, friends only. Each condition is one line, shown only when it is set.
 - **Script** button in the **Take from** row: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available when no config is selected or in menus without a battle config list. A displayed ascension stored in the config is not copied.
 - **Profile** button in the **Take from** row: copies the conditions of a saved profile (displayed ascensions included). Not available while there is no profile.
-- The **Last list** line: what the filter did to the last support list (people left, servant slots left), or "not changed".
+- The **Filter result** line: what the filter did to the last support list (for example "Filter result: 6 of 20 shown"), or "not changed".
 
 **Script** and **Profile** both **copy** the conditions. Changing that battle config or profile later does not change the active filter: take or load it again. Conditions are not edited in the play button menu; that happens on the profile screen.
 

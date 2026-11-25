@@ -1360,8 +1360,8 @@
     <string name="clear_all">"すべて解除"</string>
     <string name="p_open_source_notices">オープンソースライセンス</string>
     <string name="open_source_notices_summary">このアプリにはオープンソースのコンポーネントも含まれています。そのライセンスと著作権表示:</string>
-    <string name="capture_support_filter_last">"前回の一覧: %1$d人中%2$d人、サーヴァント枠%3$d件中%4$d件"</string>
-    <string name="capture_support_filter_last_unchanged">"前回の一覧: 変更なし"</string>
+    <string name="capture_support_filter_last">"フィルター結果: %2$d人中%1$d人を表示"</string>
+    <string name="capture_support_filter_last_unchanged">"フィルター結果: 変更なし"</string>
     <string name="support_list_filter">"サポート一覧フィルター"</string>
     <string name="support_list_filter_applied">"フィルター適用"</string>
     <string name="support_list_filter_screen_only">"画面判定のみ"</string>

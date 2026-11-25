@@ -719,7 +719,6 @@
     <string name="p_quest_item_usage">아이템 자동 사용</string>
     <string name="p_use_storm_pod">스톰포드 사용</string>
     <string name="p_use_teapot">티포트 사용</string>
-    <string name="p_quest_item_usage_summary">체크하면 ON, 해제하면 OFF로 맞춘 뒤 퀘스트를 시작합니다.</string>
     <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본 서버에서 지원합니다.</string>
     <string name="quest_item_setting_failed">스톰포드·티포트 설정 또는 설정창 닫기를 확인하지 못해 퀘스트 시작 전에 중단했습니다.</string>
     <string name="p_bond">인연포인트</string>
@@ -1578,8 +1577,8 @@
     <string name="dashboard_col_codes">코드</string>
     <string name="dashboard_col_card_boost">카드 강화</string>
     <string name="clear_all">"모두 해제"</string>
-    <string name="capture_support_filter_last">"마지막 목록: %1$d명 중 %2$d명, 서번트 칸 %3$d개 중 %4$d개"</string>
-    <string name="capture_support_filter_last_unchanged">"마지막 목록: 바꾸지 않음"</string>
+    <string name="capture_support_filter_last">"필터 결과: %2$d명 중 %1$d명 표시"</string>
+    <string name="capture_support_filter_last_unchanged">"필터 결과: 바꾸지 않음"</string>
     <string name="support_list_filter">"서포트 목록 필터"</string>
     <string name="support_list_filter_applied">"필터 적용"</string>
     <string name="support_list_filter_screen_only">"화면 판독만"</string>

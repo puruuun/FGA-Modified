@@ -724,7 +724,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_quest_item_usage">Item auto-use</string>
     <string name="p_use_storm_pod">Use Storm Pods</string>
     <string name="p_use_teapot">Use Teapots</string>
-    <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
     <string name="p_bond">Bond points</string>
@@ -1607,8 +1606,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_servant_card_boost">Card boost +%1$s (%2$d cards)</string>
     <string name="dashboard_col_codes">Codes</string>
     <string name="dashboard_col_card_boost">Card boost</string>
-    <string name="capture_support_filter_last">"Last list: %2$d of %1$d people, %4$d of %3$d servant slots"</string>
-    <string name="capture_support_filter_last_unchanged">"Last list: not changed"</string>
+    <string name="capture_support_filter_last">"Filter result: %1$d of %2$d shown"</string>
+    <string name="capture_support_filter_last_unchanged">"Filter result: not changed"</string>
     <string name="support_list_filter">"Support list filter"</string>
     <string name="support_list_filter_applied">"Filtered"</string>
     <string name="support_list_filter_screen_only">"Screen reading only"</string>

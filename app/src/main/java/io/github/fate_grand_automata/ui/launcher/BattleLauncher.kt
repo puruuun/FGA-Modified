@@ -440,14 +440,14 @@ fun battleLauncher(
                         modifier = Modifier.weight(1f), maxLines = 2
                     ) { useTeapot = it }
                 }
-                Text(
-                    stringResource(when {
-                        !questItemsSupported -> R.string.p_quest_item_usage_servers
-                        else -> R.string.p_quest_item_usage_summary
-                    }),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(start = 8.dp, end = 8.dp)
-                )
+                // Only the unsupported-server notice remains; the checkboxes explain themselves (owner, #708).
+                if (!questItemsSupported) {
+                    Text(
+                        stringResource(R.string.p_quest_item_usage_servers),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp, end = 8.dp)
+                    )
+                }
                 HorizontalDivider(modifier = Modifier.padding(top = 10.dp, bottom = 16.dp))
             }
 
