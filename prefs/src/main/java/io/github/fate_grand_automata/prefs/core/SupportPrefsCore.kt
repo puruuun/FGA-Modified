@@ -76,11 +76,12 @@ class SupportPrefsCore(
      * Copies every support condition of [other] into this one: a battle config or a profile into the active support
      * list filter (#695). A copy, not a link: a later change to [other] does not reach this one.
      */
-    fun copyConditionsFrom(other: SupportPrefsCore) {
+    fun copyConditionsFrom(other: SupportPrefsCore, withDisplayedAscensions: Boolean = true) {
         // Changing the servants clears the NP images, so the servants go first.
         preferredServants.set(other.preferredServants.get())
         preferredNoblePhantasms.set(other.preferredNoblePhantasms.get())
-        displayedAscensions.set(other.displayedAscensions.get())
+        // A battle config has no screen for it since #708, so a copy from one must not carry stored values along.
+        displayedAscensions.set(if (withDisplayedAscensions) other.displayedAscensions.get() else emptySet())
         friendNames.set(other.friendNames.get())
         preferredCEs.set(other.preferredCEs.get())
         mlb.set(other.mlb.get())

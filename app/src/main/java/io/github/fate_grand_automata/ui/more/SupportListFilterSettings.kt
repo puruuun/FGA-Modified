@@ -339,7 +339,7 @@ internal fun ImportFromBattleConfig(prefs: PrefsCore, profile: SupportFilterProf
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                profile.support.copyConditionsFrom(config.support)
+                                profile.support.copyConditionsFrom(config.support, withDisplayedAscensions = false)
                                 open = false
                                 Toast.makeText(context, imported, Toast.LENGTH_SHORT).show()
                             }

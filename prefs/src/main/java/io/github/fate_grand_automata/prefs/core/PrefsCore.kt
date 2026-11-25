@@ -116,6 +116,9 @@ class PrefsCore @Inject constructor(
      */
     val supportFilterFeature = maker.bool("support_filter_feature", false)
     val supportFilterOn = maker.bool("support_filter_on", false)
+
+    /** Whether the launcher's filter panel was open when the launcher last changed it (#708). Read only with the feature on. */
+    val supportFilterPanelOpen = maker.bool("support_filter_panel_open", false)
     val supportFilterSource = maker.enum("support_filter_source", SupportFilterSource.None)
 
     /** The config or profile name [supportFilterSource] refers to, as it was when the conditions were copied. */

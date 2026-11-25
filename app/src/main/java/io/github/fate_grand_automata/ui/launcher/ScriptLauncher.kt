@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
@@ -46,10 +49,19 @@ fun ScriptLauncher(
     initialPanel: LauncherPanel = LauncherPanel.None,
 ) {
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
-    var openPanel by remember { mutableStateOf(initialPanel) }
+    val filterOffered = rememberSupportFilterOffered(prefsCore)
+    // The filter panel comes back open when it was open the last time; only read with the feature on (#708).
+    var openPanel by remember {
+        mutableStateOf(
+            when {
+                initialPanel != LauncherPanel.None -> initialPanel
+                filterOffered && prefsCore.supportFilterPanelOpen.get() -> LauncherPanel.SupportFilter
+                else -> LauncherPanel.None
+            }
+        )
+    }
     val weekly = remember { WeeklyPanelState() }
     val weeklyEnabled by prefsCore.weeklyRouteFeatureEnabled.remember()
-    val filterOffered = rememberSupportFilterOffered(prefsCore)
     val filterOn by prefsCore.supportFilterOn.remember()
     var selectedConfigId by remember { mutableStateOf<String?>(null) }
     // The filter and the weekly missions share the right side: opening one closes the other (#695).
@@ -57,7 +69,11 @@ fun ScriptLauncher(
     fun toggle(target: LauncherPanel) {
         openPanel = if (panel == target) LauncherPanel.None else target
         onSidePanelExpanded(openPanel.widen)
+        // Opening the weekly panel closes the filter panel, and that is what is remembered.
+        if (filterOffered) prefsCore.supportFilterPanelOpen.set(openPanel == LauncherPanel.SupportFilter)
     }
+    // A panel that starts open needs the window widened too.
+    LaunchedEffect(Unit) { if (panel != LauncherPanel.None) onSidePanelExpanded(panel.widen) }
     val filterPanel: (@Composable (Modifier) -> Unit)? = if (panel == LauncherPanel.SupportFilter) {
         { width -> SupportFilterLauncherPanel(prefsCore, selectedConfigId, width) }
     } else null
@@ -125,22 +141,19 @@ fun ScriptLauncher(
                     if (scriptMode == ScriptModeEnum.Battle && weeklyEnabled &&
                         (prefs.gameServer is GameServer.Jp || prefs.gameServer is GameServer.Kr)
                     ) {
-                        TextButton(onClick = { toggle(LauncherPanel.Weekly) }) {
-                            Text(stringResource(R.string.weekly_route_title))
-                        }
+                        PanelButton(
+                            selected = panel == LauncherPanel.Weekly,
+                            onClick = { toggle(LauncherPanel.Weekly) },
+                            label = stringResource(R.string.weekly_route_title),
+                        )
                     }
 
                     if (filterOffered) {
-                        FilterChip(
-                            selected = filterOn,
+                        PanelButton(
+                            selected = panel == LauncherPanel.SupportFilter,
                             onClick = { toggle(LauncherPanel.SupportFilter) },
-                            label = {
-                                Text(stringResource(if (filterOn) R.string.support_filter_chip_on else R.string.support_filter_chip_off))
-                            },
-                            modifier = Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(horizontal = 4.dp)
-                                .testTag(SupportFilterChipTag),
+                            label = stringResource(if (filterOn) R.string.support_filter_chip_on else R.string.support_filter_chip_off),
+                            modifier = Modifier.testTag(SupportFilterChipTag),
                         )
                     }
                 }
@@ -160,6 +173,24 @@ fun ScriptLauncher(
             }
         }
     }
+}
+
+/**
+ * A button that opens a right panel. Both such buttons look the same, and the one whose panel is open is filled in
+ * and reports itself as selected (#708).
+ */
+@Composable
+private fun PanelButton(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier) {
+    TextButton(
+        onClick = onClick,
+        colors = if (selected) {
+            ButtonDefaults.textButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        } else ButtonDefaults.textButtonColors(),
+        modifier = modifier.semantics { this.selected = selected },
+    ) { Text(label) }
 }
 
 /**

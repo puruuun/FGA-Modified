@@ -812,19 +812,20 @@ private fun LauncherFolderRow(
 }
 
 @Composable
-private fun QuestItemCheckbox(
+internal fun QuestItemCheckbox(
     checked: Boolean,
     enabled: Boolean,
     text: String,
     modifier: Modifier = Modifier.fillMaxWidth(),
     maxLines: Int = Int.MAX_VALUE,
+    checkboxModifier: Modifier = Modifier,
     onChange: (Boolean) -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.clickable(enabled = enabled) { onChange(!checked) }
     ) {
-        Checkbox(checked = checked, enabled = enabled, onCheckedChange = onChange, modifier = Modifier.padding(end = 5.dp))
+        Checkbox(checked = checked, enabled = enabled, onCheckedChange = onChange, modifier = checkboxModifier.padding(end = 5.dp))
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium,

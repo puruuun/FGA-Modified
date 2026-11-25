@@ -3,6 +3,7 @@ package io.github.fate_grand_automata.ui.launcher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,10 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.SupportFilterBuild
@@ -40,7 +39,6 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.SupportFilterSource
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
-import io.github.fate_grand_automata.ui.FGASwitchColors
 import io.github.fate_grand_automata.ui.more.SupportListLastResultLine
 import io.github.fate_grand_automata.ui.pref_support.ascensionLabel
 import io.github.fate_grand_automata.ui.pref_support.rememberCaptureAvailable
@@ -58,12 +56,13 @@ import kotlinx.coroutines.flow.map
  */
 @Composable
 internal fun rememberSupportFilterOffered(prefs: PrefsCore): Boolean {
-    val feature by prefs.supportFilterFeature.remember()
+    // Seeded with the stored value, not the default: a panel restored open (#708) is decided in the first composition.
+    val feature by prefs.supportFilterFeature.asFlow().collectAsState(initial = prefs.supportFilterFeature.get())
     return rememberCaptureAvailable(prefs) && feature
 }
 
 /**
- * The launcher's right panel for the support list filter (#695): the toggle, where the conditions came from, every
+ * The launcher's right panel for the support list filter (#695, #708): the toggle, where the conditions came from, every
  * active condition, and the two ways to fill them. Editing happens on the profile screen under More.
  */
 @Composable
@@ -94,19 +93,15 @@ internal fun SupportFilterLauncherPanel(
             .fillMaxHeight()
             .padding(start = 4.dp, end = 4.dp, top = 5.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.support_list_filter),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
-            Switch(
-                checked = on,
-                onCheckedChange = setOn,
-                colors = FGASwitchColors(),
-                modifier = Modifier.testTag(SupportFilterToggleTag),
-            )
-        }
+        // The row the middle column's options use, so the toggle looks and behaves like them (owner, #708).
+        QuestItemCheckbox(
+            checked = on,
+            enabled = true,
+            text = stringResource(R.string.support_list_filter),
+            modifier = Modifier.fillMaxWidth(),
+            checkboxModifier = Modifier.testTag(SupportFilterToggleTag),
+            onChange = setOn,
+        )
         Text(
             stringResource(R.string.support_filter_from, sourceLabel(source, sourceName)),
             style = MaterialTheme.typography.bodySmall,
@@ -114,7 +109,9 @@ internal fun SupportFilterLauncherPanel(
             // A very long config or profile name must not push the conditions away.
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.testTag(SupportFilterSourceTag),
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .testTag(SupportFilterSourceTag),
         )
         Column(
             Modifier
@@ -137,65 +134,59 @@ internal fun SupportFilterLauncherPanel(
             }
         }
         SupportListLastResultLine()
+        // The section label style of the middle column ("아이템 자동 사용", "인연포인트").
         Text(
-            stringResource(R.string.support_filter_refresh_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            stringResource(R.string.support_filter_take_from),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(start = 8.dp, top = 4.dp),
         )
         val configName = remember(selectedConfigId) { selectedConfigId?.let { prefs.forBattleConfig(it).name.get() } }
-        SideBySideOrStacked(Modifier.padding(vertical = 4.dp)) {
+        val takeConfigDescription = stringResource(R.string.support_filter_take_config)
+        val loadProfileDescription = stringResource(R.string.support_filter_load_profile)
+        // Two equal halves, never measured by their text: a long label can neither squeeze nor stack them (#708).
+        Row(Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = {
                     val id = selectedConfigId ?: return@OutlinedButton
-                    prefs.loadSupportFilter(prefs.forBattleConfig(id).support, SupportFilterSource.Config, configName.orEmpty())
+                    loadConfigConditions(prefs, prefs.forBattleConfig(id).support, configName.orEmpty())
                 },
                 enabled = selectedConfigId != null,
-                modifier = Modifier.testTag(SupportFilterTakeConfigTag),
-            ) { Text(stringResource(R.string.support_filter_take_config), textAlign = TextAlign.Center) }
-            LoadProfileButton(prefs, profileIds)
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(SupportFilterTakeConfigTag)
+                    .semantics { contentDescription = takeConfigDescription },
+            ) { Text(stringResource(R.string.support_filter_take_script), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            LoadProfileButton(prefs, profileIds, loadProfileDescription, Modifier.weight(1f))
         }
     }
 }
 
 /**
- * The children side by side at their natural width when they all fit, otherwise one under the other at the full width,
- * so a button label never gets clipped in a narrow panel (owner, #695).
+ * Copies a battle config's conditions into the active filter. A displayed ascension is left behind: no screen of a
+ * battle config edits it any more, so a value stored there by a 1.8.2 beta must not come along unseen (#708).
  */
-@Composable
-private fun SideBySideOrStacked(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Layout(content, modifier) { measurables, constraints ->
-        val gap = 8.dp.roundToPx()
-        val natural = measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }
-        val fits = natural.sum() + gap * (measurables.size - 1).coerceAtLeast(0) <= constraints.maxWidth
-        val placeables = measurables.mapIndexed { i, m ->
-            val width = if (fits) natural[i] else constraints.maxWidth
-            m.measure(Constraints.fixedWidth(width))
-        }
-        val width = if (fits) natural.sum() + gap * (placeables.size - 1).coerceAtLeast(0) else constraints.maxWidth
-        val height = if (fits) placeables.maxOfOrNull { it.height } ?: 0 else placeables.sumOf { it.height } + gap * (placeables.size - 1).coerceAtLeast(0)
-        layout(width, height) {
-            var x = 0
-            var y = 0
-            for (p in placeables) {
-                p.placeRelative(x, y)
-                if (fits) x += p.width + gap else y += p.height + gap
-            }
-        }
-    }
+internal fun loadConfigConditions(prefs: PrefsCore, from: SupportPrefsCore, name: String) {
+    prefs.activeSupportFilter.copyConditionsFrom(from, withDisplayedAscensions = false)
+    prefs.supportFilterSourceName.set(name)
+    prefs.supportFilterSource.set(SupportFilterSource.Config)
 }
 
 @Composable
-private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>) {
+private fun LoadProfileButton(prefs: PrefsCore, profileIds: Set<String>, description: String, modifier: Modifier) {
     var open by remember { mutableStateOf(false) }
     val profiles = remember(profileIds) { prefs.supportFilterProfilesToShow(profileIds) }
-    Box {
+    Box(modifier) {
         OutlinedButton(
             onClick = { open = true },
             enabled = profiles.isNotEmpty(),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag(SupportFilterLoadProfileTag),
-        ) { Text(stringResource(R.string.support_filter_load_profile), textAlign = TextAlign.Center) }
+                .testTag(SupportFilterLoadProfileTag)
+                .semantics { contentDescription = description },
+        ) { Text(stringResource(R.string.support_filter_take_profile), maxLines = 1, overflow = TextOverflow.Ellipsis) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             for (profile in profiles) {
                 val name = profile.name.get()
