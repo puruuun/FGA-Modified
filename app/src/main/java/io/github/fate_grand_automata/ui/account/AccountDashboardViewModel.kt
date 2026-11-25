@@ -39,16 +39,33 @@ class AccountDashboardViewModel @Inject constructor(
             allowDownload = { !ChaldeaSyncManager.isScriptRunning })
     }
 
+    private suspend fun storedTable(userId: String, table: String): String? =
+        withContext(Dispatchers.IO) { CaptureTracker.loadState(userId)?.rawTables?.get(table) }
+
     private val questRetries = MutableStateFlow(0)
     private val questLoader by lazy {
-        QuestRecordsLoader(
-            readTable = { id -> withContext(Dispatchers.IO) { CaptureTracker.loadState(id)?.rawTables?.get("userQuest") } },
-            questWars = { server, allowDownload, force -> cache.questWars(server, allowDownload, force) },
+        RecordsLoader(
+            readTable = { id -> storedTable(id, "userQuest") },
+            parse = ::readUserQuest,
+            names = { server, allowDownload, force -> cache.questWars(server, allowDownload, force) },
+            hasNames = { it.isNotEmpty() },
+            project = { read, wars -> io.github.fate_grand_automata.capture.questRecords(read, wars) },
             scriptRunning = ChaldeaSyncManager.scriptActive,
             isScriptRunning = { ChaldeaSyncManager.isScriptRunning },
         )
     }
-
+    private val shopRetries = MutableStateFlow(0)
+    private val shopLoader by lazy {
+        RecordsLoader(
+            readTable = { id -> storedTable(id, "userShop") },
+            parse = ::readUserShop,
+            names = { server, allowDownload, force -> cache.shopNames(server, allowDownload, force) },
+            hasNames = { it.complete },
+            project = { read, lists -> io.github.fate_grand_automata.capture.shopRecords(read, lists) },
+            scriptRunning = ChaldeaSyncManager.scriptActive,
+            isScriptRunning = { ChaldeaSyncManager.isScriptRunning },
+        )
+    }
     internal constructor(repository: BattleLogRepository, context: Context, namesCache: GameNames) : this(repository, context) {
         customCache = namesCache
     }
@@ -102,19 +119,27 @@ class AccountDashboardViewModel @Inject constructor(
         .catch { emit(DashboardProgress()) }
         .flowOn(Dispatchers.IO)
 
+    private fun recordKeys(userId: String) = CaptureTracker.accounts
+        .onStart { CaptureTracker.init(appContext) }
+        .mapNotNull { accounts -> accounts.find { it.id == userId } }
+        .map { RecordsKey(it.revision, it.server) }
+
     /**
      * The quest records block's data. A cold flow, not shared: it runs only while the block collects it, so leaving the
      * tab drops the records (#730).
      */
-    internal fun questRecords(userId: String): Flow<QuestRecordsState> {
-        val keys = CaptureTracker.accounts
-            .onStart { CaptureTracker.init(appContext) }
-            .mapNotNull { accounts -> accounts.find { it.id == userId } }
-            .map { QuestRecordsKey(it.revision, it.server) }
-        return questLoader.load(userId, keys, questRetries)
-            .catch { emit(QuestRecordsState(records = emptyList(), names = QuestNameStatus.Missing)) }
+    internal fun questRecords(userId: String): Flow<QuestRecordsState> =
+        questLoader.load(userId, recordKeys(userId), questRetries)
+            .catch { emit(QuestRecordsState(records = emptyList(), names = RecordNameStatus.Missing)) }
             .flowOn(Dispatchers.IO)
-    }
 
     internal fun retryQuestNames() { questRetries.value++ }
+
+    /** The shop records block's data, collected and dropped like [questRecords]. */
+    internal fun shopRecords(userId: String): Flow<ShopRecordsState> =
+        shopLoader.load(userId, recordKeys(userId), shopRetries)
+            .catch { emit(ShopRecordsState(records = ShopRecords(emptyList(), emptyList(), emptyList()), names = RecordNameStatus.Missing)) }
+            .flowOn(Dispatchers.IO)
+
+    internal fun retryShopNames() { shopRetries.value++ }
 }

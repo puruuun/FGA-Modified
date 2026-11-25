@@ -63,7 +63,7 @@ class QuestRecordsUiTest {
     private fun waitFor(tag: String) = compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
     @Test fun theBlockSitsInTheRenamedTabWithTheSummaryAndRows() {
-        show(questSource(QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready)))
+        show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
         compose.onNodeWithTag("dashboard-nav:Collection").assertTextContains("도감·기록")
         waitFor("quest:93000001")
         compose.onNodeWithTag("dashboard-section:${DashboardBlockId.QuestRecords}").assertExists()
@@ -82,7 +82,7 @@ class QuestRecordsUiTest {
     }
 
     @Test fun storyQuestsAppearOnlyUnderTheirChip() {
-        show(questSource(QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready)))
+        show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
         waitFor("quest:93000001")
         compose.onNodeWithTag("quest:1000000").assertDoesNotExist()
         compose.onNodeWithTag("quest-filter:Story").performScrollTo().performClick()
@@ -92,7 +92,7 @@ class QuestRecordsUiTest {
     }
 
     @Test fun searchFindsAnUnnamedQuestByItsNumber() {
-        show(questSource(QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready)))
+        show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
         waitFor("quest:93000001")
         compose.onNodeWithTag("quest-search").performTextInput("94061234")
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("quest:93000001").fetchSemanticsNodes().isEmpty() }
@@ -100,9 +100,9 @@ class QuestRecordsUiTest {
     }
 
     @Test fun theListGrowsAPageAtATimeAndAFilterStartsAgain() {
-        show(questSource(QuestRecordsState(manyQuestRecords(130), QuestNameStatus.Ready)))
+        show(questSource(QuestRecordsState(manyQuestRecords(130), RecordNameStatus.Ready)))
         waitFor("quest-records-show-all")
-        assertEquals(QUEST_FIRST_ROWS, compose.onAllNodes(hasTestTagPrefix("quest:")).fetchSemanticsNodes().size)
+        assertEquals(RECORDS_FIRST_ROWS, compose.onAllNodes(hasTestTagPrefix("quest:")).fetchSemanticsNodes().size)
         compose.onNodeWithTag("quest-records-show-all").assertTextEquals("전체 보기 (130)").performScrollTo().performClick()
         compose.onNodeWithTag("quest-records-more").assertTextEquals("50개 더 보기 (남은 80개)").performScrollTo().performClick()
         compose.onNodeWithTag("quest-records-more").assertTextEquals("30개 더 보기 (남은 30개)").performScrollTo().performClick()
@@ -114,7 +114,7 @@ class QuestRecordsUiTest {
 
     @Test fun missingNamesShowNumbersAndARetry() {
         var retries = 0
-        show(questSource(QuestRecordsState(questRecordsFixture(names = false), QuestNameStatus.Missing)) { retries++ })
+        show(questSource(QuestRecordsState(questRecordsFixture(names = false), RecordNameStatus.Missing)) { retries++ })
         waitFor("quest:93000001")
         compose.onNodeWithText("#93000001").assertExists()
         compose.onNodeWithTag("quest-names-missing").assertExists()
@@ -126,14 +126,14 @@ class QuestRecordsUiTest {
         val flow = MutableStateFlow(QuestRecordsState())
         show(questSource(flow))
         waitFor("quest-records-loading")
-        flow.value = QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready, paused = true)
+        flow.value = QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready, paused = true)
         waitFor("quest:93000001")
         compose.onNodeWithTag("quest-records-loading").assertDoesNotExist()
         compose.onNodeWithTag("quest-records-paused").assertExists()
     }
 
     @Test fun noBlockWithoutTheTable() {
-        show(questSource(QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready)), hasQuests = false)
+        show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)), hasQuests = false)
         compose.onNodeWithTag("dashboard-section:${DashboardBlockId.QuestRecords}").assertDoesNotExist()
     }
 }

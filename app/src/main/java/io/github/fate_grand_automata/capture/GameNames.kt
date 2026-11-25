@@ -329,6 +329,39 @@ class GameNames(
             }
         }
 
+    /**
+     * The `nice_shop` and `nice_event` shop summaries of the account's own [server], with the same rules as [questWars]:
+     * own server only, cache first, refreshed by the Atlas hash only when [allowDownload] and no script runs.
+     */
+    suspend fun shopNames(server: String, allowDownload: Boolean, force: Boolean = false): ShopNames =
+        withContext(Dispatchers.IO) {
+            if (server != "KR" && server != "JP") return@withContext ShopNames()
+            mutex.withLock {
+                val allow = allowDownload && !isScriptRunning()
+                val shops = fetchSummary(
+                    list = "nice_shop",
+                    server = server,
+                    idOf = ShopSummary::id,
+                    decode = { Json.decodeFromString<List<ShopSummary>>(it) },
+                    encode = { Json.encodeToString(it) },
+                    parseStream = ::summarizeShops,
+                    allowDownload = allow,
+                    ignoreCooldown = force,
+                )
+                val events = fetchSummary(
+                    list = "nice_event",
+                    server = server,
+                    idOf = EventShopSummary::id,
+                    decode = { Json.decodeFromString<List<EventShopSummary>>(it) },
+                    encode = { Json.encodeToString(it) },
+                    parseStream = ::summarizeEventShops,
+                    allowDownload = allow,
+                    ignoreCooldown = force,
+                )
+                ShopNames(shops.values.toList(), events.values.toList())
+            }
+        }
+
     /** JP exports have their own files and budgets. Never feed the merged result back into loaded. */
     private fun withJpLists(kr: GameNameMap, need: JpNeed, includeCards: Boolean = false, allowDownload: Boolean = true): GameNameMap {
         if (!need.any) return kr
@@ -686,8 +719,74 @@ class GameNames(
             check(wars.any { it.quests.isNotEmpty() })
             return wars
         }
+
+        /** Atlas event names put their subtitle on a second line, often with a space before the break. */
+        private val LINE_BREAK = Regex("""\s*\n\s*""")
+
+        private fun RawShop.summary(): ShopSummary? {
+            val shopId = id ?: return null
+            val item = cost?.item
+            return ShopSummary(
+                id = shopId,
+                name = name?.takeIf { it.isNotBlank() },
+                costItem = item?.id ?: 0,
+                costName = item?.name?.takeIf { it.isNotBlank() },
+                cost = cost?.amount ?: 0,
+                limit = limitNum,
+                openedAt = openedAt,
+                closedAt = closedAt,
+            )
+        }
+
+        internal fun summarizeShops(body: String): List<ShopSummary> = body.byteInputStream().use(::summarizeShops)
+
+        /** `nice_shop` is 4.5-6.5 MiB of text; decoded one shop at a time, keeping only [ShopSummary]'s fields. */
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun summarizeShops(stream: InputStream): List<ShopSummary> =
+            streamJson.decodeToSequence<RawShop>(stream, DecodeSequenceMode.ARRAY_WRAPPED).mapNotNull { it.summary() }.toList()
+                .also { check(it.isNotEmpty()) }
+
+        internal fun summarizeEventShops(body: String): List<EventShopSummary> = body.byteInputStream().use(::summarizeEventShops)
+
+        /**
+         * `nice_event` is 35-41 MiB of text (missions, rewards, lotteries and more); decoded one event at a time, keeping
+         * only the events that have a shop and only [EventShopSummary]'s fields.
+         */
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun summarizeEventShops(stream: InputStream): List<EventShopSummary> =
+            streamJson.decodeToSequence<RawEvent>(stream, DecodeSequenceMode.ARRAY_WRAPPED).mapNotNull { raw ->
+                val id = raw.id ?: return@mapNotNull null
+                val shops = raw.shop.mapNotNull { it.summary() }
+                if (shops.isEmpty()) return@mapNotNull null
+                EventShopSummary(id, raw.name?.replace(LINE_BREAK, " ")?.takeIf { it.isNotBlank() }, raw.startedAt, raw.endedAt, shops)
+            }.toList().also { check(it.isNotEmpty()) }
     }
 }
+
+@Serializable
+private data class RawCostItem(val id: Long? = null, val name: String? = null)
+
+@Serializable
+private data class RawCost(val item: RawCostItem? = null, val amount: Long = 0)
+
+@Serializable
+private data class RawShop(
+    val id: Long? = null,
+    val name: String? = null,
+    val cost: RawCost? = null,
+    val limitNum: Long = 0,
+    val openedAt: Long = 0,
+    val closedAt: Long = 0,
+)
+
+@Serializable
+private data class RawEvent(
+    val id: Long? = null,
+    val name: String? = null,
+    val startedAt: Long = 0,
+    val endedAt: Long = 0,
+    val shop: List<RawShop> = emptyList(),
+)
 
 @Serializable
 private data class RawQuest(

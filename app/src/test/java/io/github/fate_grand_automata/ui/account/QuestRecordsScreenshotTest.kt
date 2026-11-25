@@ -40,7 +40,7 @@ class QuestRecordsScreenshotTest(private val width: Int, private val dark: Boole
             }
         }
 
-    @Test fun withNames() = shot("QuestRecords", QuestRecordsState(questRecordsFixture(), QuestNameStatus.Ready), "quest:93000001")
-    @Test fun numbersOnly() = shot("QuestRecordsNumbers", QuestRecordsState(questRecordsFixture(names = false), QuestNameStatus.Missing), "quest:93000001")
+    @Test fun withNames() = shot("QuestRecords", QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready), "quest:93000001")
+    @Test fun numbersOnly() = shot("QuestRecordsNumbers", QuestRecordsState(questRecordsFixture(names = false), RecordNameStatus.Missing), "quest:93000001")
     @Test fun loading() = shot("QuestRecordsLoading", QuestRecordsState(), "quest-records-loading")
 }

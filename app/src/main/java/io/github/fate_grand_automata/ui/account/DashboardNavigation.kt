@@ -60,6 +60,7 @@ internal fun DashboardNavigation(
     initialSection: Int, friendCount: Int?, server: String, now: Long, wide: Boolean, openLogs: () -> Unit,
     progress: DashboardProgress = DashboardProgress(),
     questRecords: QuestRecordsSource? = null,
+    shopRecords: ShopRecordsSource? = null,
 ) {
     val sections = remember(data) { dashboardSections(data) }
     // The raw choice survives rotation and process recreation; each opening of the dashboard starts from initialSection.
@@ -81,7 +82,7 @@ internal fun DashboardNavigation(
                     }
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, progress, questRecords, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, true, openLogs, target, initialSection, progress, questRecords, shopRecords, Modifier.weight(1f))
         } else Column(Modifier.fillMaxSize()) {
             AccountHeader(data, displayName, server, now, wide = false, Modifier.padding(horizontal = HEADER_PADDING, vertical = 8.dp))
             PrimaryScrollableTabRow(selectedTabIndex = sections.indexOf(selected).coerceAtLeast(0), edgePadding = 8.dp) {
@@ -93,7 +94,7 @@ internal fun DashboardNavigation(
                     )
                 }
             }
-            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, progress, questRecords, Modifier.weight(1f))
+            SectionPane(selected, data, names, battle, outside, friendCount, now, false, openLogs, target, initialSection, progress, questRecords, shopRecords, Modifier.weight(1f))
         }
     }
 }
@@ -120,7 +121,7 @@ private fun RailItem(label: String, selected: Boolean, onClick: () -> Unit, name
 private fun SectionPane(
     selected: DashboardSection, data: DashboardData, names: GameNameMap, battle: BattleLogEntry?, outside: OutsideLogEntry?,
     friendCount: Int?, now: Long, wide: Boolean, openLogs: () -> Unit, target: BringIntoViewRequester, initialSection: Int, progress: DashboardProgress,
-    questRecords: QuestRecordsSource?, modifier: Modifier,
+    questRecords: QuestRecordsSource?, shopRecords: ShopRecordsSource?, modifier: Modifier,
 ) {
     key(selected) {
         Column(
@@ -136,7 +137,10 @@ private fun SectionPane(
                 DashboardSection.Items -> data.inventory?.let { DashboardItemsSection(it, names) }
                 DashboardSection.Formations -> DashboardFormationsSection(data, names)
                 DashboardSection.Collection -> DashboardCollectionSection(data, names, questRecords)
-                DashboardSection.PresentBox -> data.presentBox?.let { DashboardPresentBoxSection(it, names) }
+                DashboardSection.PresentBox -> {
+                    data.presentBox?.let { DashboardPresentBoxSection(it, names) }
+                    if (data.hasShopRecords && shopRecords != null) ShopRecordsBlock(shopRecords, now)
+                }
             }
         }
         if (sectionOfBlock(initialSection) == selected && isBlockAddressable(initialSection)) {

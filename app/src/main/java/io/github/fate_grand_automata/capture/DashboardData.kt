@@ -205,6 +205,8 @@ data class DashboardData(
      * every battle, and its rows are read by the quest records block alone, while that block is shown (#730).
      */
     val hasQuestRecords: Boolean = false,
+    /** True when the stored state has a `userShop` table; like [hasQuestRecords], its rows are read by their block alone. */
+    val hasShopRecords: Boolean = false,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -323,7 +325,8 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
         login = projectLogin(rows("userLogin"), rows("mstTotalLogin")),
         parties = projectParties(rows("userDeck"), svts, rows("userEquip")),
         progressInput = projectProgressInput(state.snapshotTime, rows("userEventMission"), rows("userEventPoint")),
-        hasQuestRecords = "userQuest" in state.rawTables)
+        hasQuestRecords = "userQuest" in state.rawTables,
+        hasShopRecords = "userShop" in state.rawTables)
 }
 
 private fun JsonObject.bool(key: String) = (this[key] as? JsonPrimitive)?.let { it.booleanOrNull ?: (it.longOrNull == 1L) } == true

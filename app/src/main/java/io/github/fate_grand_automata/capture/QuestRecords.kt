@@ -1,19 +1,8 @@
 package io.github.fate_grand_automata.capture
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.transformLatest
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.DecodeSequenceMode
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeToSequence
 import java.io.InputStream
+
 import java.util.Locale
 
 /** One war of the public `nice_war` export, reduced to what the quest records block shows. Never holds user state. */
@@ -50,40 +39,12 @@ internal data class UserQuestRow(
     val lastStartedAt: Long = 0,
 )
 
-/** [complete] is false when the stored text stopped being readable part way; the rows before that point are kept. */
-internal data class UserQuestRead(val rows: List<UserQuestRow>, val complete: Boolean)
+/** The stored `userQuest` table, read one row at a time without a tree (see [readTableRows]). */
+internal fun readUserQuestRows(stream: InputStream): Sequence<UserQuestRow> = readTableRows(stream, UserQuestRow.serializer())
 
-private val questJson = Json {
-    ignoreUnknownKeys = true
-    coerceInputValues = true
-    isLenient = true
-}
+internal fun readUserQuest(raw: String): TableRead<UserQuestRow> = raw.byteInputStream().use(::readUserQuest)
 
-/**
- * Decodes the stored table one row at a time: the table's text is about 0.9 MB for 6,600 quests, and a JsonElement
- * tree of it would cost about ten times that (issue #258), so no tree is built.
- */
-@OptIn(ExperimentalSerializationApi::class)
-internal fun readUserQuestRows(stream: InputStream): Sequence<UserQuestRow> =
-    questJson.decodeToSequence<UserQuestRow>(stream, DecodeSequenceMode.ARRAY_WRAPPED)
-
-internal fun readUserQuest(raw: String): UserQuestRead = raw.byteInputStream().use(::readUserQuest)
-
-internal fun readUserQuest(stream: InputStream): UserQuestRead {
-    val rows = ArrayList<UserQuestRow>()
-    val iterator = readUserQuestRows(stream).iterator()
-    while (true) {
-        val row = try {
-            if (!iterator.hasNext()) return UserQuestRead(rows, complete = true)
-            iterator.next()
-        } catch (_: SerializationException) {
-            return UserQuestRead(rows, complete = false)
-        } catch (_: IllegalArgumentException) {
-            return UserQuestRead(rows, complete = false)
-        }
-        if (row.questId > 0) rows.add(row)
-    }
-}
+internal fun readUserQuest(stream: InputStream): TableRead<UserQuestRow> = readTable(stream, UserQuestRow.serializer()) { it.questId > 0 }
 
 /** Single choice. [All] and every chip but [Story] leave story quests out (owner, #730). */
 enum class QuestFilter { All, Free, Event, HighLevel, InterludeRankUp, Daily, Raid, Story }
@@ -122,7 +83,7 @@ private val HIGH_LEVELS = setOf("90+", "90++")
  * `clearNum` counting clears of the whole quest. A second row for the same quest (not seen) is not added up, which would
  * count the clears twice; the row with the furthest phase, then the most clears, is kept.
  */
-internal fun questRecords(read: UserQuestRead, wars: Collection<QuestWarSummary>): List<QuestRecord> {
+internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestWarSummary>): List<QuestRecord> {
     val byId = HashMap<Long, UserQuestRow>(read.rows.size * 2)
     for (row in read.rows) {
         val old = byId[row.questId]
@@ -188,90 +149,5 @@ internal fun questView(records: List<QuestRecord>, filter: QuestFilter, query: S
     return QuestView(shown.sumOf { it.clears }, shown.count { it.clears > 0 }, shown.sortedWith(comparator))
 }
 
-/**
- * [Ready]: names from the account's own server list. [Loading]: the list is being fetched. [Waiting]: there is no cached
- * list and a script is running, so nothing is fetched until it ends. [Missing]: the fetch failed; numbers are shown.
- */
-enum class QuestNameStatus { Ready, Loading, Waiting, Missing }
-
-/**
- * [records] is null while the stored table is read. [paused] is true when the account changed while a script was
- * running: the list is not rebuilt then and shows the last result. [damaged] is true when the stored table could
- * only be read in part.
- */
-data class QuestRecordsState(
-    val records: List<QuestRecord>? = null,
-    val names: QuestNameStatus = QuestNameStatus.Loading,
-    val paused: Boolean = false,
-    val damaged: Boolean = false,
-)
-
-/** What a rebuild depends on: the account's revision (it changes after every battle) and its server. */
-internal data class QuestRecordsKey(val revision: Long?, val server: String)
-
-/**
- * The records of one account, built only while the block collects this flow and dropped with it. They are not part of
- * the dashboard projection, which is rebuilt after every battle. While a script runs nothing is rebuilt and nothing is
- * downloaded; the first build when the block opens still reads the stored table, without a download.
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-internal class QuestRecordsLoader(
-    private val readTable: suspend (userId: String) -> String?,
-    /** The `nice_war` summary of [server]; empty when it is not cached and cannot be fetched. */
-    private val questWars: suspend (server: String, allowDownload: Boolean, force: Boolean) -> List<QuestWarSummary>,
-    private val scriptRunning: Flow<Boolean>,
-    private val isScriptRunning: () -> Boolean,
-) {
-    fun load(userId: String, keys: Flow<QuestRecordsKey>, retries: Flow<Int>): Flow<QuestRecordsState> {
-        var last: QuestRecordsState? = null
-        var builtKey: QuestRecordsKey? = null
-        var read: UserQuestRead? = null
-        var lastRetry: Int? = null
-        return combine(keys.distinctUntilChanged(), scriptRunning.distinctUntilChanged(), retries) { key, running, retry -> Triple(key, running, retry) }
-            .transformLatest { (key, running, retry) ->
-                val previous = last
-                // The flag is read as well as the flow: an account update can arrive before the flow's own value does.
-                if (previous != null && (running || isScriptRunning())) {
-                    val paused = previous.copy(paused = key != builtKey)
-                    if (paused != previous) { last = paused; emit(paused) }
-                    return@transformLatest
-                }
-                val rebuild = previous == null || key != builtKey || read == null
-                val retried = lastRetry != null && retry != lastRetry
-                lastRetry = retry
-                if (!rebuild && !retried && previous.names == QuestNameStatus.Ready) {
-                    if (previous.paused) previous.copy(paused = false).also { last = it; emit(it) }
-                    return@transformLatest
-                }
-                if (rebuild) {
-                    if (previous == null) emit(QuestRecordsState())
-                    val raw = readTable(userId)
-                    read = withContext(Dispatchers.Default) { raw?.let(::readUserQuest) ?: UserQuestRead(emptyList(), complete = true) }
-                    builtKey = key
-                }
-                val rows = checkNotNull(read)
-                val cached = questWars(key.server, false, false)
-                var state = QuestRecordsState(
-                    records = withContext(Dispatchers.Default) { questRecords(rows, cached) },
-                    names = if (cached.isNotEmpty()) QuestNameStatus.Ready else QuestNameStatus.Loading,
-                    damaged = !rows.complete,
-                )
-                if (isScriptRunning()) {
-                    if (cached.isEmpty()) state = state.copy(names = QuestNameStatus.Waiting)
-                    last = state
-                    emit(state)
-                    return@transformLatest
-                }
-                last = state
-                emit(state)
-                val fetched = questWars(key.server, true, retried)
-                val full = if (fetched.isEmpty()) {
-                    state.copy(names = if (cached.isEmpty()) QuestNameStatus.Missing else QuestNameStatus.Ready)
-                } else {
-                    state.copy(records = withContext(Dispatchers.Default) { questRecords(rows, fetched) }, names = QuestNameStatus.Ready)
-                }
-                last = full
-                if (full != state) emit(full)
-            }
-    }
-}
+/** The quest records block's state: one record per quest, or null while the stored table is read. */
+typealias QuestRecordsState = RecordsState<List<QuestRecord>>

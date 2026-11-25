@@ -245,17 +245,22 @@ class QuestRecordsTest {
     // --- The loader ---
 
     private class Harness(scriptInitially: Boolean = false, private val cachedWars: List<QuestWarSummary>, private val fetchedWars: List<QuestWarSummary>) {
-        val keys = MutableStateFlow(QuestRecordsKey(1, "KR"))
+        val keys = MutableStateFlow(RecordsKey(1, "KR"))
         val running = MutableStateFlow(scriptInitially)
         val retries = MutableStateFlow(0)
         var reads = 0
         val calls: MutableList<Pair<Boolean, Boolean>> = Collections.synchronizedList(mutableListOf())
         val states: MutableList<QuestRecordsState> = Collections.synchronizedList(mutableListOf())
-        val loader = QuestRecordsLoader(
+        /** When set, the volatile script flag; otherwise it follows [running], as both do in the app. */
+        @Volatile var flag: Boolean? = null
+        val loader = RecordsLoader(
             readTable = { reads++; ACCOUNT_TABLE },
-            questWars = { _, allow, force -> calls += allow to force; if (allow && !running.value) fetchedWars else cachedWars },
+            parse = ::readUserQuest,
+            names = { _, allow, force -> calls += allow to force; if (allow && !running.value) fetchedWars else cachedWars },
+            hasNames = { it.isNotEmpty() },
+            project = ::questRecords,
             scriptRunning = running,
-            isScriptRunning = { running.value },
+            isScriptRunning = { flag ?: running.value },
         )
         val scope = CoroutineScope(Dispatchers.Default)
         fun start() { scope.launch { loader.load("u", keys, retries).collect { states += it } } }
@@ -268,10 +273,10 @@ class QuestRecordsTest {
         val h = Harness(cachedWars = wars, fetchedWars = wars)
         try {
             h.start()
-            h.until("names") { it.names == QuestNameStatus.Ready && it.records != null }
+            h.until("names") { it.names == RecordNameStatus.Ready && it.records != null }
             assertEquals(1, h.reads)
             h.running.value = true
-            h.keys.value = QuestRecordsKey(2, "KR")
+            h.keys.value = RecordsKey(2, "KR")
             h.until("paused") { it.paused }
             delay(100)
             assertEquals(1, h.reads)
@@ -281,15 +286,31 @@ class QuestRecordsTest {
         } finally { h.scope.cancel() }
     }
 
+    @Test fun anAccountUpdateBeforeTheScriptFlowIsNotRebuiltWhenTheFlagSaysRunning() = runBlocking<Unit> {
+        val h = Harness(cachedWars = wars, fetchedWars = wars)
+        try {
+            h.start()
+            h.until("names") { it.names == RecordNameStatus.Ready && it.records != null }
+            val before = h.states.size
+            // The script has started (the flag is set first) but the flow has not delivered it yet; then the account changes.
+            h.flag = true
+            h.keys.value = RecordsKey(2, "KR")
+            withTimeout(5_000) { while (h.states.size == before) delay(10) }
+            assertTrue(h.states.last().paused)
+            assertEquals(1, h.reads)
+            assertFalse(h.running.value)
+        } finally { h.scope.cancel() }
+    }
+
     @Test fun noDownloadIsAskedForWhileAScriptRuns() = runBlocking<Unit> {
         val h = Harness(scriptInitially = true, cachedWars = emptyList(), fetchedWars = wars)
         try {
             h.start()
-            h.until("waiting") { it.names == QuestNameStatus.Waiting }
+            h.until("waiting") { it.names == RecordNameStatus.Waiting }
             assertTrue(h.states.last().records!!.all { it.name == null })
             assertEquals(listOf(false to false), h.calls.toList())
             h.running.value = false
-            h.until("names after the script") { it.names == QuestNameStatus.Ready }
+            h.until("names after the script") { it.names == RecordNameStatus.Ready }
             assertTrue(true to false in h.calls)
             assertEquals(1, h.reads)
             assertEquals("교회 터", h.states.last().records!!.single { it.id == 93000001L }.name)
@@ -300,7 +321,7 @@ class QuestRecordsTest {
         val h = Harness(cachedWars = emptyList(), fetchedWars = emptyList())
         try {
             h.start()
-            h.until("missing") { it.names == QuestNameStatus.Missing }
+            h.until("missing") { it.names == RecordNameStatus.Missing }
             assertTrue(h.states.last().records!!.isNotEmpty())
             h.retries.value = 1
             withTimeout(5_000) { while (true to true !in h.calls) delay(10) }

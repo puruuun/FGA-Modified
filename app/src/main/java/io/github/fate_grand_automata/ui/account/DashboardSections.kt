@@ -15,7 +15,7 @@ internal fun dashboardSections(data: DashboardData): List<DashboardSection> = bu
     if (!data.inventory.isNullOrEmpty()) add(DashboardSection.Items)
     add(DashboardSection.Formations)
     if (data.commandCodes != null || !data.classBoards.isNullOrEmpty() || data.summons != null || data.hasQuestRecords) add(DashboardSection.Collection)
-    if (data.presentBox != null) add(DashboardSection.PresentBox)
+    if (data.presentBox != null || data.hasShopRecords) add(DashboardSection.PresentBox)
 }
 
 /** A section that is no longer available falls back to Overview, which is always there. */
@@ -28,7 +28,7 @@ internal fun sectionOfBlock(blockId: Int): DashboardSection = when (blockId) {
     DashboardBlockId.Items -> DashboardSection.Items
     DashboardBlockId.MysticCodes, DashboardBlockId.Parties, DashboardBlockId.SupportFormation, DashboardBlockId.GrandFormation -> DashboardSection.Formations
     DashboardBlockId.CommandCodes, DashboardBlockId.ClassScore, DashboardBlockId.Summons, DashboardBlockId.QuestRecords -> DashboardSection.Collection
-    DashboardBlockId.PresentBox -> DashboardSection.PresentBox
+    DashboardBlockId.PresentBox, DashboardBlockId.ShopRecords -> DashboardSection.PresentBox
     else -> DashboardSection.Overview
 }
 
