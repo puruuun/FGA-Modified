@@ -97,17 +97,19 @@ never from memory. `tools/ci/android_notices.py check` runs in Main CI through
   pattern (`group:artifact`, `*` allowed), or cannot be read. Runtime means `implementation`, `api`,
   `runtimeOnly` and their variant forms (`betaImplementation`, `ciRuntimeOnly`, quoted
   `"rustImplementation"(...)`), except test variants: a variant prefix that is `test`, `testFixtures` or ends
-  in a capitalised `Test` (`androidTest`, `debugAndroidTest`, `ciUnitTest`, `deviceTest`, the device-QA
-  build type that is never shipped); a name that only contains "test" (`latestImplementation`) is read; `ksp`, `kapt`, `compileOnly`, `lintChecks`
+  in a capitalised `Test` (`androidTest`, `debugAndroidTest`, `deviceTest`, the device-QA
+  build type that is never shipped); a name that only contains "test" (`latestImplementation`) is read, and so are
+  AGP's `testDebugImplementation`-style names (a prefix that only starts with `test`; at worst a false alarm).
+  A shipping flavour or build type whose name ends in `Test` would be skipped (none exists today). `ksp`, `kapt`, `compileOnly`, `lintChecks`
   and custom configurations are build-only. The argument may span lines and be `libs.x`, `platform(libs.x)`,
   a local `val` holding one of them, `project(...)` or a `fileTree` whose folder has no jar. Anything else
   (string coordinates, `add("implementation", ...)`, a Groovy-style call) is an error that names file and
-  line: the check fails closed. The parser knows strings: `/*` or `//` inside `"..."` or a raw string is no
+  line: the check fails closed. `dependencies { }` boundaries and parentheses come from the scanner's blocks and a text with strings blanked
+  (a `'}'`, a `"${a("}")}"` or a raw string cannot end a block early; a `val` line inside a string is no definition). The parser knows strings: `/*` or `//` inside `"..."` or a raw string is no
   comment, and `${...}` templates are read as code. A local `val` resolves to the nearest preceding
   definition in an enclosing `{ }` block; two definitions of one name in the same block, an unterminated
   string, comment or brace, make the check fail with file and line. Remaining limits: `val x: Type = ...`
-  and `val x by ...` are not read as definitions (the declaration then fails as unresolvable), and a `val`
-  line inside a multi-line string is read as a definition.
+  and `val x by ...` are not read as definitions (the declaration then fails as unresolvable).
 
 What the check cannot see, so a reviewer must:
 

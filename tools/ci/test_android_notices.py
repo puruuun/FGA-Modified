@@ -229,12 +229,30 @@ class CheckTest(unittest.TestCase):
         problems = self.uncovered('    implementation(libs.newlib)\n    val s = "open')
         self.assertTrue(any(p.startswith('app/build.gradle.kts:') and 'reliably' in p for p in problems), problems)
 
+    def test_a_dependencies_block_does_not_end_early_at_a_brace_in_a_literal(self):
+        for literal in ("    val c = '}'", '    val s = "${a("}")}"', '    val r = """${"}"}"""', '    val q = "}"'):
+            problems = self.uncovered(literal + '\n    implementation(libs.newlib)')
+            self.assertEqual(len(problems), 1, (literal, problems))
+            self.assertIn('org.example:newlib', problems[0])
+
+    def test_a_val_line_inside_a_string_is_no_definition(self):
+        body = ('    val x = libs.newlib\n    if (f) {\n        val s = """\nval x = libs.timber\n"""\n'
+                '        implementation(x)\n    }')
+        problems = self.uncovered(body)
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn('org.example:newlib', problems[0])
+
+    def test_an_unterminated_raw_string_is_reported_where_it_opens(self):
+        with self.assertRaises(a.BuildFileError) as ctx:
+            a.scan('a\nval r = """open\n\n\nmore')
+        self.assertEqual(ctx.exception.line, 2)
+
     def test_a_configuration_is_a_test_one_by_the_structure_of_its_name(self):
         for name in ('implementation', 'api', 'runtimeOnly', 'latestImplementation', 'contestApi', 'attestRuntimeOnly',
                      'betaImplementation', 'ciRuntimeOnly', 'testerImplementation'):
             self.assertTrue(a.is_runtime_config(name), name)
         for name in ('testImplementation', 'testApi', 'testRuntimeOnly', 'testFixturesImplementation',
-                     'androidTestImplementation', 'debugAndroidTestImplementation', 'ciUnitTestRuntimeOnly',
+                     'androidTestImplementation', 'debugAndroidTestImplementation', 'fooTestRuntimeOnly',
                      'deviceTestImplementation', 'ksp', 'compileOnly', 'onnxRuntimeAar'):
             self.assertFalse(a.is_runtime_config(name), name)
         problems = self.uncovered('    latestImplementation(libs.newlib)')
