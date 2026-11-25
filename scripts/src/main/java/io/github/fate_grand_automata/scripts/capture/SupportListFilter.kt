@@ -201,6 +201,7 @@ object SupportListFilter {
             val kept = ArrayList<Pair<Int, JsonElement>>(infos.size)
             var firstJudged = -1
             var judgedKept = 0
+            var leftOut = 0
             for ((index, info) in infos.withIndex()) {
                 val candidate = info as? JsonObject
                 if (candidate == null) {
@@ -224,8 +225,7 @@ object SupportListFilter {
                 }
                 slotsBefore += result.filledBefore
                 if (!result.anyMatch) {
-                    entryChanged = true
-                    changed = true
+                    leftOut++
                     continue
                 }
                 after++
@@ -239,33 +239,46 @@ object SupportListFilter {
             }
             if (firstJudged >= 0 && judgedKept == 0) {
                 // The game stops reacting to an empty list (#740): the first judged follower stays, with no servant.
-                val blank = blankFollower(infos[firstJudged] as JsonObject) ?: return null
+                val received = infos[firstJudged] as JsonObject
+                val blank = blankFollower(received) ?: return null
                 kept += firstJudged to blank
                 kept.sortBy { it.first }
                 placeholder = true
+                // It was counted as left out; it is a change only when it lost a servant.
+                leftOut--
+                if (blank !== received) entryChanged = true
             }
+            if (leftOut > 0) entryChanged = true
+            if (entryChanged) changed = true
             if (entryChanged) JsonObject(entry + ("followerInfo" to JsonArray(kept.map { it.second }))) else entry
         }
         if (unknownShape || !changed) return null
         val newUpdated = JsonObject(updated + ("userFollower" to JsonArray(newFollowers)))
         val newCache = JsonObject(cache + ("updated" to newUpdated))
-        return JsonObject(root + ("cache" to newCache)) to
-            SupportListCounts(before, after, slotsBefore, slotsAfter, placeholderKept = placeholder)
+        val newRoot = JsonObject(root + ("cache" to newCache))
+        // A tree equal to the received one goes out as the original bytes.
+        if (newRoot == root) return null
+        return newRoot to SupportListCounts(before, after, slotsBefore, slotsAfter, placeholderKept = placeholder)
     }
 
     /**
      * [follower] with every filled leader and event slot in the server's blank form ([blankSlot]) and its grand container
      * emptied to the same kind, an empty entry kept as it is: the shape the server sends for a follower without grand
-     * servants. Null for any shape this code has not seen.
+     * servants. The very object that came in when it has nothing to blank or remove. Null for any shape this code has
+     * not seen.
      */
     private fun blankFollower(follower: JsonObject): JsonObject? {
+        var touched = false
         fun slot(element: JsonElement): JsonElement? {
             val row = element as? JsonObject ?: return null
             val svtId = row.long("svtId") ?: return null
-            return if (svtId > 0L) blankSlot(row) else row
+            if (svtId <= 0L) return row
+            touched = true
+            return blankSlot(row)
         }
         fun empty(element: JsonElement): Boolean? {
             val svtId = (element as? JsonObject)?.long("svtId") ?: return null
+            if (svtId > 0L) touched = true
             return svtId <= 0L
         }
         val entries = LinkedHashMap<String, JsonElement>(follower)
@@ -285,7 +298,7 @@ object SupportListFilter {
                 }
             }
         }
-        return JsonObject(entries)
+        return if (touched) JsonObject(entries) else follower
     }
 
     /** type 1 (friend) and 2 (not a friend) as a JSON integer; a string "1" or a missing type is not. */

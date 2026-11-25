@@ -99,6 +99,39 @@ class SupportListFilterTest {
         assertTrue(text.contains(""""serverTime":99"""))
     }
 
+    @Test fun aSingleJudgedFollowerThatIsAlreadyEmptyLeavesTheResponseUnchanged() {
+        val npc = friend("npc", type = 3, main = hit(500))
+        val noHash = """{"type":4,"userId":"fixed"}"""
+        for (text in listOf(body(friend("a")), body(npc, friend("a"), noHash))) {
+            assertNull(run(text), text)
+            assertNull(SupportListFilter.filter(Json.parseToJsonElement(text).jsonObject, criteria), text)
+        }
+    }
+
+    @Test fun twoJudgedFollowersThatAreBothEmptyKeepTheFirst() {
+        val r = run(body(friend("a"), friend("b", type = 2)))!!
+        assertEquals(listOf("a"), ids(r))
+        assertEquals(Json.parseToJsonElement(friend("a")), infos(r).single())
+        assertEquals(SupportListCounts(2, 0, placeholderKept = true), r.counts)
+    }
+
+    @Test fun keyedLeaderAndEventContainersAreBlankedInThePlaceholder() {
+        val kept = """{"type":1,"userId":"k","userSvtLeaderHash":{"1":${slot(300, 1, 1)},"2":${slot(0, 1, 2)}},""" +
+            """"eventUserSvtLeaderHash":{"9":${slot(301, 4, 0)}},"userSvtGrandHash":{}}"""
+        val r = run(body(kept, friend("b", main = hit(400))))!!
+        val out = infos(r).single().jsonObject
+        val leader = out["userSvtLeaderHash"]!!.jsonObject
+        assertEquals(listOf("1", "2"), leader.keys.toList())
+        assertEquals(SupportListFilter.blankSlot(Json.parseToJsonElement(slot(300, 1, 1)).jsonObject), leader["1"])
+        assertEquals(Json.parseToJsonElement(slot(0, 1, 2)), leader["2"])
+        assertEquals(
+            SupportListFilter.blankSlot(Json.parseToJsonElement(slot(301, 4, 0)).jsonObject),
+            out["eventUserSvtLeaderHash"]!!.jsonObject["9"],
+        )
+        assertEquals(Json.parseToJsonElement("{}"), out["userSvtGrandHash"])
+        assertTrue(r.counts.placeholderKept)
+    }
+
     @Test fun otherTypesAreKeptUnchangedEvenWhenEveryFriendAndNonFriendIsRemoved() {
         val npc = friend("npc", type = 3)
         val noHash = """{"type":4,"userId":"fixed"}"""
@@ -116,8 +149,10 @@ class SupportListFilterTest {
         val text = """{"type":"1","userId":"s"}"""
         val dec = """{"type":1.5,"userId":"d"}"""
         val nul = """{"type":null,"userId":"n"}"""
-        val r = run(body(friend("a"), missing, text, dec, nul))!!
+        // "a" has a servant that does not match, so the list is really filtered (its slot is blanked).
+        val r = run(body(friend("a", main = hit(300)), missing, text, dec, nul))!!
         assertEquals(listOf("a", "m", "s", "d", "n"), ids(r))
+        assertEquals(listOf(missing, text, dec, nul).map { Json.parseToJsonElement(it) }, infos(r).drop(1))
         assertNull(run(body(missing, text, dec, nul)))
     }
 
