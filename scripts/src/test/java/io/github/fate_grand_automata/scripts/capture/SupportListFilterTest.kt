@@ -350,31 +350,40 @@ class SupportListFilterTest {
     private fun firstFollower(r: kotlinx.serialization.json.JsonObject) =
         r["cache"]!!.jsonObject["updated"]!!.jsonObject["userFollower"]!!.jsonArray[0].jsonObject["followerInfo"]!!.jsonArray[0].jsonObject
 
-    @Test fun aKeptFollowersGrandListIsTheOriginalElement() {
+    @Test fun aKeptFollowersNonMatchingGrandEntriesAreRemovedAndTheMatchingOneIsTheReceivedObject() {
         val grand = listOf(realGrand(100, ce1 = 7), realGrand(999, ce3 = 8, bond = 9, graph = 10002, npCharge = true), realGrand(998, graph = 10003))
         val f = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1), (1 to 2) to realSlot(999, 1, 2)), grand = grand)
         val root = Json.parseToJsonElement(body(f, realFollower("b"))).jsonObject
         val before = firstFollower(root)
         val out = firstFollower(SupportListFilter.filter(root, criteria)!!.first)
-        assertSame(before["userSvtGrandHash"], out["userSvtGrandHash"])
-        // The follower itself was rebuilt: its non-matching normal slot is blanked.
+        val list = out["userSvtGrandHash"]!!.jsonArray
+        assertEquals(1, list.size)
+        assertSame(before["userSvtGrandHash"]!!.jsonArray[0], list[0])
+        // The non-matching normal slot is blanked as before.
         assertEquals("0", out["userSvtLeaderHash"]!!.jsonArray[2].jsonObject["svtId"]!!.toString())
     }
 
-    @Test fun aKeptFollowersGrandListKeyedBySeatIsTheOriginalElementToo() {
+    @Test fun aKeptFollowersGrandListKeyedBySeatKeepsOnlyTheMatchingKeys() {
         val keyed = """{"type":1,"userId":"a","userSvtLeaderHash":[${realSlot(100, 1, 1)},${realSlot(999, 1, 2)}],"userSvtGrandHash":{"1":${realGrand(999)},"2":${realGrand(100)}}}"""
         val root = Json.parseToJsonElement(body(keyed, realFollower("b"))).jsonObject
         val out = firstFollower(SupportListFilter.filter(root, criteria)!!.first)
-        assertSame(firstFollower(root)["userSvtGrandHash"], out["userSvtGrandHash"])
+        val hash = out["userSvtGrandHash"]!!.jsonObject
+        assertEquals(listOf("2"), hash.keys.toList())
+        assertSame(firstFollower(root)["userSvtGrandHash"]!!.jsonObject["2"], hash["2"])
     }
 
-    @Test fun nonMatchingGrandEntriesAloneChangeNothing() {
+    @Test fun nonMatchingGrandEntriesAloneAreRemovedFromTheKeptFollowers() {
         val a = realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(999), realGrand(998, ce1 = 7)))
         val b = realFollower("b", type = 2, main = mapOf((2 to 3) to realSlot(200, 2, 3)), grand = listOf(realGrand(997)))
-        assertNull(run(body(a, b)))
+        val r = run(body(a, b))!!
+        assertEquals(listOf("a", "b"), ids(r))
+        for (info in infos(r)) assertEquals(JsonArray(emptyList()), info.jsonObject["userSvtGrandHash"])
+        assertEquals(SupportListCounts(2, 2, 5, 2), r.counts)
+        // With every grand entry matching too, nothing changes.
+        assertNull(run(body(realFollower("a", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(100), realGrand(200))))))
     }
 
-    @Test fun aFollowerWhoseOnlyMatchIsAGrandEntryStaysWithItsNormalSlotsBlankedAndItsGrandListAsReceived() {
+    @Test fun aFollowerWhoseOnlyMatchIsAGrandEntryStaysWithItsNormalSlotsBlankedAndOnlyThatGrandEntry() {
         val grand = listOf(realGrand(999), realGrand(100))
         val f = realFollower("a", main = mapOf((1 to 1) to realSlot(999, 1, 1)), event = mapOf((2 to 2) to realSlot(998, 2, 2)), grand = grand)
         val root = Json.parseToJsonElement(body(f, realFollower("b"))).jsonObject
@@ -382,8 +391,10 @@ class SupportListFilterTest {
         val out = firstFollower(filtered)
         assertEquals(canonical(serverEmptySlot(1, 1)), out["userSvtLeaderHash"]!!.jsonArray[1].toString())
         assertEquals(canonical(serverEmptySlot(2, 2)), out["eventUserSvtLeaderHash"]!!.jsonArray[9 + 2].toString())
-        assertSame(firstFollower(root)["userSvtGrandHash"], out["userSvtGrandHash"])
-        assertEquals(SupportListCounts(2, 1, 4, 2), counts)
+        val list = out["userSvtGrandHash"]!!.jsonArray
+        assertEquals(1, list.size)
+        assertSame(firstFollower(root)["userSvtGrandHash"]!!.jsonArray[1], list[0])
+        assertEquals(SupportListCounts(2, 1, 4, 1), counts)
     }
 
     @Test fun aFollowerWithNoMatchAnywhereIsRemovedGrandEntriesAndAll() {
@@ -391,8 +402,9 @@ class SupportListFilterTest {
         val stays = realFollower("stays", main = mapOf((1 to 1) to realSlot(100, 1, 1)), grand = listOf(realGrand(996)))
         val r = run(body(gone, stays))!!
         assertEquals(listOf("stays"), ids(r))
-        // Before: 3 + 2 filled; after: the kept follower's normal match and its grand entry.
-        assertEquals(SupportListCounts(2, 1, 5, 2), r.counts)
+        // Before: 3 + 2 filled; after: only the kept follower's normal match, its grand entry is removed.
+        assertEquals(SupportListCounts(2, 1, 5, 1), r.counts)
+        assertEquals(JsonArray(emptyList()), infos(r)[0].jsonObject["userSvtGrandHash"])
     }
 
     @Test fun anOddGrandEntryLeavesTheWholeResponseUnchanged() {
