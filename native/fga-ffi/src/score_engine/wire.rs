@@ -13,22 +13,30 @@
 //! | 7 | text confidence as `f32` bits, NaN when there is none |
 //! | 8 | weakest character confidence as `f32` bits, NaN when there is none |
 //! | 9 | microseconds inside Rust, saturated at `i32::MAX` |
-//! | 10 | n, the number of code points that follow |
-//! | 11.. | the recognised text, or the error message, as Unicode code points |
+//! | 10 | flags: [`FLAG_SIGN_CORRECTED`], 0 otherwise |
+//! | 11 | n, the number of code points that follow |
+//! | 12.. | the recognised text, or the error message, as Unicode code points |
 //!
 //! A value and its reason travel separately, so an unknown field (`NO_VALUE` with a reason) can
 //! never read as 0, and a value always comes with [`NO_REASON`]. The Kotlin parser
 //! (`ScoreWire.kt`) refuses every other combination. The codes are part of the contract: the
 //! tests on both sides pin the same numbers.
+//!
+//! Index 10 came with the sign correction (QA 0025, section 4.19), and with it the magic changed
+//! from `FSC1` to `FSC2`, so a library and a parser of different layouts cannot meet without the
+//! parser refusing the reply (an engine error, which sends the row to the existing reader).
 
 use fga_sensing::readers::support_score::{Display, Reason, Score, SupportScore};
 
-pub const MAGIC: i32 = 0x4653_4331;
-pub const HEADER_LEN: usize = 11;
+pub const MAGIC: i32 = 0x4653_4332;
+pub const HEADER_LEN: usize = 12;
 pub const STATUS_READ: i32 = 0;
 pub const STATUS_ERROR: i32 = 1;
 pub const NO_VALUE: i32 = -1;
 pub const NO_REASON: i32 = 0;
+/// The reader decided on the text with a misread sign read as `+`; the text in the reply is the one
+/// the recogniser read. For the diagnostics records only: the values mean the same either way.
+pub const FLAG_SIGN_CORRECTED: i32 = 1;
 /// A score text holds at most `+NN/+MM`; a longer one is a misread whose tail the log does not
 /// need, and the bound keeps the Java array small whatever the model emits.
 pub const MAX_TEXT_CHARS: usize = 64;
@@ -97,6 +105,11 @@ pub fn encode_score(score: &SupportScore, micros: u128) -> Vec<i32> {
         float_bits(Some(observation.confidence)),
         float_bits(observation.min_char_confidence.map(f64::from)),
         i32::try_from(micros).unwrap_or(i32::MAX),
+        if score.sign_corrected {
+            FLAG_SIGN_CORRECTED
+        } else {
+            0
+        },
     ]);
     push_text(&mut out, &observation.text, MAX_TEXT_CHARS);
     out
@@ -117,6 +130,7 @@ pub fn encode_unknown(reason: Reason) -> Vec<i32> {
         float_bits(None),
         float_bits(None),
         0,
+        0,
     ];
     push_text(&mut out, "", MAX_TEXT_CHARS);
     out
@@ -133,6 +147,7 @@ pub fn encode_error(message: &str) -> Vec<i32> {
         NO_REASON,
         float_bits(None),
         float_bits(None),
+        0,
         0,
     ];
     push_text(&mut out, message, MAX_ERROR_CHARS);
@@ -158,10 +173,12 @@ mod tests {
             class,
             grand,
             display,
+            sign_corrected: false,
             observation: Observation {
                 text: text.to_owned(),
                 confidence: 0.75,
                 min_char_confidence: Some(0.5),
+                char_confidences: text.chars().map(|_| 0.5).collect(),
                 clip: ClipReport::default(),
                 crop_size: (60, 30),
                 featureless: false,
@@ -184,7 +201,7 @@ mod tests {
         assert_eq!(
             wire,
             vec![
-                0x4653_4331,
+                0x4653_4332,
                 0,
                 62,
                 16,
@@ -194,6 +211,7 @@ mod tests {
                 0x3F40_0000,
                 0x3F00_0000,
                 1234,
+                0,
                 7,
                 43,
                 54,
@@ -231,6 +249,7 @@ mod tests {
                 0x3F40_0000,
                 0x3F00_0000,
                 5,
+                0,
                 2,
                 43,
                 48
@@ -373,7 +392,7 @@ mod tests {
             ),
             0,
         );
-        assert_eq!(&wire[10..], &[3, 0x5C4B, 43, 0x1F600]);
+        assert_eq!(&wire[11..], &[3, 0x5C4B, 43, 0x1F600]);
         let long = "9".repeat(200);
         let wire = encode_score(
             &score(
@@ -384,8 +403,52 @@ mod tests {
             ),
             0,
         );
-        assert_eq!(wire[10], MAX_TEXT_CHARS as i32);
+        assert_eq!(wire[11], MAX_TEXT_CHARS as i32);
         assert_eq!(wire.len(), HEADER_LEN + MAX_TEXT_CHARS);
+    }
+
+    /// Also decoded in ScoreWireTest.kt (`GOLDEN_SIGN_CORRECTED`).
+    #[test]
+    fn golden_sign_corrected_reply() {
+        let mut corrected = score(
+            Score::Value(62),
+            Score::Value(16),
+            Display::Compound,
+            "+62/-16",
+        );
+        corrected.sign_corrected = true;
+        let wire = encode_score(&corrected, 9);
+        assert_eq!(
+            wire,
+            vec![
+                MAGIC,
+                0,
+                62,
+                16,
+                1,
+                0,
+                0,
+                0x3F40_0000,
+                0x3F00_0000,
+                9,
+                1,
+                7,
+                43,
+                54,
+                50,
+                47,
+                45,
+                49,
+                54
+            ]
+        );
+        assert_eq!(FLAG_SIGN_CORRECTED, 1);
+    }
+
+    #[test]
+    fn unknown_and_error_replies_carry_no_flag() {
+        assert_eq!(encode_unknown(Reason::CropSize)[10], 0);
+        assert_eq!(encode_error("no")[10], 0);
     }
 
     #[test]
@@ -408,7 +471,7 @@ mod tests {
     fn error_reply_holds_the_message() {
         let wire = encode_error("no");
         assert_eq!(&wire[..7], &[MAGIC, STATUS_ERROR, -1, -1, 2, 0, 0]);
-        assert_eq!(&wire[10..], &[2, 110, 111]);
+        assert_eq!(&wire[11..], &[2, 110, 111]);
         let wire = encode_error(&"x".repeat(1000));
         assert_eq!(wire.len(), HEADER_LEN + MAX_ERROR_CHARS);
     }
@@ -427,7 +490,7 @@ mod tests {
         let wire = after_pending_exception(&read);
         assert_eq!(wire[1], STATUS_ERROR);
         assert_eq!(wire[2], NO_VALUE);
-        let text: String = wire[11..]
+        let text: String = wire[12..]
             .iter()
             .map(|c| char::from_u32(*c as u32).unwrap())
             .collect();

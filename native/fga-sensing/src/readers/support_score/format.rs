@@ -25,7 +25,8 @@ pub struct Parsed {
 }
 
 /// Anything else is `None`: extra digits, a doubled sign, other characters, spaces, an empty
-/// text. Nothing is repaired (`+571+16` stays unknown) and no full-width sign is folded.
+/// text. Nothing is repaired here (`+571+16` stays unknown) and no full-width sign is folded; the
+/// one repair the reader makes, a misread sign, is [`correct_signs`] in front of this.
 pub fn parse(text: &str, format: Format) -> Option<Parsed> {
     let mut parts = text.split('/');
     let class_part = parts.next()?;
@@ -45,6 +46,44 @@ pub fn parse(text: &str, format: Format) -> Option<Parsed> {
         Some(part) => Some(number(part, grand_plus_needed)?),
     };
     Some(Parsed { class, grand })
+}
+
+/// What the recogniser has been seen to read, or could read, for a plus whose vertical stroke it
+/// lost: on the owner's tablet the separator line of the support list crosses the plus before
+/// `16`, and `+62/+16` came out as `+62/-16` (QA 0025, section 4.19). Only these: accepting any
+/// character in a sign position turned cut KR fields into answers in that measurement.
+pub const SIGN_LOOKALIKES: [char; 7] = ['-', '=', '~', '_', '\u{2013}', '\u{2014}', '\u{2212}'];
+
+/// The text with each [`SIGN_LOOKALIKES`] character in a sign position (the first character, and
+/// the one right after the only `/`) read as `+`, and the character indices that were changed.
+/// `None` when nothing was changed. The result is not checked here: it must pass [`parse`] like any
+/// other text, so a missing plus or a `/` read as a digit stays refused.
+pub fn correct_signs(text: &str) -> Option<(String, Vec<usize>)> {
+    let chars: Vec<char> = text.chars().collect();
+    let slashes: Vec<usize> = chars
+        .iter()
+        .enumerate()
+        .filter(|&(_, &c)| c == '/')
+        .map(|(i, _)| i)
+        .collect();
+    let mut sign_positions = vec![0];
+    if let [slash] = slashes.as_slice() {
+        sign_positions.push(slash + 1);
+    }
+    let mut corrected = Vec::new();
+    let text: String = chars
+        .iter()
+        .enumerate()
+        .map(|(i, &c)| {
+            if sign_positions.contains(&i) && SIGN_LOOKALIKES.contains(&c) {
+                corrected.push(i);
+                '+'
+            } else {
+                c
+            }
+        })
+        .collect();
+    (!corrected.is_empty()).then_some((text, corrected))
 }
 
 /// One or two digits after an optional or required plus. A two-digit number may not start with
@@ -119,6 +158,24 @@ mod tests {
         let take = |text| parse(text, Format::PlusOptional).map(|p| (p.class, p.grand));
         assert_eq!(take("62/16"), Some((62, Some(16))));
         assert_eq!(take("5"), Some((5, None)));
+    }
+
+    #[test]
+    fn signs_are_corrected_only_in_sign_positions() {
+        let fixed = |text: &str| correct_signs(text);
+        assert_eq!(fixed("+62/-16"), Some(("+62/+16".to_owned(), vec![4])));
+        assert_eq!(fixed("-62/+16"), Some(("+62/+16".to_owned(), vec![0])));
+        assert_eq!(
+            fixed("=62/\u{2212}16"),
+            Some(("+62/+16".to_owned(), vec![0, 4]))
+        );
+        assert_eq!(fixed("\u{2014}5"), Some(("+5".to_owned(), vec![0])));
+        assert_eq!(fixed("_62//-16"), Some(("+62//-16".to_owned(), vec![0])));
+        for text in [
+            "+6-2", "+62-16", "+62/1-6", "+62/+16", "+62/t16", "+62/16-", "",
+        ] {
+            assert_eq!(fixed(text), None, "{text:?}");
+        }
     }
 
     #[test]

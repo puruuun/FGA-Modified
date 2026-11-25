@@ -148,6 +148,11 @@ data class EngineScore(
     val engineTime: Duration? = null,
     /** For an [EngineUnknownReason.EngineError] or [EngineUnknownReason.Unavailable] field: what went wrong. */
     val detail: String? = null,
+    /**
+     * The engine read a misread sign in [text] as `+` (`+62/-16` as `+62/+16`; QA 0025, section
+     * 4.19). For the log only: the fields mean the same either way.
+     */
+    val signCorrected: Boolean = false,
 ) {
     companion object {
         fun unknown(reason: EngineUnknownReason, detail: String?, duration: Duration = Duration.ZERO) = EngineScore(

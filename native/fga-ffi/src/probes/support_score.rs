@@ -51,13 +51,14 @@ pub(super) fn score_json(score: &SupportScore, micros: u128) -> String {
     format!(
         "{{\"class\":{},\"grand\":{},\"display\":{},\"text\":{},\"confidence\":{confidence},\
          \"minCharConfidence\":{weakest},\"classReason\":{},\"grandReason\":{},\
-         \"clipVertical\":{},\"featureless\":{},\"micros\":{micros}}}",
+         \"signCorrected\":{},\"clipVertical\":{},\"featureless\":{},\"micros\":{micros}}}",
         number(score.class.value()),
         number(score.grand.value()),
         json_string(score.display.name()),
         json_string(&observation.text),
         reason(score.class.reason().map(|r| r.name())),
         reason(score.grand.reason().map(|r| r.name())),
+        score.sign_corrected,
         observation.clip.vertical,
         observation.featureless,
     )
@@ -81,10 +82,12 @@ mod tests {
             class,
             grand,
             display: Display::Compound,
+            sign_corrected: false,
             observation: Observation {
                 text: text.to_owned(),
                 confidence: 0.99761,
                 min_char_confidence: Some(0.9),
+                char_confidences: text.chars().map(|_| 0.9).collect(),
                 clip: ClipReport::default(),
                 crop_size: (60, 30),
                 featureless: false,
@@ -105,7 +108,8 @@ mod tests {
         assert_eq!(value["confidence"], 0.99761);
         assert!(value["classReason"].is_null() && value["grandReason"].is_null());
         assert_eq!(value["micros"], 27000);
-        assert_eq!(value.as_object().unwrap().len(), 11);
+        assert_eq!(value["signCorrected"], false);
+        assert_eq!(value.as_object().unwrap().len(), 12);
     }
 
     #[test]

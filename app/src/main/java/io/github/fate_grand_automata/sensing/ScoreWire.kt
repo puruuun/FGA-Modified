@@ -12,15 +12,19 @@ import kotlin.time.Duration.Companion.microseconds
  * (the table there). Anything that does not fit that layout exactly is
  * [EngineUnknownReason.EngineError] for both fields, never a value: a wrong magic or length, an
  * unknown status, display or reason code, a value outside its range, a value with a reason, an
- * unknown field without one, or text that is not valid code points.
+ * unknown field without one, a flag bit it does not know, or text that is not valid code points.
  */
 object ScoreWire {
-    const val MAGIC = 0x46534331
-    const val HEADER_LEN = 11
+    /** `FSC2`: the layout with the flags at index 10 (the sign correction, QA 0025 section 4.19). */
+    const val MAGIC = 0x46534332
+    const val HEADER_LEN = 12
     const val STATUS_READ = 0
     const val STATUS_ERROR = 1
     const val NO_VALUE = -1
     const val NO_REASON = 0
+
+    /** wire.rs `FLAG_SIGN_CORRECTED`: the reader read a misread sign as `+`. */
+    const val FLAG_SIGN_CORRECTED = 1
     const val MAX_CLASS = 62
     const val MAX_GRAND = 16
     /** fga-ffi bounds the text at 256 code points (error messages); more is malformed. */
@@ -64,7 +68,7 @@ object ScoreWire {
         if (reply == null) throw Malformed("no reply (JNI failure)")
         if (reply.size < HEADER_LEN) throw Malformed("${reply.size} ints, need at least $HEADER_LEN")
         if (reply[0] != MAGIC) throw Malformed("magic ${reply[0]}")
-        val length = reply[10]
+        val length = reply[11]
         if (length < 0 || length > MAX_TEXT || reply.size != HEADER_LEN + length) {
             throw Malformed("text length $length for ${reply.size} ints")
         }
@@ -84,6 +88,7 @@ object ScoreWire {
         val grandScore = field("grand", reply[3], reply[6], MAX_GRAND)
         val display = DISPLAYS.getOrNull(reply[4]) ?: throw Malformed("display ${reply[4]}")
         if (reply[9] < 0) throw Malformed("engine time ${reply[9]}")
+        if (reply[10] and FLAG_SIGN_CORRECTED.inv() != 0) throw Malformed("flags ${reply[10]}")
         return EngineScore(
             classScore = classScore,
             grandScore = grandScore,
@@ -93,6 +98,7 @@ object ScoreWire {
             minCharConfidence = confidence(reply[8]),
             duration = duration,
             engineTime = reply[9].microseconds,
+            signCorrected = reply[10] and FLAG_SIGN_CORRECTED != 0,
         )
     }
 

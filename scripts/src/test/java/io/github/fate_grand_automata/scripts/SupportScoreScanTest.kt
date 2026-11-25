@@ -907,7 +907,7 @@ class SupportScoreScanTest {
              "bounds":{"x":76,"y":200,"w":2356,"h":428},"crop":"crops/s000-r0.png","cropSha256":"${ScoreScanLog.sha256(crop0)}",
              "kotlin":{"classScore":62,"grandScore":16,"display":"compound","checkGrand":true,"micros":1500},
              "rust":{"status":"read","classScore":62,"grandScore":16,"display":"compound","classReason":null,"grandReason":null,
-                     "confidence":0.98,"minCharConfidence":0.91,"text":"+62/+16","detail":null,"micros":3500,"callMicros":5000},
+                     "confidence":0.98,"minCharConfidence":0.91,"signCorrected":false,"text":"+62/+16","detail":null,"micros":3500,"callMicros":5000},
              "agree":true}
         """))
         assertThat(lines[1].obj("kotlin")).isEqualTo(json("""{"classScore":null,"grandScore":null,"display":"unknown","checkGrand":true,"micros":1500}"""))
@@ -979,7 +979,7 @@ class SupportScoreScanTest {
         assertThat(lines.map { it.obj("bounds").int("y") }).containsExactly(200, 630, 1060)
         assertThat(lines[2].obj("rust")).isEqualTo(Json.parseToJsonElement("""
             {"status":"not_asked","classScore":null,"grandScore":null,"display":"unknown","classReason":"bottom_band",
-             "grandReason":"bottom_band","confidence":null,"minCharConfidence":null,"text":"","detail":null,"micros":null,"callMicros":null}
+             "grandReason":"bottom_band","confidence":null,"minCharConfidence":null,"signCorrected":false,"text":"","detail":null,"micros":null,"callMicros":null}
         """))
         assertThat(lines[2].getValue("agree")).isEqualTo(JsonNull)
         assertThat(lines[2].obj("kotlin").int("classScore")).isEqualTo(52)
@@ -1052,6 +1052,17 @@ class SupportScoreScanTest {
         assertThat(parsed.str("detail")).isEqualTo(text)
         assertThat(parsed.getValue("confidence")).isEqualTo(JsonNull)
         assertThat(parsed.getValue("minCharConfidence")).isEqualTo(JsonNull)
+    }
+
+    @Test
+    fun `a sign corrected read is written as such`() {
+        val rust = EngineScore(
+            EngineField.Value(62), EngineField.Value(16), EngineDisplay.Compound, "+62/-16", 0.95f, 0.61f,
+            1.milliseconds, 900.microseconds, signCorrected = true,
+        )
+        val parsed = Json.parseToJsonElement(ScoreScanLog.line(record(SupportScores(), rust))).jsonObject.obj("rust")
+        assertThat(parsed.getValue("signCorrected")).isEqualTo(JsonPrimitive(true))
+        assertThat(parsed.str("text")).isEqualTo("+62/-16")
     }
 
     @Test

@@ -108,6 +108,7 @@ fn config() -> ScoreConfig {
         check_clipping: true,
         expected_size: (W, H),
         row_trim: RowTrim::NONE,
+        sign_correction: true,
     }
 }
 
@@ -120,6 +121,7 @@ fn observation(text: &str, confidence: f64) -> Observation {
         } else {
             Some(confidence as f32)
         },
+        char_confidences: text.chars().map(|_| confidence as f32).collect(),
         clip: ClipReport::default(),
         crop_size: (W, H),
         featureless: false,
@@ -342,6 +344,7 @@ fn the_defaults_are_pinned() {
     assert!(default.check_clipping);
     assert_eq!(default.expected_size, (60, 30));
     assert_eq!(default.row_trim, RowTrim { top: 3, bottom: 4 });
+    assert!(default.sign_correction);
 }
 
 #[test]
@@ -720,4 +723,233 @@ fn a_trim_larger_than_the_crop_is_an_error_not_a_panic() {
             .height(),
         1
     );
+}
+
+/// The tablet's crop `+62/-16` of QA 0025, section 4.19 (digits 0.99 and above, the sign 0.61 to
+/// 0.81, the whole text 0.944 to 0.972), with every confidence settable.
+fn read_as(text: &str, char_confidences: &[f32], confidence: f64) -> SupportScore {
+    assert_eq!(text.chars().count(), char_confidences.len(), "{text}");
+    decide(
+        sign_observation(text, char_confidences, confidence),
+        &ScoreConfig::default(),
+    )
+}
+
+fn sign_observation(text: &str, char_confidences: &[f32], confidence: f64) -> Observation {
+    Observation {
+        text: text.to_owned(),
+        confidence,
+        min_char_confidence: char_confidences.iter().copied().reduce(f32::min),
+        char_confidences: char_confidences.to_vec(),
+        clip: ClipReport::default(),
+        crop_size: (W, H),
+        featureless: false,
+    }
+}
+
+fn answer(score: &SupportScore) -> (Option<u8>, Option<u8>, Display, bool) {
+    (
+        score.class.value(),
+        score.grand.value(),
+        score.display,
+        score.sign_corrected,
+    )
+}
+
+fn refused(score: &SupportScore) -> bool {
+    score.class.value().is_none()
+        && score.grand.value().is_none()
+        && score.display == Display::Unknown
+}
+
+const COMPOUND: [f32; 7] = [0.999, 0.999, 0.999, 0.999, 0.61, 0.999, 0.999];
+
+#[test]
+fn every_sign_lookalike_before_the_grand_score_is_read_as_a_plus() {
+    for sign in SIGN_LOOKALIKES {
+        for (class, text) in [(62, format!("+62/{sign}16")), (58, format!("+58/{sign}16"))] {
+            assert_eq!(
+                answer(&read_as(&text, &COMPOUND, 0.944)),
+                (Some(class), Some(16), Display::Compound, true),
+                "{text:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn every_sign_lookalike_before_the_class_score_is_read_as_a_plus() {
+    let leading = [0.61, 0.999, 0.999, 0.999, 0.999, 0.999, 0.999];
+    let both = [0.61, 0.999, 0.999, 0.999, 0.61, 0.999, 0.999];
+    for sign in SIGN_LOOKALIKES {
+        let text = format!("{sign}62/+16");
+        assert_eq!(
+            answer(&read_as(&text, &leading, 0.944)),
+            (Some(62), Some(16), Display::Compound, true),
+            "{text:?}"
+        );
+        let text = format!("{sign}62");
+        assert_eq!(
+            answer(&read_as(&text, &[0.61, 0.999, 0.999], 0.944)),
+            (Some(62), None, Display::Ordinary, true),
+            "{text:?}"
+        );
+        let text = format!("{sign}62/{sign}16");
+        assert_eq!(
+            answer(&read_as(&text, &both, 0.944)),
+            (Some(62), Some(16), Display::Compound, true),
+            "{text:?}"
+        );
+    }
+}
+
+#[test]
+fn a_corrected_sign_below_the_character_floor_is_still_read() {
+    let weak_sign = [0.999, 0.999, 0.999, 0.999, 0.3, 0.999, 0.999];
+    assert_eq!(
+        answer(&read_as("+62/-16", &weak_sign, 0.9)),
+        (Some(62), Some(16), Display::Compound, true)
+    );
+}
+
+#[test]
+fn a_weak_digit_keeps_a_corrected_text_unknown() {
+    for weak in [1, 2, 5, 6] {
+        let mut confidences = COMPOUND;
+        confidences[weak] = 0.49;
+        let score = read_as("+62/-16", &confidences, 0.9);
+        assert!(refused(&score), "digit {weak}: {score:?}");
+        assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
+        assert!(!score.sign_corrected);
+    }
+    let mut at_floor = COMPOUND;
+    at_floor[1] = 0.5;
+    assert_eq!(
+        answer(&read_as("+62/-16", &at_floor, 0.9)),
+        (Some(62), Some(16), Display::Compound, true)
+    );
+}
+
+#[test]
+fn a_weak_slash_or_kept_plus_keeps_a_corrected_text_unknown() {
+    let mut weak_slash = COMPOUND;
+    weak_slash[3] = 0.49;
+    assert!(refused(&read_as("+62/-16", &weak_slash, 0.9)));
+    let mut weak_plus = COMPOUND;
+    weak_plus[0] = 0.49;
+    assert!(refused(&read_as("+62/-16", &weak_plus, 0.9)));
+}
+
+#[test]
+fn a_corrected_text_below_the_text_floor_is_unknown() {
+    let score = read_as("+62/-16", &COMPOUND, 0.85999);
+    assert!(refused(&score));
+    assert_eq!(score.class, Score::Unknown(Reason::LowConfidence));
+    assert_eq!(
+        answer(&read_as("+62/-16", &COMPOUND, 0.86)),
+        (Some(62), Some(16), Display::Compound, true)
+    );
+    assert!(refused(&read_as("+62/-16", &COMPOUND, f64::NAN)));
+}
+
+#[test]
+fn a_missing_plus_stays_unknown() {
+    let six = [0.999; 6];
+    for text in ["62/+16", "+62/16", "-62/16", "62/-16"] {
+        let score = read_as(text, &six, 0.99);
+        assert!(refused(&score), "{text}: {score:?}");
+        assert_eq!(score.class, Score::Unknown(Reason::Format), "{text}");
+    }
+    assert!(refused(&read_as("62", &[0.999; 2], 0.99)));
+}
+
+#[test]
+fn a_slash_read_as_a_digit_stays_unknown() {
+    for text in [
+        "+621-16", "+627-16", "+621+16", "-621+16", "+62l-16", "-627-16",
+    ] {
+        let score = read_as(text, &COMPOUND, 0.99);
+        assert!(refused(&score), "{text}: {score:?}");
+        assert_eq!(score.class, Score::Unknown(Reason::Format), "{text}");
+    }
+}
+
+#[test]
+fn a_corrected_text_out_of_range_is_unknown() {
+    for text in ["+63/-16", "+62/-17", "-63/+16", "-99"] {
+        let confidences = vec![0.999; text.chars().count()];
+        let score = read_as(text, &confidences, 0.99);
+        assert!(refused(&score), "{text}: {score:?}");
+        assert_eq!(score.class, Score::Unknown(Reason::Range), "{text}");
+    }
+}
+
+#[test]
+fn a_cut_corrected_text_is_unknown() {
+    let mut cut = sign_observation("+62/-16", &COMPOUND, 0.944);
+    cut.clip.vertical = true;
+    let score = decide(cut, &ScoreConfig::default());
+    assert!(refused(&score));
+    assert_eq!(score.class, Score::Unknown(Reason::Clipped));
+    let mut blank = sign_observation("+62/-16", &COMPOUND, 0.944);
+    blank.featureless = true;
+    assert_eq!(
+        decide(blank, &ScoreConfig::default()).class,
+        Score::Unknown(Reason::Blank)
+    );
+}
+
+#[test]
+fn any_other_character_in_a_sign_position_stays_unknown() {
+    for other in [
+        't', '4', '1', '*', 'A', ' ', '.', '\u{FF0B}', '\u{2010}', '\u{2011}',
+    ] {
+        for text in [format!("+62/{other}16"), format!("{other}62/+16")] {
+            let score = read_as(&text, &COMPOUND, 0.99);
+            assert!(refused(&score), "{text:?}: {score:?}");
+            assert!(!score.sign_corrected, "{text:?}");
+        }
+    }
+}
+
+#[test]
+fn confidences_that_do_not_match_the_text_keep_it_unknown() {
+    let mut short = sign_observation("+62/-16", &COMPOUND, 0.99);
+    short.char_confidences.pop();
+    assert!(refused(&decide(short, &ScoreConfig::default())));
+}
+
+#[test]
+fn switched_off_the_sign_correction_reads_nothing() {
+    let off = ScoreConfig {
+        sign_correction: false,
+        ..ScoreConfig::default()
+    };
+    let score = decide(sign_observation("+62/-16", &COMPOUND, 0.99), &off);
+    assert!(refused(&score));
+    assert_eq!(score.class, Score::Unknown(Reason::Format));
+}
+
+#[test]
+fn strict_answers_are_unchanged_and_not_marked() {
+    let off = ScoreConfig {
+        sign_correction: false,
+        ..ScoreConfig::default()
+    };
+    for (text, expected) in [
+        ("+62/+16", (Some(62), Some(16), Display::Compound, false)),
+        ("+58/+16", (Some(58), Some(16), Display::Compound, false)),
+        ("+0", (Some(0), None, Display::Ordinary, false)),
+        ("+62", (Some(62), None, Display::Ordinary, false)),
+        ("+57/+0", (Some(57), Some(0), Display::Compound, false)),
+    ] {
+        let confidences = vec![0.999; text.chars().count()];
+        assert_eq!(
+            answer(&read_as(text, &confidences, 0.999)),
+            expected,
+            "{text}"
+        );
+        let observation = sign_observation(text, &confidences, 0.999);
+        assert_eq!(answer(&decide(observation, &off)), expected, "{text}");
+    }
 }

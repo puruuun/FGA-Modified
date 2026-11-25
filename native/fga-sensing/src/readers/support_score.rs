@@ -19,7 +19,7 @@ use crate::image::GrayImage;
 use crate::recognizer::Recognizer;
 
 pub use clipping::{ClipReport, inspect as inspect_clipping, is_featureless};
-pub use format::{Format, Parsed, parse};
+pub use format::{Format, Parsed, SIGN_LOOKALIKES, correct_signs, parse};
 
 pub const MAX_CLASS_SCORE: u8 = 62;
 pub const MAX_GRAND_SCORE: u8 = 16;
@@ -138,6 +138,8 @@ pub struct ScoreConfig {
     pub expected_size: (usize, usize),
     /// The rows the recogniser reads; the pixel rules still judge the whole crop.
     pub row_trim: RowTrim,
+    /// Reads a [`SIGN_LOOKALIKES`] character in a sign position as `+` (see [`decide`]).
+    pub sign_correction: bool,
 }
 
 /// Rows removed from the top and the bottom of the crop before the recogniser reads it.
@@ -197,6 +199,10 @@ impl Default for ScoreConfig {
             check_clipping: true,
             expected_size: EXPECTED_CROP_SIZE,
             row_trim: RowTrim::MEASURED,
+            // Owner, 2026-11-25, after QA 0025 section 4.19: on 3,570 distinct crops it turned
+            // exactly the five `+62/-16` and `+58/-16` fields of the tablet into correct answers
+            // and no cut field into one.
+            sign_correction: true,
         }
     }
 }
@@ -208,6 +214,9 @@ pub struct Observation {
     pub confidence: f64,
     /// The weakest character of the text; `None` for an empty text.
     pub min_char_confidence: Option<f32>,
+    /// One confidence per character of `text`, in order. The sign correction needs to know which
+    /// character is weak; a list that does not match the text fails it closed.
+    pub char_confidences: Vec<f32>,
     pub clip: ClipReport,
     /// Width and height of the crop that was read.
     pub crop_size: (usize, usize),
@@ -220,6 +229,9 @@ pub struct SupportScore {
     pub class: Score,
     pub grand: Score,
     pub display: Display,
+    /// The decision was made on the text with a misread sign read as `+` ([`correct_signs`]);
+    /// `observation.text` keeps what the recogniser read.
+    pub sign_corrected: bool,
     pub observation: Observation,
 }
 
@@ -281,18 +293,25 @@ pub fn observe_with<B: Backend>(
     crop: &GrayImage,
 ) -> Result<Observation, Error> {
     let crop_size = (crop.width(), crop.height());
-    let (text, confidence, min_char_confidence) = if crop_size == config.expected_size {
-        let seen = config.row_trim.apply(crop)?;
-        let decoded = recognizer.recognize(&seen, allowed)?;
-        let weakest = decoded.char_confidences.iter().copied().reduce(f32::min);
-        (decoded.text, decoded.confidence, weakest)
-    } else {
-        (String::new(), 0.0, None)
-    };
+    let (text, confidence, min_char_confidence, char_confidences) =
+        if crop_size == config.expected_size {
+            let seen = config.row_trim.apply(crop)?;
+            let decoded = recognizer.recognize(&seen, allowed)?;
+            let weakest = decoded.char_confidences.iter().copied().reduce(f32::min);
+            (
+                decoded.text,
+                decoded.confidence,
+                weakest,
+                decoded.char_confidences,
+            )
+        } else {
+            (String::new(), 0.0, None, Vec::new())
+        };
     Ok(Observation {
         text,
         confidence,
         min_char_confidence,
+        char_confidences,
         clip: inspect_clipping(crop),
         crop_size,
         featureless: is_featureless(crop),
@@ -314,11 +333,18 @@ pub fn read_with<B: Backend>(
 }
 
 /// Applies the rules in a fixed order: size, blank, confidence, format, range, clipping.
+///
+/// Where the confidence or the format rule refuses, the sign correction (when on) gets one try: the
+/// text with its misread signs read as `+` ([`correct_signs`]) goes on through the format, range
+/// and clipping rules as if read so, when the whole text keeps the confidence floor and every
+/// other character keeps the character floor ([`sign_corrected_parse`]). Otherwise the refusal
+/// stands. A text the strict rules accept has no sign to correct, so its answer never changes.
 pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     let unknown = |reason: Reason, observation: Observation| SupportScore {
         class: Score::Unknown(reason),
         grand: Score::Unknown(reason),
         display: Display::Unknown,
+        sign_corrected: false,
         observation,
     };
     if observation.crop_size != config.expected_size {
@@ -327,11 +353,17 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
     if is_blank(&observation) {
         return unknown(Reason::Blank, observation);
     }
-    if !is_confident(&observation, config) {
-        return unknown(Reason::LowConfidence, observation);
-    }
-    let Some(parsed) = parse(&observation.text, config.format) else {
-        return unknown(Reason::Format, observation);
+    let strict = if is_confident(&observation, config) {
+        parse(&observation.text, config.format).ok_or(Reason::Format)
+    } else {
+        Err(Reason::LowConfidence)
+    };
+    let (parsed, sign_corrected) = match strict {
+        Ok(parsed) => (parsed, false),
+        Err(reason) => match sign_corrected_parse(&observation, config) {
+            Some(parsed) => (parsed, true),
+            None => return unknown(reason, observation),
+        },
     };
     let display = if parsed.grand.is_some() {
         Display::Compound
@@ -349,6 +381,7 @@ pub fn decide(observation: Observation, config: &ScoreConfig) -> SupportScore {
         class,
         grand,
         display,
+        sign_corrected,
         observation,
     };
     if config.check_clipping {
@@ -369,6 +402,33 @@ fn is_confident(observation: &Observation, config: &ScoreConfig) -> bool {
         && observation
             .min_char_confidence
             .is_some_and(|weakest| weakest >= config.min_char_confidence)
+}
+
+/// The owner's decision of 2026-11-25 (QA 0025, section 4.19): a field whose signs alone were
+/// misread is read. The corrected sign is exempt from the character floor, since a stroke lost
+/// under the separator line is what lowers it (0.61 to 0.81 on the tablet's five crops); every
+/// digit, the `/` and a plus that was read as one keep it. The text confidence stays the one the
+/// recogniser reported, sign included.
+fn sign_corrected_parse(observation: &Observation, config: &ScoreConfig) -> Option<Parsed> {
+    // Written so that a NaN confidence fails, as in `is_confident`.
+    let text_confident = observation.confidence >= config.min_confidence;
+    if !config.sign_correction || !text_confident {
+        return None;
+    }
+    let (text, corrected) = correct_signs(&observation.text)?;
+    if observation.char_confidences.len() != observation.text.chars().count() {
+        return None;
+    }
+    let others_confident = observation
+        .char_confidences
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| !corrected.contains(i))
+        .all(|(_, &confidence)| confidence >= config.min_char_confidence);
+    if !others_confident {
+        return None;
+    }
+    parse(&text, config.format)
 }
 
 fn apply_range(parsed: Parsed, policy: RangePolicy) -> (Score, Score) {

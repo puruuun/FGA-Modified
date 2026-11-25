@@ -185,6 +185,7 @@ class EngineFirstSupportScoreReader(
                     "text" to it.text,
                     "confidence" to it.confidence,
                     "minCharConfidence" to it.minCharConfidence,
+                    "signCorrected" to it.signCorrected,
                     "engineTimeUs" to it.engineTime?.inWholeMicroseconds,
                     "callTimeUs" to it.duration.inWholeMicroseconds,
                     "detail" to it.detail,

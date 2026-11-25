@@ -64,10 +64,12 @@ mod poisoned {
                 class: Score::Value(41),
                 grand: Score::Value(7),
                 display: Display::Compound,
+                sign_corrected: false,
                 observation: Observation {
                     text: "+41/+7".to_owned(),
                     confidence: 0.75,
                     min_char_confidence: Some(0.5),
+                    char_confidences: vec![0.5, 1.0, 1.0, 0.5, 1.0, 0.5],
                     clip: ClipReport::default(),
                     crop_size: (crop.width(), crop.height()),
                     featureless: false,

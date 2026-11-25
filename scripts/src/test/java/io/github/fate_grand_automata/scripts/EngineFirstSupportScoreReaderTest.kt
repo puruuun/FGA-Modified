@@ -82,6 +82,20 @@ class EngineFirstSupportScoreReaderTest {
     }
 
     @Test
+    fun `a sign corrected engine answer is used like any other and recorded as corrected`() {
+        val corrected = EngineAnswers.compound(62, 16).copy(text = "+62/-16", signCorrected = true)
+        val diagnostics = Recording(true)
+        val existing = Existing()
+        val scores = reader(FakeSupportScoreEngine { corrected }, existing, diagnostics).read(bounds, true, true, 1, 0)
+        assertThat(scores).isEqualTo(SupportScores(62, 16, SupportScoreDisplay.Compound))
+        assertThat(existing.calls).isEmpty()
+        val record = diagnostics.records.single().json
+        assertThat(record).contains("\"text\":\"+62/-16\"")
+        assertThat(record).contains("\"signCorrected\":true")
+        assertThat(record).contains("\"answeredBy\":\"engine\"")
+    }
+
+    @Test
     fun `an incomplete engine answer hands the whole row to the existing reader once and returns its answer as it is`() {
         for (refused in EngineAnswers.REFUSALS.map { EngineAnswers.refused(it) } +
             listOf(EngineAnswers.ordinaryOutOfRange(), EngineAnswers.engineError())) {
@@ -219,6 +233,7 @@ class EngineFirstSupportScoreReaderTest {
         assertThat(answered.json).contains("\"fallback\":null")
         assertThat(answered.json).contains("\"text\":\"+62/+16\"")
         assertThat(answered.json).contains("\"engineTimeUs\":27000")
+        assertThat(answered.json).contains("\"signCorrected\":false")
         assertThat(answered.json).contains("\"engineLoadMs\":120")
         assertThat(answered.json).contains("\"result\":{\"class\":62,\"grand\":16,\"display\":\"Compound\"}")
         assertThat(clipped.images).isEqualTo(emptyMap())

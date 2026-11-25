@@ -65,6 +65,7 @@ internal fun runOcrProbeCase(runner: SupportDeviceTestRunner, case: JSONObject):
         "tract-recognise", "tract-recognise-allowed" -> engineRecognise(runner, case, TRACT)
         "rust-reader" -> rustReader(runner, case)
         "rust-engine" -> rustEngine(runner, case)
+        "rust-engine-sign" -> rustEngineSign(runner, case)
         "ort-memory", "ort-recognise", "ort-recognise-allowed", "ort-recognise-1thread" -> {
             if (!ortPackaged()) return ortSkipped(test)
             val engine = ortEngine(case.optInt("threads", 0))
@@ -957,6 +958,7 @@ private fun differencesFrom(score: EngineScore, probe: JSONObject): List<String>
         // The engine sends f32; the probe's JSON holds the f64 the f32 came from.
         "confidence" to (score.confidence to probe.floatOrNull("confidence")),
         "minCharConfidence" to (score.minCharConfidence to probe.floatOrNull("minCharConfidence")),
+        "signCorrected" to (score.signCorrected to probe.getBoolean("signCorrected")),
     )
     return pairs.filter { (_, values) -> values.first != values.second }.map { (key, values) -> "$key ${values.first} != ${values.second}" }
 }
@@ -1069,6 +1071,61 @@ private fun rustEngine(runner: SupportDeviceTestRunner, case: JSONObject): JSONO
         "memory ${readings.joinToString { "${it.getString("point")} rss ${it.opt("vmRssKb")} hwm ${it.opt("vmHwmKb")} heap ${it.opt("javaHeapKb")} native ${it.opt("nativeHeapKb")}" }}, " +
         "peaks during load $loadPeaks, hwmReset $hwmReset, model copy before $copyBefore after $copyAfter")
     reads.failure(rows.size, minRead62, minRead16)?.let { throw AssertionError("rust-engine: $it. $report") }
+    return report
+}
+
+/**
+ * QA 0025, section 4.19: the owner's tablet read `+62/+16` and `+58/+16` as `+62/-16` and
+ * `+58/-16` (the separator line of the list crosses the plus before 16), and the reader now reads
+ * such a sign as `+`. The five committed crops (`docs/reference-images/support-score-sign`, pushed
+ * by run.py from the case file's imports) go through the product binding on the packaged model,
+ * like rust-engine, and each must give its labelled class, Grand score and display with the sign
+ * correction marked. It needs neither rust-reader nor a pushed model.
+ */
+private fun rustEngineSign(runner: SupportDeviceTestRunner, case: JSONObject): JSONObject {
+    val dir = case.getString("samples")
+    val indexBytes = runner.fixture("$dir/index.json")
+    check(indexBytes.isNotEmpty()) { "$dir/index.json is missing on the device; run.py pushes it from the case file's imports" }
+    val index = JSONArray(indexBytes.toString(Charsets.UTF_8))
+    val rows = (0 until index.length()).map { index.getJSONObject(it) }
+    check(rows.isNotEmpty()) { "$dir/index.json has no rows" }
+    val engine = RustSupportScoreEngine.forApp(runner.targetContext)
+    val reads = JSONArray()
+    val failures = mutableListOf<String>()
+    try {
+        if (!engine.available) throw AssertionError("rust-engine-sign: the engine is not available: ${engine.unavailableReason}")
+        for (row in rows) {
+            val file = row.getString("file")
+            val path = "$dir/$file"
+            checkScoreCrop(runner, path)
+            val fixture = JSONObject().put("name", path).put("suite", "support").put("frame", "crop")
+                .put("file", path).put("region720", JSONArray(SCORE_CROP_REGION_720)).put("server", row.getString("server"))
+            val api = FixtureApi(runner, fixture, JSONObject())
+            val score = try {
+                with(api) {
+                    val bound = SupportBounds(locations.support.defaultBounds.copy(y = SCORE_CROP_ROW_Y_720 * 2))
+                    useSameSnapIn {
+                        SupportScoreLayout.numberRegion(bound.region).getPattern("rust-engine-sign").use { engine.read(it) }
+                    }
+                }.also { api.checkCoverage() }
+            } finally {
+                api.close()
+            }
+            val read = JSONObject().put("file", file).put("text", score.text).put("class", score.classScore.valueOrNull ?: JSONObject.NULL)
+                .put("grand", score.grandScore.valueOrNull ?: JSONObject.NULL).put("display", score.display.name.lowercase())
+                .put("signCorrected", score.signCorrected).put("confidence", score.confidence?.toDouble() ?: JSONObject.NULL)
+                .put("minCharConfidence", score.minCharConfidence?.toDouble() ?: JSONObject.NULL).put("detail", score.detail ?: JSONObject.NULL)
+            reads.put(read)
+            val expected = listOf<Any>(row.getInt("cls"), row.getInt("grand"), row.getString("display"), row.getBoolean("signCorrected"))
+            val actual = listOf<Any?>(score.classScore.valueOrNull, score.grandScore.valueOrNull, score.display.name.lowercase(), score.signCorrected)
+            if (actual != expected) failures += "$file read $actual (text ${score.text}), label $expected"
+        }
+    } finally {
+        engine.close()
+    }
+    val report = JSONObject().put("samples", rows.size).put("reads", reads).put("failures", JSONArray(failures))
+    Log.i(TAG, "rust-engine-sign: ${rows.size - failures.size} of ${rows.size} as labelled, failures $failures")
+    if (failures.isNotEmpty()) throw AssertionError("rust-engine-sign: $failures. $report")
     return report
 }
 

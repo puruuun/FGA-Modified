@@ -16,6 +16,7 @@
     { "name": "rust-engine-damaged-model", "suite": "ocrProbe", "test": "rust-engine-damaged-model", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "minRead62": 86, "minRead16": 167 },
     { "name": "rust-engine-short-model", "suite": "ocrProbe", "test": "rust-engine-short-model", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "minRead62": 86, "minRead16": 167 },
     { "name": "rust-engine-after-close", "suite": "ocrProbe", "test": "rust-engine-after-close", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "minRead62": 86, "minRead16": 167 },
+    { "name": "rust-engine-sign", "suite": "ocrProbe", "test": "rust-engine-sign", "samples": "/sdcard/Download/fga-device-qa/docs/reference-images/support-score-sign" },
     { "name": "tract-width-160", "suite": "ocrProbe", "test": "tract-width-160", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 361, "minWidth": 160, "threads": 1, "observation": true },
     { "name": "tract-threads-2", "suite": "ocrProbe", "test": "tract-threads-2", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 370, "minWidth": 320, "threads": 2 },
     { "name": "tract-threads-4", "suite": "ocrProbe", "test": "tract-threads-4", "model": "/sdcard/Download/fga-device-qa/ocr/PP-OCRv6_rec_small.onnx", "samples": "/sdcard/Download/fga-device-qa/ocr/samples", "allowed": "", "minEqual": 370, "minWidth": 320, "threads": 4 },
@@ -397,6 +398,14 @@
       "/sdcard/Download/fga-device-qa/ocr/samples/0367.png",
       "/sdcard/Download/fga-device-qa/ocr/samples/0368.png",
       "/sdcard/Download/fga-device-qa/ocr/samples/0369.png"
+    ],
+    "ocrProbe:signSamples": [
+      "docs/reference-images/support-score-sign/index.json",
+      "docs/reference-images/support-score-sign/0000.png",
+      "docs/reference-images/support-score-sign/0001.png",
+      "docs/reference-images/support-score-sign/0002.png",
+      "docs/reference-images/support-score-sign/0003.png",
+      "docs/reference-images/support-score-sign/0004.png"
     ]
   }
 }

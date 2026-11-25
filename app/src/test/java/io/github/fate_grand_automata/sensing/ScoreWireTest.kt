@@ -16,7 +16,7 @@ class ScoreWireTest {
     private fun text(s: String) = intArrayOf(s.codePointCount(0, s.length)) + s.codePoints().toArray()
 
     private fun read(cls: Int, grand: Int, display: Int, classReason: Int, grandReason: Int, s: String = "") =
-        intArrayOf(ScoreWire.MAGIC, 0, cls, grand, display, classReason, grandReason, nan, nan, 0) + text(s)
+        intArrayOf(ScoreWire.MAGIC, 0, cls, grand, display, classReason, grandReason, nan, nan, 0, 0) + text(s)
 
     private fun assertEngineError(reply: IntArray?) {
         val score = ScoreWire.decode(reply, 1.milliseconds)
@@ -36,6 +36,17 @@ class ScoreWireTest {
         assertEquals(3.milliseconds, score.duration)
         assertNull(score.detail)
         assertEquals(1234.microseconds, score.engineTime)
+        assertEquals(false, score.signCorrected)
+    }
+
+    @Test fun `golden sign corrected reply from wire_rs decodes`() {
+        val score = ScoreWire.decode(GOLDEN_SIGN_CORRECTED, 0.milliseconds)
+        assertEquals(EngineField.Value(62), score.classScore)
+        assertEquals(EngineField.Value(16), score.grandScore)
+        assertEquals(EngineDisplay.Compound, score.display)
+        assertEquals("+62/-16", score.text)
+        assertEquals(true, score.signCorrected)
+        assertEquals(9.microseconds, score.engineTime)
     }
 
     @Test fun `golden ordinary reply from wire_rs decodes`() {
@@ -75,7 +86,7 @@ class ScoreWireTest {
     }
 
     @Test fun `an error reply is engine error with its message`() {
-        val reply = intArrayOf(ScoreWire.MAGIC, 1, -1, -1, 2, 0, 0, nan, nan, 0) + text("not loaded")
+        val reply = intArrayOf(ScoreWire.MAGIC, 1, -1, -1, 2, 0, 0, nan, nan, 0, 0) + text("not loaded")
         val score = ScoreWire.decode(reply, 0.milliseconds)
         assertEquals(EngineField.Unknown(EngineUnknownReason.EngineError), score.classScore)
         assertEquals("not loaded", score.detail)
@@ -135,10 +146,16 @@ class ScoreWireTest {
     @Test fun `malformed replies are engine errors, never values`() {
         assertEngineError(null)
         assertEngineError(IntArray(0))
-        assertEngineError(GOLDEN_COMPOUND.copyOf(10))
+        assertEngineError(GOLDEN_COMPOUND.copyOf(11))
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[0] = 0 })
+        // The layout before the flags (FSC1, 11 ints of header).
+        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[0] = 0x46534331 })
+        assertEngineError(intArrayOf(0x46534331, 0, 62, 16, 1, 0, 0, 0x3F400000, 0x3F000000, 1234, 7, 43, 54, 50, 47, 43, 49, 54))
         // Text length that does not match the array.
-        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[10] = 6 })
+        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[11] = 6 })
+        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[11] = -1 })
+        // A flag bit that is not defined.
+        assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[10] = 2 })
         assertEngineError(GOLDEN_COMPOUND.copyOf().also { it[10] = -1 })
         assertEngineError(GOLDEN_COMPOUND + 43)
         // One element shorter than the declared text.
@@ -162,18 +179,21 @@ class ScoreWireTest {
         assertEngineError(read(-2, -1, 2, 0, 1))
         assertEngineError(read(Int.MIN_VALUE, 16, 1, 0, 0))
         // Text that is not code points.
-        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[11] = 0xD800 })
-        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[11] = 0x110000 })
-        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[11] = -5 })
+        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[12] = 0xD800 })
+        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[12] = 0x110000 })
+        assertEngineError(read(62, 16, 1, 0, 0, "+").also { it[12] = -5 })
         // Longer than fga-ffi ever sends.
         assertEngineError(read(62, 16, 1, 0, 0, "9".repeat(ScoreWire.MAX_TEXT + 1)))
     }
 
     companion object {
         /** wire.rs `golden_compound_reply`. */
-        val GOLDEN_COMPOUND = intArrayOf(0x46534331, 0, 62, 16, 1, 0, 0, 0x3F400000, 0x3F000000, 1234, 7, 43, 54, 50, 47, 43, 49, 54)
+        val GOLDEN_COMPOUND = intArrayOf(0x46534332, 0, 62, 16, 1, 0, 0, 0x3F400000, 0x3F000000, 1234, 0, 7, 43, 54, 50, 47, 43, 49, 54)
 
         /** wire.rs `golden_ordinary_reply`. */
-        val GOLDEN_ORDINARY = intArrayOf(0x46534331, 0, 0, -1, 0, 0, 6, 0x3F400000, 0x3F000000, 5, 2, 43, 48)
+        val GOLDEN_ORDINARY = intArrayOf(0x46534332, 0, 0, -1, 0, 0, 6, 0x3F400000, 0x3F000000, 5, 0, 2, 43, 48)
+
+        /** wire.rs `golden_sign_corrected_reply`. */
+        val GOLDEN_SIGN_CORRECTED = intArrayOf(0x46534332, 0, 62, 16, 1, 0, 0, 0x3F400000, 0x3F000000, 9, 1, 7, 43, 54, 50, 47, 45, 49, 54)
     }
 }

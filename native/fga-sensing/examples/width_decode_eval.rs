@@ -181,6 +181,7 @@ struct Dec {
     text: String,
     conf: f64,
     min: Option<f32>,
+    chars: Vec<f32>,
 }
 
 fn round5(value: f64) -> f64 {
@@ -198,6 +199,7 @@ fn dec_of(text: String, chars: &[f32]) -> Dec {
         text,
         conf,
         min: chars.iter().copied().reduce(f32::min),
+        chars: chars.to_vec(),
     }
 }
 
@@ -459,6 +461,7 @@ fn score_of(policy: Policy, ev: &Eval, config: &ScoreConfig) -> SupportScore {
             text: dec.text.clone(),
             confidence: dec.conf,
             min_char_confidence: dec.min,
+            char_confidences: dec.chars.clone(),
             clip: ev.clip,
             crop_size: ev.size,
             featureless: ev.featureless,

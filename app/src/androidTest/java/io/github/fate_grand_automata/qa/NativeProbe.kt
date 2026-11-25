@@ -72,7 +72,7 @@ object NativeProbe {
     /**
      * One 60x30 gray score crop: `{"class":62|null,"grand":16|null,"display":"ordinary"|"compound"|"unknown",
      * "text":...,"confidence":...,"minCharConfidence":...|null,"classReason":...|null,"grandReason":...|null,
-     * "clipVertical":...,"featureless":...,"micros":...}`.
+     * "signCorrected":true|false,"clipVertical":...,"featureless":...,"micros":...}`.
      */
     external fun supportScoreRead(pixels: ByteArray, width: Int, height: Int): String
 

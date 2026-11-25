@@ -562,7 +562,7 @@ class RustSupportScoreEngineTest {
 
         /** wire.rs `encode_error(text)`. */
         fun errorReply(text: String): IntArray =
-            intArrayOf(ScoreWire.MAGIC, 1, -1, -1, 2, 0, 0, Float.NaN.toRawBits(), Float.NaN.toRawBits(), 0, text.length) +
+            intArrayOf(ScoreWire.MAGIC, 1, -1, -1, 2, 0, 0, Float.NaN.toRawBits(), Float.NaN.toRawBits(), 0, 0, text.length) +
                 text.codePoints().toArray()
 
         /** wire.rs `encode_error(NOT_LOADED)`. */

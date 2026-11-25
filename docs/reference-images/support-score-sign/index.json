@@ -1,0 +1,52 @@
+[
+ {
+  "file": "0000.png",
+  "server": "Jp",
+  "cls": 62,
+  "grand": 16,
+  "display": "compound",
+  "recognised": "+62/-16",
+  "signCorrected": true,
+  "source": "tablet JP reader diagnostics 2026-11-09-182503-669 2-1"
+ },
+ {
+  "file": "0001.png",
+  "server": "Jp",
+  "cls": 62,
+  "grand": 16,
+  "display": "compound",
+  "recognised": "+62/-16",
+  "signCorrected": true,
+  "source": "tablet JP reader diagnostics 2026-11-10-141422-099 3-1"
+ },
+ {
+  "file": "0002.png",
+  "server": "Jp",
+  "cls": 62,
+  "grand": 16,
+  "display": "compound",
+  "recognised": "+62/-16",
+  "signCorrected": true,
+  "source": "tablet JP reader diagnostics 2026-11-17-175430-507 4-1"
+ },
+ {
+  "file": "0003.png",
+  "server": "Jp",
+  "cls": 62,
+  "grand": 16,
+  "display": "compound",
+  "recognised": "+62/-16",
+  "signCorrected": true,
+  "source": "tablet JP reader diagnostics 2026-11-19-134815-622 7-1"
+ },
+ {
+  "file": "0004.png",
+  "server": "Jp",
+  "cls": 58,
+  "grand": 16,
+  "display": "compound",
+  "recognised": "+58/-16",
+  "signCorrected": true,
+  "source": "tablet JP reader diagnostics 2026-11-24-225049-231 20-1"
+ }
+]
