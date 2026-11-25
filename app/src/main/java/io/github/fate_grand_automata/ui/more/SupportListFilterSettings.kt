@@ -79,7 +79,7 @@ internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
     val text = when (val result = last) {
         null -> return
         is SupportListLastResult.Result.Filtered -> result.counts.let {
-            stringResource(R.string.capture_support_filter_last, it.followersBefore, it.followersAfter, it.slotsBefore, it.slotsAfter)
+            stringResource(R.string.capture_support_filter_last, it.followersAfter, it.followersBefore)
         }
         SupportListLastResult.Result.Unchanged -> stringResource(R.string.capture_support_filter_last_unchanged)
     }
@@ -339,7 +339,7 @@ internal fun ImportFromBattleConfig(prefs: PrefsCore, profile: SupportFilterProf
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                profile.support.copyConditionsFrom(config.support)
+                                profile.support.copyConditionsFrom(config.support, withDisplayedAscensions = false)
                                 open = false
                                 Toast.makeText(context, imported, Toast.LENGTH_SHORT).show()
                             }

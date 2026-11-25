@@ -175,23 +175,15 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         }
     }
 
-    @Test fun battleConfigSupportScreenUnmappedNotice() {
+    // The same composition feature on and off: the screen is the one from before the filter existed (#708).
+    @Test fun battleConfigSupportScreen() {
         val prefs = prefs()
         val support = prefs.forBattleConfig("t").support.apply {
             preferredServants.set(setOf("Arcueid"))
             friendsOnly.set(true)
         }
         val vm = SupportViewModel(StorageProvider(prefs, context))
-        shoot("BattleConfigSupportUnmapped", 360, 800) {
-            PreferredSupport(
-                support, vm,
-                filter = SupportListFilterUi(
-                    R.string.support_list_filter_summary_config,
-                    build = { SupportFilterBuild.Unmapped(listOf("내가 만든 이미지"), emptyList()) },
-                ),
-                captureAvailable = true,
-            )
-        }
+        shoot("BattleConfigSupportFeatureOn", 360, 800) { PreferredSupport(support, vm) }
     }
 
     @Test fun moreScreenAdditionalFeatures() {

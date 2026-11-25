@@ -64,13 +64,10 @@ fun PreferredSupportScreen(
     supportVm: SupportViewModel = viewModel(),
     autoClassVm: SupportClassAutoViewModel = viewModel()
 ) {
-    // With the feature off this screen looks as it did before the filter existed (#695).
-    val filterFeature by vm.prefsCore.supportFilterFeature.remember()
+    // The same with the support list filter on or off: the filter never edits a battle config here (#708).
     PreferredSupport(
         config = vm.supportPrefs,
-        vm = supportVm,
-        filter = if (filterFeature) SupportListFilterUi(R.string.support_list_filter_summary_config) else null,
-        captureAvailable = rememberCaptureAvailable(vm.prefsCore)
+        vm = supportVm
     )
 
     val context = LocalContext.current

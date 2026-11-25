@@ -719,7 +719,6 @@
     <string name="p_quest_item_usage">아이템 자동 사용</string>
     <string name="p_use_storm_pod">스톰포드 사용</string>
     <string name="p_use_teapot">티포트 사용</string>
-    <string name="p_quest_item_usage_summary">체크하면 ON, 해제하면 OFF로 맞춘 뒤 퀘스트를 시작합니다.</string>
     <string name="p_quest_item_usage_servers">아이템 자동 사용 설정은 현재 한국·일본 서버에서 지원합니다.</string>
     <string name="quest_item_setting_failed">스톰포드·티포트 설정 또는 설정창 닫기를 확인하지 못해 퀘스트 시작 전에 중단했습니다.</string>
     <string name="p_bond">인연포인트</string>
@@ -1578,10 +1577,9 @@
     <string name="dashboard_col_codes">코드</string>
     <string name="dashboard_col_card_boost">카드 강화</string>
     <string name="clear_all">"모두 해제"</string>
-    <string name="capture_support_filter_last">"마지막 목록: %1$d명 중 %2$d명, 서번트 칸 %3$d개 중 %4$d개"</string>
-    <string name="capture_support_filter_last_unchanged">"마지막 목록: 바꾸지 않음"</string>
+    <string name="capture_support_filter_last">"필터 결과: %2$d명 중 %1$d명 표시"</string>
+    <string name="capture_support_filter_last_unchanged">"필터 결과: 바꾸지 않음"</string>
     <string name="support_list_filter">"서포트 목록 필터"</string>
-    <string name="support_list_filter_summary_config">"서포트 목록 필터가 이 전투 설정의 조건을 가져오면(재생 버튼 메뉴의 \'선택한 설정에서 가져오기\') \'필터 적용\' 표시가 붙은 조건을 적용합니다. 스크립트는 지금처럼 모든 조건을 화면에서 판독합니다."</string>
     <string name="support_list_filter_applied">"필터 적용"</string>
     <string name="support_list_filter_screen_only">"화면 판독만"</string>
     <string name="support_list_filter_capture_off">"로그 수집이 꺼져 있어 필터가 동작하지 않습니다. 추가 기능에서 로그 수집을 켜 주세요."</string>
@@ -1635,7 +1633,9 @@
     <string name="support_filter_from_profile">"프로필 %1$s"</string>
     <string name="support_filter_take_config">"선택한 설정에서 가져오기"</string>
     <string name="support_filter_load_profile">"프로필 불러오기"</string>
-    <string name="support_filter_refresh_hint">"게임은 서포트 목록이 없을 때만 목록을 요청합니다. 켜고 끄거나 조건을 불러온 뒤에는 게임에서 서포트 목록을 갱신하세요."</string>
+    <string name="support_filter_take_from">"가져오기"</string>
+    <string name="support_filter_take_script">"스크립트"</string>
+    <string name="support_filter_take_profile">"프로필"</string>
     <string name="support_filter_line_servants">"서번트: %1$s"</string>
     <string name="support_filter_line_ces">"예장: %1$s"</string>
 </resources>

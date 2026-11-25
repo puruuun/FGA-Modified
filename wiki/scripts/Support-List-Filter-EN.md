@@ -13,16 +13,16 @@ Use **Use this feature** at the top of **More options → Additional features �
 
 ## Using it from the play button menu
 
-**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The filter panel is as wide as the battle config list on the left, and the run limits (runs, materials, CEs) stay visible in the middle while it is open. With the weekly mission panel open the limits are hidden as before, because the weekly route does not use them. The button is in every script menu, and the panel shows:
+**Support filter** opens the filter panel on the right. It shares that place with the weekly mission panel, so only one of them is open at a time. The filter panel is as wide as the battle config list on the left. It comes back open the next time the menu opens if it was open when it last closed (opening the weekly mission panel counts as closing it). The **Weekly mission clear** and **Support filter** buttons at the bottom look the same, and the button of the open panel is highlighted. While it is open, the run limits (runs, materials, CEs) stay visible in the middle. With the weekly mission panel open the limits are hidden as before, because the weekly route does not use them. The button is in every script menu, and the panel shows:
 
-- **The toggle**: on, the filter applies from that moment; off, it stops at once. The toggle survives an app restart.
+- **The Support list filter checkbox**: the same kind of checkbox as the options in the middle column; the whole row is tappable. Checked, the filter applies from that moment; unchecked, it stops at once. The state survives an app restart.
 - **Conditions from**: where the current conditions came from (a battle config name or a profile name).
 - **Every active condition**: servants (with the chosen ascension looks), CEs and MLB, skills, appends, NP level, final ascension, class score +62, the grand conditions (grand servant, grand score +16, bond CE effect, both CE slots match), friends only. Each condition is one line, shown only when it is set.
-- **Take from the selected config**: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available in menus without a battle config list.
-- **Load profile**: copies the conditions of a saved profile. Not available while there is no profile.
-- The **Last list** line: what the filter did to the last support list (people left, servant slots left), or "not changed".
+- **Script** button in the **Take from** row: copies the support conditions of the battle config selected in the list on the left, whatever its support selection mode. Not available when no config is selected or in menus without a battle config list. A displayed ascension stored in the config is not copied.
+- **Profile** button in the **Take from** row: copies the conditions of a saved profile (displayed ascensions included). Not available while there is no profile.
+- The **Filter result** line: what the filter did to the last support list (for example "Filter result: 6 of 20 shown"), or "not changed".
 
-Both buttons **copy** the conditions. Changing that battle config or profile later does not change the active filter: take or load it again. Conditions are not edited in the play button menu; that happens on the profile screen.
+**Script** and **Profile** both **copy** the conditions. Changing that battle config or profile later does not change the active filter: take or load it again. Conditions are not edited in the play button menu; that happens on the profile screen.
 
 ### Refresh the support list after switching
 
@@ -37,7 +37,7 @@ Under **Profiles** in **More options → Additional features → Support list fi
 - **Use as active filter** copies the profile's conditions into the active filter (the same as **Load profile** in the play button menu).
 - The menu on the right has **Rename** and **Delete**. Deleting a profile leaves the conditions already copied into the active filter.
 
-With the feature on, a battle config's preferred support screen marks each condition **Filtered** or **Screen reading only** and shows a **Displayed ascension** item per servant. Those values are copied along when you take that config's conditions.
+A battle config's preferred support screen is the same with the feature on or off as before it existed (no filter notes, no **Filtered** marks, no **Displayed ascension** item). **Displayed ascension** is chosen only in a profile's editor, which also marks each condition **Filtered** or **Screen reading only**. So conditions taken with **Script** carry no displayed ascension; it can only come from a **Profile**.
 
 ## Conditions the filter applies
 

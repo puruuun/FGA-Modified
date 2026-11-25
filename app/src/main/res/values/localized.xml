@@ -724,7 +724,6 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="p_quest_item_usage">Item auto-use</string>
     <string name="p_use_storm_pod">Use Storm Pods</string>
     <string name="p_use_teapot">Use Teapots</string>
-    <string name="p_quest_item_usage_summary">Checked: turn ON. Unchecked: turn OFF before Quest Start.</string>
     <string name="p_quest_item_usage_servers">Item auto-use controls currently support KR and JP servers.</string>
     <string name="quest_item_setting_failed">Could not confirm the Storm Pod/Teapot settings or close the item dialog. Stopped before Quest Start.</string>
     <string name="p_bond">Bond points</string>
@@ -1607,10 +1606,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_servant_card_boost">Card boost +%1$s (%2$d cards)</string>
     <string name="dashboard_col_codes">Codes</string>
     <string name="dashboard_col_card_boost">Card boost</string>
-    <string name="capture_support_filter_last">"Last list: %2$d of %1$d people, %4$d of %3$d servant slots"</string>
-    <string name="capture_support_filter_last_unchanged">"Last list: not changed"</string>
+    <string name="capture_support_filter_last">"Filter result: %1$d of %2$d shown"</string>
+    <string name="capture_support_filter_last_unchanged">"Filter result: not changed"</string>
     <string name="support_list_filter">"Support list filter"</string>
-    <string name="support_list_filter_summary_config">"When the support list filter takes this battle config's conditions (play button menu, \"Take from the selected config\"), it applies the ones marked \"Filtered\". The script itself reads every condition on screen, as before."</string>
     <string name="support_list_filter_applied">"Filtered"</string>
     <string name="support_list_filter_screen_only">"Screen reading only"</string>
     <string name="support_list_filter_capture_off">"Log collection is off, so the filter does nothing. Turn on log collection under More > Additional features."</string>
@@ -1664,7 +1662,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_filter_from_profile">"profile %1$s"</string>
     <string name="support_filter_take_config">"Take from the selected config"</string>
     <string name="support_filter_load_profile">"Load profile"</string>
-    <string name="support_filter_refresh_hint">"The game asks for the support list only when it has none. After switching or loading, refresh the support list in the game."</string>
+    <string name="support_filter_take_from">"Take from"</string>
+    <string name="support_filter_take_script">"Script"</string>
+    <string name="support_filter_take_profile">"Profile"</string>
     <string name="support_filter_line_servants">"Servants: %1$s"</string>
     <string name="support_filter_line_ces">"CEs: %1$s"</string>
 </resources>
