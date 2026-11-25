@@ -50,7 +50,8 @@ internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, now: Long, 
         RecordsLoading(shopTexts)
         return
     }
-    var filter by rememberSaveable { mutableStateOf(ShopFilter.Event) }
+    var chosen by rememberSaveable { mutableStateOf<ShopFilter?>(null) }
+    val filter = shopFilterFor(chosen, state.names)
     var sort by rememberSaveable { mutableStateOf(ShopSort.LastPurchase) }
     var query by rememberSaveable { mutableStateOf("") }
     var buyableOnly by rememberSaveable { mutableStateOf(false) }
@@ -65,7 +66,7 @@ internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, now: Long, 
     RecordNotices(state, shopTexts, onRetry)
     PrismSummary(records.prisms)
     RecordsSearchField(query, shopTexts) { query = it }
-    ChoiceChips(ShopFilter.entries, filter, { "shop-filter:${it.name}" }, { stringResource(it.label()) }, { filter = it })
+    ChoiceChips(ShopFilter.entries, filter, { "shop-filter:${it.name}" }, { stringResource(it.label()) }, { chosen = it })
     Row(
         Modifier.clickable(role = Role.Switch) { buyableOnly = !buyableOnly }.testTag("shop-buyable"),
         verticalAlignment = Alignment.CenterVertically,
@@ -91,11 +92,17 @@ internal fun ColumnScope.ShopRecordsContent(state: ShopRecordsState, now: Long, 
     }
 }
 
-/** Purchases × price per prism; "≈" because a price may have changed and reset totals are left out (owner, #730). */
+/**
+ * Purchases × price per prism over every shop; "≈" because a price may have changed and reset totals are left out
+ * (owner, #730). The prism chips list only shops outside events, so a total with event items says so.
+ */
 @Composable
 private fun PrismSummary(prisms: List<PrismTotal>) {
     if (prisms.isEmpty()) return
-    val parts = prisms.map { stringResource(R.string.dashboard_shop_prism_total, stringResource(prismName(it.itemId)), it.amount.grouped()) }
+    val parts = prisms.map {
+        val text = if (it.includesEvents) R.string.dashboard_shop_prism_total_events else R.string.dashboard_shop_prism_total
+        stringResource(text, stringResource(prismName(it.itemId)), it.amount.grouped())
+    }
     Text(parts.joinToString(" · "), style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("shop-records-summary"))
     val excluded = prisms.sumOf { it.excluded }
     if (excluded > 0) {

@@ -1250,6 +1250,7 @@
     <string name="dashboard_quest_none">該当するクエストはありません。</string>
     <string name="dashboard_shop_records">ショップ記録</string>
     <string name="dashboard_shop_prism_total">%1$s ≈ %2$s</string>
+    <string name="dashboard_shop_prism_total_events">%1$s ≈ %2$s（イベントショップを含む）</string>
     <string name="dashboard_shop_prism_excluded">交換数がリセットされたことのある%1$d種は推定から除いています。</string>
     <string name="dashboard_shop_filter_event">イベントショップ</string>
     <string name="dashboard_shop_filter_mana">マナプリズム</string>
@@ -1266,8 +1267,8 @@
     <string name="dashboard_shop_complete">完了</string>
     <string name="dashboard_shop_loading">ショップ記録を読み込み中…</string>
     <string name="dashboard_shop_names_loading">ショップ名を取得中…</string>
-    <string name="dashboard_shop_names_waiting">スクリプト終了後にショップ名を取得します。それまでは番号で表示します。</string>
-    <string name="dashboard_shop_names_missing">ショップ名を取得できなかったため、番号で表示します。</string>
+    <string name="dashboard_shop_names_waiting">スクリプト終了後にショップ名を取得します。それまではその他に番号で表示します。</string>
+    <string name="dashboard_shop_names_missing">ショップ名を取得できなかったため、その他に番号で表示します。</string>
     <string name="dashboard_shop_damaged">保存されたショップ記録の一部を読み込めませんでした。</string>
     <string name="dashboard_shop_none">該当するものはありません。</string>
     <string name="dashboard_records_more">さらに%1$d件表示（残り%2$d件）</string>
