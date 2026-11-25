@@ -345,12 +345,15 @@ class ProxySupportListFilterTest {
         """{"userId":9,"userSvtId":${if (ce == 0L) 0 else 8},"svtId":$ce,"limitCount":${if (ce == 0L) 0 else 4},"lv":${if (ce == 0L) 0 else lv},"exp":0,"hp":0,"atk":0,""" +
             """"skillId1":0,"skillLv1":0,"skillId2":0,"skillLv2":0,"skillId3":0,"skillLv3":0,"addSkills":[],"updatedAt":0}"""
 
-    /** One userSvtGrandHash entry with the keys of a real JP entry: no supportDeckId or classId, three CEs, grandGraphId. */
+    /**
+     * One userSvtGrandHash entry with the keys of a real JP entry: no supportDeckId or classId, three CEs, grandGraphId,
+     * and a script with isSetClassBoardBaseIds (present in every real entry) and equipTarget2SkillChange.
+     */
     private fun grandEntry(svt: Long, graph: Long) =
         """{"afterTransformSvtInfo":null,"dispLimitCount":4,"imageLimitCount":4,"commandCardLimitCount":4,"iconLimitCount":4,"portraitLimitCount":4,""" +
-            """"battleVoice":2,"grandSvt":1,"transformVal":0,"randomLimitCountTargets":[],"classPassive":[3],""" +
+            """"battleVoice":0,"grandSvt":1,"transformVal":0,"randomLimitCountTargets":[],"classPassive":[3],""" +
             """"equipTarget1":${equip(7)},"equipTarget2":${equip(9, lv = 80)},"equipTarget3":${equip(0)},""" +
-            """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}],"script":{"equipTarget2SkillChange":1},""" +
+            """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}],"script":{"equipTarget2SkillChange":1,"isSetClassBoardBaseIds":[]},""" +
             """"eventSvtPoint":0,"imagePartsGroupInfo":[],"grandGraphId":$graph,"isSetClassBoardBaseIds":[],"userId":555,"userSvtId":43,"svtId":$svt,""" +
             """"limitCount":4,"lv":120,"exp":1,"hp":1,"atk":1,"adjustHp":0,"adjustAtk":0,"skillId1":1,"skillId2":2,"skillId3":3,""" +
             """"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772}"""

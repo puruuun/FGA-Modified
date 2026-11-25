@@ -277,18 +277,19 @@ class SupportListFilterTest {
 
     /**
      * One entry of userSvtGrandHash with the keys of a real JP entry (read 2026-11-25, structure only): no supportDeckId
-     * and no classId, but grandGraphId, three CEs (equipTarget2 is the bond CE at level 80), isSetClassBoardBaseIds and
-     * script.equipTarget2SkillChange. Every real entry has grandSvt 1, limitCount 4 and skill levels 10.
+     * and no classId, but grandGraphId, three CEs (equipTarget2 is the bond CE at level 80), isSetClassBoardBaseIds, and
+     * a script that always holds isSetClassBoardBaseIds (empty in 170 of 172) and, for some, equipTarget2SkillChange.
+     * Every real entry has grandSvt 1, limitCount 4 and skill levels 10; battleVoice is 0.
      */
     private fun realGrand(svt: Long, ce1: Long = 0, bond: Long = 0, ce3: Long = 0, graph: Long = 10001, npCharge: Boolean = false): String {
         val parts = mutableListOf<String>()
         parts += """"afterTransformSvtInfo":null"""
         parts += limitKeys.map { """"$it":4""" }
-        parts += """"battleVoice":2,"grandSvt":1,"transformVal":0"""
+        parts += """"battleVoice":0,"grandSvt":1,"transformVal":0"""
         parts += """"randomLimitCountTargets":[],"classPassive":[3,4]"""
         parts += """"equipTarget1":${equip(ce1)},"equipTarget2":${equip(bond, lv = 80)},"equipTarget3":${equip(ce3)}"""
         parts += """"commandCode":[],"commandCardParam":[1,2,3,4,5],"appendPassiveSkill":[{"skillId":1,"skillLv":10}]"""
-        parts += """"script":${if (npCharge) """{"equipTarget2SkillChange":1}""" else "{}"},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
+        parts += """"script":{${if (npCharge) """"equipTarget2SkillChange":1,""" else ""}"isSetClassBoardBaseIds":[]},"eventSvtPoint":0,"imagePartsGroupInfo":[]"""
         parts += """"grandGraphId":$graph,"isSetClassBoardBaseIds":[]"""
         parts += """"userId":555,"userSvtId":43,"svtId":$svt,"limitCount":4,"lv":120,"exp":10,"hp":11,"atk":12,"adjustHp":1,"adjustAtk":2"""
         parts += """"skillId1":1,"skillId2":2,"skillId3":3,"skillLv1":10,"skillLv2":10,"skillLv3":10,"treasureDeviceId":5,"treasureDeviceLv":5,"exceedCount":1,"updatedAt":1708036772"""
@@ -392,6 +393,26 @@ class SupportListFilterTest {
         assertEquals(listOf("stays"), ids(r))
         // Before: 3 + 2 filled; after: the kept follower's normal match and its grand entry.
         assertEquals(SupportListCounts(2, 1, 5, 2), r.counts)
+    }
+
+    @Test fun anOddGrandEntryLeavesTheWholeResponseUnchanged() {
+        val c = SupportListCriteria(setOf(100L), setOf(7L))
+        val changing = realFollower("ok", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7), (1 to 2) to realSlot(999, 1, 2)))
+        val gone = realFollower("gone", main = mapOf((1 to 1) to realSlot(998, 1, 1)))
+        assertNotNull(run(body(changing, gone, realFollower("g", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7)), grand = listOf(realGrand(100)))), c))
+        val odd = listOf(
+            "5",
+            "null",
+            realGrand(100).replace(""""svtId":100,"limitCount":4,"lv":120""", """"svtId":"100","limitCount":4,"lv":120"""),
+            realGrand(100).replace(""""svtId":100,"limitCount":4,"lv":120""", """"svtId":1.5,"limitCount":4,"lv":120"""),
+            realGrand(100).replace(""""equipTarget1":${equip(0)}""", """"equipTarget1":"x""""),
+            realGrand(100).replace(""""equipTarget1":${equip(0)}""", """"equipTarget1":{"svtId":"7"}"""),
+        )
+        for (entry in odd) {
+            assertTrue(entry != realGrand(100), entry)
+            val g = realFollower("g", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7)), grand = listOf(realGrand(999), entry))
+            assertNull(run(body(changing, gone, g), c), entry)
+        }
     }
 
     @Test fun grandEntriesOfAFriendOnlyListsNonFriendLeaveWithIt() {
