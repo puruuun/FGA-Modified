@@ -33,13 +33,15 @@ private val questTexts = RecordTexts(
 internal fun QuestRecordsBlock(source: QuestRecordsSource) {
     val flow = remember(source) { source.records() }
     val state by flow.collectAsStateWithLifecycle(QuestRecordsState())
-    DashboardBlock(DashboardBlockId.QuestRecords, stringResource(R.string.dashboard_quest_records)) {
-        QuestRecordsContent(state, source.retry)
+    val search = rememberRecordsSearch()
+    val actions: (@Composable RowScope.() -> Unit)? = if (state.records != null) { { RecordsSearchButton(search, questTexts) } } else null
+    DashboardBlock(DashboardBlockId.QuestRecords, stringResource(R.string.dashboard_quest_records), actions = actions) {
+        QuestRecordsContent(state, source.retry, search)
     }
 }
 
 @Composable
-internal fun ColumnScope.QuestRecordsContent(state: QuestRecordsState, onRetry: () -> Unit) {
+internal fun ColumnScope.QuestRecordsContent(state: QuestRecordsState, onRetry: () -> Unit, search: RecordsSearch) {
     val records = state.records
     if (records == null) {
         RecordsLoading(questTexts)
@@ -47,7 +49,7 @@ internal fun ColumnScope.QuestRecordsContent(state: QuestRecordsState, onRetry: 
     }
     var filter by rememberSaveable { mutableStateOf(QuestFilter.All) }
     var sort by rememberSaveable { mutableStateOf(QuestSort.Clears) }
-    var query by rememberSaveable { mutableStateOf("") }
+    val query = search.query
     // A new filter, search or sort starts again from the first rows.
     var shown by rememberSaveable(filter, query, sort) { mutableIntStateOf(RECORDS_FIRST_ROWS) }
     var view by remember { mutableStateOf<QuestView?>(null) }
@@ -63,7 +65,7 @@ internal fun ColumnScope.QuestRecordsContent(state: QuestRecordsState, onRetry: 
             modifier = Modifier.testTag("quest-records-summary"),
         )
     }
-    RecordsSearchField(query, questTexts) { query = it }
+    if (search.visible) RecordsSearchField(search, questTexts)
     ChoiceChips(QuestFilter.entries, filter, { "quest-filter:${it.name}" }, { stringResource(it.label()) }, { filter = it },
         Modifier.testTag("quest-filter-chips"))
     ChoiceChips(QuestSort.entries, sort, { "quest-sort:${it.name}" }, { stringResource(it.label()) }, { sort = it })
@@ -87,15 +89,8 @@ private fun QuestRow(record: QuestRecord) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(record.name ?: "#${record.id}", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val place = listOfNotNull(record.war, record.spot).joinToString(" · ")
-            if (place.isNotEmpty() || record.level != null) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    record.level?.let { level ->
-                        RecordTag(level, "quest-level:${record.id}", MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
-                    if (place.isNotEmpty()) {
-                        Text(place, style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
+            if (place.isNotEmpty()) {
+                Text(place, style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -119,11 +114,8 @@ private fun QuestFilter.label() = when (this) {
     QuestFilter.All -> R.string.dashboard_filter_all
     QuestFilter.Free -> R.string.dashboard_quest_filter_free
     QuestFilter.Event -> R.string.dashboard_quest_filter_event
-    QuestFilter.HighLevel -> R.string.dashboard_quest_filter_high_level
-    QuestFilter.InterludeRankUp -> R.string.dashboard_quest_filter_interlude
     QuestFilter.Daily -> R.string.dashboard_quest_filter_daily
     QuestFilter.Raid -> R.string.dashboard_quest_filter_raid
-    QuestFilter.Story -> R.string.dashboard_quest_filter_story
 }
 
 private fun QuestSort.label() = when (this) {

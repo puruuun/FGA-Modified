@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.LocalNavigateBack
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -55,4 +56,11 @@ class ShopRecordsScreenshotTest(private val width: Int, private val dark: Boolea
     }
 
     @Test fun loading() = shot("ShopRecordsLoading", ShopRecordsState(), "shop-records-loading")
+
+    @Test fun searchOpen() = shot("ShopRecordsSearch", ShopRecordsState(shopRecordsFixture(), RecordNameStatus.Ready), "shop-event:80001") {
+        compose.onNodeWithTag("shop-search-open").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("shop-search").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("shop-search").performTextInput("서유기")
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("shop-event:80003").fetchSemanticsNodes().isEmpty() }
+    }
 }

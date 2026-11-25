@@ -16,7 +16,10 @@ data class QuestWarSummary(
     val quests: List<QuestNameSummary> = emptyList(),
 )
 
-/** [lv] is Atlas's `recommendLv` text ("90+", "90++", "80", ...). */
+/**
+ * [lv] is Atlas's `recommendLv` text ("90+", "90++", "80", ...) and [noBattle] its `noBattle` flag. The block reads
+ * neither since the owner removed the level and story chips (2026-11-26); they stay so that cached summaries stay valid.
+ */
 @Serializable
 data class QuestNameSummary(
     val id: Long,
@@ -45,8 +48,8 @@ internal fun readUserQuest(raw: String): TableRead<UserQuestRow> = raw.byteInput
 
 internal fun readUserQuest(stream: InputStream): TableRead<UserQuestRow> = readTable(stream, UserQuestRow.serializer()) { it.questId > 0 }
 
-/** Single choice. [All] and every chip but [Story] leave story quests out (owner, #730). */
-enum class QuestFilter { All, Free, Event, HighLevel, InterludeRankUp, Daily, Raid, Story }
+/** Single choice. [All] lists every quest, story quests included (owner, 2026-11-26). */
+enum class QuestFilter { All, Free, Event, Daily, Raid }
 enum class QuestSort { Clears, LastRun, Name }
 
 /**
@@ -58,24 +61,18 @@ data class QuestRecord(
     val name: String?,
     val war: String?,
     val spot: String?,
-    /** "90+" or "90++"; other recommended levels are not shown. */
-    val level: String?,
     val clears: Long,
     val challenges: Long,
     /** Epoch seconds of the last start; null when the row has none. */
     val lastStartedAt: Long?,
     val kinds: Set<QuestFilter>,
-    val story: Boolean,
     internal val searchText: String,
 )
 
 data class QuestView(val totalClears: Long, val clearedQuests: Int, val rows: List<QuestRecord>)
 
-/** Atlas groups these in their own wars, not by quest type (they are `event` quests in war 1001 and 1002). */
-internal const val RANK_UP_WAR = 1001L
+/** Atlas groups the daily quests in their own war, not by quest type (they are `event` quests in war 1002). */
 internal const val DAILY_WAR = 1002L
-internal const val INTERLUDE_WAR = 1003L
-private val HIGH_LEVELS = setOf("90+", "90++")
 
 /**
  * One record per quest: the game keeps one `userQuest` row per quest, with `questPhase` as the furthest phase reached and
@@ -104,13 +101,10 @@ internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestW
             if (quest != null && war != null) {
                 if (quest.type == "free") add(QuestFilter.Free)
                 if (war.eventId != 0L) add(QuestFilter.Event)
-                if (quest.lv in HIGH_LEVELS) add(QuestFilter.HighLevel)
-                if (war.id == RANK_UP_WAR || war.id == INTERLUDE_WAR) add(QuestFilter.InterludeRankUp)
                 if (war.id == DAILY_WAR) add(QuestFilter.Daily)
                 if (quest.raid) add(QuestFilter.Raid)
             }
         }
-        val story = quest != null && (quest.type == "main" || quest.noBattle)
         val search = listOfNotNull("#${row.questId}", quest?.name, quest?.spot, war?.name, war?.longName, war?.eventName)
             .joinToString("\u0000").lowercase(Locale.ROOT)
         QuestRecord(
@@ -118,12 +112,10 @@ internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestW
             name = quest?.name?.takeIf { it.isNotBlank() },
             war = warLabel,
             spot = quest?.spot?.takeIf { it.isNotBlank() },
-            level = quest?.lv?.takeIf { it in HIGH_LEVELS },
             clears = row.clearNum,
             challenges = row.challengeNum,
             lastStartedAt = row.lastStartedAt.takeIf { it > 0 },
             kinds = kinds,
-            story = story,
             searchText = search,
         )
     }
@@ -132,11 +124,7 @@ internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestW
 internal fun questView(records: List<QuestRecord>, filter: QuestFilter, query: String, sort: QuestSort): QuestView {
     val needle = query.trim().lowercase(Locale.ROOT)
     val shown = records.filter { record ->
-        val inFilter = when (filter) {
-            QuestFilter.Story -> record.story
-            QuestFilter.All -> !record.story
-            else -> !record.story && filter in record.kinds
-        }
+        val inFilter = filter == QuestFilter.All || filter in record.kinds
         inFilter && (needle.isEmpty() || needle in record.searchText)
     }
     val comparator = when (sort) {

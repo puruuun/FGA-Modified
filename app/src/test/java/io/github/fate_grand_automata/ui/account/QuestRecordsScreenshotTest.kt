@@ -3,6 +3,10 @@ package io.github.fate_grand_automata.ui.account
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.LocalNavigateBack
 import io.github.fate_grand_automata.ui.screenshotRules
@@ -30,9 +34,10 @@ class QuestRecordsScreenshotTest(private val width: Int, private val dark: Boole
     @get:Rule val rules = screenshotRules(compose)
     private val fixture by lazy { DashboardUiFixture() }
 
-    private fun shot(name: String, state: QuestRecordsState, readyTag: String) =
+    private fun shot(name: String, state: QuestRecordsState, readyTag: String, then: () -> Unit = {}) =
         compose.shoot("dashboard-730", name, width, if (width >= 840) 900 else 1600, dark, locale, beforeCapture = {
             compose.waitUntil(10_000) { compose.onAllNodesWithTag(readyTag).fetchSemanticsNodes().isNotEmpty() }
+            then()
         }) {
             CompositionLocalProvider(LocalNavigateBack provides {}) {
                 AccountDashboardContent(fixture.data.copy(hasQuestRecords = true), fixture.names, "샘플 별명", {}, {},
@@ -43,4 +48,10 @@ class QuestRecordsScreenshotTest(private val width: Int, private val dark: Boole
     @Test fun withNames() = shot("QuestRecords", QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready), "quest:93000001")
     @Test fun numbersOnly() = shot("QuestRecordsNumbers", QuestRecordsState(questRecordsFixture(names = false), RecordNameStatus.Missing), "quest:93000001")
     @Test fun loading() = shot("QuestRecordsLoading", QuestRecordsState(), "quest-records-loading")
+    @Test fun searchOpen() = shot("QuestRecordsSearch", QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready), "quest:93000001") {
+        compose.onNodeWithTag("quest-search-open").performScrollTo().performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("quest-search").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("quest-search").performTextInput("오행산")
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("quest:93000001").fetchSemanticsNodes().isEmpty() }
+    }
 }

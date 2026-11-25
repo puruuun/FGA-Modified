@@ -1229,11 +1229,8 @@
     <string name="dashboard_quest_summary">クリア %1$s回・クリアしたクエスト %2$s件</string>
     <string name="dashboard_quest_filter_free">フリー</string>
     <string name="dashboard_quest_filter_event">イベント</string>
-    <string name="dashboard_quest_filter_high_level">90+・90++</string>
-    <string name="dashboard_quest_filter_interlude">幕間・強化</string>
     <string name="dashboard_quest_filter_daily">曜日</string>
     <string name="dashboard_quest_filter_raid">レイド</string>
-    <string name="dashboard_quest_filter_story">ストーリー</string>
     <string name="dashboard_quest_sort_clears">クリア数</string>
     <string name="dashboard_quest_sort_last_run">最近の実行</string>
     <string name="dashboard_quest_sort_name">名前</string>
@@ -1245,10 +1242,11 @@
     <string name="dashboard_quest_names_waiting">スクリプト終了後にクエスト名を取得します。それまでは番号で表示します。</string>
     <string name="dashboard_quest_names_missing">クエスト名を取得できなかったため、番号で表示します。</string>
     <string name="dashboard_records_retry">再試行</string>
+    <string name="dashboard_records_search">検索</string>
     <string name="dashboard_records_paused">スクリプト実行中は一覧を更新しません。終了後に更新します。</string>
     <string name="dashboard_quest_damaged">保存されたクエスト記録の一部を読み込めませんでした。</string>
     <string name="dashboard_quest_none">該当するクエストはありません。</string>
-    <string name="dashboard_shop_records">ショップ記録</string>
+    <string name="dashboard_shop_records">ショップ</string>
     <string name="dashboard_shop_prism_total">%1$s ≈ %2$s</string>
     <string name="dashboard_shop_prism_total_events">%1$s ≈ %2$s（イベントショップを含む）</string>
     <string name="dashboard_shop_prism_excluded">交換数がリセットされたことのある%1$d種は推定から除いています。</string>
@@ -1257,7 +1255,6 @@
     <string name="dashboard_shop_filter_rare">レアプリズム</string>
     <string name="dashboard_shop_filter_pure">ピュアプリズム</string>
     <string name="dashboard_shop_filter_other">その他</string>
-    <string name="dashboard_shop_buyable">交換できるものだけ</string>
     <string name="dashboard_shop_sort_last">最近の交換</string>
     <string name="dashboard_shop_sort_amount">交換数</string>
     <string name="dashboard_shop_sort_name">名前</string>

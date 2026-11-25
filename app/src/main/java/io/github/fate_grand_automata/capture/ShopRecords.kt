@@ -7,7 +7,9 @@ import java.util.Locale
 /**
  * One shop item of the public `nice_shop` or an event's `shop` list, reduced to what the shop records block shows.
  * [limit] is Atlas's `limitNum`; 0 is "no limit" (it is what the unlimited exchanges carry: anonymous servant exchange,
- * unlimited material exchanges, lottery shops). [costItem] 0 means the export names no price. Never holds user state.
+ * unlimited material exchanges, lottery shops). [costItem] 0 means the export names no price. [openedAt] and [closedAt]
+ * are no longer read since the owner removed the "buyable only" switch (2026-11-26); they stay so that cached summaries
+ * stay valid. Never holds user state.
  */
 @Serializable
 data class ShopSummary(
@@ -84,14 +86,11 @@ data class ShopItem(
     val resetNum: Long,
     /** Epoch seconds of the last change of the total; null when the row has none. */
     val updatedAt: Long?,
-    val openedAt: Long?,
-    val closedAt: Long?,
     /** The event whose shop sells the item; null for the other shops and for unknown items. */
     val eventId: Long?,
     internal val searchText: String,
 ) {
     val complete get() = limit != null && limit > 0 && num >= limit
-    fun buyable(now: Long) = openedAt != null && closedAt != null && openedAt <= now && now < closedAt && (limit == 0L || (limit != null && num < limit))
 }
 
 /**
@@ -106,15 +105,10 @@ data class ShopEvent(
     val items: List<ShopItem>,
     val limited: Int,
     val completed: Int,
-    /** The earliest opening and latest closing of the event's shop items: exchanges often stay open after the event ends. */
-    val shopOpenedAt: Long,
-    val shopClosedAt: Long,
-    val hasUnlimited: Boolean,
     internal val searchText: String,
 ) {
     val lastPurchase get() = items.mapNotNull { it.updatedAt }.maxOrNull()
     val amount get() = items.sumOf { it.num }
-    fun buyable(now: Long) = shopOpenedAt <= now && now < shopClosedAt && (hasUnlimited || completed < limited)
 }
 
 /**
@@ -153,8 +147,6 @@ internal fun shopRecords(read: TableRead<UserShopRow>, names: ShopNames): ShopRe
             limit = summary?.limit,
             resetNum = row.resetNum,
             updatedAt = row.updatedAt.takeIf { it > 0 },
-            openedAt = summary?.openedAt,
-            closedAt = summary?.closedAt,
             eventId = hit?.first?.id,
             searchText = listOfNotNull("#${row.shopId}", summary?.name, summary?.costName).joinToString("\u0000").lowercase(Locale.ROOT),
         )
@@ -172,9 +164,6 @@ internal fun shopRecords(read: TableRead<UserShopRow>, names: ShopNames): ShopRe
             items = bought,
             limited = limitedShops.size,
             completed = limitedShops.count { (numById[it.id] ?: 0) >= it.limit },
-            shopOpenedAt = event.shops.minOfOrNull { it.openedAt } ?: 0,
-            shopClosedAt = event.shops.maxOfOrNull { it.closedAt } ?: 0,
-            hasUnlimited = event.shops.any { it.limit == 0L },
             searchText = listOfNotNull("#${event.id}", event.name).joinToString("\u0000").lowercase(Locale.ROOT),
         )
     }
@@ -194,22 +183,19 @@ sealed interface ShopRow {
         override val key get() = "item:${item.id}"
     }
 
-    /** [items] are the event's items that pass the search and the toggle. */
+    /** [items] are the event's items that pass the search. */
     data class Event(val event: ShopEvent, val items: List<ShopItem>) : ShopRow {
         override val key get() = "event:${event.id}"
     }
 }
 
-/** [now] is epoch seconds, for "buyable only": open now and below its limit; release conditions are not evaluated. */
-internal fun shopView(records: ShopRecords, filter: ShopFilter, query: String, sort: ShopSort, buyableOnly: Boolean, now: Long): List<ShopRow> {
+internal fun shopView(records: ShopRecords, filter: ShopFilter, query: String, sort: ShopSort): List<ShopRow> {
     val needle = query.trim().lowercase(Locale.ROOT)
     fun matches(item: ShopItem) = needle.isEmpty() || needle in item.searchText
-    fun passes(item: ShopItem) = matches(item) && (!buyableOnly || item.buyable(now))
     if (filter == ShopFilter.Event) {
         val rows = records.events.mapNotNull { event ->
-            if (buyableOnly && !event.buyable(now)) return@mapNotNull null
             val nameHit = needle.isNotEmpty() && needle in event.searchText
-            val items = event.items.filter { (nameHit || matches(it)) && (!buyableOnly || it.buyable(now)) }
+            val items = event.items.filter { nameHit || matches(it) }
             if (needle.isNotEmpty() && !nameHit && items.isEmpty()) null else ShopRow.Event(event, items)
         }
         val comparator = when (sort) {
@@ -226,7 +212,7 @@ internal fun shopView(records: ShopRecords, filter: ShopFilter, query: String, s
             ShopFilter.Pure -> item.costItem == PURE_PRISM
             else -> item.costItem !in PRISMS
         }
-        inGroup && passes(item)
+        inGroup && matches(item)
     }
     val comparator = when (sort) {
         ShopSort.LastPurchase -> compareByDescending<ShopItem> { it.updatedAt ?: 0 }.thenBy { it.id }

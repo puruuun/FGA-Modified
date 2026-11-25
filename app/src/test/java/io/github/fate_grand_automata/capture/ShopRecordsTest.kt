@@ -59,9 +59,8 @@ internal fun shopFixtureNames() = ShopNames(GameNames.summarizeShops(NICE_SHOP_F
 class ShopRecordsTest {
     @TempDir lateinit var directory: File
     private val records by lazy { shopRecords(readUserShop(SHOP_TABLE), shopFixtureNames()) }
-    private val now = 1_750_000_000L
-    private fun ids(filter: ShopFilter, query: String = "", sort: ShopSort = ShopSort.LastPurchase, buyable: Boolean = false) =
-        shopView(records, filter, query, sort, buyable, now).map {
+    private fun ids(filter: ShopFilter, query: String = "", sort: ShopSort = ShopSort.LastPurchase) =
+        shopView(records, filter, query, sort).map {
             when (it) { is ShopRow.Item -> it.item.id; is ShopRow.Event -> it.event.id }
         }
 
@@ -119,7 +118,7 @@ class ShopRecordsTest {
         assertEquals(340L + 100L, mana.amount)
         assertTrue(mana.includesEvents)
         assertFalse(withEvent.prisms.single { it.itemId == RARE_PRISM }.includesEvents)
-        val manaChip = shopView(withEvent, ShopFilter.Mana, "", ShopSort.LastPurchase, false, now).map { (it as ShopRow.Item).item.id }
+        val manaChip = shopView(withEvent, ShopFilter.Mana, "", ShopSort.LastPurchase).map { (it as ShopRow.Item).item.id }
         assertEquals(listOf(11000102L, 11000101L), manaChip)
     }
 
@@ -149,7 +148,6 @@ class ShopRecordsTest {
         assertEquals(2, event.limited)
         assertEquals(1, event.completed)
         assertEquals(listOf(80001001L, 80001002L, 80001003L), event.items.map { it.id }.sorted())
-        assertEquals(1_600_000_000L, event.shopClosedAt)
         val open = records.events.single { it.id == 80003L }
         assertEquals(2, open.limited)
         assertEquals(0, open.completed)
@@ -165,15 +163,6 @@ class ShopRecordsTest {
         assertNull(all.single { it.id == 99999999L }.limit)
     }
 
-    @Test fun buyableOnlyKeepsOpenShopsBelowTheirLimit() {
-        assertEquals(listOf(80003L), ids(ShopFilter.Event, buyable = true))
-        val row = shopView(records, ShopFilter.Event, "", ShopSort.LastPurchase, true, now).single() as ShopRow.Event
-        assertEquals(listOf(80003001L), row.items.map { it.id })
-        assertEquals(listOf(11000102L), ids(ShopFilter.Mana, buyable = true))
-        // The unlimited anonymous exchange stays; the unknown item cannot be judged and is left out.
-        assertEquals(listOf(400013L), ids(ShopFilter.Other, buyable = true))
-    }
-
     @Test fun anUnknownItemShowsItsNumberUnderOtherAndIsSearchable() {
         val unknown = records.items.single { it.id == 99999999L }
         assertNull(unknown.name)
@@ -185,9 +174,9 @@ class ShopRecordsTest {
     @Test fun searchFindsItemAndEventNames() {
         assertEquals(listOf(11000101L), ids(ShopFilter.Mana, "성배"))
         assertEquals(listOf(80001L), ids(ShopFilter.Event, "서유기"))
-        val byEvent = shopView(records, ShopFilter.Event, "서유기", ShopSort.LastPurchase, false, now).single() as ShopRow.Event
+        val byEvent = shopView(records, ShopFilter.Event, "서유기", ShopSort.LastPurchase).single() as ShopRow.Event
         assertEquals(3, byEvent.items.size)
-        val byItem = shopView(records, ShopFilter.Event, "금각", ShopSort.LastPurchase, false, now).single() as ShopRow.Event
+        val byItem = shopView(records, ShopFilter.Event, "금각", ShopSort.LastPurchase).single() as ShopRow.Event
         assertEquals(listOf(80001001L), byItem.items.map { it.id })
         assertEquals(emptyList(), ids(ShopFilter.Event, "없는 이름"))
     }
@@ -207,12 +196,12 @@ class ShopRecordsTest {
     @Test fun theNumbersOfALargeAccountAreProjectedQuickly() {
         val table = (1..4687).joinToString(",", "[", "]") { shopRow(80_000_000L + it, (it % 5).toLong(), at = 1_600_000_000L + it) }
         val names = shopFixtureNames()
-        shopView(shopRecords(readUserShop(table), names), ShopFilter.Other, "", ShopSort.Name, false, now)
+        shopView(shopRecords(readUserShop(table), names), ShopFilter.Other, "", ShopSort.Name)
         lateinit var rows: List<ShopRow>
-        val ms = measureTimeMillis { rows = shopView(shopRecords(readUserShop(table), names), ShopFilter.Other, "#8000", ShopSort.Name, true, now) }
+        val ms = measureTimeMillis { rows = shopView(shopRecords(readUserShop(table), names), ShopFilter.Other, "#8000", ShopSort.Name) }
         println("shop records: read and projected 4,687 rows in $ms ms")
         assertTrue(ms < 2_000, "$ms ms")
-        assertTrue(rows.isEmpty())
+        assertEquals(4687 - 5, rows.size)
     }
 
     @Test fun theDashboardProjectionNeverParsesTheShopTable() {
