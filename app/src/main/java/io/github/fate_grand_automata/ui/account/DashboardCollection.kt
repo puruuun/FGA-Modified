@@ -21,9 +21,9 @@ import io.github.fate_grand_automata.R
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.util.grouped
 
-/** Collection and summons section: command code collection, class score and summon history. */
+/** Collection and records section: command code collection, class score, summon history and quest records. */
 @Composable
-internal fun DashboardCollectionSection(data: DashboardData, names: GameNameMap) {
+internal fun DashboardCollectionSection(data: DashboardData, names: GameNameMap, questRecords: QuestRecordsSource? = null) {
     data.commandCodes?.let { codes ->
         DashboardBlock(DashboardBlockId.CommandCodes, stringResource(R.string.dashboard_command_code_collection)) {
             CommandCodeCollection(codes, names)
@@ -35,6 +35,7 @@ internal fun DashboardCollectionSection(data: DashboardData, names: GameNameMap)
     data.summons?.let { summons ->
         DashboardBlock(DashboardBlockId.Summons, stringResource(R.string.dashboard_summon_history)) { SummonHistory(summons) }
     }
+    if (data.hasQuestRecords && questRecords != null) QuestRecordsBlock(questRecords)
 }
 
 @Composable private fun CommandCodeCollection(codes: DashboardCommandCodes, names: GameNameMap) {

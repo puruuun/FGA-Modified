@@ -39,6 +39,16 @@ class AccountDashboardViewModel @Inject constructor(
             allowDownload = { !ChaldeaSyncManager.isScriptRunning })
     }
 
+    private val questRetries = MutableStateFlow(0)
+    private val questLoader by lazy {
+        QuestRecordsLoader(
+            readTable = { id -> withContext(Dispatchers.IO) { CaptureTracker.loadState(id)?.rawTables?.get("userQuest") } },
+            questWars = { server, allowDownload, force -> cache.questWars(server, allowDownload, force) },
+            scriptRunning = ChaldeaSyncManager.scriptActive,
+            isScriptRunning = { ChaldeaSyncManager.isScriptRunning },
+        )
+    }
+
     internal constructor(repository: BattleLogRepository, context: Context, namesCache: GameNames) : this(repository, context) {
         customCache = namesCache
     }
@@ -91,4 +101,20 @@ class AccountDashboardViewModel @Inject constructor(
         .flatMapLatest { (input, server) -> progressLoader.load(input, server) }
         .catch { emit(DashboardProgress()) }
         .flowOn(Dispatchers.IO)
+
+    /**
+     * The quest records block's data. A cold flow, not shared: it runs only while the block collects it, so leaving the
+     * tab drops the records (#730).
+     */
+    internal fun questRecords(userId: String): Flow<QuestRecordsState> {
+        val keys = CaptureTracker.accounts
+            .onStart { CaptureTracker.init(appContext) }
+            .mapNotNull { accounts -> accounts.find { it.id == userId } }
+            .map { QuestRecordsKey(it.revision, it.server) }
+        return questLoader.load(userId, keys, questRetries)
+            .catch { emit(QuestRecordsState(records = emptyList(), names = QuestNameStatus.Missing)) }
+            .flowOn(Dispatchers.IO)
+    }
+
+    internal fun retryQuestNames() { questRetries.value++ }
 }

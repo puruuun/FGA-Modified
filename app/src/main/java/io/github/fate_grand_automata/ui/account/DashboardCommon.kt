@@ -42,6 +42,7 @@ internal object DashboardBlockId {
     const val ClassScore = 13
     const val Summons = 14
     const val Parties = 15
+    const val QuestRecords = 16
 }
 
 internal class DashboardTarget(val blockId: Int, val requester: BringIntoViewRequester)

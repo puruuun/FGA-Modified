@@ -18,11 +18,12 @@ class DashboardSectionsTest {
         summons: DashboardSummons? = null,
         teapots: DashboardTeapots? = null,
         itemsCaptured: Boolean = false,
+        hasQuestRecords: Boolean = false,
     ) = DashboardData(
         profile = emptyMap(), snapshotTime = 0, lastUpdateTime = 0, game = null, resources = resources, freePaid = null,
         storage = null, servants = servants, inventory = inventory, equips = null, teapots = teapots,
         formations = null as OwnFormations?, presentBox = presentBox, commandCodes = commandCodes, classBoards = classBoards, summons = summons,
-        itemsCaptured = itemsCaptured,
+        itemsCaptured = itemsCaptured, hasQuestRecords = hasQuestRecords,
     )
 
     private val servant = DashboardServant(1, null, null, null, null, emptyList(), null)
@@ -56,10 +57,11 @@ class DashboardSectionsTest {
         assertFalse(DashboardSection.PresentBox in sections)
     }
 
-    @Test fun collectionNeedsAnyOneOfItsThreeBlocks() {
+    @Test fun collectionNeedsAnyOneOfItsBlocks() {
         assertEquals(true, DashboardSection.Collection in dashboardSections(data(commandCodes = DashboardCommandCodes(emptyList(), 3))))
         assertEquals(true, DashboardSection.Collection in dashboardSections(data(classBoards = listOf(board))))
         assertEquals(true, DashboardSection.Collection in dashboardSections(data(summons = summons)))
+        assertEquals(true, DashboardSection.Collection in dashboardSections(data(hasQuestRecords = true)))
     }
 
     @Test fun anEmptyPresentBoxIsStillASection() {
@@ -79,7 +81,7 @@ class DashboardSectionsTest {
             3 to DashboardSection.Servants, 4 to DashboardSection.Items,
             5 to DashboardSection.Formations, 7 to DashboardSection.Formations, 8 to DashboardSection.Formations,
             10 to DashboardSection.PresentBox,
-            12 to DashboardSection.Collection, 13 to DashboardSection.Collection, 14 to DashboardSection.Collection,
+            12 to DashboardSection.Collection, 13 to DashboardSection.Collection, 14 to DashboardSection.Collection, 16 to DashboardSection.Collection,
         )
         expected.forEach { (id, section) -> assertEquals("block $id", section, sectionOfBlock(id)) }
         assertEquals(DashboardSection.Overview, sectionOfBlock(99))

@@ -17,6 +17,7 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.GZIPInputStream
 
 data class GameNameMap(
     val items: Map<Long, String> = emptyMap(),
@@ -306,6 +307,28 @@ class GameNames(
         } }
     }
 
+    /**
+     * The `nice_war` summary of the account's own [server] (KR or JP), never the other server's (owner, #730). Read from
+     * the cache, and refreshed by the Atlas hash only when [allowDownload] and no script runs. [force] (the block's
+     * retry) skips the wait between failed attempts. Empty when there is no usable list.
+     */
+    suspend fun questWars(server: String, allowDownload: Boolean, force: Boolean = false): List<QuestWarSummary> =
+        withContext(Dispatchers.IO) {
+            if (server != "KR" && server != "JP") return@withContext emptyList()
+            mutex.withLock {
+                fetchSummary(
+                    list = "nice_war",
+                    server = server,
+                    idOf = QuestWarSummary::id,
+                    decode = { Json.decodeFromString<List<QuestWarSummary>>(it) },
+                    encode = { Json.encodeToString(it) },
+                    parseStream = ::summarizeWars,
+                    allowDownload = allowDownload && !isScriptRunning(),
+                    ignoreCooldown = force,
+                ).values.toList()
+            }
+        }
+
     /** JP exports have their own files and budgets. Never feed the merged result back into loaded. */
     private fun withJpLists(kr: GameNameMap, need: JpNeed, includeCards: Boolean = false, allowDownload: Boolean = true): GameNameMap {
         if (!need.any) return kr
@@ -380,6 +403,7 @@ class GameNames(
         encode: (List<T>) -> String,
         parseStream: (InputStream) -> List<T>,
         allowDownload: Boolean = !isScriptRunning(),
+        ignoreCooldown: Boolean = false,
     ): Map<Long, T> {
         val stem = "${cachePrefix(list, server)}_summary"
         val cached = runCatching {
@@ -395,6 +419,7 @@ class GameNames(
             parseStream = parseStream,
             encode = encode,
             idOf = idOf,
+            ignoreCooldown = ignoreCooldown,
         )
     }
 
@@ -409,6 +434,7 @@ class GameNames(
         encode: (List<T>) -> String,
         idOf: (T) -> Long,
         onSaved: (File, Map<Long, T>) -> Unit = { _, _ -> },
+        ignoreCooldown: Boolean = false,
     ): Map<Long, T> {
         if (!allowDownload) return cached
         val regionHash = versions.current()?.get(server)
@@ -420,7 +446,7 @@ class GameNames(
         if (cached.isNotEmpty() && current) return cached
         val cooldownMs = if (regionHash != null) HOUR_MS else DAY_MS
         return runCatching {
-            if (!canAttempt(stem, cooldownMs)) return cached
+            if (!canAttempt(stem, if (ignoreCooldown) 0L else cooldownMs)) return cached
             val parsed = downloadAndParse("https://api.atlasacademy.io/export/$server/$list.json", parseStream)
             check(parsed.isNotEmpty())
             saveStem(stem, parsed, encode(parsed), regionHash, idOf, onSaved)
@@ -618,8 +644,76 @@ class GameNames(
                     )
                 }
                 .toList()
+
+        internal fun summarizeWars(body: String): List<QuestWarSummary> =
+            body.byteInputStream().use(::summarizeWars)
+
+        /**
+         * The export is over 20 MB of text (KR 21 MiB, JP 24 MiB), so one war at a time is decoded and only the fields of
+         * [QuestWarSummary] are kept; phases, gifts, scripts and the rest are skipped by the decoder without a tree.
+         */
+        @OptIn(ExperimentalSerializationApi::class)
+        internal fun summarizeWars(stream: InputStream): List<QuestWarSummary> {
+            val wars = streamJson.decodeToSequence<RawWar>(stream, DecodeSequenceMode.ARRAY_WRAPPED)
+                .mapNotNull { raw ->
+                    val id = raw.id ?: return@mapNotNull null
+                    val seen = HashSet<Long>()
+                    val quests = raw.spots.flatMap { spot ->
+                        spot.quests.mapNotNull { quest ->
+                            val questId = quest.id?.takeIf { seen.add(it) } ?: return@mapNotNull null
+                            QuestNameSummary(
+                                id = questId,
+                                name = quest.name?.takeIf { it.isNotBlank() },
+                                spot = (quest.spotName ?: spot.name)?.takeIf { it.isNotBlank() },
+                                type = quest.type,
+                                lv = quest.recommendLv?.takeIf { it.isNotBlank() },
+                                raid = "raid" in quest.flags,
+                                noBattle = "noBattle" in quest.flags,
+                            )
+                        }
+                    }
+                    QuestWarSummary(
+                        id = id,
+                        name = raw.name?.takeIf { it.isNotBlank() },
+                        longName = raw.longName?.replace('\n', ' ')?.takeIf { it.isNotBlank() },
+                        eventId = raw.eventId,
+                        eventName = raw.eventName?.takeIf { it.isNotBlank() },
+                        quests = quests,
+                    )
+                }
+                .toList()
+            // A list without a single quest is not a usable export; the old summary stays.
+            check(wars.any { it.quests.isNotEmpty() })
+            return wars
+        }
     }
 }
+
+@Serializable
+private data class RawQuest(
+    val id: Long? = null,
+    val name: String? = null,
+    val type: String? = null,
+    val flags: List<String> = emptyList(),
+    val recommendLv: String? = null,
+    val spotName: String? = null,
+)
+
+@Serializable
+private data class RawSpot(
+    val name: String? = null,
+    val quests: List<RawQuest> = emptyList(),
+)
+
+@Serializable
+private data class RawWar(
+    val id: Long? = null,
+    val name: String? = null,
+    val longName: String? = null,
+    val eventId: Long = 0,
+    val eventName: String? = null,
+    val spots: List<RawSpot> = emptyList(),
+)
 
 @Serializable
 private data class RawClassBoardSquare(
@@ -656,9 +750,15 @@ private fun <T> downloadPublicStream(address: String, parse: (InputStream) -> T)
         connection.connectTimeout = 10_000
         connection.readTimeout = 15_000
         connection.instanceFollowRedirects = false
+        // Asked for explicitly, as the weekly route and event downloads do: nice_war is 21-24 MiB plain and 1.3-1.5 MB gzip.
+        connection.setRequestProperty("Accept-Encoding", "gzip")
         check(connection.responseCode == 200)
-        connection.inputStream.buffered().use(parse)
+        decodedBody(connection.inputStream, connection.contentEncoding).buffered().use(parse)
     } finally {
         connection.disconnect()
     }
 }
+
+/** Once a request sets Accept-Encoding itself, HttpURLConnection no longer unzips the body, so a gzip body is unzipped here. */
+internal fun decodedBody(stream: InputStream, contentEncoding: String?): InputStream =
+    if (contentEncoding.equals("gzip", ignoreCase = true)) GZIPInputStream(stream) else stream

@@ -200,6 +200,11 @@ data class DashboardData(
     /** Parties with at least one servant of the owner's, by party number. */
     val parties: List<DashboardParty> = emptyList(),
     val progressInput: DashboardProgressInput? = null,
+    /**
+     * True when the stored state has a `userQuest` table. Only its presence is checked here: the table changes after
+     * every battle, and its rows are read by the quest records block alone, while that block is shown (#730).
+     */
+    val hasQuestRecords: Boolean = false,
 ) {
     val servantClasses = servants.orEmpty().mapNotNull { it.atlas?.className }.distinct().sorted()
 }
@@ -317,7 +322,8 @@ internal fun dashboardData(tables: DashboardStateTables, names: GameNameMap, tim
             .takeIf { it.isNotEmpty() },
         login = projectLogin(rows("userLogin"), rows("mstTotalLogin")),
         parties = projectParties(rows("userDeck"), svts, rows("userEquip")),
-        progressInput = projectProgressInput(state.snapshotTime, rows("userEventMission"), rows("userEventPoint")))
+        progressInput = projectProgressInput(state.snapshotTime, rows("userEventMission"), rows("userEventPoint")),
+        hasQuestRecords = "userQuest" in state.rawTables)
 }
 
 private fun JsonObject.bool(key: String) = (this[key] as? JsonPrimitive)?.let { it.booleanOrNull ?: (it.longOrNull == 1L) } == true

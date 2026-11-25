@@ -112,6 +112,13 @@ object ChaldeaSyncManager {
     internal val isCollectionDownloadDeferred: Boolean get() = synchronized(lock) { collectionDownloadDeferred }
     @Volatile private var scriptRunningNow = false
     internal val isScriptRunning: Boolean get() = scriptRunningNow
+    private val scriptActiveFlow = MutableStateFlow(false)
+
+    /**
+     * [isScriptRunning] as a flow, set whether or not the Chaldea sync is on (unlike [scriptRunning], which only the
+     * scheduler feeds). The dashboard's quest records wait on it to rebuild after a script.
+     */
+    internal val scriptActive: StateFlow<Boolean> = scriptActiveFlow.asStateFlow()
     @Volatile private var cachedGameNames: GameNames? = null
     internal var collectionClock: () -> Long = SystemClock::elapsedRealtime
     internal var gameNamesFactory: (Application) -> GameNames = { GameNames(File(it.filesDir, "capture/names")) }
@@ -248,6 +255,7 @@ object ChaldeaSyncManager {
             collectionDownloadDeferred = false
         }
         scriptRunningNow = false
+        scriptActiveFlow.value = false
         collectionJob = null
         applyCount = 0
         cachedGameNames = null
@@ -647,6 +655,7 @@ object ChaldeaSyncManager {
 
     fun onScriptStart() {
         synchronized(lock) { scriptRunningNow = true }
+        scriptActiveFlow.value = true
         rootPolicy?.onScriptStart()
         hooks?.onScriptStart()
     }
@@ -656,6 +665,7 @@ object ChaldeaSyncManager {
             scriptRunningNow = false
             app to collectionDownloadDeferred
         }
+        scriptActiveFlow.value = false
         // A root probe that waited for the script starts now, off this thread.
         startProbe(rootPolicy?.onScriptEnd())
         hooks?.onScriptEnd()

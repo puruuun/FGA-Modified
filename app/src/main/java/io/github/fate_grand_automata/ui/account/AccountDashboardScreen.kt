@@ -41,9 +41,10 @@ fun AccountDashboardScreen(userId: String, openSettings: () -> Unit, openLogs: (
     val recentOutside = remember(outside, open, userId) { (outside + open).filter { it.accountId == userId }.maxByOrNull { it.endedAt } }
     val export = rememberChaldeaAccountExport()
     val progress by remember(vm, userId) { vm.progress(userId) }.collectAsStateWithLifecycle(DashboardProgress())
+    val questRecords = remember(vm, userId) { QuestRecordsSource({ vm.questRecords(userId) }, vm::retryQuestNames) }
     AccountDashboardContent(version.data, names, version.displayName, openSettings, openLogs, battle, recentOutside,
         userId = userId, exportAccount = export, friendCount = version.friendCount, openFriends = openFriends,
-        server = version.server, loading = version.loading, progress = progress)
+        server = version.server, loading = version.loading, progress = progress, questRecords = questRecords)
 }
 
 /**
@@ -55,7 +56,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
     openSettings: () -> Unit, openLogs: () -> Unit, battle: BattleLogEntry? = null, outside: OutsideLogEntry? = null,
     initialSection: Int = 0, userId: String = "", exportAccount: (String?) -> Unit = {}, friendCount: Int? = null,
     openFriends: (String) -> Unit = {}, server: String = "KR", loading: Boolean = false,
-    progress: DashboardProgress = DashboardProgress()) {
+    progress: DashboardProgress = DashboardProgress(), questRecords: QuestRecordsSource? = null) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis() / 1000) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis() / 1000; delay(60_000) } }
     CappedWidth {
@@ -96,7 +97,7 @@ internal fun AccountDashboardContent(data: DashboardData?, names: GameNameMap, d
             else BoxWithConstraints(Modifier.weight(1f)) {
                 DashboardNavigation(
                     data, names, displayName, battle, outside, initialSection, friendCount, server, now,
-                    wide = maxWidth >= 840.dp, openLogs = openLogs, progress = progress,
+                    wide = maxWidth >= 840.dp, openLogs = openLogs, progress = progress, questRecords = questRecords,
                 )
             }
         }

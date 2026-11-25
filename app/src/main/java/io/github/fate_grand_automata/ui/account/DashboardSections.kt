@@ -14,7 +14,7 @@ internal fun dashboardSections(data: DashboardData): List<DashboardSection> = bu
     if (!data.servants.isNullOrEmpty()) add(DashboardSection.Servants)
     if (!data.inventory.isNullOrEmpty()) add(DashboardSection.Items)
     add(DashboardSection.Formations)
-    if (data.commandCodes != null || !data.classBoards.isNullOrEmpty() || data.summons != null) add(DashboardSection.Collection)
+    if (data.commandCodes != null || !data.classBoards.isNullOrEmpty() || data.summons != null || data.hasQuestRecords) add(DashboardSection.Collection)
     if (data.presentBox != null) add(DashboardSection.PresentBox)
 }
 
@@ -27,7 +27,7 @@ internal fun sectionOfBlock(blockId: Int): DashboardSection = when (blockId) {
     DashboardBlockId.Servants -> DashboardSection.Servants
     DashboardBlockId.Items -> DashboardSection.Items
     DashboardBlockId.MysticCodes, DashboardBlockId.Parties, DashboardBlockId.SupportFormation, DashboardBlockId.GrandFormation -> DashboardSection.Formations
-    DashboardBlockId.CommandCodes, DashboardBlockId.ClassScore, DashboardBlockId.Summons -> DashboardSection.Collection
+    DashboardBlockId.CommandCodes, DashboardBlockId.ClassScore, DashboardBlockId.Summons, DashboardBlockId.QuestRecords -> DashboardSection.Collection
     DashboardBlockId.PresentBox -> DashboardSection.PresentBox
     else -> DashboardSection.Overview
 }
