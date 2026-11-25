@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -52,11 +53,59 @@ def run(cmd, **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", **kwargs)
 
 
-def adb(adb_path: str, serial: str, *args: str) -> str:
-    result = run([adb_path, "-s", serial, *args])
-    if result.returncode != 0:
-        sys.exit(f"adb {' '.join(args)} failed: {result.stdout}{result.stderr}")
-    return result.stdout
+# Issue #703: while the PC is busy an adb client sometimes times out before it reaches the adb server,
+# although the server process is alive. These messages mean the call never reached the server.
+SERVER_UNREACHABLE = (
+    "cannot connect to daemon",
+    "daemon not running",
+    "daemon still not running",
+    "failed to start daemon",
+    "could not read ok from ADB Server",
+)
+# Pauses between the attempts: 4 attempts in all.
+RETRY_PAUSES = (5, 15, 30)
+# Tests replace it, so they do not sleep.
+sleep = time.sleep
+
+
+def server_unreachable(output: str) -> bool:
+    return any(message in output for message in SERVER_UNREACHABLE)
+
+
+def adb(adb_path: str, serial: str, *args: str, retry: bool = False) -> str:
+    """Run one adb call; exit with its output when it fails.
+
+    retry=True repeats a call whose output says the adb server could not be reached. Only calls that
+    are harmless to run twice may ask for it (push, shell mkdir, version, install -r): a call that
+    may have started something on the device, such as `am instrument`, must not be repeated, because
+    the client losing the server does not tell whether the device already ran it. No other failure is
+    retried, and no adb server command (start-server, kill-server, reconnect, connect) is ever issued:
+    the agents share one server.
+    """
+    pauses = RETRY_PAUSES if retry else ()
+    attempt = 0
+    while True:
+        result = run([adb_path, "-s", serial, *args])
+        if result.returncode == 0:
+            return result.stdout
+        output = f"{result.stdout}{result.stderr}"
+        if attempt >= len(pauses) or not server_unreachable(output):
+            sys.exit(f"adb {' '.join(args)} failed: {output}")
+        pause = pauses[attempt]
+        attempt += 1
+        print(f"adb {args[0]}: adb server not reachable, retry {attempt}/{len(pauses)} in {pause}s", file=sys.stderr)
+        sleep(pause)
+
+
+def missing_summaries(out_dir: Path, suites: list[str]) -> list[str]:
+    """Suites without a summary file: they did not run, which must never look like a pass."""
+    return [s for s in suites if not (out_dir / f"summary-{s}.md").is_file()]
+
+
+def exit_code(overall: bool, not_run: list[str]) -> int:
+    if not_run:
+        return 2
+    return 0 if overall else 1
 
 
 def gradle_command(native: bool, native_ort: bool = False, native_threads: bool = False, ocr_model: Path | None = None, native_crypto: bool = False) -> list[str]:
@@ -141,8 +190,8 @@ def push_local_fixtures(adb_path: str, serial: str, original: dict, local_dir: P
         if not source.is_file():
             missing += 1
             continue
-        adb(adb_path, serial, "shell", "mkdir", "-p", os.path.dirname(device_path))
-        adb(adb_path, serial, "push", str(source), device_path)
+        adb(adb_path, serial, "shell", "mkdir", "-p", os.path.dirname(device_path), retry=True)
+        adb(adb_path, serial, "push", str(source), device_path, retry=True)
         pushed += 1
     print(f"local fixtures: pushed {pushed}, missing {missing}")
 
@@ -161,8 +210,8 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path, local_fixtures
     def push(repo_relative: str) -> str:
         target = device_path_for(repo_relative)
         if repo_relative not in pushed:
-            adb(adb_path, serial, "shell", "mkdir", "-p", f"{DEVICE_ROOT}/{os.path.dirname(repo_relative)}")
-            adb(adb_path, serial, "push", str(REPO / repo_relative), target)
+            adb(adb_path, serial, "shell", "mkdir", "-p", f"{DEVICE_ROOT}/{os.path.dirname(repo_relative)}", retry=True)
+            adb(adb_path, serial, "push", str(REPO / repo_relative), target, retry=True)
             pushed.add(repo_relative)
         return target
 
@@ -181,8 +230,8 @@ def stage_repo_cases(adb_path: str, serial: str, case_file: Path, local_fixtures
     local.parent.mkdir(parents=True, exist_ok=True)
     local.write_text(json.dumps(staged, ensure_ascii=False, indent=2), encoding="utf-8")
     device_case = f"{DEVICE_ROOT}/run/{case_file.stem}.json"
-    adb(adb_path, serial, "shell", "mkdir", "-p", f"{DEVICE_ROOT}/run")
-    adb(adb_path, serial, "push", str(local), device_case)
+    adb(adb_path, serial, "shell", "mkdir", "-p", f"{DEVICE_ROOT}/run", retry=True)
+    adb(adb_path, serial, "push", str(local), device_case, retry=True)
     return device_case, skipped
 
 
@@ -284,7 +333,7 @@ def main() -> int:
     if args.build:
         gradle_build(args.native, args.native_ort, args.native_threads, args.ocr_model, args.native_crypto)
     adb_path = find_adb()
-    adb_version = adb(adb_path, args.serial, "version").splitlines()[0]
+    adb_version = adb(adb_path, args.serial, "version", retry=True).splitlines()[0]
     print(f"adb: {adb_path} ({adb_version})")
     app_apk, test_apk = find_apk("app"), find_apk("test")
     package = test_package(test_apk)
@@ -293,13 +342,14 @@ def main() -> int:
 
     for apk in (app_apk, test_apk):
         # File-backed install avoids a stalled streamed-install pipe on BlueStacks TCP transports.
-        adb(adb_path, args.serial, "install", "--no-streaming", "-r", "-t", str(apk))
+        adb(adb_path, args.serial, "install", "--no-streaming", "-r", "-t", str(apk), retry=True)
 
     suites = [s.strip() for s in args.suite.split(",") if s.strip()]
-    overall = True
     for suite in suites:
         if suite not in KNOWN_SUITES:
             sys.exit(f"unknown suite: {suite}")
+
+    def run_suite(suite: str) -> bool:
         case_file = REPO / (args.cases or f"docs/reference-images/cases/{suite}.json")
         if case_file.exists():
             device_case, skipped = stage_repo_cases(adb_path, args.serial, case_file, args.local_fixtures)
@@ -314,10 +364,27 @@ def main() -> int:
         if any(required_skip(r, args.native, args.native_ort, args.native_threads, args.native_crypto) for r in report.get("results", [])):
             print(f"{suite}: --native, --native-ort, --native-threads or --native-crypto was given but the APK lacks what it asked for; the native probes were skipped")
         print(f"{suite}: {'PASS' if ok else 'FAIL'} -> {out_dir / f'summary-{suite}.md'}")
-        overall = overall and ok
-    # summary.md joins every suite summary so one file shows the whole run.
-    (out_dir / "summary.md").write_text("".join((out_dir / f"summary-{s}.md").read_text(encoding="utf-8") for s in suites), encoding="utf-8")
-    return 0 if overall else 1
+        return ok
+
+    overall, not_run = run_suites(suites, run_suite, out_dir)
+    # summary.md joins every suite summary that exists so one file shows the whole run.
+    ran = [s for s in suites if s not in not_run]
+    (out_dir / "summary.md").write_text("".join((out_dir / f"summary-{s}.md").read_text(encoding="utf-8") for s in ran), encoding="utf-8")
+    if not_run:
+        print(f"NOT RUN (no summary): {', '.join(not_run)}", file=sys.stderr)
+    return exit_code(overall, not_run)
+
+
+def run_suites(suites: list[str], run_suite, out_dir: Path) -> tuple[bool, list[str]]:
+    """Run every requested suite; a suite that stops with an error does not hide the ones after it,
+    and a suite without a summary is reported as not run."""
+    overall = True
+    for suite in suites:
+        try:
+            overall = run_suite(suite) and overall
+        except SystemExit as stop:
+            print(f"{suite}: stopped: {stop}", file=sys.stderr)
+    return overall, missing_summaries(out_dir, suites)
 
 
 if __name__ == "__main__":
