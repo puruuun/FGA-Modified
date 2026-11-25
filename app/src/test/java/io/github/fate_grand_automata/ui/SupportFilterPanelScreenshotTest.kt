@@ -38,7 +38,6 @@ class SupportFilterPanelScreenshotTest(private val locale: String, private val d
     @Test fun panelWithImportButtons() {
         context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.captureTrackerEnabled.set(true)
         compose.shoot("ui718", "SupportFilterPanel", 840, 900, dark = dark, locale = locale, beforeCapture = {
             compose.onNodeWithTag(LauncherSettingsListTag).performScrollToNode(hasTestTag(LauncherResetAllTag))
@@ -51,7 +50,6 @@ class SupportFilterPanelScreenshotTest(private val locale: String, private val d
         org.junit.Assume.assumeTrue(locale == "ko" && !dark)
         context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterPanelOpen.set(true)
         fixture.core.captureTrackerEnabled.set(true)
         compose.shoot("ui718", "FpLauncher", 600, 500, locale = locale) {

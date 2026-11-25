@@ -39,7 +39,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The support list filter of #695, light and dark, Korean: the launcher (feature off, filter panel, weekly panel) at
+ * The support list filter of #695, light and dark, Korean: the launcher (capture off, filter panel, weekly panel) at
  * the width the overlay window takes with a side panel on a 16:9 screen 720dp high, and the More and profile screens
  * at 360dp. Images land in `build/outputs/roborazzi/support695/`. Recorded by `:app:recordRoborazziCi`.
  */
@@ -100,17 +100,16 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
         friendsOnly.set(true)
     }
 
-    private fun launcherFixture(feature: Boolean): CaptureLauncherFixture {
+    private fun launcherFixture(capture: Boolean): CaptureLauncherFixture {
         context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
         return CaptureLauncherFixture(context, GameServer.Kr).also {
-            it.core.captureTrackerEnabled.set(true)
-            it.core.supportFilterFeature.set(feature)
+            it.core.captureTrackerEnabled.set(capture)
         }
     }
 
-    @Test fun launcherFeatureOff() {
-        val fixture = launcherFixture(feature = false)
-        shoot("LauncherFeatureOff", LAUNCHER_WIDTH, LAUNCHER_HEIGHT) {
+    @Test fun launcherCaptureOff() {
+        val fixture = launcherFixture(capture = false)
+        shoot("LauncherCaptureOff", LAUNCHER_WIDTH, LAUNCHER_HEIGHT) {
             ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core)
         }
     }
@@ -121,7 +120,7 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
     @Test fun launcherFilterPanelJa() = filterPanel("ja")
 
     private fun filterPanel(locale: String) {
-        val fixture = launcherFixture(feature = true)
+        val fixture = launcherFixture(capture = true)
         fixture.core.supportFilterOn.set(true)
         fixture.core.activeSupportFilter.longConditions()
         fixture.core.supportFilterSource.set(SupportFilterSource.Profile)
@@ -137,7 +136,7 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun launcherWeeklyPanel() {
-        val fixture = launcherFixture(feature = true)
+        val fixture = launcherFixture(capture = true)
         shoot("LauncherWeeklyPanel", LAUNCHER_WIDE, LAUNCHER_HEIGHT) {
             ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, initialPanel = LauncherPanel.Weekly)
         }
@@ -145,7 +144,6 @@ class SupportListFilterScreenshotTest(private val dark: Boolean) {
 
     @Test fun moreScreenWithTwoProfiles() {
         val prefs = prefs()
-        prefs.supportFilterFeature.set(true)
         prefs.addSupportFilterProfile("주회용 필터", "a").support.longConditions()
         prefs.addSupportFilterProfile("고난도", "b").support.apply {
             preferredServants.set(setOf("Skadi"))

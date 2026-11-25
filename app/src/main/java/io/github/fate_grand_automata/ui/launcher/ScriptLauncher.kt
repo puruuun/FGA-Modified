@@ -49,11 +49,12 @@ fun ScriptLauncher(
     initialPanel: LauncherPanel = LauncherPanel.None,
 ) {
     var shownMode by remember(scriptMode) { mutableStateOf(scriptMode) }
-    // Only the launcher that chooses a battle config and starts a battle offers the filter; every other launcher looks as it
-    // did before the filter existed, whatever open state is stored (#719).
+    // The launcher that is shown decides, not the detected mode: pressing play on the support selection screen detects
+    // SupportImageMaker but shows the same battle config list, and the enhancement launchers' switch button changes what is
+    // shown. Launchers without a config list look as they did before the filter existed, whatever open state is stored (#719).
     val featureOffered = rememberSupportFilterOffered(prefsCore)
-    val filterOffered = featureOffered && scriptMode == ScriptModeEnum.Battle
-    // The filter panel comes back open when it was open the last time; only read with the feature on (#708).
+    val filterOffered = featureOffered && shownMode in CONFIG_LIST_MODES
+    // The filter panel comes back open when it was open the last time; only read where the launcher offers the filter (#708).
     var openPanel by remember {
         mutableStateOf(
             when {
@@ -108,11 +109,6 @@ fun ScriptLauncher(
                     ScriptModeEnum.WeeklyRoute ->
                         battleLauncher(prefs, modifier, prefsCore, onSelectedConfig = select, sidePanel = filterPanel)
                 }
-
-                // The launchers with a config list place the panel themselves, as wide as that list. The others have no
-                // list to match and no selected config to take: the panel gets a fixed share, the one a config list
-                // takes of a battle launcher (1 of 2.5).
-                if (filterPanel != null && shownMode !in CONFIG_LIST_MODES) filterPanel(Modifier.weight(1f / 2.5f))
             }
 
             HorizontalDivider()

@@ -1397,8 +1397,6 @@
     <string name="support_list_filter_part_bond_ce">"絆礼装: %1$s"</string>
     <string name="support_list_filter_part_both_ces">"通常・報酬礼装の両方に一致"</string>
     <string name="support_list_filter_summary_profile">"再生ボタンのメニューでこのプロファイルを読み込むか「有効なフィルターにする」を押すと、サポート一覧フィルターにコピーされます。「フィルター適用」の付いた条件だけが適用されます。後でプロファイルを変えても有効なフィルターは変わらないので、もう一度読み込んでください。"</string>
-    <string name="support_filter_feature">"この機能を使う"</string>
-    <string name="support_filter_feature_summary">"オフ: 再生ボタンのメニューにサポートフィルターは表示されず、何も絞り込みません。オン: 再生ボタンのメニューに、切り替えと条件を持つ「サポートフィルター」ボタンが加わります。ログ収集が必要です。"</string>
     <string name="support_filter_profiles">"プロファイル"</string>
     <string name="support_filter_profiles_none">"プロファイルはまだありません。"</string>
     <string name="support_filter_profile_add">"プロファイルを追加"</string>

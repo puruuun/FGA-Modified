@@ -106,9 +106,8 @@ class SupportListFilterStateTest {
         servantRows = mapOf(null to listOf(SupportListRow(100100, 2, "Servant", "saber"))),
     )
 
-    @Test fun theFeatureSwitchAndTheToggleAreOffByDefault() {
+    @Test fun theToggleIsOffByDefault() {
         val prefs = prefs()
-        assertFalse(prefs.supportFilterFeature.get())
         assertFalse(prefs.supportFilterOn.get())
         assertEquals(SupportFilterSource.None, prefs.supportFilterSource.get())
     }
@@ -310,18 +309,17 @@ class SupportListFilterStateTest {
         second.cancel()
     }
 
-    @Test fun theWatcherAppliesTheActiveConditionsOnlyWhileTheFeatureAndTheToggleAreOn() {
+    // #728: the retired feature switch is not read; a stored false changes nothing.
+    @Test fun theWatcherAppliesTheActiveConditionsOnlyWhileTheToggleIsOn() {
         val prefs = prefs()
         prefs.supportFilterToggleMigrated.set(true)
+        prefs.supportFilterFeature.set(false)
         prefs.activeSupportFilter.friendsOnly.set(true)
         SupportListFilterController.init(context, prefs)
         try {
             settle()
             assertNull(SupportListFilterState.criteria())
             prefs.supportFilterOn.set(true)
-            settle()
-            assertNull(SupportListFilterState.criteria())
-            prefs.supportFilterFeature.set(true)
             settle()
             assertEquals(SupportListCriteria(friendsOnly = true), SupportListFilterState.criteria())
             prefs.activeSupportFilter.friendsOnly.set(false)
@@ -334,9 +332,7 @@ class SupportListFilterStateTest {
             assertNull(SupportListFilterState.criteria())
             prefs.supportFilterOn.set(true)
             settle()
-            prefs.supportFilterFeature.set(false)
-            settle()
-            assertNull(SupportListFilterState.criteria())
+            assertEquals(SupportListCriteria(minimumNpLevel = 4), SupportListFilterState.criteria())
         } finally {
             SupportListFilterController.watcherForTesting?.cancel()
         }
@@ -360,7 +356,6 @@ class SupportListFilterStateTest {
     private fun prefsSwitchedOn(): PrefsCore = prefs().apply {
         supportFilterToggleMigrated.set(true)
         activeSupportFilter.friendsOnly.set(true)
-        supportFilterFeature.set(true)
         supportFilterOn.set(true)
     }
 
@@ -399,10 +394,6 @@ class SupportListFilterStateTest {
         repeat(200) { round ->
             prefs.supportFilterOn.set(false)
             prefs.supportFilterOn.set(true)
-            if (round % 2 == 1) {
-                prefs.supportFilterFeature.set(false)
-                prefs.supportFilterFeature.set(true)
-            }
         }
         assertTrue(waitFor(10_000) { SupportListFilterState.criteria() == current })
         Thread.sleep(500)

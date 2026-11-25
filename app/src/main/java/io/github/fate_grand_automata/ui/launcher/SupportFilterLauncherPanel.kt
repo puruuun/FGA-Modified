@@ -54,15 +54,12 @@ import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
 import kotlinx.coroutines.flow.map
 
 /**
- * Whether the launcher offers the support list filter (#695): only with the feature switch on and capture usable.
- * Otherwise the launcher has no chip and no panel and looks as it did before the filter existed.
+ * Whether the launcher offers the support list filter (#695): whenever capture is usable. Otherwise the launcher has no
+ * chip and no panel and looks as it did before the filter existed. The former "use this feature" switch is gone (#728);
+ * a stored `support_filter_feature` is ignored.
  */
 @Composable
-internal fun rememberSupportFilterOffered(prefs: PrefsCore): Boolean {
-    // Seeded with the stored value, not the default: a panel restored open (#708) is decided in the first composition.
-    val feature by prefs.supportFilterFeature.asFlow().collectAsState(initial = prefs.supportFilterFeature.get())
-    return rememberCaptureAvailable(prefs) && feature
-}
+internal fun rememberSupportFilterOffered(prefs: PrefsCore): Boolean = rememberCaptureAvailable(prefs)
 
 /**
  * The launcher's right panel for the support list filter (#695, #708): the toggle, where the conditions came from, every

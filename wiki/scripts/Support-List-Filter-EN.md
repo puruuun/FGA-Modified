@@ -4,12 +4,12 @@ While log collection is on, this leaves the supports that do not meet your condi
 
 There is one filter, and you switch it yourself. Starting or ending a script does not change it, so the same filter applies whether a script runs or you play by hand.
 
-## Turning the feature on
+## Turning it on
 
-Use **Use this feature** at the top of **More options → Additional features → Support list filter**. It is off by default. The menu entry shows only while log collection is on.
+The filter is always available and has no on/off switch of its own. You turn it on per play button menu with its **Support filter** checkbox (off by default). The menu and the button need log collection to be on. **More options → Additional features → Support list filter** holds only the profiles.
 
-- Off: the battle menu shows no support filter and nothing is filtered. The support list reaches the game as received.
-- On: the button row at the bottom of the battle menu (the play button menu where you pick a battle config and start a battle) gets a **Support filter · On/Off** button. The menus of the other scripts (FP gacha, lottery, gift box and so on) show neither the button nor the panel and look as they did before the feature.
+- With log collection off, the battle menu shows no support filter and nothing is filtered. The support list reaches the game as received.
+- With log collection on, the button row at the bottom of the battle menu (the play button menu where you pick a battle config and start a battle) gets a **Support filter · On/Off** button. The same goes for that menu when it is opened from the support selection screen (the one that also shows the support image maker button): it is the same battle config list menu, and the button does not depend on the weekly mission button being shown. The menus of the other scripts (FP gacha, lottery, gift box and so on) show neither the button nor the panel and look as they did before the filter existed.
 
 ## Using it from the play button menu
 
@@ -37,7 +37,7 @@ Under **Profiles** in **More options → Additional features → Support list fi
 - **Use as active filter** copies the profile's conditions into the active filter (the same as **Load profile** in the play button menu).
 - The menu on the right has **Rename** and **Delete**. Deleting a profile leaves the conditions already copied into the active filter.
 
-A battle config's preferred support screen is the same with the feature on or off as before it existed (no filter notes, no **Filtered** marks, no **Displayed ascension** item). **Displayed ascension** is chosen only in a profile's editor, which also marks each condition **Filtered** or **Screen reading only**. So conditions taken with **Script** carry no displayed ascension; it can only come from a **Profile**.
+A battle config's preferred support screen is the same as before the filter existed (no filter notes, no **Filtered** marks, no **Displayed ascension** item). **Displayed ascension** is chosen only in a profile's editor, which also marks each condition **Filtered** or **Screen reading only**. So conditions taken with **Script** carry no displayed ascension; it can only come from a **Profile**.
 
 ## Conditions the filter applies
 
@@ -83,7 +83,7 @@ With the toggle on, the filter still does not run in these cases, and the panel 
 
 - Nothing the game sends to the server is changed, and no request is added.
 - Only the support list response changes. Matching servant slots and everything else stay as received.
-- With the feature off or the toggle off, the support list reaches the game as received.
+- With log collection off or the toggle off, the support list reaches the game as received.
 - The mapping of the displayed ascension (stage 1 to final, costumes) is still being checked on a device.
 
 ## Changes from earlier versions
@@ -92,5 +92,4 @@ The **Support list filter** switch of each battle config and the "Preferred mode
 
 - The manual filter's conditions stay the active conditions and are also saved as a profile named **My filter**.
 - The manual filter's switch becomes the toggle.
-- **Use this feature** is turned on if the manual filter or any battle config had its switch on. Otherwise it stays off and the play button menu looks as before.
 - The battle configs lose their switch value; their other support settings stay. A .fga exported earlier still imports.

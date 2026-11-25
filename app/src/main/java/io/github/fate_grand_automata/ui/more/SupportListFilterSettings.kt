@@ -25,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,7 +53,6 @@ import io.github.fate_grand_automata.prefs.core.PrefsCore
 import io.github.fate_grand_automata.prefs.core.SupportFilterProfileCore
 import io.github.fate_grand_automata.prefs.core.SupportFilterSource
 import io.github.fate_grand_automata.ui.CappedWidth
-import io.github.fate_grand_automata.ui.FGASwitchColors
 import io.github.fate_grand_automata.ui.Heading
 import io.github.fate_grand_automata.ui.OnResume
 import io.github.fate_grand_automata.ui.launcher.supportFilterSummary
@@ -62,7 +60,6 @@ import io.github.fate_grand_automata.ui.pref_support.PreferredSupport
 import io.github.fate_grand_automata.ui.pref_support.SupportListFilterUi
 import io.github.fate_grand_automata.ui.pref_support.SupportViewModel
 import io.github.fate_grand_automata.ui.pref_support.rememberCaptureAvailable
-import io.github.fate_grand_automata.ui.prefs.Preference
 import io.github.fate_grand_automata.ui.prefs.remember
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -87,7 +84,7 @@ internal fun SupportListLastResultLine(modifier: Modifier = Modifier) {
 }
 
 /**
- * More > 서포트 목록 필터 (#695): the feature switch and the profiles. The filter itself is switched and filled in
+ * More > 서포트 목록 필터 (#695): the profiles. The filter itself is switched and filled in
  * the play button menu.
  */
 @Composable
@@ -97,7 +94,6 @@ fun SupportListFilterScreen(
     /** The name dialog; a test passes its own, as Robolectric never gets idle with a focused text field in a dialog. */
     nameDialog: ProfileNameDialogContent = { title, initial, onDismiss, onConfirm -> ProfileNameDialog(title, initial, onDismiss, onConfirm) },
 ) {
-    var feature by prefs.supportFilterFeature.remember()
     val ids by prefs.supportFilterProfiles.remember()
     var adding by remember { mutableStateOf(false) }
     // Read again when the list changes, so a rename made on this screen shows.
@@ -106,16 +102,6 @@ fun SupportListFilterScreen(
     CappedWidth {
         LazyColumn {
             item { Heading(stringResource(R.string.support_list_filter)) }
-            item {
-                Preference(
-                    title = stringResource(R.string.support_filter_feature),
-                    summary = stringResource(R.string.support_filter_feature_summary),
-                    onClick = { feature = !feature },
-                    modifier = Modifier.testTag(SupportFilterFeatureTag),
-                ) {
-                    Switch(checked = feature, onCheckedChange = { feature = it }, colors = FGASwitchColors())
-                }
-            }
             item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -354,7 +340,6 @@ internal fun ImportFromBattleConfig(prefs: PrefsCore, profile: SupportFilterProf
 
 internal const val ImportFromBattleConfigTag = "supportListFilter:import"
 internal const val ImportConfigTag = "supportListFilter:import:"
-internal const val SupportFilterFeatureTag = "supportListFilter:feature"
 internal const val SupportFilterAddProfileTag = "supportListFilter:addProfile"
 internal const val SupportFilterProfileRowTag = "supportListFilter:profile:"
 internal const val SupportFilterUseProfileTag = "supportListFilter:use:"

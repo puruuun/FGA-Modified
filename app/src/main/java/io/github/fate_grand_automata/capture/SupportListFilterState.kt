@@ -52,7 +52,7 @@ object SupportListFilterState {
     fun request(): Long = synchronized(lock) { ++generation }
 
     /**
-     * Applies [build] only when [token] is still the latest and [switchesOn] (the feature switch and the toggle, read
+     * Applies [build] only when [token] is still the latest and [switchesOn] (the launcher toggle, read
      * now, under the lock) holds. The proxy gets criteria only from a ready build with a condition set.
      * @return whether [build] was applied.
      */
@@ -74,7 +74,7 @@ object SupportListFilterState {
 }
 
 /**
- * Builds the criteria off the proxy thread, at app start and again whenever the feature switch, the toggle or one of
+ * Builds the criteria off the proxy thread, at app start and again whenever the toggle or one of
  * the active conditions changes.
  */
 object SupportListFilterController {
@@ -104,17 +104,17 @@ object SupportListFilterController {
         // A cancelled watcher can still be inside a build, which does not stop at a cancel: its result is stale from
         // here on, before the new watcher's first pass.
         SupportListFilterState.clear()
-        // Every change of either switch is one signal. Not the prefs' flows: flow-preferences conflates `asFlow()`, so
+        // Every change of the toggle is one signal. Not the prefs' flows: flow-preferences conflates `asFlow()`, so
         // an off and an on in quick succession could reach a collector as nothing at all.
         val signals = Channel<Unit>(Channel.UNLIMITED)
-        stopWatchingSwitches = prefs.watchSupportFilterSwitches { signals.trySend(Unit) }
+        stopWatchingSwitches = prefs.watchSupportFilterOn { signals.trySend(Unit) }
         watcher = scope.launch {
             runCatching { SupportFilterMigration.run(prefs, SupportIdLookup.load(app)) }
                 .onFailure { Timber.w(it, "Support list filter: migration failed") }
             runCatching { SupportFilterToggleMigration.run(prefs, app.getString(R.string.support_filter_profile_migrated)) }
                 .onFailure { Timber.w(it, "Support list filter: toggle migration failed") }
             val active = prefs.activeSupportFilter
-            val switchesOn = { prefs.supportFilterFeature.get() && prefs.supportFilterOn.get() }
+            val switchesOn = { prefs.supportFilterOn.get() }
             // One collector that never waits for a build, and decides from the switches as they are now, not from a
             // value carried by the signal: no notification is lost, and the clear of an "off" always comes before the
             // request of a later "on". A build runs in its own job; a later request or clear makes its token stale.

@@ -111,13 +111,14 @@ class PrefsCore @Inject constructor(
     val supportFilterMigrated = maker.bool("capture_support_filter_migrated", false)
 
     /**
-     * The support list filter (#695). [supportFilterFeature] is "use this feature" in More: off, the launcher looks as
-     * it did before the filter existed and the proxy relays every byte. [supportFilterOn] is the launcher's toggle.
+     * The support list filter (#695). [supportFilterFeature] was "use this feature" in More. It is no longer read (#728): the
+     * filter is always available. The declaration stays so that the stored value is neither lost nor rewritten (a
+     * downgrade finds it) and the retired-switch migration can still write it. [supportFilterOn] is the launcher's toggle.
      */
     val supportFilterFeature = maker.bool("support_filter_feature", false)
     val supportFilterOn = maker.bool("support_filter_on", false)
 
-    /** Whether the launcher's filter panel was open when the launcher last changed it (#708). Read only with the feature on. */
+    /** Whether the launcher's filter panel was open when the launcher last changed it (#708). Read only where the launcher offers the filter. */
     val supportFilterPanelOpen = maker.bool("support_filter_panel_open", false)
     val supportFilterSource = maker.enum("support_filter_source", SupportFilterSource.None)
 
@@ -312,11 +313,11 @@ class PrefsCore @Inject constructor(
     private val mainFile = maker.prefs
 
     /**
-     * Calls [onChange] on every change of [supportFilterFeature] or [supportFilterOn], one call per change, also when
+     * Calls [onChange] on every change of [supportFilterOn], one call per change, also when
      * the file is cleared. The returned function unregisters it; keep it, as the file holds its listeners weakly.
      */
-    fun watchSupportFilterSwitches(onChange: () -> Unit): () -> Unit {
-        val keys = setOf(supportFilterFeature.key, supportFilterOn.key)
+    fun watchSupportFilterOn(onChange: () -> Unit): () -> Unit {
+        val keys = setOf(supportFilterOn.key)
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == null || key in keys) onChange()
         }

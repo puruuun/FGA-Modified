@@ -61,7 +61,6 @@ import io.github.fate_grand_automata.ui.more.ImportFromBattleConfigTag
 import io.github.fate_grand_automata.ui.more.SupportFilterAddProfileTag
 import io.github.fate_grand_automata.ui.more.SupportFilterDeleteConfirmTag
 import io.github.fate_grand_automata.ui.more.SupportFilterDeleteTag
-import io.github.fate_grand_automata.ui.more.SupportFilterFeatureTag
 import io.github.fate_grand_automata.ui.more.SupportFilterProfile
 import io.github.fate_grand_automata.ui.more.SupportFilterProfileMenuTag
 import io.github.fate_grand_automata.ui.more.SupportFilterRenameTag
@@ -186,7 +185,6 @@ class SupportListFilterUiTest {
     // The battle config's own screen is the one from before #685, with the feature on as well (#708).
     @Test fun theBattleConfigSupportScreenHasNoFilterElementsWithTheFeatureOn() {
         val prefs = prefs()
-        prefs.supportFilterFeature.set(true)
         prefs.forBattleConfig("t").support.preferredServants.set(setOf("Arcueid"))
         battleConfigScreen(prefs)
         compose.onNodeWithTag(DisplayedAscensionTag).assertDoesNotExist()
@@ -557,15 +555,15 @@ class SupportListFilterUiTest {
         assertEquals("주회용", prefs.supportFilterSourceName.get())
     }
 
-    @Test fun theMoreScreenSwitchesTheFeatureAndManagesProfiles() {
+    @Test fun theMoreScreenHasNoFeatureSwitchAndManagesProfiles() {
         val prefs = prefs()
         val id = prefs.addSupportFilterProfile("새 프로필", "m1").id
         prefs.forSupportFilterProfile(id).support.friendsOnly.set(true)
         var edited: String? = null
         compose.setContent { FGATheme { SupportListFilterScreen(prefs, editProfile = { edited = it }) } }
-        compose.onNodeWithTag(SupportFilterFeatureTag).performClick()
         compose.waitForIdle()
-        assertTrue(prefs.supportFilterFeature.get())
+        compose.onNodeWithText("이 기능 사용").assertDoesNotExist()
+        compose.onAllNodes(androidx.compose.ui.test.isToggleable()).assertCountEquals(0)
         compose.onNodeWithTag(SupportFilterAddProfileTag).assertExists()
 
         // The middle of the row is the "use" button, so the tap goes to the name at the left.
@@ -594,17 +592,17 @@ class SupportListFilterUiTest {
         assertTrue(prefs.activeSupportFilter.friendsOnly.get())
     }
 
-    private fun launcher(fixture: CaptureLauncherFixture, mode: ScriptModeEnum = ScriptModeEnum.Battle, initial: LauncherPanel = LauncherPanel.None) {
+    private fun launcher(fixture: CaptureLauncherFixture, mode: ScriptModeEnum = ScriptModeEnum.Battle, initial: LauncherPanel = LauncherPanel.None, captureOn: Boolean = true) {
         context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
-        fixture.core.captureTrackerEnabled.set(true)
+        fixture.core.captureTrackerEnabled.set(captureOn)
         compose.setContent { FGATheme { ScriptLauncher(mode, {}, fixture.prefs, fixture.core, initialPanel = initial) } }
         compose.waitForIdle()
     }
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
-    fun withTheFeatureOffTheLauncherHasNoChipAndNoPanel() {
+    fun withCaptureOffTheLauncherHasNoChipAndNoPanel() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        launcher(fixture, initial = LauncherPanel.SupportFilter)
+        launcher(fixture, initial = LauncherPanel.SupportFilter, captureOn = false)
         compose.onNodeWithTag(SupportFilterChipTag).assertDoesNotExist()
         compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
     }
@@ -612,7 +610,6 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theChipOpensTheFilterAndClosesTheWeeklyPanel() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         launcher(fixture)
         compose.onNodeWithText("서포트 필터 · 꺼짐").assertExists()
         compose.onNodeWithTag(SupportFilterChipTag).performClick()
@@ -634,7 +631,6 @@ class SupportListFilterUiTest {
 
     private fun assertPanelAsWideAsTheConfigList() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         launcher(fixture, initial = LauncherPanel.SupportFilter)
         val list = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherConfigListTag).getUnclippedBoundsInRoot()
         val panel = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot()
@@ -666,7 +662,6 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theLimitsHideOnlyNextToTheWeeklyPanel() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         launcher(fixture, initial = LauncherPanel.Weekly)
         val settings = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherSettingsListTag)
         repeat(5) { settings.performTouchInput { swipeUp() } }
@@ -681,7 +676,6 @@ class SupportListFilterUiTest {
     // #719: the two import buttons are the size of "모두 초기화", measured in one composition.
     private fun assertImportButtonsAreAsHighAsResetAll() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         launcher(fixture, initial = LauncherPanel.SupportFilter)
         val settings = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherSettingsListTag)
         settings.performScrollToNode(hasTestTag(io.github.fate_grand_automata.ui.launcher.LauncherResetAllTag))
@@ -705,7 +699,6 @@ class SupportListFilterUiTest {
     // #719: only the battle launcher offers the filter, even with the feature on and the open state stored as true.
     private fun assertNoFilterInLauncher(mode: ScriptModeEnum) {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterOn.set(true)
         fixture.core.supportFilterPanelOpen.set(true)
         fixture.core.captureTrackerEnabled.set(true)
@@ -728,24 +721,46 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theLotteryLauncherHasNoFilterChipNorPanel() = assertNoFilterInLauncher(ScriptModeEnum.Lottery)
 
-    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
-    fun theBattleLauncherStillRestoresTheStoredPanelAndWidens() {
+    // #728: every launcher that shows the battle config list offers the filter; the detected mode is not what decides.
+    private fun assertConfigListLauncherOffersAndRestoresTheFilter(mode: ScriptModeEnum) {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterPanelOpen.set(true)
         fixture.core.captureTrackerEnabled.set(true)
+        context.getSharedPreferences(PrefsCore.MANUAL_SUPPORT_FILTER_FILE, Context.MODE_PRIVATE).edit().clear().commit()
         val asked = mutableListOf<Float>()
-        compose.setContent { FGATheme { ScriptLauncher(ScriptModeEnum.Battle, {}, fixture.prefs, fixture.core, onSidePanelExpanded = { asked += it }) } }
+        compose.setContent { FGATheme { ScriptLauncher(mode, {}, fixture.prefs, fixture.core, onSidePanelExpanded = { asked += it }) } }
         compose.waitForIdle()
         compose.onNodeWithTag(SupportFilterChipTag).assertExists()
         compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
         assertEquals(listOf(LauncherPanel.SupportFilter.widen), asked)
+        val list = compose.onNodeWithTag(io.github.fate_grand_automata.ui.launcher.LauncherConfigListTag).getUnclippedBoundsInRoot()
+        val panel = compose.onNodeWithTag(SupportFilterPanelTag).getUnclippedBoundsInRoot()
+        assertEquals(list.width.value, panel.width.value, 1f / 1.5f + 0.01f)
+        compose.onNodeWithTag(SupportFilterChipTag).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
+        assertFalse(fixture.core.supportFilterPanelOpen.get())
+    }
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theBattleLauncherStillRestoresTheStoredPanelAndWidens() = assertConfigListLauncherOffersAndRestoresTheFilter(ScriptModeEnum.Battle)
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theImageMakerModeLauncherOffersTheFilter() = assertConfigListLauncherOffersAndRestoresTheFilter(ScriptModeEnum.SupportImageMaker)
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theWeeklyRouteModeLauncherOffersTheFilter() = assertConfigListLauncherOffersAndRestoresTheFilter(ScriptModeEnum.WeeklyRoute)
+
+    @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
+    fun theTakeFromConfigButtonIsUsableInTheImageMakerModeLauncher() {
+        val fixture = CaptureLauncherFixture(context, GameServer.Kr)
+        launcher(fixture, ScriptModeEnum.SupportImageMaker, LauncherPanel.SupportFilter)
+        compose.onNodeWithTag(SupportFilterTakeConfigTag).assertIsEnabled()
     }
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theOpenStateIsRememberedAcrossTwoLaunchers() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.captureTrackerEnabled.set(true)
         var show by androidx.compose.runtime.mutableStateOf(true)
         compose.setContent {
@@ -772,7 +787,6 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theWeeklyPanelClosingTheFilterPanelIsRemembered() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterPanelOpen.set(true)
         launcher(fixture)
         compose.onNodeWithTag(SupportFilterPanelTag).assertExists()
@@ -783,10 +797,10 @@ class SupportListFilterUiTest {
     }
 
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
-    fun aRememberedOpenPanelIsIgnoredWithTheFeatureOff() {
+    fun aRememberedOpenPanelIsIgnoredWithCaptureOff() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
         fixture.core.supportFilterPanelOpen.set(true)
-        launcher(fixture)
+        launcher(fixture, captureOn = false)
         compose.onNodeWithTag(SupportFilterPanelTag).assertDoesNotExist()
         compose.onNodeWithTag(SupportFilterChipTag).assertDoesNotExist()
     }
@@ -794,7 +808,6 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun aRestoredOpenPanelAsksTheWindowToWiden() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         fixture.core.supportFilterPanelOpen.set(true)
         fixture.core.captureTrackerEnabled.set(true)
         val asked = mutableListOf<Float>()
@@ -807,7 +820,6 @@ class SupportListFilterUiTest {
     @Test @Config(qualifiers = "ko-w840dp-h480dp-hdpi")
     fun theTwoPanelButtonsShowTheOpenPanelTheSameWay() {
         val fixture = CaptureLauncherFixture(context, GameServer.Kr)
-        fixture.core.supportFilterFeature.set(true)
         launcher(fixture)
         val weekly = compose.onNode(hasText(context.getString(R.string.weekly_route_title)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected))
         val filter = compose.onNodeWithTag(SupportFilterChipTag)
