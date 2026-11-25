@@ -250,11 +250,13 @@ class SupportListFilterUiTest {
         fun labelRightUnderBoth(): Boolean {
             compose.onNode(hasScrollAction()).performScrollToNode(hasText(both))
             compose.waitForIdle()
-            val item = compose.onNodeWithText(both).fetchSemanticsNode().boundsInRoot
+            // Positions, not clipped bounds: the label may sit below the visible part of the list.
+            val item = compose.onNodeWithText(both).fetchSemanticsNode()
+            val itemBottom = item.positionInRoot.y + item.size.height
             // The label sits right under its item; the next card's labels are much further down.
             val reach = 40f * context.resources.displayMetrics.density
             return compose.onAllNodesWithText("필터 적용").fetchSemanticsNodes()
-                .any { it.boundsInRoot.top >= item.bottom && it.boundsInRoot.top <= item.bottom + reach }
+                .any { it.positionInRoot.y >= itemBottom && it.positionInRoot.y <= itemBottom + reach }
         }
         compose.runOnIdle { profile.support.grandServant.set(true) }
         compose.waitForIdle()
