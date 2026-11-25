@@ -252,10 +252,10 @@ object SupportListFilter {
         var changed = false
         val entries = LinkedHashMap<String, JsonElement>(follower)
         // Read once per follower, and only when a condition needs it.
-        val boards = if ((criteria.classScore62 || criteria.grandScore16) && !excluded) {
-            classBoards(follower, grand = criteria.grandScore16)
-        } else Boards.Missing
+        val boards = if (criteria.classScore62 && !excluded) classBoards(follower) else Boards.Missing
         if (boards == Boards.Odd) return null
+        val grandBoards = if (criteria.grandScore16 && !excluded) grandBoards(follower) else GrandBoards.Missing
+        if (grandBoards == GrandBoards.Odd) return null
 
         fun reduceSlot(slot: JsonElement, grand: Boolean): JsonElement {
             val row = slot as? JsonObject
@@ -266,7 +266,7 @@ object SupportListFilter {
             }
             if (svtId <= 0L) return slot
             filledBefore++
-            val matches = if (excluded) false else passes(row, grand, criteria, boards)
+            val matches = if (excluded) false else passes(row, grand, criteria, boards, grandBoards)
             if (matches == null) {
                 failed = true
                 return slot
@@ -309,10 +309,12 @@ object SupportListFilter {
 
     /**
      * A filled slot matches when every condition that is set holds. Null when a field a set condition reads has a shape
-     * this code has not seen, so the caller passes the response through. [boards] is the follower's class boards;
-     * without them a slot that needs the class score does not match.
+     * this code has not seen, so the caller passes the response through. [boards] is the follower's class boards and
+     * [grandBoards] its grand boards; without them a slot that needs the class score or the grand score does not match.
      */
-    private fun passes(row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Boards): Boolean? {
+    private fun passes(
+        row: JsonObject, grand: Boolean, criteria: SupportListCriteria, boards: Boards, grandBoards: GrandBoards,
+    ): Boolean? {
         val svtId = row.long("svtId")
         if (svtId == null || svtId <= 0L) return false
         if (criteria.servantIds.isNotEmpty() && svtId !in criteria.servantIds) return false
@@ -365,32 +367,29 @@ object SupportListFilter {
         if (criteria.grandScore16) {
             if (!grand) return false
             val classId = criteria.servantClassIds[svtId] ?: return false
-            if (boards !is Boards.Read) return false
-            // The grand board of class board n is 10000 + n (Atlas `parentClassBoardBaseId`, #704).
-            val normal = boards.boardsOfClass[classId] ?: return false
-            if (normal.none { boards.grandSquares[GRAND_BOARD_OFFSET + it] == GRAND_SCORE_SQUARES }) return false
+            val board = grandBoardOf(classId) ?: return false
+            if (grandBoards !is GrandBoards.Read || grandBoards.squares[GRAND_BOARD_OFFSET + board] != GRAND_SCORE_SQUARES) return false
         }
         return true
     }
 
     /**
      * What the support screen shows on a grand entry's bond CE: [BondCEEffectEnum.NP] when the effect was switched to NP
-     * charge (`script.equipTarget2SkillChange` 1), [BondCEEffectEnum.Default] for any other bond CE, and
-     * [BondCEEffectEnum.Ignore] for no bond CE (no icon, which matches neither). Null for a shape this code has not seen.
+     * charge (`script.equipTarget2SkillChange` 1), [BondCEEffectEnum.Default] when that key is absent, and
+     * [BondCEEffectEnum.Ignore] for no bond CE (no icon, which matches neither). Null for a shape this code has not seen,
+     * including any other value of the key: real responses only ever had 1 there (#704).
      */
     private fun bondEffect(row: JsonObject): BondCEEffectEnum? {
         val ce = ceId(row, "equipTarget2")
         if (ce == UNKNOWN_CE) return null
         if (ce == null || ce <= 0L) return BondCEEffectEnum.Ignore
-        val change = when (val script = row["script"]) {
-            null, is JsonNull -> null
-            is JsonObject -> when (val value = script["equipTarget2SkillChange"]) {
-                null, is JsonNull -> null
-                else -> integer(value) ?: return null
-            }
+        val script = when (val value = row["script"]) {
+            null, is JsonNull -> return BondCEEffectEnum.Default
+            is JsonObject -> value
             else -> return null
         }
-        return if (change == 1L) BondCEEffectEnum.NP else BondCEEffectEnum.Default
+        val change = script["equipTarget2SkillChange"] ?: return BondCEEffectEnum.Default
+        return if (integer(change) == 1L) BondCEEffectEnum.NP else null
     }
 
     /** The number of squares of a full class board, which the support screen shows as "+62". */
@@ -425,52 +424,26 @@ object SupportListFilter {
         /** A board list of a shape this code has not seen: the whole response passes unchanged. */
         data object Odd : Boards
 
-        /**
-         * [full]: class id to "a board that covers it has all [CLASS_SCORE_SQUARES] squares". [boardsOfClass]: class id
-         * to the base ids (1..9) of the class boards that list it. [grandSquares]: grand board base id (10001..10009) to
-         * its number of squares; only filled when the grand score is asked for.
-         */
-        class Read(
-            val full: Map<Int, Boolean>,
-            val boardsOfClass: Map<Int, Set<Long>>,
-            val grandSquares: Map<Long, Int>,
-        ) : Boards
+        /** Class id to "a board that covers it has all [CLASS_SCORE_SQUARES] squares". */
+        class Read(val full: Map<Int, Boolean>) : Boards
     }
 
     /**
      * The class boards the support screen's "+62" is about: `classBoardBaseId` 1 to 9. JP also sends boards with large
-     * base ids and up to 16 squares (#695); those never count for "+62", whatever classes they list.
+     * base ids and up to 16 squares (#695); those never count, whatever classes they list.
      */
     private val CLASS_BOARD_BASE_IDS = 1L..9L
 
-    /**
-     * The grand boards of "+16" (#704): Atlas Academy's JP class board data has 10001 to 10009, each the grand board of
-     * class board 1 to 9 with 16 squares. A large base id outside this range is one this code has not seen.
-     */
-    private val GRAND_BOARD_BASE_IDS = 10001L..10009L
-
-    /**
-     * One entry per board, each with its squares in `squareIds` and the classes it covers in `releasedClassIds`. With
-     * [grand], the grand boards are read too, and any other base id outside 1..9 is an odd shape.
-     */
-    private fun classBoards(follower: JsonObject, grand: Boolean): Boards {
+    /** One entry per board, each with its squares in `squareIds` and the classes it covers in `releasedClassIds`. */
+    private fun classBoards(follower: JsonObject): Boards {
         val value = follower["userClassBoardInfo"]
         if (value == null || value is JsonNull) return Boards.Missing
         val boards = value as? JsonArray ?: return Boards.Odd
         val full = HashMap<Int, Boolean>()
-        val boardsOfClass = HashMap<Int, MutableSet<Long>>()
-        val grandSquares = HashMap<Long, Int>()
         for (board in boards) {
             val entry = board as? JsonObject ?: return Boards.Odd
             val base = integer(entry["classBoardBaseId"] ?: return Boards.Odd) ?: return Boards.Odd
-            if (base !in CLASS_BOARD_BASE_IDS) {
-                if (!grand) continue
-                if (base !in GRAND_BOARD_BASE_IDS) return Boards.Odd
-                val squares = entry["squareIds"] as? JsonArray ?: return Boards.Odd
-                if (squares.any { integer(it) == null }) return Boards.Odd
-                grandSquares[base] = maxOf(grandSquares[base] ?: 0, squares.size)
-                continue
-            }
+            if (base !in CLASS_BOARD_BASE_IDS) continue
             val squares = entry["squareIds"] as? JsonArray ?: return Boards.Odd
             val classes = entry["releasedClassIds"] as? JsonArray ?: return Boards.Odd
             if (squares.any { integer(it) == null }) return Boards.Odd
@@ -478,10 +451,56 @@ object SupportListFilter {
                 val id = integer(element) ?: return Boards.Odd
                 if (id !in 0L..Int.MAX_VALUE.toLong()) return Boards.Odd
                 full[id.toInt()] = full[id.toInt()] == true || squares.size == CLASS_SCORE_SQUARES
-                boardsOfClass.getOrPut(id.toInt()) { mutableSetOf() } += base
             }
         }
-        return Boards.Read(full, boardsOfClass, grandSquares)
+        return Boards.Read(full)
+    }
+
+    /** A follower's grand boards as the grand score condition reads them; the same three cases as [Boards]. */
+    private sealed interface GrandBoards {
+        data object Missing : GrandBoards
+
+        data object Odd : GrandBoards
+
+        /** Grand board base id (10001..10009) to its number of squares. */
+        class Read(val squares: Map<Long, Int>) : GrandBoards
+    }
+
+    /**
+     * The grand boards of "+16" (#704): Atlas Academy's JP class board data has 10001 to 10009, each the grand board of
+     * class board 1 to 9 (`parentClassBoardBaseId`) with 16 squares. Another base id outside 1..9 is one this code has
+     * not seen.
+     */
+    private val GRAND_BOARD_BASE_IDS = 10001L..10009L
+
+    /**
+     * Class id to the class board (1..9) whose grand board "+16" is about, from Atlas's JP class board data (#704):
+     * board n of the seven standard classes is the class itself, Extra I (8) covers shielder, ruler, avenger and moon
+     * cancer, Extra II (9) alter ego, foreigner, pretender, beast, beastEresh and unBeastOlgaMarie. Fixed, not read from
+     * the follower's `releasedClassIds`: on JP a board 9 often lists only alter ego although its grand board is complete.
+     */
+    private val GRAND_BOARD_OF_CLASS: Map<Int, Int> = (1..7).associateWith { it } +
+        listOf(8, 9, 11, 23).associateWith { 8 } + listOf(10, 25, 28, 33, 38, 40).associateWith { 9 }
+
+    /** The class board (1..9) whose grand board holds [classId]'s "+16", or null for a class this code does not know. */
+    fun grandBoardOf(classId: Int): Int? = GRAND_BOARD_OF_CLASS[classId]
+
+    /** Only the grand boards are read: boards 1..9 are skipped unread, so they never affect "+16". */
+    private fun grandBoards(follower: JsonObject): GrandBoards {
+        val value = follower["userClassBoardInfo"]
+        if (value == null || value is JsonNull) return GrandBoards.Missing
+        val boards = value as? JsonArray ?: return GrandBoards.Odd
+        val squares = HashMap<Long, Int>()
+        for (board in boards) {
+            val entry = board as? JsonObject ?: return GrandBoards.Odd
+            val base = integer(entry["classBoardBaseId"] ?: return GrandBoards.Odd) ?: return GrandBoards.Odd
+            if (base in CLASS_BOARD_BASE_IDS) continue
+            if (base !in GRAND_BOARD_BASE_IDS) return GrandBoards.Odd
+            val ids = entry["squareIds"] as? JsonArray ?: return GrandBoards.Odd
+            if (ids.any { integer(it) == null }) return GrandBoards.Odd
+            squares[base] = maxOf(squares[base] ?: 0, ids.size)
+        }
+        return GrandBoards.Read(squares)
     }
 
     /** An integer as a JSON number; the string "100" is not one. */

@@ -172,16 +172,49 @@ class SupportListFilterGrandTest {
         }
     }
 
-    @Test fun grandScoreWithoutBoardsOrWithTheClassOnNoBoardMatchesNothing() {
+    @Test fun grandScoreWithoutBoardsMatchesNothing() {
         val c = grand16(mapOf(125L to 25))
         val text = body(
             follower("complete", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 16))),
             follower("noBoards", grand = listOf(realGrand(125))),
             follower("nullBoards", grand = listOf(realGrand(125)), boards = "null"),
-            // Board 9 of this follower does not release foreigner yet.
-            follower("notReleased", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 16), released = JP_RELEASED + (9 to listOf(10)))),
         )
         assertEquals(listOf("complete"), kept(text, c))
+    }
+
+    @Test fun grandScoreFindsTheGrandBoardByTheFixedTableNotByReleasedClassIds() {
+        // As 5 of 18 JP followers: board 9 lists only alter ego, while the grand board 10009 is complete.
+        val onlyAlterEgo = JP_RELEASED + (9 to listOf(10))
+        val c = grand16(mapOf(125L to 25))
+        val text = body(
+            follower("foreigner", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 16), released = onlyAlterEgo)),
+            follower("incomplete", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(9 to 15), released = onlyAlterEgo)),
+        )
+        assertEquals(listOf("foreigner"), kept(text, c))
+        // A board that lists the class elsewhere does not move it.
+        val moved = JP_RELEASED + (1 to listOf(1, 25)) + (9 to listOf(10))
+        assertEquals(emptyList(), kept(body(follower("moved", grand = listOf(realGrand(125)), boards = jpBoards(mapOf(1 to 16), released = moved))), c))
+    }
+
+    @Test fun grandScoreDoesNotReadTheClassBoards() {
+        val c = grand16(mapOf(100L to 1))
+        val grandOnly = """[{"classBoardBaseId":10001,"squareIds":[${(1..16).joinToString(",")}],"releasedClassIds":[10001]}]"""
+        val oddNormal = """[{"classBoardBaseId":1,"squareIds":"odd","releasedClassIds":null},""" + grandOnly.removePrefix("[")
+        val text = body(
+            follower("noNormalBoards", grand = listOf(realGrand(100)), boards = grandOnly),
+            follower("oddNormalBoard", grand = listOf(realGrand(100)), boards = oddNormal),
+            follower("gone", grand = listOf(realGrand(999)), boards = grandOnly),
+        )
+        assertEquals(listOf("noNormalBoards", "oddNormalBoard"), kept(text, c))
+        // With +62 on as well, the odd normal board is read again and the response passes unchanged.
+        assertNull(kept(text, c.copy(classScore62 = true)))
+    }
+
+    @Test fun theGrandBoardTableCoversEveryClassTheFilterKnows() {
+        val expected = (1..7).associateWith { it } + listOf(8, 9, 11, 23).associateWith { 8 } + listOf(10, 25, 28, 33, 38, 40).associateWith { 9 }
+        for ((cls, board) in expected) assertEquals(board, SupportListFilter.grandBoardOf(cls), "class $cls")
+        assertNull(SupportListFilter.grandBoardOf(39))
+        assertNull(SupportListFilter.grandBoardOf(0))
     }
 
     @Test fun grandScoreForAServantWithoutAKnownClassMatchesNothing() {
@@ -235,16 +268,30 @@ class SupportListFilterGrandTest {
         val text = body(
             follower("np", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 1))),
             follower("default", grand = listOf(realGrand(100, ce1 = 7, bond = 50))),
-            follower("changeZero", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 0))),
             follower("noBondCe", grand = listOf(realGrand(100, ce1 = 7, bond = 0, change = 1))),
             follower("noBondCeNoChange", grand = listOf(realGrand(100, ce1 = 7))),
             follower("otherCe", grand = listOf(realGrand(100, ce1 = 9, bond = 50, change = 1))),
             follower("normal", main = mapOf((1 to 1) to realSlot(100, 1, 1, ce = 7))),
         )
         assertEquals(listOf("np"), kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)))
-        assertEquals(listOf("default", "changeZero"), kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.Default)))
-        assertEquals(listOf("np", "default", "changeZero", "noBondCe", "noBondCeNoChange"), kept(text, ceCriteria))
+        assertEquals(listOf("default"), kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.Default)))
+        assertEquals(listOf("np", "default", "noBondCe", "noBondCeNoChange"), kept(text, ceCriteria))
         assertGrandListsAsReceived(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP))
+    }
+
+    @Test fun aSkillChangeValueOtherThanOneLeavesTheWholeResponseUnchangedWhenTheEffectIsAsked() {
+        val base = arrayOf(
+            follower("np", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = 1))),
+            follower("default", grand = listOf(realGrand(100, ce1 = 7, bond = 50))),
+        )
+        for (value in listOf(0, 2)) {
+            val text = body(*base, follower("odd", grand = listOf(realGrand(100, ce1 = 7, bond = 50, change = value))))
+            assertNull(kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)), "value $value")
+            assertNull(kept(text, ceCriteria.copy(bondCeEffect = BondCEEffectEnum.Default)), "value $value")
+            // Ignore does not read it; the follower whose CE does not match is still left out.
+            assertEquals(listOf("np", "default"), kept(body(*base, follower("odd", grand = listOf(realGrand(100, ce1 = 9, bond = 50, change = value)))), ceCriteria), "value $value")
+        }
+        assertEquals(listOf("np"), kept(body(*base), ceCriteria.copy(bondCeEffect = BondCEEffectEnum.NP)))
     }
 
     @Test fun aNormalSlotNeverMeetsTheGrandCeConditions() {

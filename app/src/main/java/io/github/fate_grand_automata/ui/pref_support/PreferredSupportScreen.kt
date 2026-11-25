@@ -372,7 +372,8 @@ internal fun PreferredSupport(
                                     config.requireBothNormalAndRewardMatch.SwitchPreference(
                                         title = stringResource(R.string.p_battle_config_support_require_both_normal_and_reward_match)
                                     )
-                                    scope(applied = true)
+                                    // The filter applies these two only with a preferred servant as well (#704).
+                                    if (prefServants.isNotEmpty()) scope(applied = true)
                                 }
                             }
                         }

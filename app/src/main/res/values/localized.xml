@@ -1613,8 +1613,8 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="support_list_filter_screen_only">"Screen reading only"</string>
     <string name="support_list_filter_capture_off">"Log collection is off, so the filter does nothing. Turn on log collection under More > Additional features."</string>
     <string name="support_list_filter_unmapped">"The filter does not run: these could not be matched to a game ID: %1$s"</string>
-    <string name="support_list_filter_no_class_list">"The filter does not run: the class score condition needs the servant list, which is not on this device yet. The friend manager, the account dashboard and the image download get it."</string>
-    <string name="support_list_filter_unknown_class">"The filter does not run: the class score condition needs the class of these servants, which is not known yet: %1$s"</string>
+    <string name="support_list_filter_no_class_list">"The filter does not run: the class score or grand score condition needs the servant list, which is not on this device yet. The friend manager, the account dashboard and the image download get it."</string>
+    <string name="support_list_filter_unknown_class">"The filter does not run: the class score or grand score condition needs the class of these servants, which is not known yet: %1$s"</string>
     <string name="support_list_filter_ascension">"Displayed ascension"</string>
     <string name="support_list_filter_ascension_any">"Any"</string>
     <string name="support_list_filter_ascension_set">"Set for %1$d servants"</string>

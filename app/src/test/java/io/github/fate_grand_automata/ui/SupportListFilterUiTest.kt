@@ -241,6 +241,30 @@ class SupportListFilterUiTest {
         compose.onNodeWithText(context.getString(R.string.p_battle_config_support_friend_names)).assertDoesNotExist()
     }
 
+    @Test fun withoutAPreferredServantTheGrandCeItemsAreNotMarkedAsFiltered() {
+        val prefs = prefs()
+        val profile = prefs.addSupportFilterProfile("Grand", "p4")
+        profile.support.preferredCEs.set(setOf("Black Grail.png"))
+        profileScreen(prefs, profile)
+        val both = context.getString(R.string.p_battle_config_support_require_both_normal_and_reward_match)
+        fun labelRightUnderBoth(): Boolean {
+            compose.onNode(hasScrollAction()).performScrollToNode(hasText(both))
+            compose.waitForIdle()
+            val item = compose.onNodeWithText(both).fetchSemanticsNode().boundsInRoot
+            // The label sits right under its item; the next card's labels are much further down.
+            val reach = 40f * context.resources.displayMetrics.density
+            return compose.onAllNodesWithText("필터 적용").fetchSemanticsNodes()
+                .any { it.boundsInRoot.top >= item.bottom && it.boundsInRoot.top <= item.bottom + reach }
+        }
+        compose.runOnIdle { profile.support.grandServant.set(true) }
+        compose.waitForIdle()
+        assertFalse(labelRightUnderBoth())
+        // With a preferred servant the filter applies them, and the label shows.
+        compose.runOnIdle { profile.support.preferredServants.set(setOf("Arcueid")) }
+        compose.waitForIdle()
+        assertTrue(labelRightUnderBoth())
+    }
+
     @Test fun aProfileShowsTheGrandItemsTheFilterNowApplies() {
         val prefs = prefs()
         val profile = prefs.addSupportFilterProfile("Grand", "p3")

@@ -54,7 +54,7 @@ Only servant slots that meet **all** set conditions stay.
 | Class score +62 | The class score board (boards 1 to 9) of that servant's class is fully open. A servant whose class is unknown does not match |
 | Preferred CEs / MLB | One of the chosen CEs (with MLB on, that CE is MLB) |
 | Grand servant | Only grand servant slots match. A normal support slot does not, even with the same servant |
-| Grand score +16 | The grand board (16 squares) of that servant's class is fully open. Extra classes use the grand board of Extra I or II. A servant whose class is unknown does not match |
+| Grand score +16 | The grand board (16 squares) of that servant's class is fully open: each of saber to berserker has its own, shielder, ruler, avenger and moon cancer use Extra I's, alter ego, foreigner, pretender and the beast classes use Extra II's. An unknown class stops the filter (see below). A person without that grand board does not match |
 | Bond CE effect preference | NP charge: a bond CE whose effect was switched to NP charge. Default effects: a bond CE whose effect was not switched. Ignore: not looked at |
 | Both CE slots match | The grand servant's normal CE slot and its bonus-up CE slot both hold a chosen CE (with MLB on, each MLB). Off: either one |
 | Friends only | People who are not friends are left out |
@@ -74,7 +74,7 @@ The grand conditions only decide which people stay in the list. A person with a 
 With the toggle on, the filter still does not run in these cases, and the panel shows the reason in red.
 
 - **An entry that cannot be matched to a game ID**: an image of your own, for which the servant or CE is unknown, could hide the supports you want, so the filter does not run. The entry is named. Built-in images and images from **Download images** can be matched.
-- **Class score +62 or grand score +16 on with a chosen servant of unknown class**: the classes that can be matched to a class score board are saber, archer, lancer, rider, caster, assassin, berserker, shielder, ruler, alter ego, avenger, moon cancer, foreigner, pretender, beast and the two beast classes in JP's board 9 (Atlas's beastEresh and unBeastOlgaMarie). With a servant of another class chosen and class score +62 on, every support of that servant would be hidden, so the filter does not run and the servant is named.
+- **Class score +62 or grand score +16 on with a chosen servant of unknown class**: the classes that can be matched to a class score board are saber, archer, lancer, rider, caster, assassin, berserker, shielder, ruler, alter ego, avenger, moon cancer, foreigner, pretender, beast and the two beast classes in JP's board 9 (Atlas's beastEresh and unBeastOlgaMarie). Grand score +16 needs the same classes to find the class's grand board. With a servant of another class chosen and class score +62 or grand score +16 on, every support of that servant would be hidden, so the filter does not run and the servant is named.
 - **No servant list for the class score or the grand score**: telling a servant's class needs the servant list on the device. The friend manager, the account dashboard and the image download get it. The filter never downloads it.
 - A support list in a shape the filter does not expect reaches the game as received.
 - With log collection off, the filter does nothing.

@@ -4,6 +4,7 @@ import android.content.Context
 import io.github.fate_grand_automata.prefs.core.SupportPrefsCore
 import io.github.fate_grand_automata.scripts.capture.DisplayedAscension
 import io.github.fate_grand_automata.scripts.capture.SupportListCriteria
+import io.github.fate_grand_automata.scripts.capture.SupportListFilter
 import io.github.fate_grand_automata.scripts.enums.BondCEEffectEnum
 import io.github.fate_grand_automata.util.chaldea.BuiltinSupportIds
 import io.github.fate_grand_automata.util.portraits.ServantPortraitFolder
@@ -244,7 +245,11 @@ fun buildSupportFilter(settings: SupportFilterSettings, lookup: SupportIdLookup)
     val needsClass = settings.score62 || grandScore16
     if (needsClass && lookup.servantClassIds.isEmpty()) return SupportFilterBuild.NoClassList
     if (needsClass) {
-        val unknown = servantIds.filterValues { it !in lookup.servantClassIds }.keys.sorted()
+        // For "+16" a class must also have a grand board in the fixed table.
+        val unknown = servantIds.filterValues { id ->
+            val classId = lookup.servantClassIds[id]
+            classId == null || (grandScore16 && SupportListFilter.grandBoardOf(classId) == null)
+        }.keys.sorted()
         if (unknown.isNotEmpty()) return SupportFilterBuild.UnknownClass(unknown)
     }
     val ascensions = HashMap<Long, MutableSet<Int>>()

@@ -1368,8 +1368,8 @@
     <string name="support_list_filter_screen_only">"画面判定のみ"</string>
     <string name="support_list_filter_capture_off">"ログ収集がオフのため、フィルターは動作しません。追加機能でログ収集をオンにしてください。"</string>
     <string name="support_list_filter_unmapped">"次の項目をゲームのIDと対応付けられないため、フィルターは動作しません: %1$s"</string>
-    <string name="support_list_filter_no_class_list">"クラススコアの条件に必要なサーヴァント一覧がまだこの端末にないため、フィルターは動作しません。サーヴァント一覧はフレンド管理、アカウント状況、画像の取得でダウンロードされます。"</string>
-    <string name="support_list_filter_unknown_class">"クラススコアの条件に必要な次のサーヴァントのクラスがまだ分からないため、フィルターは動作しません: %1$s"</string>
+    <string name="support_list_filter_no_class_list">"クラススコア・グランドスコアの条件に必要なサーヴァント一覧がまだこの端末にないため、フィルターは動作しません。サーヴァント一覧はフレンド管理、アカウント状況、画像の取得でダウンロードされます。"</string>
+    <string name="support_list_filter_unknown_class">"クラススコア・グランドスコアの条件に必要な次のサーヴァントのクラスがまだ分からないため、フィルターは動作しません: %1$s"</string>
     <string name="support_list_filter_ascension">"霊基の見た目"</string>
     <string name="support_list_filter_ascension_any">"指定なし"</string>
     <string name="support_list_filter_ascension_set">"サーヴァント%1$d騎に設定"</string>
