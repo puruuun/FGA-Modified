@@ -38,7 +38,8 @@ import kotlin.test.assertTrue
 class ProxySupportListFilterTest {
     private val gameHost = CaptureNames.JP_HOST
 
-    private fun slot(svt: Long, deck: Int, cls: Int) = """{"supportDeckId":$deck,"classId":$cls,"svtId":$svt,"equipTarget1":{"svtId":0}}"""
+    private fun slot(svt: Long, deck: Int, cls: Int) =
+        """{"supportDeckId":$deck,"classId":$cls,"svtId":$svt,"userSvtId":${if (svt == 0L) 0 else 7000 + svt},"equipTarget1":{"svtId":0}}"""
 
     private fun hash(svt: Long = 0) = (1..3).flatMap { d -> (0..8).map { c -> slot(if (d == 1 && c == 1) svt else 0, d, c) } }.joinToString(",")
 
@@ -368,8 +369,8 @@ class ProxySupportListFilterTest {
         """{"response":[{"resCode":"00"}],"cache":{"updated":{"userFollower":[{"followerInfo":[${followers.joinToString(",")}]}]},"serverTime":1}}"""
 
     @Test(timeout = 20000)
-    fun aJpListWhoseOnlyNonMatchingEntriesAreGrandOnesReachesTheGameByteForByte() {
-        val list = jpList(jpFollower("a", 1, 100, grandList(999, 998, 100)), jpFollower("b", 2, 100, grandList(997)))
+    fun aJpListWhereEverySlotAndGrandEntryMatchesReachesTheGameByteForByte() {
+        val list = jpList(jpFollower("a", 1, 100, grandList(100, 100)), jpFollower("b", 2, 100, grandList(100)))
         for (chunked in listOf(false, true)) {
             val upstream = response(list.toByteArray(), chunked = chunked)
             assertContentEquals(upstream, exchange(upstream, criteria).clientWire)
@@ -379,14 +380,18 @@ class ProxySupportListFilterTest {
     }
 
     @Test(timeout = 20000)
-    fun aFilteredJpListCarriesTheKeptFollowersGrandListAsReceived() {
-        val grand = grandList(999, 100, 998)
-        val list = jpList(jpFollower("a", 1, 100, grand, other = 996), jpFollower("b", 1, 0, grandList(995)))
+    fun aFilteredJpListCarriesOnlyTheKeptFollowersMatchingGrandEntries() {
+        val list = jpList(
+            jpFollower("a", 1, 100, grandList(999, 100, 998), other = 996),
+            jpFollower("b", 1, 0, grandList(995)),
+            jpFollower("c", 2, 100, grandList(994)),
+        )
         val e = exchange(response(list.toByteArray()), criteria)
-        val follower = kept(e.body).single().jsonObject
-        assertEquals("0", follower["userSvtLeaderHash"]!!.jsonArray[2].jsonObject["svtId"]!!.toString())
-        assertEquals(Json.parseToJsonElement(grand), follower["userSvtGrandHash"])
-        assertTrue(String(e.body).contains(""""userSvtGrandHash":$grand"""))
+        val (a, c) = kept(e.body).map { it.jsonObject }
+        assertEquals("0", a["userSvtLeaderHash"]!!.jsonArray[2].jsonObject["svtId"]!!.toString())
+        assertTrue(String(e.body).contains(""""userSvtGrandHash":[${grandEntry(100, 10002)}]"""))
+        assertEquals("[]", c["userSvtGrandHash"].toString())
+        assertEquals(2, kept(e.body).size)
         assertContentEquals(list.toByteArray(), e.captured[0])
         assertContentEquals(request, e.upstreamReceived)
     }

@@ -25,6 +25,7 @@ import io.github.fate_grand_automata.scripts.models.battle.BattleState
 import io.github.fate_grand_automata.scripts.models.battle.CommandPosition
 import io.github.fate_grand_automata.scripts.modules.ApplyBraveChains
 import io.github.fate_grand_automata.scripts.modules.BattleExecution
+import io.github.fate_grand_automata.scripts.modules.ChainPriorityAvailability
 import io.github.fate_grand_automata.scripts.modules.Card
 import io.github.fate_grand_automata.scripts.modules.CardParser
 import io.github.fate_grand_automata.scripts.modules.Caster
@@ -193,7 +194,7 @@ class ChainPriorityOffStateTest {
         nps.joinToString("") { "${it.autoSkillCode}" } + "/" + cardsBeforeNP + (directCards?.let { "/$it" } ?: "")
 
     /** [chain] is the stored Chain Priority switch of every entry; [chainShown] the feature's availability. */
-    private fun record(chainShown: Boolean = false, chain: List<Boolean> = emptyList()): List<String> {
+    private fun record(chainShown: Boolean = ChainPriorityAvailability.SHOWN, chain: List<Boolean> = emptyList()): List<String> {
         val random = Random(654)
         val lines = mutableListOf<String>()
         val styleSets = listOf(
@@ -310,7 +311,7 @@ class ChainPriorityOffStateTest {
     }
 
     @Test
-    fun `card choices with chain priority off match the recorded choices`() {
+    fun `a config that never touched chain priority picks as recorded on beta 15 with the production switch`() {
         assertMatchesFixture(record())
     }
 
