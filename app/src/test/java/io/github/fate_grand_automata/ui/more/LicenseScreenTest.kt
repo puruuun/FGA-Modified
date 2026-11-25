@@ -20,7 +20,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+
+private const val LATCH_TIMEOUT_SECONDS = 10L
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [32], qualifiers = "w400dp-h800dp")
@@ -76,6 +79,10 @@ class LicenseScreenTest {
         }
     }
 
+    private fun awaitOrFail(latch: CountDownLatch, message: String) {
+        if (!latch.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) throw AssertionError("Timed out after ${LATCH_TIMEOUT_SECONDS}s: $message")
+    }
+
     /**
      * Leaving the screen cancels the load while an asset is being read. The caller is cancelled from the
      * test thread, as `produceState` does on leaving, and the read is released afterwards.
@@ -90,12 +97,12 @@ class LicenseScreenTest {
                     loadNoticeAssets(names) {
                         reads += it
                         reading.countDown()
-                        release.await()
+                        awaitOrFail(release, "the test never released the read")
                         "paragraph of $it"
                     }
                 })
             }
-            reading.await()
+            awaitOrFail(reading, "no asset was read: the load never started or never called the reader")
             job.cancel()
             release.countDown()
             job.join()

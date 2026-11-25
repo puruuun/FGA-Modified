@@ -16,13 +16,17 @@ from. This check only keeps the file from going stale, in three ways:
    patterns ("group:artifact", fnmatch) of a component match. The rule, exactly:
    - A configuration is a runtime one when its name (also quoted, `"implementation"(...)`) is
      `implementation`, `api` or `runtimeOnly`, or a variant form of them (`betaImplementation`,
-     `debugImplementation`, `ciRuntimeOnly`, ...), unless the variant part contains "test" in any case
-     (`testImplementation`, `androidTestImplementation`, `debugAndroidTestImplementation`).
+     `debugImplementation`, `ciRuntimeOnly`, ...), unless its variant prefix is a test one: `test`,
+     `testFixtures`, or ending in a capitalised `Test` (`androidTest`, `debugAndroidTest`, `ciUnitTest`,
+     `deviceTest`). A name that merely contains "test" (`latestImplementation`) is a runtime one.
      `ksp`, `kapt`, `compileOnly`, `lintChecks`, custom configurations such as `onnxRuntimeAar` and
      everything else are build-only and are not read.
    - Its argument is read across lines. Accepted: `libs.<alias>`, `platform(...)` / `enforcedPlatform(...)`
      around one, a local `val` that holds one of those, `project(...)` (our own modules, under the app's
      own licence) and `fileTree(...)` whose `dir` has no `.jar` file.
+   - Comments are removed with strings known (`"jni/*/x.so"` is no comment; a `${...}` template is code);
+     a local `val` is resolved to the nearest preceding definition in an enclosing `{ }` block. An
+     unterminated string, comment or brace, or two definitions of one name in the same block, is an error.
    - Any other runtime declaration (string coordinates, `add("implementation", ...)`, Groovy-style
      `implementation "g:a:v"`, an unknown alias, a form this parser does not know) is an error that names
      the file and line: it fails closed instead of being skipped.
@@ -95,14 +99,172 @@ def catalog_modules(catalog):
     return result
 
 
+def is_test_variant(variant):
+    """A test configuration by the structure of its name, not by a substring ("latestImplementation" is not one).
+
+    The variant prefix is a test one when it is `test`, `testFixtures`, or ends in a capitalised `Test`
+    segment: `androidTest`, `debugAndroidTest`, `ciUnitTest`, `deviceTest`. `deviceTest` is the build type
+    of the device-QA APK (tools/device-qa/run.py), which is never shipped, so it stays out on purpose.
+    """
+    return variant in ('test', 'testFixtures') or variant.endswith('Test')
+
+
 def is_runtime_config(name):
     m = RUNTIME_CONFIG.match(name)
-    return bool(m) and 'test' not in (m.group('variant') or '').lower()
+    return bool(m) and not is_test_variant(m.group('variant') or '')
+
+
+class BuildFileError(Exception):
+    """The build file cannot be read reliably; carries the 1-based line."""
+
+    def __init__(self, line, reason):
+        super().__init__(reason)
+        self.line = line
+        self.reason = reason
+
+
+CHAR_LITERAL = re.compile(r"'(?:\\.|[^\\'\n])'")
+
+
+def scan(text):
+    """(text with comments replaced by spaces, [(open, close)] of every code `{ }` block).
+
+    Offsets and line numbers stay. Strings are known: a `/*` or `//` inside `"..."` or a raw triple-quoted
+    string is not a comment and a brace inside one is not a block. A string template `${ ... }` is code
+    again, so quotes, comments and braces inside it are read as code; it nests. Character literals (`'"'`)
+    are skipped. Block comments nest like Kotlin's. Anything unterminated (string, comment, brace) raises
+    BuildFileError, so the check fails closed instead of reading a wrong span.
+    """
+    out = list(text)
+    blocks = []
+    stack = []  # open braces of code, innermost last: ('{', offset) or ('$', offset) of a template
+    modes = []  # the string mode ('str' or 'raw') to resume after each open template
+    n = len(text)
+
+    def line_at(offset):
+        return text.count('\n', 0, offset) + 1
+
+    def blank(a, b):
+        for k in range(a, b):
+            if out[k] != '\n':
+                out[k] = ' '
+
+    def string(i, raw):
+        """Reads a string body from i. Returns the index after it, or minus the index after `${` of a template."""
+        while i < n:
+            c = text[i]
+            if raw:
+                if text.startswith('"""', i):
+                    j = i + 3
+                    while j < n and text[j] == '"':
+                        j += 1  # a raw string may end in more than three quotes
+                    return j
+            elif c == '\\':
+                i += 2
+                continue
+            elif c == '"':
+                return i + 1
+            elif c == '\n':
+                raise BuildFileError(line_at(i), 'unterminated string')
+            if c == '$' and text.startswith('{', i + 1):
+                stack.append(('$', i + 1))
+                modes.append('raw' if raw else 'str')
+                return -(i + 2)
+            i += 1
+        raise BuildFileError(line_at(n - 1), 'unterminated string')
+
+    i = 0
+    while i < n:
+        c = text[i]
+        if text.startswith('//', i):
+            j = text.find('\n', i)
+            j = n if j < 0 else j
+            blank(i, j)
+            i = j
+        elif text.startswith('/*', i):
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if text.startswith('/*', j):
+                    depth, j = depth + 1, j + 2
+                elif text.startswith('*/', j):
+                    depth, j = depth - 1, j + 2
+                else:
+                    j += 1
+            if depth:
+                raise BuildFileError(line_at(i), 'unterminated block comment')
+            blank(i, j)
+            i = j
+        elif c == '"':
+            raw = text.startswith('"""', i)
+            r = string(i + (3 if raw else 1), raw)
+            i = r if r >= 0 else -r
+        elif c == "'":
+            m = CHAR_LITERAL.match(text, i)
+            i = m.end() if m else i + 1
+        elif c == '{':
+            stack.append(('{', i))
+            i += 1
+        elif c == '}':
+            if not stack:
+                raise BuildFileError(line_at(i), 'unbalanced }')
+            kind, start = stack.pop()
+            if kind == '{':
+                blocks.append((start, i))
+                i += 1
+            else:
+                r = string(i + 1, modes.pop() == 'raw')
+                i = r if r >= 0 else -r
+        else:
+            i += 1
+    if stack:
+        raise BuildFileError(line_at(stack[-1][1]), 'unbalanced {')
+    return ''.join(out), sorted(blocks)
 
 
 def blank_comments(text):
     """The text with comments replaced by spaces, so that offsets and line numbers stay."""
-    return re.sub(r'//[^\n]*|/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S)
+    return scan(text)[0]
+
+
+class LocalVals:
+    """Local `val name = value` definitions, resolved to the nearest preceding one in an enclosing block.
+
+    A definition is visible from its own offset to the end of the innermost `{ }` block that holds it (the
+    whole file at top level). A name is resolved to the visible definition closest before the reference. When
+    the two closest ones sit in the same block, the scanner cannot say which one the build means, so
+    resolution raises BuildFileError with the line of the reference instead of picking one.
+    """
+
+    def __init__(self, text, blocks):
+        self.text = text
+        self.blocks = blocks
+        self.defs = {}
+        for m in LOCAL_VAL.finditer(text):
+            start = m.start(1)
+            self.defs.setdefault(m.group(1), []).append((start, m.group(2), self.block_of(start)))
+
+    def block_of(self, offset):
+        """(open, close) of the innermost block that holds offset; (-1, len) at top level."""
+        best = (-1, len(self.text))
+        for o, c in self.blocks:
+            if o < offset < c and o > best[0]:
+                best = (o, c)
+        return best
+
+    def line_of(self, offset):
+        return self.text.count('\n', 0, offset) + 1
+
+    def resolve(self, name, at):
+        """(value, offset of its definition) or None when no definition is visible at `at`."""
+        visible = [d for d in self.defs.get(name, []) if d[0] < at and d[2][0] < at < d[2][1]]
+        if not visible:
+            return None
+        visible.sort(key=lambda d: d[0])
+        if len(visible) > 1 and visible[-1][2] == visible[-2][2]:
+            raise BuildFileError(self.line_of(at), 'the local val %s is defined more than once in one block '
+                                 '(lines %d and %d); cannot tell which one is meant'
+                                 % (name, self.line_of(visible[-2][0]), self.line_of(visible[-1][0])))
+        return visible[-1][1], visible[-1][0]
 
 
 def balanced(text, start, open_char, close_char):
@@ -138,12 +300,17 @@ def dependency_blocks(text):
     return blocks
 
 
-def resolve_argument(arg, local_vals, module_dir):
-    """('lib', accessor), ('ok', None) or ('error', reason) for the argument of a runtime declaration."""
+def resolve_argument(arg, local_vals, module_dir, at=0):
+    """('lib', accessor), ('ok', None) or ('error', reason) for the argument of a runtime declaration.
+
+    `local_vals` is a LocalVals (or None); `at` is the offset of the declaration in the scanned text.
+    """
     arg = arg.strip()
     for _ in range(4):
-        if arg in local_vals:
-            arg = local_vals[arg].strip()
+        found = local_vals.resolve(arg, at) if local_vals and re.fullmatch(r'\w+', arg) else None
+        if found is None:
+            break
+        arg, at = found[0].strip(), found[1]
     m = CATALOG_REF.match(arg)
     if m:
         return 'lib', accessor(m.group(1))
@@ -170,8 +337,12 @@ def declared_dependencies(repo):
         if not os.path.isfile(path):
             continue
         rel = module + '/build.gradle.kts'
-        text = blank_comments(read(path))
-        local_vals = {m.group(1): m.group(2) for m in LOCAL_VAL.finditer(text)}
+        try:
+            text, blocks = scan(read(path))
+        except BuildFileError as e:
+            errors.append((rel, e.line, 'cannot be read reliably: ' + e.reason))
+            continue
+        local_vals = LocalVals(text, blocks)
 
         def line_of(offset):
             return text.count('\n', 0, offset) + 1
@@ -187,7 +358,12 @@ def declared_dependencies(repo):
                 if close < 0:
                     errors.append((rel, line, 'unbalanced parentheses in the declaration of ' + name))
                     continue
-                kind, value = resolve_argument(body[m.end():close - 1], local_vals, os.path.join(repo, module))
+                try:
+                    kind, value = resolve_argument(body[m.end():close - 1], local_vals, os.path.join(repo, module),
+                                                   start + m.start())
+                except BuildFileError as e:
+                    errors.append((rel, e.line, name + ': ' + e.reason))
+                    continue
                 if kind == 'lib':
                     found.append((rel, line, value))
                 elif kind == 'error':
