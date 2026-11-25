@@ -48,7 +48,7 @@ fun CardPriorityListItem.Render(
     var useServantPriority by useServantPriority
     var useChainPriority by useChainPriority
     val servantStyle = style == CardPriorityStyle.Servant
-    // Hidden until the planner shows the feature (#654); a Servant style entry ignores it like brave chains.
+    // A Servant style entry ignores it like brave chains; false everywhere while ChainPriorityAvailability hides it.
     val chainPriorityOn = chainShown && useChainPriority && !servantStyle
 
     Column(

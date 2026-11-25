@@ -235,7 +235,7 @@ class ChainPriorityOffStateTraceTest {
     }
 
     @Test
-    fun `taps reads and waits with chain priority off match the recorded trace`() {
+    fun `taps reads and waits of a config that never touched chain priority match the recorded trace`() {
         assertMatchesFixture(run({ api, config -> ServantTracker(api, config) }))
     }
 
@@ -256,7 +256,10 @@ class ChainPriorityOffStateTraceTest {
     @Test
     fun `a stored Always while the feature is hidden matches the recorded trace`() {
         assertMatchesFixture(
-            run({ api, config -> ServantTracker(api, config) }, config(braveChains = listOf(BraveChainEnum.Always))),
+            run(
+                { api, config -> ServantTracker(api, config, mockk<OcrService>(), chainShown = false) },
+                config(braveChains = listOf(BraveChainEnum.Always))
+            ),
             ALWAYS_FIXTURE
         )
     }

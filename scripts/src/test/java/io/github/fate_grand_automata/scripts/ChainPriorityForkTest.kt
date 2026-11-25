@@ -270,8 +270,8 @@ class ChainPriorityForkTest {
     }
 
     @Test
-    fun `the production switch hides chain priority for now`() {
-        assertThat(ChainPriorityAvailability.SHOWN).isFalse()
+    fun `the production switch shows chain priority`() {
+        assertThat(ChainPriorityAvailability.SHOWN).isTrue()
     }
 
     @Test
