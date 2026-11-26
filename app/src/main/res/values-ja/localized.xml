@@ -1234,7 +1234,7 @@
     <string name="dashboard_quest_sort_clears">クリア数</string>
     <string name="dashboard_quest_sort_last_run">最近の実行</string>
     <string name="dashboard_quest_sort_name">名前</string>
-    <string name="dashboard_quest_search">クエスト・スポット・戦争・イベント名または番号</string>
+    <string name="dashboard_quest_search">クエスト・スポット・章・イベント名または番号</string>
     <string name="dashboard_quest_clears">%1$s回</string>
     <string name="dashboard_quest_challenges">挑戦 %1$s</string>
     <string name="dashboard_quest_loading">クエスト記録を読み込み中…</string>
