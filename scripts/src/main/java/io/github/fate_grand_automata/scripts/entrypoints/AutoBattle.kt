@@ -37,11 +37,13 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Checks if Support Selection menu is up
+ * Checks if Support Selection menu is up (both standard 10-tab and compact 11-tab layouts).
+ * Does not wrap in useSameSnapIn because AutoBattle.loop already holds a snapshot and
+ * ScreenshotManager.useSameSnapIn is not re-entrant.
  */
-fun IFgoAutomataApi.isInSupport(): Boolean {
-    return locations.support.screenCheckRegion.exists(images[Images.SupportScreen], similarity = 0.85)
-}
+fun IFgoAutomataApi.isInSupport(): Boolean =
+    locations.support.screenCheckRegion.exists(images[Images.SupportScreen], similarity = 0.85) ||
+        locations.support.screenCheckRegion.exists(images[Images.SupportScreenCompact], similarity = 0.85)
 
 /** Shared with offline device QA; keeps the battle loop's default similarity and centered region. */
 fun IFgoAutomataApi.isRankUpScreen() = images[Images.RankUp] in locations.rankUpRegion

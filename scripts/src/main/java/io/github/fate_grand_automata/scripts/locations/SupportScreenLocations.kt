@@ -69,18 +69,20 @@ class SupportScreenLocations @Inject constructor(
     val listSwipeStart = Location(-59, if (canLongSwipe) 1000 else 1190) + supportOffset
     val listSwipeEnd = Location(-89, if (canLongSwipe) 300 else 660) + supportOffset
 
-    fun locate(supportClass: SupportClass) = when (supportClass) {
+    // Quests with the Recommended (オススメ) tab at index 0 fit 11 scaled-down tabs into the same header span
+    // as the usual 10 tabs, shifting every class tab center rightward (pitch 135 -> ~122 px at 1440p).
+    fun locate(supportClass: SupportClass, hasRecommendedTab: Boolean = false) = when (supportClass) {
         SupportClass.None -> 0
-        SupportClass.All -> 184
-        SupportClass.Saber -> 320
-        SupportClass.Archer -> 454
-        SupportClass.Lancer -> 568
-        SupportClass.Rider -> 724
-        SupportClass.Caster -> 858
-        SupportClass.Assassin -> 994
-        SupportClass.Berserker -> 1130
-        SupportClass.Extra -> 1264
-        SupportClass.Mix -> 1402
+        SupportClass.All -> if (hasRecommendedTab) 300 else 184
+        SupportClass.Saber -> if (hasRecommendedTab) 421 else 320
+        SupportClass.Archer -> if (hasRecommendedTab) 543 else 454
+        SupportClass.Lancer -> if (hasRecommendedTab) 664 else 568
+        SupportClass.Rider -> if (hasRecommendedTab) 786 else 724
+        SupportClass.Caster -> if (hasRecommendedTab) 907 else 858
+        SupportClass.Assassin -> if (hasRecommendedTab) 1029 else 994
+        SupportClass.Berserker -> if (hasRecommendedTab) 1150 else 1130
+        SupportClass.Extra -> if (hasRecommendedTab) 1272 else 1264
+        SupportClass.Mix -> if (hasRecommendedTab) 1394 else 1402
     }.let { x -> Location(x, 256) + headerOffset }
 
     val topScrollbarRegion = when(isWide) {

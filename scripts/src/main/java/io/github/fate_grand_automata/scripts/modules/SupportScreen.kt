@@ -27,6 +27,8 @@ class RealSupportScreen @Inject constructor(
     api: IFgoAutomataApi,
     private val swipe: Swiper
 ) : IFgoAutomataApi by api, SupportScreen {
+    private var hasRecommendedTab = false
+
     override fun scrollDown() {
         swipe(
             locations.support.listSwipeStart,
@@ -39,7 +41,7 @@ class RealSupportScreen @Inject constructor(
     }
 
     override fun click(supportClass: SupportClass) =
-        locations.support.locate(supportClass).click()
+        locations.support.locate(supportClass, hasRecommendedTab).click()
 
     override fun delay(duration: Duration) = duration.wait(false)
 
@@ -52,8 +54,29 @@ class RealSupportScreen @Inject constructor(
     override fun refreshAvailable() =
         images[Images.SupportRefresh] in locations.support.refreshRegion
 
-    override fun isAnyDialogOpen() =
-        images[Images.SupportExtra] !in locations.support.extraRegion
+    /**
+     * Checks whether the Extra class tab is visible in [extraRegion] and which tab-bar scale is shown.
+     * Matches both templates on one crop instead of nesting useSameSnapIn, because SupportScoreScanner
+     * calls isAnyDialogOpen inside its own sameSnap block and useSameSnapIn is not re-entrant.
+     * Comparing both scores avoids misclassifying 10-tab vs 11-tab if the user lowers minSimilarity.
+     */
+    private fun detectHasRecommendedTab(): Boolean? =
+        locations.support.extraRegion.getPattern().use { crop ->
+            val minSimilarity = prefs.platformPrefs.minSimilarity
+            val standard = crop.findMatches(images[Images.SupportExtra], minSimilarity).maxOfOrNull { it.score }
+            val compact = crop.findMatches(images[Images.SupportExtraCompact], minSimilarity).maxOfOrNull { it.score }
+            when {
+                standard == null && compact == null -> null
+                compact != null && (standard == null || compact > standard) -> true
+                else -> false
+            }
+        }
+
+    override fun isAnyDialogOpen(): Boolean {
+        val detected = detectHasRecommendedTab() ?: return true
+        hasRecommendedTab = detected
+        return false
+    }
 
     override fun noSupportsPresent() = findImage(locations.support.notFoundRegion, Images.SupportNotFound)
 
