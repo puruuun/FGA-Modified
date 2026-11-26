@@ -81,8 +81,9 @@ internal const val DAILY_WAR = 1002L
 
 /**
  * JP's 冠位戴冠戦 (Grand Duel) is a war without quests of its own whose child wars (one per class, the extra wars and the
- * 冠位名代戦) name it as `parentWarId`. Most of those child wars are not event wars (`eventId` 0), so no other chip
- * claims them. KR's list has no such war yet, so the chip is empty there.
+ * 冠位名代戦) name it as `parentWarId`. Owner decision (2026-11-26): a quest of such a war shows under this chip only, and
+ * under All; never under Free, Event, Daily or Raid, even when its war is an event war or the quest has the raid flag
+ * (the 冠位名代戦 does). KR's list has no such war yet, so the chip is empty there.
  */
 internal const val GRAND_DUEL_WAR = 8395L
 
@@ -111,11 +112,14 @@ internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestW
         val warLabel = war?.let { w -> w.eventName?.takeIf { w.eventId != 0L && it.isNotBlank() } ?: w.longName?.takeIf { it.isNotBlank() } ?: w.name }
         val kinds = buildSet {
             if (quest != null && war != null) {
-                if (quest.type == "free") add(QuestFilter.Free)
-                if (war.eventId != 0L) add(QuestFilter.Event)
-                if (war.id == DAILY_WAR) add(QuestFilter.Daily)
-                if (quest.raid) add(QuestFilter.Raid)
-                if (war.parentWarId == GRAND_DUEL_WAR) add(QuestFilter.GrandDuel)
+                if (war.parentWarId == GRAND_DUEL_WAR) {
+                    add(QuestFilter.GrandDuel)
+                } else {
+                    if (quest.type == "free") add(QuestFilter.Free)
+                    if (war.eventId != 0L) add(QuestFilter.Event)
+                    if (war.id == DAILY_WAR) add(QuestFilter.Daily)
+                    if (quest.raid) add(QuestFilter.Raid)
+                }
             }
         }
         val search = listOfNotNull("#${row.questId}", quest?.name, quest?.spot, war?.name, war?.longName, war?.eventName)

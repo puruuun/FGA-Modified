@@ -152,9 +152,12 @@ class QuestRecordsTest {
         assertEquals(listOf(0L, 8395L, 8395L, 0L, 0L), grandDuel.map { it.parentWarId })
         val duel = questRecords(readUserQuest(listOf(94145400L, 94149901L, 94147001L, 93000001L).joinToString(",", "[", "]") { duelRow(it) }), grandDuel)
         fun kinds(id: Long) = duel.single { it.id == id }.kinds
-        // A class war is no event war, so only the new chip claims it; the proxy war is an event war with raid quests.
+        // Owner decision: a Grand Duel quest has no other kind, also the proxy war's raid quest in an event war.
         assertEquals(setOf(QuestFilter.GrandDuel), kinds(94145400))
-        assertEquals(setOf(QuestFilter.Event, QuestFilter.Raid, QuestFilter.GrandDuel), kinds(94149901))
+        assertEquals(setOf(QuestFilter.GrandDuel), kinds(94149901))
+        assertTrue(94149901L in questView(duel, QuestFilter.All, "", QuestSort.Clears).rows.map { it.id })
+        assertFalse(94149901L in questView(duel, QuestFilter.Raid, "", QuestSort.Clears).rows.map { it.id })
+        assertFalse(94149901L in questView(duel, QuestFilter.Event, "", QuestSort.Clears).rows.map { it.id })
         assertEquals(setOf(QuestFilter.Event, QuestFilter.Raid), kinds(94147001))
         assertEquals(setOf(QuestFilter.Free), kinds(93000001))
         assertEquals(setOf(94145400L, 94149901L), questView(duel, QuestFilter.GrandDuel, "", QuestSort.Clears).rows.map { it.id }.toSet())
