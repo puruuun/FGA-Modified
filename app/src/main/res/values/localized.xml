@@ -1475,6 +1475,7 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_quest_filter_event">Event</string>
     <string name="dashboard_quest_filter_daily">Daily</string>
     <string name="dashboard_quest_filter_raid">Raid</string>
+    <string name="dashboard_quest_filter_grand_duel">Grand Duel</string>
     <string name="dashboard_quest_sort_clears">Clears</string>
     <string name="dashboard_quest_sort_last_run">Last run</string>
     <string name="dashboard_quest_sort_name">Name</string>

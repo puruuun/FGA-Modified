@@ -325,6 +325,8 @@ class GameNames(
                     parseStream = ::summarizeWars,
                     allowDownload = allowDownload && !isScriptRunning(),
                     ignoreCooldown = force,
+                    // A summary cached before parentWarId existed reads every war as parentless: drop it so it is rebuilt.
+                    usable = { wars -> wars.all { it.parentWarId != null } },
                 ).values.toList()
             }
         }
@@ -437,10 +439,11 @@ class GameNames(
         parseStream: (InputStream) -> List<T>,
         allowDownload: Boolean = !isScriptRunning(),
         ignoreCooldown: Boolean = false,
+        usable: (List<T>) -> Boolean = { true },
     ): Map<Long, T> {
         val stem = "${cachePrefix(list, server)}_summary"
         val cached = runCatching {
-            decode(File(directory, "${stem}.json").readText()).associateBy(idOf)
+            decode(File(directory, "${stem}.json").readText()).also { check(usable(it)) }.associateBy(idOf)
         }.getOrDefault(emptyMap())
         return fetchStem(
             list = list,
@@ -711,6 +714,7 @@ class GameNames(
                         longName = raw.longName?.replace('\n', ' ')?.takeIf { it.isNotBlank() },
                         eventId = raw.eventId,
                         eventName = raw.eventName?.takeIf { it.isNotBlank() },
+                        parentWarId = raw.parentWarId,
                         quests = quests,
                     )
                 }
@@ -811,6 +815,7 @@ private data class RawWar(
     val longName: String? = null,
     val eventId: Long = 0,
     val eventName: String? = null,
+    val parentWarId: Long = 0,
     val spots: List<RawSpot> = emptyList(),
 )
 

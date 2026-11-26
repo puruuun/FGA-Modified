@@ -85,7 +85,7 @@ class QuestRecordsUiTest {
         show(questSource(QuestRecordsState(questRecordsFixture(), RecordNameStatus.Ready)))
         waitFor("quest:1000000")
         compose.onNodeWithTag("quest:94010102").assertExists()
-        for (chip in listOf("All", "Free", "Event", "Daily", "Raid")) compose.onNodeWithTag("quest-filter:$chip").assertExists()
+        for (chip in listOf("All", "Free", "Event", "Daily", "Raid", "GrandDuel")) compose.onNodeWithTag("quest-filter:$chip").assertExists()
         for (chip in listOf("HighLevel", "InterludeRankUp", "Story")) compose.onNodeWithTag("quest-filter:$chip").assertDoesNotExist()
     }
 

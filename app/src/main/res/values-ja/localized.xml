@@ -1231,6 +1231,7 @@
     <string name="dashboard_quest_filter_event">イベント</string>
     <string name="dashboard_quest_filter_daily">曜日</string>
     <string name="dashboard_quest_filter_raid">レイド</string>
+    <string name="dashboard_quest_filter_grand_duel">冠位戴冠戦</string>
     <string name="dashboard_quest_sort_clears">クリア数</string>
     <string name="dashboard_quest_sort_last_run">最近の実行</string>
     <string name="dashboard_quest_sort_name">名前</string>

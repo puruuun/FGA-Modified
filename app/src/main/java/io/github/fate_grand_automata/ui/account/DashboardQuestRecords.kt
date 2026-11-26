@@ -116,6 +116,7 @@ private fun QuestFilter.label() = when (this) {
     QuestFilter.Event -> R.string.dashboard_quest_filter_event
     QuestFilter.Daily -> R.string.dashboard_quest_filter_daily
     QuestFilter.Raid -> R.string.dashboard_quest_filter_raid
+    QuestFilter.GrandDuel -> R.string.dashboard_quest_filter_grand_duel
 }
 
 private fun QuestSort.label() = when (this) {

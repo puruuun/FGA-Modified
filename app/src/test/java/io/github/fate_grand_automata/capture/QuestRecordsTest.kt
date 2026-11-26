@@ -43,6 +43,25 @@ internal const val NICE_WAR_FIXTURE = """[
   ]}]}
 ]"""
 
+/** The Grand Duel shape of JP's `nice_war`: a parent war without quests, class wars below it, and the event proxy war. */
+private const val GRAND_DUEL_FIXTURE = """[
+ {"id":8395,"name":"冠位戴冠戦","longName":"冠位戴冠戦","flags":["changeDispClosedMessage"],"parentWarId":0,"eventId":0,"eventName":"","spots":[]},
+ {"id":8396,"name":"冠位戴冠戦
+セイバー","longName":"冠位戴冠戦
+セイバー","flags":["changeDispClosedMessage"],"parentWarId":8395,"eventId":0,"eventName":"",
+  "spots":[{"name":"冠位戴冠戦","quests":[{"id":94145400,"name":"セイバー 1","type":"event","flags":["noDisplayRemain"],"recommendLv":"90++","spotName":"冠位戴冠戦"}]}]},
+ {"id":8413,"name":"冠位名代戦
+エクストラ","longName":"冠位名代戦
+エクストラ","parentWarId":8395,"eventId":80637,"eventName":"冠位名代戦",
+  "spots":[{"name":"名代","quests":[{"id":94149901,"name":"名代 1","type":"event","flags":["raid","raidConnection"],"recommendLv":"90++","spotName":"名代"}]}]},
+ {"id":8400,"name":"失われた創世","longName":"失われた創世","parentWarId":0,"eventId":80559,"eventName":"失われた創世",
+  "spots":[{"name":"方舟","quests":[{"id":94147001,"name":"方舟 1","type":"event","flags":["raid"],"recommendLv":"90","spotName":"方舟"}]}]},
+ {"id":100,"name":"特異点F","longName":"特異点F","parentWarId":0,"eventId":0,"eventName":"",
+  "spots":[{"name":"冬木","quests":[{"id":93000001,"name":"教会跡","type":"free","flags":[],"recommendLv":"90","spotName":"教会跡"}]}]}
+]"""
+
+private fun duelRow(id: Long) = row(id, 3)
+
 private fun row(id: Long, clears: Long, challenges: Long = clears, last: Long = 1_700_000_000, phase: Long = 3) =
     """{"userId":"111","questId":$id,"questPhase":$phase,"clearNum":$clears,"challengeNum":$challenges,"lastStartedAt":$last,""" +
         """"createdAt":1600000000,"updatedAt":1700000001,"status":2,"expireAt":0,"isEternalOpen":false,"isNew":false}"""
@@ -120,12 +139,28 @@ class QuestRecordsTest {
     @Test fun eachChipIsDecidedFromThePublicData() {
         assertEquals(listOf(93000001L), ids(QuestFilter.Free))
         assertEquals(setOf(94010101L, 94010102L, 94010103L), ids(QuestFilter.Event).toSet())
-        assertEquals(listOf(QuestFilter.All, QuestFilter.Free, QuestFilter.Event, QuestFilter.Daily, QuestFilter.Raid), QuestFilter.entries)
+        assertEquals(listOf(QuestFilter.All, QuestFilter.Free, QuestFilter.Event, QuestFilter.Daily, QuestFilter.Raid, QuestFilter.GrandDuel), QuestFilter.entries)
         // Interlude (war 1003) and rank-up (war 1001) quests have no chip of their own any more.
         assertEquals(emptySet(), records.single { it.id == 91000101L }.kinds)
         assertEquals(emptySet(), records.single { it.id == 94002501L }.kinds)
         assertEquals(listOf(94006801L), ids(QuestFilter.Daily))
         assertEquals(listOf(94010101L), ids(QuestFilter.Raid))
+    }
+
+    @Test fun theGrandDuelWarsAreToldApartByTheirParentWarAlone() {
+        val grandDuel = GameNames.summarizeWars(GRAND_DUEL_FIXTURE)
+        assertEquals(listOf(0L, 8395L, 8395L, 0L, 0L), grandDuel.map { it.parentWarId })
+        val duel = questRecords(readUserQuest(listOf(94145400L, 94149901L, 94147001L, 93000001L).joinToString(",", "[", "]") { duelRow(it) }), grandDuel)
+        fun kinds(id: Long) = duel.single { it.id == id }.kinds
+        // A class war is no event war, so only the new chip claims it; the proxy war is an event war with raid quests.
+        assertEquals(setOf(QuestFilter.GrandDuel), kinds(94145400))
+        assertEquals(setOf(QuestFilter.Event, QuestFilter.Raid, QuestFilter.GrandDuel), kinds(94149901))
+        assertEquals(setOf(QuestFilter.Event, QuestFilter.Raid), kinds(94147001))
+        assertEquals(setOf(QuestFilter.Free), kinds(93000001))
+        assertEquals(setOf(94145400L, 94149901L), questView(duel, QuestFilter.GrandDuel, "", QuestSort.Clears).rows.map { it.id }.toSet())
+        // The old fixture has no such war, as the KR export: the chip matches nothing.
+        assertEquals(emptyList(), ids(QuestFilter.GrandDuel))
+        assertEquals(QuestFilter.Raid, QuestFilter.entries[QuestFilter.entries.indexOf(QuestFilter.GrandDuel) - 1])
     }
 
     @Test fun aQuestWithoutANameShowsItsNumberOnlyUnderAllAndStaysSearchable() {
@@ -218,6 +253,37 @@ class QuestRecordsTest {
         val cache = names(script = { true }) { calls++; NICE_WAR_FIXTURE }
         assertEquals(emptyList(), cache.questWars("KR", allowDownload = true, force = true))
         assertEquals(0, calls)
+        // The same holds with a cache of the version before parentWarId on disk: it stays and nothing is fetched.
+        val old = oldCache()
+        assertEquals(emptyList(), cache.questWars("JP", allowDownload = true, force = true))
+        assertEquals(0, calls)
+        assertTrue(old.isFile)
+    }
+
+    private fun oldCache(): File = File(directory, "jp_nice_war_summary.json").also {
+        // Written by the version before parentWarId: no such key in any war.
+        it.writeText("""[{"id":8396,"name":"冠位戴冠戦","quests":[{"id":94145400,"name":"セイバー 1","type":"event"}]}]""")
+        File(directory, "jp_nice_war_summary.fetched").writeText("1000")
+    }
+
+    @Test fun aSummaryCachedBeforeTheParentWarFieldIsRebuiltAndNotMisread() = runBlocking<Unit> {
+        oldCache()
+        var calls = 0
+        val cache = names { url -> if (url == AtlasVersions.INFO_URL) error("offline"); calls++; GRAND_DUEL_FIXTURE }
+        // While a script runs the old file is neither used nor replaced.
+        val running = GameNames(directory, { calls++; GRAND_DUEL_FIXTURE }, { 1000L }, { true })
+        assertEquals(emptyList(), running.questWars("JP", allowDownload = true))
+        assertEquals(0, calls)
+        assertTrue("parentWarId" !in File(directory, "jp_nice_war_summary.json").readText())
+        // Otherwise it counts as missing, although it is fresh by its age, and is downloaded again.
+        val rebuilt = cache.questWars("JP", allowDownload = true, force = true)
+        assertEquals(1, calls)
+        assertEquals(8395L, rebuilt.single { it.id == 8396L }.parentWarId)
+        assertTrue("parentWarId" in File(directory, "jp_nice_war_summary.json").readText())
+        // The rebuilt file is current: no further download, and the script flag does not matter for reading it.
+        assertEquals(rebuilt, cache.questWars("JP", allowDownload = true))
+        assertEquals(rebuilt, running.questWars("JP", allowDownload = true))
+        assertEquals(1, calls)
     }
 
     @Test fun aDamagedDownloadLeavesTheOldSummaryInPlace() = runBlocking<Unit> {

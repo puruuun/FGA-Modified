@@ -13,6 +13,11 @@ data class QuestWarSummary(
     val longName: String? = null,
     val eventId: Long = 0,
     val eventName: String? = null,
+    /**
+     * Atlas's `parentWarId` (0 for a war without a parent). Null only in a summary cached before the field existed: that
+     * cannot say which wars are Grand Duel wars, so [GameNames.questWars] rebuilds it instead of reading it as "none".
+     */
+    val parentWarId: Long? = null,
     val quests: List<QuestNameSummary> = emptyList(),
 )
 
@@ -49,7 +54,7 @@ internal fun readUserQuest(raw: String): TableRead<UserQuestRow> = raw.byteInput
 internal fun readUserQuest(stream: InputStream): TableRead<UserQuestRow> = readTable(stream, UserQuestRow.serializer()) { it.questId > 0 }
 
 /** Single choice. [All] lists every quest, story quests included (owner, 2026-11-26). */
-enum class QuestFilter { All, Free, Event, Daily, Raid }
+enum class QuestFilter { All, Free, Event, Daily, Raid, GrandDuel }
 enum class QuestSort { Clears, LastRun, Name }
 
 /**
@@ -73,6 +78,13 @@ data class QuestView(val totalClears: Long, val clearedQuests: Int, val rows: Li
 
 /** Atlas groups the daily quests in their own war, not by quest type (they are `event` quests in war 1002). */
 internal const val DAILY_WAR = 1002L
+
+/**
+ * JP's 冠位戴冠戦 (Grand Duel) is a war without quests of its own whose child wars (one per class, the extra wars and the
+ * 冠位名代戦) name it as `parentWarId`. Most of those child wars are not event wars (`eventId` 0), so no other chip
+ * claims them. KR's list has no such war yet, so the chip is empty there.
+ */
+internal const val GRAND_DUEL_WAR = 8395L
 
 /**
  * One record per quest: the game keeps one `userQuest` row per quest, with `questPhase` as the furthest phase reached and
@@ -103,6 +115,7 @@ internal fun questRecords(read: TableRead<UserQuestRow>, wars: Collection<QuestW
                 if (war.eventId != 0L) add(QuestFilter.Event)
                 if (war.id == DAILY_WAR) add(QuestFilter.Daily)
                 if (quest.raid) add(QuestFilter.Raid)
+                if (war.parentWarId == GRAND_DUEL_WAR) add(QuestFilter.GrandDuel)
             }
         }
         val search = listOfNotNull("#${row.questId}", quest?.name, quest?.spot, war?.name, war?.longName, war?.eventName)
