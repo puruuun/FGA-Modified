@@ -1218,6 +1218,9 @@ If your FGO version isn't recognized or runs inside an app cloner, select your s
     <string name="dashboard_col_np">NP</string>
     <string name="dashboard_col_skills">Skills</string>
     <string name="dashboard_col_appends">Appends</string>
+    <string name="dashboard_sort_by">Sort by %1$s</string>
+    <string name="dashboard_sorted_asc">%1$s, sorted ascending</string>
+    <string name="dashboard_sorted_desc">%1$s, sorted descending</string>
     <string name="dashboard_bond">Bond %1$d</string>
     <string name="dashboard_show_all">Show all (%1$d)</string>
     <string name="dashboard_group_materials">Enhancement materials</string>

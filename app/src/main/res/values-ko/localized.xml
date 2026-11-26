@@ -1192,6 +1192,9 @@
     <string name="dashboard_col_np">보구</string>
     <string name="dashboard_col_skills">스킬</string>
     <string name="dashboard_col_appends">어펜드</string>
+    <string name="dashboard_sort_by">%1$s 기준으로 정렬</string>
+    <string name="dashboard_sorted_asc">%1$s, 오름차순 정렬됨</string>
+    <string name="dashboard_sorted_desc">%1$s, 내림차순 정렬됨</string>
     <string name="dashboard_bond">인연%1$d</string>
     <string name="dashboard_show_all">전체 보기 (%1$d)</string>
     <string name="dashboard_group_materials">강화 재료</string>

@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import io.github.fate_grand_automata.capture.*
 import io.github.fate_grand_automata.ui.FGATheme
 import io.github.fate_grand_automata.ui.LocalNavigateBack
@@ -93,13 +94,68 @@ class DashboardServantsTest {
         .mapNotNull { n -> compose.onAllNodesWithText(n).fetchSemanticsNodes().firstOrNull()?.let { n to it.boundsInRoot.top } }
         .sortedBy { it.second }.map { it.first }
 
-    @Test fun sortChipsReorderTheList() {
+    private fun header(sort: ServantSort) = compose.onNodeWithTag("dashboard-sort:${sort.name}")
+    private fun arrowIn(sort: ServantSort) = compose.onAllNodes(hasTestTag("dashboard-sort-arrow") and hasAnyAncestor(hasTestTag("dashboard-sort:${sort.name}")), useUnmergedTree = true)
+    private fun description(sort: ServantSort) = header(sort).fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)!!.joinToString()
+
+    @Test fun headerTapsSortAndSecondTapReverses() {
         show(1280)
         compose.waitUntil(10_000) { order() == listOf("Beta", "Gamma", "Alpha") }
-        compose.onNodeWithTag("dashboard-sort:Level").performClick()
+        arrowIn(ServantSort.Bond).assertCountEquals(1)
+        assertEquals("인연, 내림차순 정렬됨", description(ServantSort.Bond))
+        header(ServantSort.Level).performClick()
         compose.waitUntil(10_000) { order() == listOf("Gamma", "Beta", "Alpha") }
-        compose.onNodeWithTag("dashboard-sort:Cost").performClick()
+        arrowIn(ServantSort.Level).assertCountEquals(1)
+        arrowIn(ServantSort.Bond).assertCountEquals(0)
+        assertEquals("Lv, 내림차순 정렬됨", description(ServantSort.Level))
+        header(ServantSort.Level).performClick()
         compose.waitUntil(10_000) { order() == listOf("Alpha", "Beta", "Gamma") }
+        assertEquals("Lv, 오름차순 정렬됨", description(ServantSort.Level))
+        header(ServantSort.Cost).performClick()
+        compose.waitUntil(10_000) { order() == listOf("Alpha", "Beta", "Gamma") }
+        assertEquals("코스트, 내림차순 정렬됨", description(ServantSort.Cost))
+        header(ServantSort.Cost).performClick()
+        compose.waitUntil(10_000) { order() == listOf("Gamma", "Beta", "Alpha") }
+        assertEquals("인연 기준으로 정렬", description(ServantSort.Bond))
+    }
+
+    @Test fun nameHeaderStartsAscending() {
+        show(1280)
+        header(ServantSort.Name).performClick()
+        compose.waitUntil(10_000) { order() == listOf("Alpha", "Beta", "Gamma") }
+        assertEquals("이름, 오름차순 정렬됨", description(ServantSort.Name))
+        header(ServantSort.Name).performClick()
+        compose.waitUntil(10_000) { order() == listOf("Gamma", "Beta", "Alpha") }
+        assertEquals("이름, 내림차순 정렬됨", description(ServantSort.Name))
+    }
+
+    @Test fun everyHeaderCellIsATouchTargetOfAtLeast48dp() {
+        show(1280)
+        ServantSort.entries.forEach { header(it).assertHasClickAction().assertHeightIsAtLeast(48.dp) }
+    }
+
+    @Test fun wideLayoutHasNoSortChipsAndShowsTheCostColumn() {
+        show(1280)
+        compose.onAllNodesWithTag("dashboard-sort-chips").assertCountEquals(0)
+        compose.onAllNodes(hasTestTag("dashboard-sort:Cost") and !hasAnyAncestor(hasTestTag("dashboard-servant-header"))).assertCountEquals(0)
+        val costs = compose.onAllNodesWithTag("dashboard-servant-cost").fetchSemanticsNodes()
+            .map { it.config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { t -> t.text } }
+        assertEquals(setOf("16", "12", "7"), costs.toSet())
+    }
+
+    @Test fun narrowLayoutKeepsOneChipRowWithTheSameColumns() {
+        show(360)
+        compose.onNodeWithTag("dashboard-servant-header").assertDoesNotExist()
+        compose.onAllNodesWithTag("dashboard-sort-chips").assertCountEquals(1)
+        ServantSort.entries.forEach { header(it).assertExists() }
+        header(ServantSort.Bond).assertIsSelected()
+        arrowIn(ServantSort.Bond).assertCountEquals(1)
+        compose.waitUntil(10_000) { order() == listOf("Beta", "Gamma", "Alpha") }
+        header(ServantSort.Level).performClick().assertIsSelected()
+        compose.waitUntil(10_000) { order() == listOf("Gamma", "Beta", "Alpha") }
+        header(ServantSort.Level).performClick()
+        compose.waitUntil(10_000) { order() == listOf("Alpha", "Beta", "Gamma") }
+        assertEquals("Lv, 오름차순 정렬됨", description(ServantSort.Level))
     }
 
     @Test fun classChipFiltersAndAllRestores() {
@@ -116,7 +172,7 @@ class DashboardServantsTest {
     @Test fun wideLayoutIsATableWithHeaderAndLockedAppendDashes() {
         show(1280)
         compose.onNodeWithTag("dashboard-servant-header").assertExists()
-        listOf("이름", "Lv", "인연", "보구", "스킬", "어펜드").forEach {
+        listOf("이름", "코스트", "Lv", "인연", "보구", "스킬", "어펜드").forEach {
             compose.onNode(hasText(it) and hasAnyAncestor(hasTestTag("dashboard-servant-header"))).assertExists()
         }
         compose.onAllNodesWithTag("dashboard-servant-detail").assertCountEquals(0)
@@ -133,7 +189,7 @@ class DashboardServantsTest {
         compose.onAllNodesWithTag("dashboard-servant-detail").assertCountEquals(3)
         fun texts(tag: String) = compose.onAllNodesWithTag(tag).fetchSemanticsNodes()
             .map { node -> node.config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text } }
-        assertTrue(texts("dashboard-servant-detail").toString(), "Lv 50/90 · 인연 5 · 보구 2" in texts("dashboard-servant-detail"))
+        assertTrue(texts("dashboard-servant-detail").toString(), "코스트 16 · Lv 50/90 · 인연 5 · 보구 2" in texts("dashboard-servant-detail"))
         assertTrue(texts("dashboard-servant-levels").toString(), "스킬 10/10/9 · 어펜드 10/–/–/–/–" in texts("dashboard-servant-levels"))
         compose.onAllNodesWithTag("dashboard-servant-levels").assertCountEquals(3)
         texts("dashboard-servant-detail").plus(texts("dashboard-servant-levels")).forEach { assertFalse(it.trimEnd().endsWith("·")) }

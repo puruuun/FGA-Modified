@@ -971,6 +971,9 @@
     <string name="dashboard_col_np">宝具</string>
     <string name="dashboard_col_skills">スキル</string>
     <string name="dashboard_col_appends">アペンド</string>
+    <string name="dashboard_sort_by">%1$sで並べ替え</string>
+    <string name="dashboard_sorted_asc">%1$s、昇順で並べ替え中</string>
+    <string name="dashboard_sorted_desc">%1$s、降順で並べ替え中</string>
     <string name="dashboard_bond">絆 %1$d</string>
     <string name="dashboard_show_all">すべて表示（%1$d）</string>
     <string name="dashboard_group_materials">強化素材</string>

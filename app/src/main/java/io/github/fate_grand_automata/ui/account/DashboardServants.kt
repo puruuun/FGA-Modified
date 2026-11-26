@@ -1,10 +1,14 @@
 package io.github.fate_grand_automata.ui.account
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -12,6 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -131,15 +140,18 @@ internal fun classGroups(servantClasses: List<String>, label: (String) -> String
     return groups
 }
 
-private val TABLE_MIN_WIDTH = 600.dp
+/** The face, the seven sortable columns and the gaps take 508dp; this leaves the name column at least 170dp. */
+private val TABLE_MIN_WIDTH = 680.dp
 /** Below this the two extra columns (command codes, card boost) do not leave the name enough room and join the class line. */
 private val EXTRA_COLUMNS_MIN_WIDTH = 880.dp
 private val CodesWidth = 52.dp
 private val BoostWidth = 92.dp
 private val FaceSize = 40.dp
-private val LevelWidth = 76.dp
-private val BondWidth = 44.dp
-private val NpWidth = 36.dp
+private val CostWidth = 52.dp
+private val LevelWidth = 68.dp
+private val BondWidth = 52.dp
+private val NpWidth = 48.dp
+private val HeaderHeight = 48.dp
 private val SkillsWidth = 76.dp
 private val AppendsWidth = 116.dp
 
@@ -149,12 +161,16 @@ private val numeric = TextStyle(fontFeatureSettings = "tnum")
 internal fun ColumnScope.Servants(data: DashboardData) {
     val servants = data.servants.orEmpty()
     var sort by rememberSaveable { mutableStateOf(ServantSort.Bond) }
+    var descending by rememberSaveable { mutableStateOf(ServantSort.Bond.firstTapDescending) }
+    val onSort = { column: ServantSort ->
+        if (column == sort) descending = !descending else { sort = column; descending = column.firstTapDescending }
+    }
     var classLabel by rememberSaveable { mutableStateOf<String?>(null) }
     val labels = data.servantClasses.associateWith { dashboardClass(it) }
     val classes = classGroups(data.servantClasses) { labels.getValue(it) }
     val selectedClasses = classes[classLabel]?.toSet()
     var selected by remember { mutableStateOf(emptyList<DashboardServant>()) }
-    LaunchedEffect(servants, sort, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, selectedClasses) } }
+    LaunchedEffect(servants, sort, descending, selectedClasses) { selected = withContext(Dispatchers.Default) { servants.selectServants(sort, descending, selectedClasses) } }
     val summary = remember(servants, data.servantCatalog, selectedClasses) { servantSummary(servants, data.servantCatalog, selectedClasses) }
     val scheme = MaterialTheme.colorScheme
 
@@ -163,22 +179,9 @@ internal fun ColumnScope.Servants(data: DashboardData) {
         // The columns are only worth their width when some servant has a value for them.
         val extraColumns = maxWidth >= EXTRA_COLUMNS_MIN_WIDTH && servants.any { it.commandCodes != null || it.cardBoost != null }
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val sortChips = @Composable {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ServantSort.entries.forEach { option ->
-                        FilterChip(selected = sort == option, onClick = { sort = option }, modifier = Modifier.testTag("dashboard-sort:${option.name}"), label = {
-                            Text(stringResource(when (option) { ServantSort.Bond -> R.string.dashboard_sort_bond; ServantSort.Cost -> R.string.dashboard_sort_cost; ServantSort.Level -> R.string.dashboard_sort_level }))
-                        })
-                    }
-                }
-            }
-            if (table) Row(verticalAlignment = Alignment.CenterVertically) {
-                ServantSummaryLine(summary, Modifier.weight(1f))
-                sortChips()
-            } else {
-                ServantSummaryLine(summary, Modifier)
-                sortChips()
-            }
+            ServantSummaryLine(summary, Modifier)
+            // The wide table sorts through its header cells; the narrow rows have no header, so they keep a chip row.
+            if (!table) SortChips(sort, descending, onSort)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dashboard-class-chips"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = classLabel == null, onClick = { classLabel = null }, modifier = Modifier.testTag("dashboard-class:all"),
                     label = { Text(stringResource(R.string.dashboard_filter_all)) })
@@ -186,7 +189,7 @@ internal fun ColumnScope.Servants(data: DashboardData) {
                     FilterChip(selected = classLabel == label, onClick = { classLabel = label }, modifier = Modifier.testTag("dashboard-class:$label"), label = { Text(label) })
                 }
             }
-            if (table) TableHeader(extraColumns)
+            if (table) TableHeader(extraColumns, sort, descending, onSort)
             HorizontalDivider(color = scheme.outlineVariant)
             LazyColumn(Modifier.fillMaxWidth().weight(1f).testTag("dashboard-servant-list")) {
                 items(selected, key = { it.id }) { servant ->
@@ -199,17 +202,78 @@ internal fun ColumnScope.Servants(data: DashboardData) {
 }
 
 @Composable
-private fun TableHeader(extraColumns: Boolean) {
+private fun ServantSort.label(): String = stringResource(when (this) {
+    ServantSort.Name -> R.string.dashboard_col_name
+    ServantSort.Cost -> R.string.dashboard_sort_cost
+    ServantSort.Level -> R.string.dashboard_sort_level
+    ServantSort.Bond -> R.string.dashboard_sort_bond
+    ServantSort.Np -> R.string.dashboard_col_np
+    ServantSort.Skills -> R.string.dashboard_col_skills
+    ServantSort.Appends -> R.string.dashboard_col_appends
+})
+
+/** The column and, for the active one, its direction; this is what a screen reader announces. */
+@Composable
+private fun sortDescription(column: ServantSort, active: Boolean, descending: Boolean): String = when {
+    !active -> stringResource(R.string.dashboard_sort_by, column.label())
+    descending -> stringResource(R.string.dashboard_sorted_desc, column.label())
+    else -> stringResource(R.string.dashboard_sorted_asc, column.label())
+}
+
+@Composable
+private fun SortArrow(descending: Boolean, tint: Color) {
+    Icon(if (descending) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward, null, Modifier.size(14.dp).testTag("dashboard-sort-arrow"), tint = tint)
+}
+
+/** One tappable header cell. The arrow sits before the text of right-aligned cells so the text keeps lining up with the numbers below. */
+@Composable
+private fun HeaderCell(column: ServantSort, active: Boolean, descending: Boolean, onSort: (ServantSort) -> Unit, modifier: Modifier) {
+    val alignEnd = column != ServantSort.Name
+    val color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+    val description = sortDescription(column, active, descending)
+    Row(
+        modifier.heightIn(min = HeaderHeight).testTag("dashboard-sort:${column.name}")
+            .semantics(mergeDescendants = true) { contentDescription = description; selected = active; role = Role.Button }
+            .clickable { onSort(column) },
+        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start, verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (active && alignEnd) SortArrow(descending, color)
+        Text(column.label(), style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1, softWrap = false)
+        if (active && !alignEnd) SortArrow(descending, color)
+    }
+}
+
+/** The narrow layout's stand-in for the header: the same seven columns, the active chip shows the arrow, tapping it again reverses. */
+@Composable
+private fun SortChips(sort: ServantSort, descending: Boolean, onSort: (ServantSort) -> Unit) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).testTag("dashboard-sort-chips"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ServantSort.entries.forEach { column ->
+            val active = sort == column
+            val description = sortDescription(column, active, descending)
+            FilterChip(
+                selected = active, onClick = { onSort(column) },
+                modifier = Modifier.testTag("dashboard-sort:${column.name}").semantics { contentDescription = description },
+                label = { Text(column.label()) },
+                trailingIcon = if (active) ({ SortArrow(descending, MaterialTheme.colorScheme.onSecondaryContainer) }) else null,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TableHeader(extraColumns: Boolean, sort: ServantSort, descending: Boolean, onSort: (ServantSort) -> Unit) {
     val style = MaterialTheme.typography.labelMedium
     val color = MaterialTheme.colorScheme.onSurfaceVariant
+    @Composable fun cell(column: ServantSort, modifier: Modifier) = HeaderCell(column, sort == column, descending, onSort, modifier)
     Row(Modifier.fillMaxWidth().testTag("dashboard-servant-header"), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.width(FaceSize))
-        Text(stringResource(R.string.dashboard_col_name), Modifier.weight(1f), style = style, color = color)
-        Text(stringResource(R.string.dashboard_sort_level), Modifier.width(LevelWidth), style = style, color = color, textAlign = TextAlign.End)
-        Text(stringResource(R.string.dashboard_sort_bond), Modifier.width(BondWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
-        Text(stringResource(R.string.dashboard_col_np), Modifier.width(NpWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
-        Text(stringResource(R.string.dashboard_col_skills), Modifier.width(SkillsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
-        Text(stringResource(R.string.dashboard_col_appends), Modifier.width(AppendsWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
+        cell(ServantSort.Name, Modifier.weight(1f))
+        cell(ServantSort.Cost, Modifier.width(CostWidth))
+        cell(ServantSort.Level, Modifier.width(LevelWidth))
+        cell(ServantSort.Bond, Modifier.width(BondWidth))
+        cell(ServantSort.Np, Modifier.width(NpWidth))
+        cell(ServantSort.Skills, Modifier.width(SkillsWidth))
+        cell(ServantSort.Appends, Modifier.width(AppendsWidth))
         if (extraColumns) {
             Text(stringResource(R.string.dashboard_col_codes), Modifier.width(CodesWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
             Text(stringResource(R.string.dashboard_col_card_boost), Modifier.width(BoostWidth), style = style, color = color, textAlign = TextAlign.End, maxLines = 1)
@@ -236,6 +300,7 @@ private fun TableRow(servant: DashboardServant, extraColumns: Boolean) {
                 Text(line, Modifier.testTag("dashboard-servant-subline"), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
+        Text(servant.cost?.toString() ?: LOCKED_TEXT, Modifier.width(CostWidth).testTag("dashboard-servant-cost"), style = body, textAlign = TextAlign.End, maxLines = 1)
         Text(levelText(servant.level, servant.maxLevel), Modifier.width(LevelWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
         Text(servant.bond?.toString() ?: LOCKED_TEXT, Modifier.width(BondWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
         Text(servant.np?.toString() ?: LOCKED_TEXT, Modifier.width(NpWidth), style = body, textAlign = TextAlign.End, maxLines = 1)
@@ -261,6 +326,7 @@ private fun NarrowRow(servant: DashboardServant) {
     val scheme = MaterialTheme.colorScheme
     val muted = scheme.onSurfaceVariant
     val stats = joinSegments(listOf(
+        AnnotatedString(stringResource(R.string.dashboard_sort_cost) + " " + (servant.cost?.toString() ?: LOCKED_TEXT)),
         AnnotatedString(stringResource(R.string.dashboard_sort_level) + " " + levelText(servant.level, servant.maxLevel)),
         AnnotatedString(stringResource(R.string.dashboard_sort_bond) + " " + (servant.bond?.toString() ?: LOCKED_TEXT)),
         AnnotatedString(stringResource(R.string.dashboard_col_np) + " " + (servant.np?.toString() ?: LOCKED_TEXT)),
