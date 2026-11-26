@@ -10,7 +10,7 @@
 
 ## 다운로드·업데이트
 
-**정규판 1.8.1** — 긴 보구 이름의 서포트 보구 레벨 인식(JP), 스킬 강화 속도 개선, 마스터 스킬 메뉴 대기시간 설정을 넣고, 정규판·베타판 루트 수집 충돌을 고쳤습니다. [변경 사항](wiki/releases/1.8.1-KR.md).
+**정규판 1.8.2** — 서포트 목록 필터, 카드 우선순위의 체인 우선순위, 섹션으로 나뉜 새 계정 대시보드(퀘스트 기록·상점 포함), 날짜별 로그 보기를 넣었습니다. [변경 사항](wiki/releases/1.8.2-KR.md).
 
 | 배포판 | APK | Obtainium |
 |---|---|---|
@@ -29,7 +29,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | 기능 | 설명 |
 |---|---|
 | [로그 수집](wiki/scripts/Gains-Tracker-KR.md) | 게임 서버 응답으로 스크립트별 획득량과 스크립트 밖 변화를 기록합니다(Android 10+, KR·JP). FGA VPN·외부 앱 프록시·루트 중에서 연결 방식을 고릅니다. |
-| [계정 대시보드](wiki/scripts/Modified-Features-KR.md) | 메인 화면의 계정 카드에서 AP, 재화, 서번트, 아이템, 편성을 확인합니다. |
+| [계정 대시보드](wiki/scripts/Gains-Tracker-KR.md) | 메인 화면의 계정 카드에서 AP, 재화, 서번트, 아이템, 편성, 퀘스트 기록, 상점을 섹션별로 확인합니다. |
 | [프렌드 관리](wiki/scripts/Friend-Manager-KR.md) | 친구 목록의 편성 서번트·예장을 모아 보고 조건으로 거릅니다. |
 | [Chaldea 자동 반영](wiki/scripts/Chaldea-Sync-KR.md) | 수집한 계정 데이터를 Shizuku·루트로 Chaldea에 자동으로 써 넣습니다. |
 | [홈 화면 위젯](wiki/scripts/Widgets-KR.md) | 서비스 시작·중지 위젯과 계정별 AP 위젯을 둡니다. |
@@ -40,7 +40,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [주간 미션 클리어](wiki/scripts/Weekly-Mission-Route-KR.md) | 고른 미션의 최소 AP 경로를 계산하고, 보물창고 초급을 포함해 전체 경로를 반복합니다. |
 | [개념예장 자동 강화](wiki/scripts/CE-Auto-Enhance-KR.md) | 추천 선택 필터로 자동 세트를 켜고 강화를 반복합니다. |
 | [하쿠노 셔플](wiki/scripts/Hakuno-Shuffle-KR.md) | NP를 쓰는 1스킬을 카드 조건이 맞을 때까지 반복합니다. |
-| [카드 우선순위 확장](wiki/scripts/Card-Priority-KR.md) | 최대 10개 항목, 웨이브·턴 구분, 서번트 방식을 지원하고, 방식과 서번트 우선순위를 항목마다 정합니다. 아오코 카드 변화 감지를 켤 수 있습니다. |
+| [카드 우선순위 확장](wiki/scripts/Card-Priority-KR.md) | 최대 10개 항목, 웨이브·턴 구분, 서번트 방식을 지원하고, 방식과 서번트 우선순위를 항목마다 정합니다. 마이티·색 체인을 만드는 체인 우선순위와 아오코 카드 변화 감지를 켤 수 있습니다. |
 | [오토 스킬 폴더](wiki/scripts/Battle-Config-Folders-KR.md) | 배틀 설정을 폴더 상자로 묶어 목록과 런처에서 접고 폅니다. |
 | [턴 제한 퇴각](wiki/scripts/Turn-Limit-Retreat-KR.md) | 전멸하거나 N턴에 도달하면 퇴각하고 다시 시작하며, 연속 퇴각 횟수에서 멈춥니다. |
 | [적 배치별 타겟](wiki/scripts/Enemy-Layout-Targets-KR.md) | 6타겟·레이드 배치의 적을 지정합니다. |
@@ -48,7 +48,7 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [추가 기능 미세 조정](wiki/scripts/Added-Features-Fine-Tune-KR.md) | 수정판 기능의 대기 시간과 인식 유사도를 구역별로 조정합니다. |
 | [퀘스트 후 친구 신청](wiki/scripts/Modified-Features-KR.md#auto-friend-request) | 친구가 아닌 서포트를 쓴 뒤 친구 신청을 보냅니다. |
 | [그랜드 서포트 예장](wiki/scripts/Support-Grand-CE-KR.md) | 그랜드 서포트의 일반·보상 슬롯 예장과 인연 예장 효과를 확인합니다. |
-| [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호·이름으로 서포트 이미지를 만들어 저장하고, 선호 서번트·예장 선택창에서 바로 받습니다. |
+| [서번트 번호 이미지 생성](wiki/scripts/Servant-Number-Portraits-KR.md) | 도감 번호·이름으로 서포트 이미지를 만들어 저장하고, 선호 서번트·예장 선택창에서 바로 받거나 길게 눌러 지웁니다. |
 | [원본 FGA 데이터 가져오기](wiki/scripts/Original-FGA-Import-KR.md) | 원본 FGA의 스크립트·서포트 이미지를 가져옵니다. |
 | [Chaldea 링크로 커맨드 입력](wiki/scripts/Chaldea-Import-KR.md) | 공유 링크의 전투 행동을 커맨드로 변환하고, 퀘스트의 웨이브 수로 웨이브와 턴을 나눕니다. |
 | [카드 조건으로 커맨드 시작](wiki/scripts/Card-Count-Start-KR.md) | 색별 조건 줄(AND/OR)을 만족할 때만 커맨드를 시작하고, 서번트 조건은 최대 세 대상까지 둡니다. |
@@ -56,11 +56,12 @@ Android 7 이상 ARM 기기(arm64-v8a / armeabi-v7a)를 지원합니다. 기존 
 | [서포트 어펜드 스킬](wiki/scripts/Support-Append-Skills-KR.md) | 어펜드 스킬이 레벨 10인 서포트를 고릅니다. |
 | [서포트 스코어](wiki/scripts/Support-Score-62-KR.md) | 클래스 +62·그랜드 +16 서포트를 고릅니다. |
 | [서포트 보구 레벨](wiki/scripts/Support-NP-Level-KR.md) | 설정한 최소 보구 레벨 이상의 서포트를 선택합니다. |
+| [서포트 목록 필터](wiki/scripts/Support-List-Filter-KR.md) | 로그 수집 중 게임이 받는 서포트 목록에서 조건(서번트, 예장, +62, 관위, 그랜드 +16 등)에 맞지 않는 서포트를 빼고 보여 줍니다. |
 | [재림 구분](wiki/scripts/Ascension-Select-KR.md) | 재림이 다른 서번트를 이름+보구 그림으로 구분해 고릅니다. |
 | [공격 순서 직접 지정](wiki/scripts/Direct-Cards-KR.md) | 한 턴의 카드·보구 순서를 직접 정합니다. |
 | [티포트·스톰포드](wiki/scripts/Quest-Items-KR.md) | 퀘스트 시작 전에 ON/OFF를 맞춥니다. |
 | [인연포인트·MAX 정지](wiki/scripts/Bond-Tracking-KR.md) | 획득 인연포인트를 합산하고 MAX가 되면 멈춥니다. |
-| [전투 기록 로그](wiki/scripts/Battle-Log-KR.md) | 끝난 전투와 스크립트 밖 변화를 종류별 최대 200개까지 저장하고, 날짜·출처·자원으로 걸러 봅니다. |
+| [전투 기록 로그](wiki/scripts/Battle-Log-KR.md) | 끝난 전투와 스크립트 밖 변화를 종류별 최대 200개까지 저장하고, 날짜·출처·자원으로 걸러 보며, 게임 날짜별로 묶어 볼 수 있습니다. |
 
 설정 방법과 동작은 [사용 설명서](wiki/scripts/Modified-Features-KR.md)에서 확인하세요.
 
@@ -74,6 +75,6 @@ FGA(mod)가 도움이 되었다면 [Ko-fi](https://ko-fi.com/puruuun)에서 후�
 
 [원본 저장소](https://github.com/Fate-Grand-Automata/FGA) · [원본 사용 안내](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT 라이선스](LICENSE)
 
-수정 기준: 공식 FGA v3071 ([기준 커밋](https://github.com/Fate-Grand-Automata/FGA/commit/14f7878a14d6ed3fe28770e45f720c64aaa1f47d)). 원본 개발팀의 저작권 고지를 유지합니다. 추가·수정한 부분의 저작권은 puruuun에게 있으며, 같은 MIT 라이선스로 배포합니다.
+수정 기준: 공식 FGA v3081 ([기준 커밋](https://github.com/Fate-Grand-Automata/FGA/commit/3852388b685d1ce35be8aa17b26e8e212af910c7)). 원본 개발팀의 저작권 고지를 유지합니다. 추가·수정한 부분의 저작권은 puruuun에게 있으며, 같은 MIT 라이선스로 배포합니다.
 
 참조: Chaldea 링크로 커맨드 입력의 변환 규칙은 [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter)(커밋 `1c95510`)의 변환 로직을 참조해 Kotlin으로 옮겼습니다.

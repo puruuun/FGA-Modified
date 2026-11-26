@@ -9,7 +9,7 @@ A modified version of [Fate/Grand Automata (FGA)](https://github.com/Fate-Grand-
 ## Download and updates
 
 - [Latest APK](https://github.com/puruuun/FGA-Modified/releases/latest)
-- [Release notes for 1.8.1](wiki/releases/1.8.1-EN.md)
+- [Release notes (Korean)](wiki/releases/1.8.2-KR.md)
 - [Add to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522io.github.fate_grand_automata.cardcount%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fpuruuun%252FFGA-Modified%2522%252C%2522author%2522%253A%2522puruuun%2522%252C%2522name%2522%253A%2522FGA%2528mod%2529%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522includePrereleases%255C%2522%253Afalse%252C%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255EFGA-mod-.%252A-arm%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D)
 - [Details](wiki/scripts/Modified-Features-EN.md#installation)
 
@@ -22,7 +22,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | Feature | Summary |
 |---|---|
 | [Log collection](wiki/scripts/Gains-Tracker-EN.md) | Records each script run's gains and changes outside scripts from the game server's responses (Android 10+, KR and JP), with FGA VPN, an external proxy app or root as the connection mode. |
-| [Account dashboard](wiki/scripts/Modified-Features-EN.md) | Shows AP, currencies, Servants, items and formations from the account cards on the main screen. |
+| [Account dashboard](wiki/scripts/Gains-Tracker-EN.md) | Shows AP, currencies, Servants, items, formations, quest records and shop purchases in sections from the account cards on the main screen. |
 | [Friend manager](wiki/scripts/Friend-Manager-EN.md) | Collects the Servants and CEs in your friends' formations, with filters. |
 | [Chaldea auto sync](wiki/scripts/Chaldea-Sync-EN.md) | Writes collected account data into Chaldea through Shizuku or root. |
 | [Home screen widgets](wiki/scripts/Widgets-EN.md) | A service start/stop widget and a per-account AP widget. |
@@ -33,7 +33,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Weekly mission clear](wiki/scripts/Weekly-Mission-Route-EN.md) | Runs the chosen missions on the lowest-AP route, Treasure Vault Beginner included, and repeats it. |
 | [CE auto-enhance](wiki/scripts/CE-Auto-Enhance-EN.md) | Turns on auto-select with the recommended filter and repeats enhancement. |
 | [Hakuno Shuffle](wiki/scripts/Hakuno-Shuffle-EN.md) | Repeats an NP-cost first skill until the card condition is met. |
-| [Card priority extensions](wiki/scripts/Card-Priority-EN.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. Aoko card change detection can be turned on. |
+| [Card priority extensions](wiki/scripts/Card-Priority-EN.md) | Up to 10 entries, wave or turn steps, and a Servant style, with the style and servant priority set per entry. Chain priority (Mighty and colour chains) and Aoko card change detection can be turned on. |
 | [Battle config folders](wiki/scripts/Battle-Config-Folders-EN.md) | Groups battle configs into folder boxes you can fold in the list and the launcher. |
 | [Turn-limit retreat](wiki/scripts/Turn-Limit-Retreat-EN.md) | Retreats and restarts on a wipe or at turn N, and stops after a set number of retreats in a row. |
 | [Enemy layout targets](wiki/scripts/Enemy-Layout-Targets-EN.md) | Targets enemies in six-enemy and raid layouts. |
@@ -41,7 +41,7 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Added-features fine tune](wiki/scripts/Added-Features-Fine-Tune-EN.md) | Adjusts waits and match similarity of the fork's features per area. |
 | [Friend request after quest](wiki/scripts/Modified-Features-EN.md#auto-friend-request) | Sends a friend request after using a non-friend support. |
 | [Grand support CE](wiki/scripts/Support-Grand-CE-EN.md) | Checks the normal and reward slot CEs and the bond CE effect of Grand supports. |
-| [Servant number images](wiki/scripts/Servant-Number-Portraits-EN.md) | Creates and saves support images by number or name, also straight from the Preferred Servant / CE picker. |
+| [Servant number images](wiki/scripts/Servant-Number-Portraits-EN.md) | Creates and saves support images by number or name, also straight from the Preferred Servant / CE picker, where a long press deletes a saved image. |
 | [Import original FGA data](wiki/scripts/Original-FGA-Import-EN.md) | Imports scripts and support images from the original FGA. |
 | [Chaldea command import](wiki/scripts/Chaldea-Import-EN.md) | Converts a Chaldea share link into script commands, splitting waves and turns by the quest's wave count. |
 | [Card-count command start](wiki/scripts/Card-Count-Start-EN.md) | Starts the command only when the per-colour condition rows (AND/OR) are met; Servant conditions take up to three targets. |
@@ -49,11 +49,12 @@ Install source: do not install APKs from anywhere other than GitHub Releases and
 | [Support Append Skills](wiki/scripts/Support-Append-Skills-EN.md) | Picks supports whose Append Skills are level 10. |
 | [Support scores](wiki/scripts/Support-Score-62-EN.md) | Picks Class +62 / Grand +16 supports. |
 | [Support NP level](wiki/scripts/Support-NP-Level-EN.md) | Picks supports at or above a minimum NP level. |
+| [Support list filter](wiki/scripts/Support-List-Filter-EN.md) | While log collection is on, leaves supports that do not meet your conditions (Servants, CEs, +62, Grand, Grand +16 and more) out of the support list the game shows. |
 | [Ascension select](wiki/scripts/Ascension-Select-EN.md) | Tells ascensions apart by Servant name and NP image. |
 | [Fixed attack order](wiki/scripts/Direct-Cards-EN.md) | Sets the order of cards and NPs for a turn. |
 | [Teapots / Storm Pods](wiki/scripts/Quest-Items-EN.md) | Sets ON/OFF before the quest starts. |
 | [Bond tracking / MAX stop](wiki/scripts/Bond-Tracking-EN.md) | Adds up bond gains and stops at MAX. |
-| [Battle log](wiki/scripts/Battle-Log-EN.md) | Keeps up to 200 finished runs and outside-script changes per kind, filtered by date, source and resource. |
+| [Battle log](wiki/scripts/Battle-Log-EN.md) | Keeps up to 200 finished runs and outside-script changes per kind, filtered by date, source and resource, and viewable by game day. |
 
 See the [full guide](wiki/scripts/Modified-Features-EN.md) and the [manual site](https://puruuun.github.io/FGA-Modified/en/) for setup and behavior.
 
@@ -67,6 +68,6 @@ If FGA(mod) helps you, you can leave a tip on [Ko-fi](https://ko-fi.com/puruuun)
 
 [Upstream repository](https://github.com/Fate-Grand-Automata/FGA) · [Original documentation](https://github.com/Fate-Grand-Automata/FGA/wiki) · [MIT license](LICENSE)
 
-Based on official FGA v3071 ([source commit](https://github.com/Fate-Grand-Automata/FGA/commit/14f7878a14d6ed3fe28770e45f720c64aaa1f47d)). Upstream copyright notices are retained. Additions and changes are Copyright (c) 2026 puruuun and are distributed under the same MIT license.
+Based on official FGA v3081 ([source commit](https://github.com/Fate-Grand-Automata/FGA/commit/3852388b685d1ce35be8aa17b26e8e212af910c7)). Upstream copyright notices are retained. Additions and changes are Copyright (c) 2026 puruuun and are distributed under the same MIT license.
 
 Credit: the conversion rules behind "Chaldea command import" follow the logic of [Unic31/fgo-converter](https://github.com/Unic31/fgo-converter) (commit `1c95510`), ported to Kotlin.
