@@ -289,6 +289,39 @@ class QuestRecordsTest {
         assertEquals(1, calls)
     }
 
+    @Test fun anOldSummaryIsReplacedAtOnceEvenRightAfterAnAttempt() = runBlocking<Unit> {
+        var calls = 0
+        val body: (String) -> String = { url -> if (url == AtlasVersions.INFO_URL) error("offline"); calls++; GRAND_DUEL_FIXTURE }
+        // The attempt that saved the old cache is a minute old: no wait applies to a cache that cannot be used.
+        oldCache()
+        File(directory, "jp_nice_war_summary.attempt").writeText("1000")
+        val cache = names(time = { 61_000L }, download = body)
+        assertEquals(5, cache.questWars("JP", allowDownload = true).size)
+        assertEquals(1, calls)
+        // With a script running nothing is fetched.
+        oldCache()
+        File(directory, "jp_nice_war_summary.attempt").writeText("1000")
+        calls = 0
+        assertEquals(emptyList(), GameNames(directory, body, { 61_000L }, { true }).questWars("JP", allowDownload = true))
+        assertEquals(0, calls)
+        // A failed attempt since the save keeps the wait, so a broken network does not loop.
+        File(directory, "jp_nice_war_summary.attempt").writeText("30000")
+        assertEquals(emptyList(), cache.questWars("JP", allowDownload = true))
+        assertEquals(0, calls)
+    }
+
+    @Test fun aUsableSummaryWithARecentAttemptIsNotDownloadedAgain() = runBlocking<Unit> {
+        var calls = 0
+        val body: (String) -> String = { url -> if (url == AtlasVersions.INFO_URL) error("offline"); calls++; GRAND_DUEL_FIXTURE }
+        val first = names(download = body).questWars("JP", allowDownload = true)
+        assertEquals(1, calls)
+        // Old by age, but the attempt is a minute old and the cache is in the current format: the wait applies.
+        val later = 8 * 86_400_000L
+        File(directory, "jp_nice_war_summary.attempt").writeText((later - 60_000L).toString())
+        assertEquals(first, names(time = { later }, download = body).questWars("JP", allowDownload = true))
+        assertEquals(1, calls)
+    }
+
     @Test fun aDamagedDownloadLeavesTheOldSummaryInPlace() = runBlocking<Unit> {
         var body = NICE_WAR_FIXTURE
         var time = 1000L

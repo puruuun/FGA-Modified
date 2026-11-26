@@ -442,9 +442,20 @@ class GameNames(
         usable: (List<T>) -> Boolean = { true },
     ): Map<Long, T> {
         val stem = "${cachePrefix(list, server)}_summary"
+        var rejected = false
         val cached = runCatching {
-            decode(File(directory, "${stem}.json").readText()).also { check(usable(it)) }.associateBy(idOf)
+            val rows = decode(File(directory, "${stem}.json").readText())
+            rejected = !usable(rows)
+            check(!rejected)
+            rows.associateBy(idOf)
         }.getOrDefault(emptyMap())
+        // A cache the current version cannot use is replaced at once, not after the wait that follows a download. Only
+        // when the last attempt is the one that saved that cache: a failed attempt since then keeps the wait.
+        val freshAfterUpdate = rejected && run {
+            fun stamp(suffix: String) = runCatching { File(directory, "$stem.$suffix").readText().trim().toLong() }.getOrNull()
+            val attempt = stamp("attempt")
+            attempt == null || stamp("fetched")?.let { attempt <= it } == true
+        }
         return fetchStem(
             list = list,
             server = server,
@@ -455,7 +466,7 @@ class GameNames(
             parseStream = parseStream,
             encode = encode,
             idOf = idOf,
-            ignoreCooldown = ignoreCooldown,
+            ignoreCooldown = ignoreCooldown || freshAfterUpdate,
         )
     }
 
