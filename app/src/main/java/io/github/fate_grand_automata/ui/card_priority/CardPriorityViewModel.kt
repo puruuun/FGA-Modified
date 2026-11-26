@@ -36,6 +36,7 @@ class CardPriorityViewModel @AssistedInject constructor(
         val servantPriority = battleConfig.servantPriority.get()
         val servantCards = battleConfig.servantCardPriority.get()
 
+        // Read as the battle reads them: a short list repeats its last value, an empty one means off.
         val rearrangeCards = battleConfig.rearrangeCards.get()
         val braveChains = battleConfig.braveChains.get()
         // Empty per-entry prefs mean a config saved before per-entry settings: use the old single values.
@@ -53,8 +54,8 @@ class CardPriorityViewModel @AssistedInject constructor(
                     it.value,
                     servantPriority.atWave(it.index).toMutableStateList(),
                     servantCards.atWave(it.index).toMutableStateList(),
-                    mutableStateOf(rearrangeCards.getOrElse(it.index) { false }),
-                    mutableStateOf(braveChains.getOrElse(it.index) { BraveChainEnum.None }),
+                    mutableStateOf(PerEntrySettings.at(rearrangeCards, it.index, false)),
+                    mutableStateOf(PerEntrySettings.at(braveChains, it.index, BraveChainEnum.None)),
                     mutableStateOf(PerEntrySettings.at(styles, it.index, CardPriorityStyle.Affinity)),
                     mutableStateOf(PerEntrySettings.at(servantFlags, it.index, false)),
                     mutableStateOf(PerEntrySettings.at(chainFlags, it.index, false)),

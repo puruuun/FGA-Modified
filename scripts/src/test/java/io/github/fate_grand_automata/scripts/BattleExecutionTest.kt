@@ -233,4 +233,35 @@ class BattleExecutionTest {
             assertFailsWith<IllegalArgumentException> { execution.select(2) }
         }
     }
+
+    // The expectations are repeated in CardPriorityShortListsTest (app), which pins the screen to the same table.
+    @Test
+    fun `brave chains and rearrange cards of a short list repeat the last value and an empty list reads as off`() {
+        val none = BraveChainEnum.None
+        val np = BraveChainEnum.WithNP
+        val avoid = BraveChainEnum.Avoid
+        val brave = mapOf(
+            emptyList<BraveChainEnum>() to listOf(none, none, none),
+            listOf(np) to listOf(np, np, np),
+            listOf(np, avoid) to listOf(np, avoid, avoid),
+            listOf(np, avoid, none) to listOf(np, avoid, none),
+            listOf(np, avoid, none, np) to listOf(np, avoid, none)
+        )
+        for ((stored, expected) in brave) {
+            val execution = BattleExecution(config(TestExecutionProfile(braveChains = stored)))
+            assertThat(List(3) { execution.active.braveChainAt(it) }).isEqualTo(expected)
+        }
+        val rearrange = mapOf(
+            emptyList<Boolean>() to listOf(false, false, false),
+            listOf(true) to listOf(true, true, true),
+            listOf(true, false) to listOf(true, false, false),
+            listOf(false, true) to listOf(false, true, true),
+            listOf(true, false, true) to listOf(true, false, true),
+            listOf(true, false, true, false) to listOf(true, false, true)
+        )
+        for ((stored, expected) in rearrange) {
+            val execution = BattleExecution(config(TestExecutionProfile(rearrangeCards = stored)))
+            assertThat(List(3) { execution.active.rearrangeAt(it) }).isEqualTo(expected)
+        }
+    }
 }
