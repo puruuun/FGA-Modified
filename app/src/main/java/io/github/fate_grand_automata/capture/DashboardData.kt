@@ -54,7 +54,10 @@ internal fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.conte
 
 /** Declaration order is the display order: the grail group leads (owner, 2026-11-22). */
 enum class InventoryGroup { Grails, Materials, Gems, Pieces, Event, Coins, Other }
-enum class ServantSort { Bond, Cost, Level }
+/** Declaration order is the column order of the table and of the narrow sort chips. */
+enum class ServantSort(val firstTapDescending: Boolean) {
+    Name(false), Cost(true), Level(true), Bond(true), Np(true), Skills(true), Appends(true),
+}
 enum class StoredKind { Servant, Equip, Other }
 
 /** Atlas `type` values of the servants a player can own; everything else in `basic_servant` (enemies, CEs, ...) is not counted. */
@@ -567,15 +570,42 @@ private fun projectSummons(
     return DashboardSummons(friendPointTotal, otherSummons, recentLog)
 }
 
-internal fun List<DashboardServant>.selectServants(sort: ServantSort, classes: Set<String>?): List<DashboardServant> {
-    val bond = compareByDescending<DashboardServant> { it.bond ?: -1L }.thenByDescending { it.friendship ?: -1L }
-    val cost = compareByDescending<DashboardServant> { it.cost ?: -1 }
-    val level = compareByDescending<DashboardServant> { it.maxLevel ?: -1L }
-    val order = when (sort) {
-        ServantSort.Bond -> bond.then(cost).then(level)
-        ServantSort.Cost -> cost.then(bond).then(level)
-        ServantSort.Level -> level.then(bond).then(cost)
-    }.thenBy { it.id }
+/** Skill and append levels summed; a locked or unknown slot counts 0. */
+internal val DashboardServant.skillSum: Long get() = skills.sumOf { it ?: 0L }
+internal val DashboardServant.appendSum: Long get() = appends.sumOf { it ?: 0L }
+
+/** Servants without a value for the sorted column come last in both directions. */
+private fun <T : Comparable<T>> byValue(descending: Boolean, select: (DashboardServant) -> T?) = Comparator<DashboardServant> { a, b ->
+    val x = select(a)
+    val y = select(b)
+    when {
+        x == null && y == null -> 0
+        x == null -> 1
+        y == null -> -1
+        descending -> y.compareTo(x)
+        else -> x.compareTo(y)
+    }
+}
+
+/** Bond is the rank, then the points inside the rank. Level sorts by the maximum level, as it always has. */
+private fun ServantSort.valueOrder(descending: Boolean): Comparator<DashboardServant> = when (this) {
+    ServantSort.Name -> byValue(descending) { it.name.lowercase() }
+    ServantSort.Cost -> byValue(descending) { it.cost }
+    ServantSort.Level -> byValue(descending) { it.maxLevel }
+    ServantSort.Bond -> byValue<Long>(descending) { it.bond }.then(byValue(descending) { it.friendship })
+    ServantSort.Np -> byValue(descending) { it.np }
+    ServantSort.Skills -> byValue(descending) { it.skillSum }
+    ServantSort.Appends -> byValue(descending) { it.appendSum }
+}
+
+/**
+ * Ties fall back to bond, then cost, then maximum level (each highest first, whichever column and direction is
+ * sorted; the sorted column itself is left out), and finally the servant id, so the order is stable and the same
+ * whichever way the column points.
+ */
+internal fun List<DashboardServant>.selectServants(sort: ServantSort, descending: Boolean, classes: Set<String>?): List<DashboardServant> {
+    val ties = listOf(ServantSort.Bond, ServantSort.Cost, ServantSort.Level).filter { it != sort }
+    val order = ties.fold(sort.valueOrder(descending)) { acc, tie -> acc.then(tie.valueOrder(true)) }.thenBy { it.id }
     return filter { classes == null || it.atlas?.className in classes }.sortedWith(order)
 }
 

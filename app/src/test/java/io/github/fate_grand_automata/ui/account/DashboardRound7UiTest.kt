@@ -198,10 +198,10 @@ class DashboardRound7UiTest {
         val collection = hasAnyAncestor(hasTestTag("dashboard-section:3"))
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Servant 6", substring = true).fetchSemanticsNodes().isNotEmpty() }
         val chips = ServantSort.entries.map { compose.onNodeWithTag("dashboard-sort:${it.name}") }
-        chips[0].assertIsSelected()
+        compose.onNodeWithTag("dashboard-sort:Bond").assertIsSelected()
         chips.map { it.getUnclippedBoundsInRoot() }.zipWithNext().forEach { (a,b) -> assertTrue(a.left < b.left) }
-        chips[1].performClick().assertIsSelected()
-        chips[2].performClick().assertIsSelected()
+        compose.onNodeWithTag("dashboard-sort:Cost").performClick().assertIsSelected()
+        compose.onNodeWithTag("dashboard-sort:Level").performClick().assertIsSelected()
         compose.onAllNodes(hasSetTextAction() and collection).assertCountEquals(0)
         compose.onNode(hasText("Owned",substring=true) and hasClickAction()).assertDoesNotExist()
         compose.onNodeWithText("Bond ≥10",substring=true).assertDoesNotExist()

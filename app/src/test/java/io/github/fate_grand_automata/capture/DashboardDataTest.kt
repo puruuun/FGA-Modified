@@ -112,12 +112,12 @@ class DashboardDataTest {
             {"svtId":13,"status":2,"friendshipRank":10,"friendship":400},
             {"svtId":14,"status":2,"friendshipRank":9}]
         """), dashboardNames())
-        assertEquals(listOf(11L, 13L, 10L, 14L), data.servants!!.selectServants(ServantSort.Bond, null).map { it.id })
+        assertEquals(listOf(11L, 13L, 10L, 14L), data.servants!!.selectServants(ServantSort.Bond, true, null).map { it.id })
     }
     @Test fun classFilterKeepsOnlySelectedClasses() {
         val data = dashboardData(dashboardState("userSvtCollection" to """[{"svtId":10,"status":2},{"svtId":11,"status":2}]"""), dashboardNames()).servants!!
-        assertEquals(listOf(10L), data.selectServants(ServantSort.Bond, setOf("saber")).map { it.id })
-        assertTrue(data.selectServants(ServantSort.Bond, setOf("beast")).isEmpty())
+        assertEquals(listOf(10L), data.selectServants(ServantSort.Bond, true, setOf("saber")).map { it.id })
+        assertTrue(data.selectServants(ServantSort.Bond, true, setOf("beast")).isEmpty())
     }
     private fun servant(id: Long, rarity: Long?, bond: Long?, points: Long?, level: Long?) =
         DashboardServant(id, AtlasBasic(id, rarity = rarity), bond, points, null, emptyList(), level)
@@ -138,18 +138,74 @@ class DashboardDataTest {
         servant(5,1,10,200,70), servant(6,0,11,0,1), servant(7,null,null,null,null))
 
     @Test fun bondSortUsesPointsThenCostLevelAndId() {
-        assertEquals(listOf(6L,5L,3L,4L,2L,1L,7L), sortRows.reversed().selectServants(ServantSort.Bond,null).map { it.id })
+        assertEquals(listOf(6L,5L,3L,4L,2L,1L,7L), sortRows.reversed().selectServants(ServantSort.Bond, true, null).map { it.id })
     }
     @Test fun costSortUsesBondPointsLevelAndId() {
-        assertEquals(listOf(3L,4L,2L,1L,6L,5L,7L), sortRows.reversed().selectServants(ServantSort.Cost,null).map { it.id })
+        assertEquals(listOf(3L,4L,2L,1L,6L,5L,7L), sortRows.reversed().selectServants(ServantSort.Cost, true, null).map { it.id })
         val tied = listOf(servant(1,5,10,100,1),servant(2,5,11,0,1),servant(3,5,10,200,1))
-        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Cost,null).map { it.id })
+        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Cost, true, null).map { it.id })
     }
     @Test fun levelSortUsesBondPointsCostAndId() {
-        assertEquals(listOf(3L,4L,1L,2L,5L,6L,7L), sortRows.reversed().selectServants(ServantSort.Level,null).map { it.id })
+        assertEquals(listOf(3L,4L,1L,2L,5L,6L,7L), sortRows.reversed().selectServants(ServantSort.Level, true, null).map { it.id })
         val tied = listOf(servant(1,5,10,100,100),servant(2,1,11,0,100),servant(3,1,10,200,100))
-        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Level,null).map { it.id })
-        assertEquals(listOf(ServantSort.Bond,ServantSort.Cost,ServantSort.Level),ServantSort.entries)
+        assertEquals(listOf(2L,3L,1L), tied.selectServants(ServantSort.Level, true, null).map { it.id })
+    }
+
+    private fun colRow(id: Long, name: String, rarity: Long, bond: Long?, np: Long?, skills: List<Long?>, maxLevel: Long?, appends: List<Long?>) =
+        DashboardServant(id, AtlasBasic(id, name, "normal", "saber", rarity), bond, 0, np, skills, maxLevel, null, appends)
+
+    // Costs 16, 12, 7, 16. Delta has no NP, no skills and no max level, so it also checks that empty values come last.
+    private val columnRows get() = listOf(
+        colRow(1, "Alpha", 5, 5, 2, listOf(10, 10, 9), 90, listOf(10, 0, null, null, null)),
+        colRow(2, "beta", 4, 10, 1, listOf(1, 1, 1), 100, List(5) { null }),
+        colRow(3, "Gamma", 3, 7, 5, listOf(10, 10, 10), 120, List(5) { 10L }),
+        colRow(4, "delta", 5, 7, null, emptyList(), null, List(5) { null }),
+    )
+    private fun ids(sort: ServantSort, descending: Boolean) = columnRows.selectServants(sort, descending, null).map { it.id }
+
+    @Test fun everyColumnSortsInBothDirections() {
+        assertEquals(listOf(1L, 2L, 4L, 3L), ids(ServantSort.Name, false))
+        assertEquals(listOf(3L, 4L, 2L, 1L), ids(ServantSort.Name, true))
+        assertEquals(listOf(4L, 1L, 2L, 3L), ids(ServantSort.Cost, true))
+        assertEquals(listOf(3L, 2L, 4L, 1L), ids(ServantSort.Cost, false))
+        assertEquals(listOf(3L, 2L, 1L, 4L), ids(ServantSort.Level, true))
+        assertEquals(listOf(1L, 2L, 3L, 4L), ids(ServantSort.Level, false))
+        assertEquals(listOf(2L, 4L, 3L, 1L), ids(ServantSort.Bond, true))
+        assertEquals(listOf(1L, 4L, 3L, 2L), ids(ServantSort.Bond, false))
+        assertEquals(listOf(3L, 1L, 2L, 4L), ids(ServantSort.Np, true))
+        assertEquals(listOf(2L, 1L, 3L, 4L), ids(ServantSort.Np, false))
+        assertEquals(listOf(3L, 1L, 2L, 4L), ids(ServantSort.Skills, true))
+        assertEquals(listOf(4L, 2L, 1L, 3L), ids(ServantSort.Skills, false))
+        assertEquals(listOf(3L, 1L, 2L, 4L), ids(ServantSort.Appends, true))
+        assertEquals(listOf(2L, 4L, 1L, 3L), ids(ServantSort.Appends, false))
+    }
+
+    @Test fun skillAndAppendSortsSumTheLevelsAndCountLockedSlotsAsZero() {
+        assertEquals(listOf(29L, 3L, 30L, 0L), columnRows.map { it.skillSum })
+        assertEquals(listOf(10L, 0L, 50L, 0L), columnRows.map { it.appendSum })
+    }
+
+    @Test fun tiesKeepTheSameOrderInBothDirections() {
+        val tied = listOf(colRow(3, "C", 5, 5, 1, emptyList(), 1, emptyList()), colRow(1, "A", 5, 9, 1, emptyList(), 1, emptyList()), colRow(2, "B", 5, 9, 1, emptyList(), 1, emptyList()))
+        listOf(ServantSort.Cost, ServantSort.Np, ServantSort.Level, ServantSort.Skills, ServantSort.Appends).forEach { sort ->
+            assertEquals(listOf(1L, 2L, 3L), tied.selectServants(sort, true, null).map { it.id }, sort.name)
+            assertEquals(listOf(1L, 2L, 3L), tied.selectServants(sort, false, null).map { it.id }, sort.name)
+        }
+    }
+
+    @Test fun reversingFlipsTheSortedValuesButNotMissingOnes() {
+        ServantSort.entries.filter { it != ServantSort.Bond && it != ServantSort.Cost }.forEach { sort ->
+            val up = ids(sort, false).filter { it != 4L }
+            val down = ids(sort, true).filter { it != 4L }
+            assertEquals(up.reversed(), down, sort.name)
+        }
+        assertEquals(4L, ids(ServantSort.Np, true).last())
+        assertEquals(4L, ids(ServantSort.Np, false).last())
+    }
+
+    @Test fun nameIsTheOnlyColumnThatStartsAscending() {
+        assertEquals(listOf(ServantSort.Name), ServantSort.entries.filter { !it.firstTapDescending })
+        assertEquals(listOf("Name", "Cost", "Level", "Bond", "Np", "Skills", "Appends"), ServantSort.entries.map { it.name })
     }
     @Test fun preservesHighestCollectionStatsAndMissingStatsStayNull() {
         val servants = dashboardData(dashboardState("userSvtCollection" to """[
